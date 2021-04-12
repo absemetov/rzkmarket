@@ -1,5 +1,17 @@
 {
   "projects": {
     "default": "rzk-market-ua"
+  },
+  "targets": {
+    "rzk-market-ua": {
+      "hosting": {
+        "absemetov.org.ua": [
+          "absemetov-personal"
+        ],
+        "rzk.com.ua": [
+          "rzk-market-ua"
+        ]
+      }
+    }
   }
 }

@@ -4,12 +4,18 @@
       "npm --prefix \"$RESOURCE_DIR\" run lint"
     ]
   },
-  "hosting": {
+  "hosting": [ {
+    "target": "rzk.com.ua",
     "public": "public",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ]
+  },
+  {
+    "target": "absemetov.org.ua",
+    "public": "sites/absemetov.org.ua"
   }
+]
 }
