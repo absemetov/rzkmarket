@@ -1,3 +1,5 @@
+#firebase
+.firebase
 #If you're not using Zero-Installs
 .yarn/*
 !.yarn/patches
