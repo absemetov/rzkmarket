@@ -1,13 +1,5 @@
 #firebase
 .firebase
-#If you're not using Zero-Installs
-.yarn/*
-!.yarn/patches
-!.yarn/releases
-!.yarn/plugins
-!.yarn/sdks
-!.yarn/versions
-.pnp.*
 # Created by .ignore support plugin (hsz.mobi)
 ### Node template
 # Logs
