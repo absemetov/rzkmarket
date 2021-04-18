@@ -1,21 +1,40 @@
 {
   "functions": {
     "predeploy": [
-      "npm --prefix \"$RESOURCE_DIR\" run lint"
+      //"npm --prefix \"$RESOURCE_DIR\" run lint",
+      "rm -rf functions/.nuxt && mkdir -p functions/.nuxt/dist && cp -r .nuxt/dist/server functions/.nuxt/dist && cp nuxt.config.js functions"
     ]
   },
   "hosting": [ {
     "target": "rzk.com.ua",
     "public": "public",
+    "predeploy": [
+      "rm -rf public && mkdir -p public/_nuxt && cp -r .nuxt/dist/client/. public/_nuxt && cp -r static/. public"
+    ],
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "function": "app"
+      }
     ]
   },
   {
     "target": "absemetov.org.ua",
-    "public": "sites/absemetov.org.ua"
+    "public": "sites/absemetov.org.ua",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [ {
+      "source": "**",
+      "destination": "/index.html"
+    } ]
   }
 ]
 }
