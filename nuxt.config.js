@@ -39,6 +39,25 @@ export default {
 
   // Modules: https://go.nuxtjs.dev/config-modules
   modules: [
+    [
+      '@nuxtjs/firebase',
+      {
+        config: {
+          apiKey: "AIzaSyD-7Ts6Yn6nTRJUwxPDVJ_5i0wyU11vwM0",
+          authDomain: "rzk-market-ua.firebaseapp.com",
+          projectId: "rzk-market-ua",
+          storageBucket: "rzk-market-ua.appspot.com",
+          messagingSenderId: "741872790396",
+          appId: "1:741872790396:web:10ca22e384040f400c92f9",
+          measurementId: "G-6KCV0R018E"
+        },
+        services: {
+          auth: true, // Just as example. Can be any other service.
+          firestore: true,
+          analytics: true,
+        }
+      }
+    ]
   ],
 
   // Vuetify module configuration: https://go.nuxtjs.dev/config-vuetify

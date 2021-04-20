@@ -11,7 +11,9 @@
     "lint": "yarn lint:js"
   },
   "dependencies": {
+    "@nuxtjs/firebase": "^7.5.0",
     "core-js": "^3.9.1",
+    "firebase": "^8.4.1",
     "nuxt": "^2.15.3"
   },
   "devDependencies": {
