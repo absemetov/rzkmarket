@@ -1,8 +1,8 @@
 const app = require("./app");
-//const bot = require("./bot");
+const bot = require("./bot");
 
 exports.app = app.app;
-//exports.bot = bot.bot;
+exports.bot = bot.bot;
 
 // const functions = require("firebase-functions");
 // // Create and Deploy Your First Cloud Functions

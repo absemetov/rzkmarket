@@ -20,7 +20,8 @@
     "firebase-admin": "^9.2.0",
     "firebase-functions": "^3.11.0",
     "nuxt": "^2.15.3",
-    "nuxt-start": "^2.15.4"
+    "nuxt-start": "^2.15.4",
+    "telegraf": "^4.3.0"
   },
   "devDependencies": {
     "@nuxtjs/eslint-config": "^6.0.0",
