@@ -1,5 +1,5 @@
 const functions = require("firebase-functions");
-const admin = require("firebase-admin");
+// const admin = require("firebase-admin");
 
 const {Telegraf, Markup} = require("telegraf");
 
@@ -14,10 +14,10 @@ const {Telegraf, Markup} = require("telegraf");
 // const doc = new GoogleSpreadsheet('1NdlYGQb3qUiS5D7rkouhZZ8Q7KvoJ6kTpKMtF2o5oVM');
 
 const bot = new Telegraf(functions.config().bot.token);
-//firebase functions:config:set bot.token="1359239824:AAFqbJhFQxm3kgItUKiq6tdui5j3jPc5UEw"
+// firebase functions:config:set bot.token="1359239824:AAFqbJhFQxm3kgItUKiq6tdui5j3jPc5UEw"
 
 bot.start((ctx) => ctx.reply("Welcome to RZK Market Ukraine!", Markup.keyboard([
-  'sheet', 'USD', 'EUR', 'RUB'
+  "sheet", "USD", "EUR", "RUB"
   ]).resize().extra()
 ));
 

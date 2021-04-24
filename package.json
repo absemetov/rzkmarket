@@ -8,7 +8,11 @@
     "start": "nuxt start",
     "generate": "nuxt generate",
     "lint:js": "eslint --ext \".js,.vue\" --ignore-path .gitignore .",
-    "lint": "yarn lint:js"
+    "lint": "yarn lint:js",
+    "export-server": "rm -rf functions/.nuxt && mkdir -p functions/.nuxt/dist && cp -r .nuxt/dist/server functions/.nuxt/dist",
+    "export-public": "rm -rf public && mkdir -p public/_nuxt && cp -r .nuxt/dist/client/. public/_nuxt && cp -r static/. public",
+    "deploy": "yarn export-server && yarn export-public && firebase deploy --only hosting:rzk.com.ua,functions:app",
+    "deploy-fire": "firebase deploy --only hosting:rzk.com.ua,functions:app"
   },
   "dependencies": {
     "@nuxtjs/firebase": "^7.5.0",
