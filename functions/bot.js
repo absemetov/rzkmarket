@@ -1,7 +1,7 @@
 const functions = require("firebase-functions");
 // const admin = require("firebase-admin");
 
-const {Telegraf, Markup} = require("telegraf");
+const {Telegraf, Markup}  = require("telegraf");
 
 // const axios = require("axios");
 // const cc = require("currency-codes");
@@ -12,16 +12,25 @@ const {Telegraf, Markup} = require("telegraf");
 
 // // spreadsheet key is the long id in the sheets URL
 // const doc = new GoogleSpreadsheet('1NdlYGQb3qUiS5D7rkouhZZ8Q7KvoJ6kTpKMtF2o5oVM');
+let bot;
 
-const bot = new Telegraf(functions.config().bot.token);
+if(Object.keys(functions.config()).length) {
+  bot = new Telegraf(functions.config().bot.token);
+} else {
+  bot = new Telegraf("1359239824:AAFqbJhFQxm3kgItUKiq6tdui5j3jPc5UEw");
+}
+
 // firebase functions:config:set bot.token="1359239824:AAFqbJhFQxm3kgItUKiq6tdui5j3jPc5UEw"
 
 bot.start((ctx) => ctx.reply("Welcome to RZK Market Ukraine!", Markup.keyboard([
   "sheet", "USD", "EUR", "RUB"
-  ]).resize().extra()
+  ]).resize()
 ));
 
-bot.hears('hi', (ctx) => ctx.reply('Hey there'));
+bot.hears('hi', (ctx) => ctx.reply('Hey there', Markup.keyboard([
+  "sheet", "USD", "EUR", "RUB", "hi"
+  ]).resize()
+));
 
 // bot.use(async (ctx, next_call) => {
 //   const start = new Date();
@@ -150,7 +159,7 @@ bot.hears('hi', (ctx) => ctx.reply('Hey there'));
 
 //   });
 
-//   bot.launch();
+bot.launch();
 
 exports.bot = functions.https.onRequest(async (req, res) => {
   await bot.handleUpdate(req.body);
