@@ -14,6 +14,7 @@ module.exports = {
   parserOptions: {
     // Required for certain syntax usages
     // ecmaVersion: 2020,
-    parser: "babel-eslint",
+    // parser: "babel-eslint",
+    // ecmaVersion: 8,
   },
 };
