@@ -1,20 +1,18 @@
 const functions = require("firebase-functions");
 // const admin = require("firebase-admin");
 
-const {Telegraf, Markup}  = require("telegraf");
+const {Telegraf, Markup} = require("telegraf");
 
 const token = functions.config().bot.token;
 
 const bot = new Telegraf(token);
 
 bot.start((ctx) => ctx.reply("Welcome to RZK Market Ukraine!", Markup.keyboard([
-  "sheet", "USD", "EUR", "RUB"
-  ]).resize()
+  "sheet", "USD", "EUR", "RUB"]).resize(),
 ));
 
-bot.hears('hi', (ctx) => ctx.reply('Hey there', Markup.keyboard([
-  "sheet", "USD", "EUR", "RUB", "hi"
-  ]).resize()
+bot.hears("hi", (ctx) => ctx.reply("Hey there", Markup.keyboard([
+  "sheet", "USD", "EUR", "RUB", "hi"]).resize(),
 ));
 
 bot.launch();
@@ -38,9 +36,7 @@ exports.bot = functions.https.onRequest(async (req, res) => {
 // const doc = new GoogleSpreadsheet('1NdlYGQb3qUiS5D7rkouhZZ8Q7KvoJ6kTpKMtF2o5oVM');
 
 
-
-// firebase functions:config:set bot.token="1359239824:AAFqbJhFQxm3kgItUKiq6tdui5j3jPc5UEw"
-
+// functions:config:set bot.token = "1359239824:AAFqbJhFQxm3kgItUKiq6tdui5j3jPc5UEw"
 
 
 // bot.use(async (ctx, next_call) => {
@@ -51,7 +47,6 @@ exports.bot = functions.https.onRequest(async (req, res) => {
 //   ctx.reply(`Response time: ${ms}ms`);
 //   return;
 // });
-
 
 
 //   //Test Tags

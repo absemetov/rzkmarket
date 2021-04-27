@@ -9,12 +9,11 @@ module.exports = {
     "google",
   ],
   rules: {
-    quotes: ["error", "double"],
+    "max-len": ["error", {"code": 120}],
+    "quotes": ["error", "double"],
   },
   parserOptions: {
     // Required for certain syntax usages
-    // ecmaVersion: 2020,
-    // parser: "babel-eslint",
-    // ecmaVersion: 8,
+    ecmaVersion: 2020,
   },
 };
