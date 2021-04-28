@@ -1,5 +1,4 @@
 const functions = require("firebase-functions");
-// const admin = require("firebase-admin");
 
 const {Telegraf, Markup} = require("telegraf");
 
@@ -24,6 +23,8 @@ exports.bot = functions.https.onRequest(async (req, res) => {
     res.status(200).end();
   }
 });
+
+// const admin = require("firebase-admin");
 
 // const axios = require("axios");
 // const cc = require("currency-codes");
