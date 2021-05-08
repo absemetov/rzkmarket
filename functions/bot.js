@@ -1,18 +1,33 @@
 const functions = require("firebase-functions");
 
-const {Telegraf, Markup} = require("telegraf");
+const {Telegraf, session, Markup, Scenes: {Stage}} = require("telegraf");
+
+const {start} = require("./bot_start_scene");
+
+// const mono = require("./bot_mono_scene");
 
 const token = functions.config().bot.token;
 
 const bot = new Telegraf(token);
 
-bot.start((ctx) => ctx.reply("Welcome to RZK Market Ukraine!", Markup.keyboard([
-  "sheet", "USD", "EUR", "RUB"]).resize(),
-));
+const stage = new Stage([start]);
 
-bot.hears("hi", (ctx) => ctx.reply("Hey there", Markup.keyboard([
-  "sheet", "USD", "EUR", "RUB", "hi"]).resize(),
-));
+bot.use(session());
+
+bot.use(stage.middleware());
+
+// bot.start((ctx) => ctx.replyWithDice());
+
+bot.command("hi", (ctx) => ctx.scene.enter("mono"));
+
+// bot.start((ctx) => ctx.reply("Welcome to RZK Market Ukraine!", Markup.keyboard([
+//   "sheet", "USD", "EUR", "RUB"]).resize(),
+// ));
+
+// bot.hears("hi", (ctx) => ctx.reply("Hey there", Markup.keyboard([
+//   "sheet", "USD", "EUR", "RUB", "hi"]).resize(),
+// ));
+bot.on("message", (ctx) => ctx.reply("Try /hi or /hi"));
 
 bot.launch();
 
