@@ -11,6 +11,8 @@ start.leave((ctx) => ctx.reply("Bye"));
 
 start.hears("hi", enter("greeter"));
 
+start.command("saveme", leave());
+
 start.on("message", (ctx) => ctx.replyWithMarkdown("Send `hi`"));
 
 exports.start = start;

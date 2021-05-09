@@ -29,7 +29,13 @@ bot.command("hi", (ctx) => ctx.scene.enter("mono"));
 // ));
 bot.on("message", (ctx) => ctx.reply("Try /hi or /hi"));
 
-bot.launch();
+// in local dev true in prod undefined 
+
+if (process.env.FUNCTIONS_EMULATOR) {
+  bot.launch();
+} else {
+  bot.telegram.setWebhook("https://us-central1-rzk-market-ua.cloudfunctions.net/bot");
+}
 
 exports.bot = functions.https.onRequest(async (req, res) => {
   try {
