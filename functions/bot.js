@@ -16,20 +16,7 @@ bot.use(session());
 
 bot.use(stage.middleware());
 
-// bot.start((ctx) => ctx.replyWithDice());
-
-bot.command("hi", (ctx) => ctx.scene.enter("mono"));
-
-// bot.start((ctx) => ctx.reply("Welcome to RZK Market Ukraine!", Markup.keyboard([
-//   "sheet", "USD", "EUR", "RUB"]).resize(),
-// ));
-
-// bot.hears("hi", (ctx) => ctx.reply("Hey there", Markup.keyboard([
-//   "sheet", "USD", "EUR", "RUB", "hi"]).resize(),
-// ));
-bot.on("message", (ctx) => ctx.reply("Try /hi or /hi"));
-
-// in local dev true in prod undefined 
+bot.start((ctx) => ctx.scene.enter("start"));
 
 if (process.env.FUNCTIONS_EMULATOR) {
   bot.launch();
@@ -44,6 +31,18 @@ exports.bot = functions.https.onRequest(async (req, res) => {
     res.status(200).end();
   }
 });
+
+// bot.start((ctx) => ctx.reply("Welcome to RZK Market Ukraine!", Markup.keyboard([
+//   "sheet", "USD", "EUR", "RUB"]).resize(),
+// ));
+
+// bot.hears("hi", (ctx) => ctx.reply("Hey there", Markup.keyboard([
+//   "sheet", "USD", "EUR", "RUB", "hi"]).resize(),
+// ));
+
+// in local dev true in prod undefined 
+
+
 
 // const admin = require("firebase-admin");
 

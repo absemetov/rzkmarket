@@ -1,18 +1,18 @@
 const {Scenes: {BaseScene, Stage}} = require("telegraf");
+const {getMainKeyboard} = require("./bot_keyboards.js");
 
 // Handler factories
-const {enter, leave} = Stage;
+const {leave} = Stage;
 
-const start = new BaseScene("mono");
+const start = new BaseScene("start");
 
-start.enter((ctx) => ctx.reply("Hi"));
+start.enter((ctx) => {
+  const {mainKeyboard} = getMainKeyboard(ctx);
+  ctx.reply("Choose language / Выбери язык", mainKeyboard);
+});
 
 start.leave((ctx) => ctx.reply("Bye"));
 
-start.hears("hi", enter("greeter"));
-
 start.command("saveme", leave());
-
-start.on("message", (ctx) => ctx.replyWithMarkdown("Send `hi`"));
 
 exports.start = start;

@@ -7,7 +7,7 @@ firebase.initializeApp();
 
 async function updateData(currenciesFirestore) {
   try {
-    //get data from monobank
+    // get data from monobank
     const currenciesMonobank = await axios.get("https://api.monobank.ua/bank/currency");
 
     const USD = currenciesMonobank.data.find((data) => {
@@ -40,7 +40,7 @@ async function updateData(currenciesFirestore) {
         currencyResult[doc.id] = doc.data();
       });
 
-      return currencyResult;
+    return currencyResult;
   }
 }
 
