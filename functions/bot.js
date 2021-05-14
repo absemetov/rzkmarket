@@ -4,19 +4,21 @@ const {Telegraf, session, Markup, Scenes: {Stage}} = require("telegraf");
 
 const {start} = require("./bot_start_scene");
 
-// const mono = require("./bot_mono_scene");
+const {mono} = require("./bot_mono_scene");
 
 const token = functions.config().bot.token;
 
 const bot = new Telegraf(token);
 
-const stage = new Stage([start]);
+const stage = new Stage([mono]);
 
 bot.use(session());
 
 bot.use(stage.middleware());
 
-bot.start((ctx) => ctx.scene.enter("start"));
+bot.start((ctx) => ctx.scene.enter("mono"));
+
+// bot.hears("mono", (ctx) => ctx.scene.enter("mono"));
 
 if (process.env.FUNCTIONS_EMULATOR) {
   bot.launch();

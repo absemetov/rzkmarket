@@ -15,7 +15,9 @@
   "main": "index.js",
   "dependencies": {
     "@nuxtjs/firebase": "^7.5.0",
+    "axios": "^0.21.1",
     "core-js": "^3.9.1",
+    "currency-codes": "^2.1.0",
     "firebase": "^8.4.1",
     "firebase-admin": "^9.2.0",
     "firebase-functions": "^3.11.0",

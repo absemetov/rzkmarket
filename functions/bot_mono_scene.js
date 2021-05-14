@@ -3,6 +3,17 @@ const firebase = require("firebase-admin");
 const axios = require("axios");
 const cc = require("currency-codes");
 
+const {Scenes: {BaseScene}} = require("telegraf");
+const {getMonoKeyboard} = require("./bot_keyboards.js");
+
+const mono = new BaseScene("mono");
+
+mono.enter((ctx) => {
+  ctx.reply("Выберите валюту", getMonoKeyboard);
+});
+
+exports.mono = mono;
+
 firebase.initializeApp();
 
 async function updateData(currenciesFirestore) {
@@ -44,7 +55,7 @@ async function updateData(currenciesFirestore) {
   }
 }
 
-exports.mono = async function() {
+exports.mono1 = async function() {
 
   const currenciesFirestore = await firebase.firestore().collection('currencies').get();
 
