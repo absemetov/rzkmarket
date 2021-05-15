@@ -1,16 +1,25 @@
-const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
 const axios = require("axios");
 const cc = require("currency-codes");
 
-const {Scenes: {BaseScene}} = require("telegraf");
-const {getMonoKeyboard} = require("./bot_keyboards.js");
+const {Scenes: {Stage, BaseScene}} = require("telegraf");
+const {getMainKeyboard, getMonoKeyboard} = require("./bot_keyboards.js");
+
+const {leave} = Stage;
 
 const mono = new BaseScene("mono");
 
 mono.enter((ctx) => {
   ctx.reply("Выберите валюту", getMonoKeyboard);
 });
+
+mono.leave((ctx) => {
+  ctx.reply("Menu", getMainKeyboard);
+});
+
+mono.hears("where", (ctx) => ctx.reply("You are in mono scene"));
+
+mono.hears("back", leave());
 
 exports.mono = mono;
 

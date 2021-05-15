@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "postdeploy": [
+      "curl https://us-central1-rzk-market-ua.cloudfunctions.net/bot"
+    ]
+  },
   "hosting": [ {
     "target": "rzk.com.ua",
     "public": "public",

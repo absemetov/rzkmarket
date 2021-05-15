@@ -1,6 +1,6 @@
 const functions = require("firebase-functions");
 
-const {Telegraf, session, Markup, Scenes: {Stage}} = require("telegraf");
+const {Telegraf, session, Scenes: {Stage}} = require("telegraf");
 
 const {start} = require("./bot_start_scene");
 
@@ -10,15 +10,17 @@ const token = functions.config().bot.token;
 
 const bot = new Telegraf(token);
 
-const stage = new Stage([mono]);
+const stage = new Stage([start, mono]);
 
 bot.use(session());
 
 bot.use(stage.middleware());
 
-bot.start((ctx) => ctx.scene.enter("mono"));
+bot.start((ctx) => ctx.scene.enter("start"));
 
-// bot.hears("mono", (ctx) => ctx.scene.enter("mono"));
+bot.hears("mono", (ctx) => ctx.scene.enter("mono"));
+
+bot.hears("where", (ctx) => ctx.reply("You are in outside"));
 
 if (process.env.FUNCTIONS_EMULATOR) {
   bot.launch();

@@ -7,4 +7,6 @@ start.enter((ctx) => {
   ctx.reply("Выберите меню", getMainKeyboard);
 });
 
+start.hears("where", (ctx) => ctx.reply("You are in start scene"));
+
 exports.start = start;
