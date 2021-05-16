@@ -17,13 +17,20 @@ mono.leave((ctx) => {
   ctx.reply("Menu", getMainKeyboard);
 });
 
-mono.hears("USD", async (ctx) => ctx.reply( await getCurrency() ) );
-
 mono.hears("where", (ctx) => ctx.reply("You are in mono scene"));
 
 mono.hears("back", leave());
 
-exports.mono = mono;
+// listen all text messages
+mono.on("text", async (ctx) => {
+  const currency = await getCurrency(ctx.message.text);
+  if (currency) {
+    return ctx.replyWithMarkdown(`CURRENCY: *${ctx.message.text}*
+RATE BUY: *${currency.rateBuy}*
+RATE SELL: *${currency.rateSell}*
+      `);
+  }
+});
 
 firebase.initializeApp();
 
@@ -55,35 +62,35 @@ async function updateData(currenciesFirestore) {
     return {USD: usdRate, EUR: eurRate, RUB: rubRate};
   } catch (error) {
     // res.send(error.response.data.errorDescription);
-    // if error return old data
-
-    const currencyResult = {};
-
-    currenciesFirestore.forEach((doc) => {
-      currencyResult[doc.id] = doc.data();
-    });
-
-    return currencyResult;
+    return {};
   }
 }
 
-async function getCurrency() {
+async function getCurrency(currencyName) {
   const currenciesFirestore = await firebase.firestore().collection("currencies").get();
 
   let currencyResult = {};
-
+  let refresh = false;
   const dateTimestamp = Math.floor(Date.now() / 1000);
 
   currenciesFirestore.forEach((doc) => {
     const timeDiff = dateTimestamp - doc.data().data_updated;
-    if (timeDiff < 60) {
-      currencyResult[doc.id] = doc.data();
+    if (timeDiff > 3600) {
+      refresh = true;
     }
+    currencyResult[doc.id] = doc.data();
   });
   // refresh data
-
+  // if empty collection
   if ( Object.keys(currencyResult).length === 0 ) {
-    currencyResult = await updateData(currenciesFirestore);
+    currencyResult = await updateData();
   }
-  return currencyResult;
+  // if old data
+  if (refresh) {
+    currencyResult = await updateData();
+  }
+
+  return currencyResult[currencyName];
 }
+
+exports.mono = mono;
