@@ -17,6 +17,8 @@ mono.leave((ctx) => {
   ctx.reply("Menu", getMainKeyboard);
 });
 
+mono.hears("USD", async (ctx) => ctx.reply( await getCurrency() ) );
+
 mono.hears("where", (ctx) => ctx.reply("You are in mono scene"));
 
 mono.hears("back", leave());
@@ -30,58 +32,58 @@ async function updateData(currenciesFirestore) {
     // get data from monobank
     const currenciesMonobank = await axios.get("https://api.monobank.ua/bank/currency");
 
-    const USD = currenciesMonobank.data.find((data) => {
-      return data.currencyCodeA === Number(cc.code('USD').number);
+    const usdRate = currenciesMonobank.data.find((data) => {
+      return data.currencyCodeA === Number(cc.code("USD").number);
     });
 
-    const EUR = currenciesMonobank.data.find((data) => {
-      return data.currencyCodeA === Number(cc.code('EUR').number);
+    const eurRate = currenciesMonobank.data.find((data) => {
+      return data.currencyCodeA === Number(cc.code("EUR").number);
     });
 
-    const RUB = currenciesMonobank.data.find((data) => {
-      return data.currencyCodeA === Number(cc.code('RUB').number);
+    const rubRate = currenciesMonobank.data.find((data) => {
+      return data.currencyCodeA === Number(cc.code("RUB").number);
     });
 
-    //save data
+    // save data
+
     const dateUpdated = Math.floor(Date.now() / 1000);
 
-    await firebase.firestore().doc('currencies/USD').set({data_updated: dateUpdated, ...USD});
-    await firebase.firestore().doc('currencies/EUR').set({data_updated: dateUpdated, ...EUR});
-    await firebase.firestore().doc('currencies/RUB').set({data_updated: dateUpdated, ...RUB});
+    await firebase.firestore().doc("currencies/USD").set({data_updated: dateUpdated, ...usdRate});
+    await firebase.firestore().doc("currencies/EUR").set({data_updated: dateUpdated, ...eurRate});
+    await firebase.firestore().doc("currencies/RUB").set({data_updated: dateUpdated, ...rubRate});
 
-    return {USD: USD, EUR: EUR, RUB: RUB};
+    return {USD: usdRate, EUR: eurRate, RUB: rubRate};
+  } catch (error) {
+    // res.send(error.response.data.errorDescription);
+    // if error return old data
 
-  } catch(error) {
-      //res.send(error.response.data.errorDescription);
-      //if error return old data
-      let currencyResult = {};
+    const currencyResult = {};
 
-      currenciesFirestore.forEach(doc => {
-        currencyResult[doc.id] = doc.data();
-      });
+    currenciesFirestore.forEach((doc) => {
+      currencyResult[doc.id] = doc.data();
+    });
 
     return currencyResult;
   }
 }
 
-exports.mono1 = async function() {
-
-  const currenciesFirestore = await firebase.firestore().collection('currencies').get();
+async function getCurrency() {
+  const currenciesFirestore = await firebase.firestore().collection("currencies").get();
 
   let currencyResult = {};
 
-  const date_timestamp  = Math.floor(Date.now() / 1000);
+  const dateTimestamp = Math.floor(Date.now() / 1000);
 
-  currenciesFirestore.forEach(doc => {
-    let timeDiff =  date_timestamp - doc.data().data_updated;
+  currenciesFirestore.forEach((doc) => {
+    const timeDiff = dateTimestamp - doc.data().data_updated;
     if (timeDiff < 60) {
       currencyResult[doc.id] = doc.data();
     }
   });
-  //if data not exist
+  // refresh data
+
   if ( Object.keys(currencyResult).length === 0 ) {
     currencyResult = await updateData(currenciesFirestore);
   }
-
   return currencyResult;
-};
+}

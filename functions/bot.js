@@ -6,6 +6,8 @@ const {start} = require("./bot_start_scene");
 
 const {mono} = require("./bot_mono_scene");
 
+const {getMainKeyboard} = require("./bot_keyboards.js");
+
 const token = functions.config().bot.token;
 
 const bot = new Telegraf(token);
@@ -21,6 +23,8 @@ bot.start((ctx) => ctx.scene.enter("start"));
 bot.hears("mono", (ctx) => ctx.scene.enter("mono"));
 
 bot.hears("where", (ctx) => ctx.reply("You are in outside"));
+
+bot.hears("back", (ctx) => ctx.reply("Menu", getMainKeyboard));
 
 if (process.env.FUNCTIONS_EMULATOR) {
   bot.launch();
