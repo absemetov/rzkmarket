@@ -23,13 +23,18 @@ mono.hears("back", leave());
 
 // listen all text messages
 mono.on("text", async (ctx) => {
-  const currency = await getCurrency(ctx.message.text);
-  if (currency) {
-    return ctx.replyWithMarkdown(`CURRENCY: *${ctx.message.text}*
+  const currencyObj = await getCurrency();
+  const currency = currencyObj[ctx.message.text];
+  const date = new Date(currency.date*1000);
+
+  return ctx.replyWithMarkdown(`CURRENCY: *${ctx.message.text}*
 RATE BUY: *${currency.rateBuy}*
 RATE SELL: *${currency.rateSell}*
-      `);
-  }
+DATE: *${+date.getDate()+"/"+(date.getMonth()+1)+
+  "/"+date.getFullYear()+
+  " "+date.getHours()+
+  ":"+date.getMinutes()+
+  ":"+date.getSeconds()}*`);
 });
 
 firebase.initializeApp();
@@ -55,9 +60,9 @@ async function updateData(currenciesFirestore) {
 
     const dateUpdated = Math.floor(Date.now() / 1000);
 
-    await firebase.firestore().doc("currencies/USD").set({data_updated: dateUpdated, ...usdRate});
-    await firebase.firestore().doc("currencies/EUR").set({data_updated: dateUpdated, ...eurRate});
-    await firebase.firestore().doc("currencies/RUB").set({data_updated: dateUpdated, ...rubRate});
+    await firebase.firestore().doc("currencies/USD").set({updated_at: dateUpdated, ...usdRate});
+    await firebase.firestore().doc("currencies/EUR").set({updated_at: dateUpdated, ...eurRate});
+    await firebase.firestore().doc("currencies/RUB").set({updated_at: dateUpdated, ...rubRate});
 
     return {USD: usdRate, EUR: eurRate, RUB: rubRate};
   } catch (error) {
@@ -70,27 +75,28 @@ async function getCurrency(currencyName) {
   const currenciesFirestore = await firebase.firestore().collection("currencies").get();
 
   let currencyResult = {};
-  let refresh = false;
+  const currencyResultOld = {};
   const dateTimestamp = Math.floor(Date.now() / 1000);
 
   currenciesFirestore.forEach((doc) => {
-    const timeDiff = dateTimestamp - doc.data().data_updated;
-    if (timeDiff > 3600) {
-      refresh = true;
+    const timeDiff = dateTimestamp - doc.data().updated_at;
+    if (timeDiff < 3600) {
+      currencyResult[doc.id] = doc.data();
+    } else {
+      currencyResultOld[doc.id] = doc.data();
     }
-    currencyResult[doc.id] = doc.data();
   });
-  // refresh data
-  // if empty collection
+
+  // if empty collection or old data
   if ( Object.keys(currencyResult).length === 0 ) {
     currencyResult = await updateData();
-  }
-  // if old data
-  if (refresh) {
-    currencyResult = await updateData();
+    // if an error in update
+    if ( Object.keys(currencyResult).length === 0 ) {
+      currencyResult = currencyResultOld;
+    }
   }
 
-  return currencyResult[currencyName];
+  return currencyResult;
 }
 
 exports.mono = mono;
