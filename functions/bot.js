@@ -28,8 +28,6 @@ bot.hears("back", (ctx) => ctx.reply("Menu", getMainKeyboard));
 
 if (process.env.FUNCTIONS_EMULATOR) {
   bot.launch();
-} else {
-  bot.telegram.setWebhook("https://us-central1-rzk-market-ua.cloudfunctions.net/bot");
 }
 
 exports.bot = functions.https.onRequest(async (req, res) => {
@@ -48,7 +46,7 @@ exports.bot = functions.https.onRequest(async (req, res) => {
 //   "sheet", "USD", "EUR", "RUB", "hi"]).resize(),
 // ));
 
-// in local dev true in prod undefined 
+// in local dev true in prod undefined
 
 
 
