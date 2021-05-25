@@ -25,16 +25,19 @@ mono.hears("back", leave());
 mono.on("text", async (ctx) => {
   const currencyObj = await getCurrency();
   const currency = currencyObj[ctx.message.text];
-  const date = new Date(currency.date*1000);
-
-  return ctx.replyWithMarkdown(`CURRENCY: *${ctx.message.text}*
+  if (currency) {
+    const date = new Date(currency.date*1000);
+    return ctx.replyWithMarkdown(`CURRENCY: *${ctx.message.text}*
 RATE BUY: *${currency.rateBuy}*
 RATE SELL: *${currency.rateSell}*
 DATE: *${+date.getDate()+"/"+(date.getMonth()+1)+
-  "/"+date.getFullYear()+
-  " "+date.getHours()+
-  ":"+date.getMinutes()+
-  ":"+date.getSeconds()}*`);
+    "/"+date.getFullYear()+
+    " "+date.getHours()+
+    ":"+date.getMinutes()+
+    ":"+date.getSeconds()}*`);
+  } else {
+    ctx.replyWithMarkdown(`Currency *${ctx.message.text}* not found`);
+  }
 });
 
 firebase.initializeApp();
