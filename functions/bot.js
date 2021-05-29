@@ -24,7 +24,8 @@ bot.hears("mono", (ctx) => ctx.scene.enter("mono"));
 
 bot.hears("where", (ctx) => ctx.reply("You are in outside"));
 
-bot.hears("back", (ctx) => ctx.reply("Menu", getMainKeyboard));
+// if session destroyed show main keyboard
+bot.on("text", async (ctx) => ctx.reply("Menu", getMainKeyboard));
 
 if (process.env.FUNCTIONS_EMULATOR) {
   bot.launch();
@@ -47,8 +48,6 @@ exports.bot = functions.https.onRequest(async (req, res) => {
 // ));
 
 // in local dev true in prod undefined
-
-
 
 // const admin = require("firebase-admin");
 
