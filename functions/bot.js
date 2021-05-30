@@ -6,13 +6,15 @@ const {start} = require("./bot_start_scene");
 
 const {mono} = require("./bot_mono_scene");
 
+const {upload} = require("./bot_upload_scene");
+
 const {getMainKeyboard} = require("./bot_keyboards.js");
 
 const token = functions.config().bot.token;
 
 const bot = new Telegraf(token);
 
-const stage = new Stage([start, mono]);
+const stage = new Stage([start, mono, upload]);
 
 bot.use(session());
 
@@ -21,6 +23,8 @@ bot.use(stage.middleware());
 bot.start((ctx) => ctx.scene.enter("start"));
 
 bot.hears("mono", (ctx) => ctx.scene.enter("mono"));
+
+bot.hears("upload", (ctx) => ctx.scene.enter("upload"));
 
 bot.hears("where", (ctx) => ctx.reply("You are in outside"));
 
