@@ -2,7 +2,7 @@ const {Scenes: {Stage, BaseScene}} = require("telegraf");
 const {getMainKeyboard, getBackKeyboard} = require("./bot_keyboards.js");
 const {GoogleSpreadsheet} = require("google-spreadsheet");
 const creds = require("./rzk-com-ua-d1d3248b8410.json");
-
+const Validator = require("validatorjs");
 const {leave} = Stage;
 
 const upload = new BaseScene("upload");
@@ -43,7 +43,17 @@ upload.on("text", async (ctx) => {
         console.log(`rowCount ${sheet.rowCount - 1}, limit: ${perPage}, offset: ${i}`);
         const rows = await sheet.getRows({limit: perPage, offset: i});
         rows.forEach(async (row) => {
-          console.log(row.id, row.name, row.price, row.group);
+          // validate data
+          const rulesItemRow = {
+            id: "required|alpha_dash",
+            name: "required|string",
+            price: "required",
+          };
+          const validateItemRow = new Validator(row, rulesItemRow);
+
+          if ( validateItemRow.fails() ) {
+            console.log(row.id, row.name, row.price, row.group);
+          }
         });
       }
       ctx.replyWithMarkdown(`In sheet *${doc.title + " " + (sheet.rowCount - 1)}* rows found`);
