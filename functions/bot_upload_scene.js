@@ -35,7 +35,18 @@ upload.on("text", async (ctx) => {
       await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
       await doc.loadInfo(); // loads document properties and worksheets
       const sheet = doc.sheetsByIndex[0];
-      ctx.replyWithMarkdown(`*${sheet.rowCount}* rows found`);
+      // read rows
+
+      const perPage = 10;
+      const rowCount = 10; // sheet.rowCount
+      for (let i = 0; i < rowCount - 1; i += perPage) {
+        console.log(`rowCount ${sheet.rowCount - 1}, limit: ${perPage}, offset: ${i}`);
+        const rows = await sheet.getRows({limit: perPage, offset: i});
+        rows.forEach(async (row) => {
+          console.log(row.id, row.name, row.price, row.group);
+        });
+      }
+      ctx.replyWithMarkdown(`In sheet *${doc.title + " " + (sheet.rowCount - 1)}* rows found`);
     } catch (error) {
       ctx.replyWithMarkdown(`Error *${error}*`);
     }
