@@ -35,6 +35,7 @@ upload.on("text", async (ctx) => {
       await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
       await doc.loadInfo(); // loads document properties and worksheets
       const sheet = doc.sheetsByIndex[0];
+      ctx.replyWithMarkdown(`Load goods from sheet *${doc.title + " with " + (sheet.rowCount - 1)}* rows`);
       // read rows
 
       const perPage = 10;
@@ -42,23 +43,40 @@ upload.on("text", async (ctx) => {
       for (let i = 0; i < rowCount - 1; i += perPage) {
         console.log(`rowCount ${sheet.rowCount - 1}, limit: ${perPage}, offset: ${i}`);
         const rows = await sheet.getRows({limit: perPage, offset: i});
-        rows.forEach(async (row) => {
-          // validate data
-          const rulesItemRow = {
-            id: "required|alpha_dash",
-            name: "required|string",
-            price: "required",
-          };
-          const validateItemRow = new Validator(row, rulesItemRow);
-
-          if ( validateItemRow.fails() ) {
-            console.log(row.id, row.name, row.price, row.group);
+        const BreakException = {};
+        try {
+          rows.forEach((row) => {
+            // validate data
+            const item = {
+              id: row.id.toLowerCase(),
+              name: row.name,
+              price: row.price ? Number(row.price.replace(",", ".")) : "",
+            };
+            const rulesItemRow = {
+              id: "required|alpha_dash",
+              name: "required|string",
+              price: "required|numeric",
+            };
+            const validateItemRow = new Validator(item, rulesItemRow);
+            if ( validateItemRow.fails() ) {
+              console.log(row.id, row.name, row.price, row.group);
+              // throw validateItemRow.errors.first("price");
+              BreakException.rowIndex = row.rowIndex;
+              BreakException.item = item;
+              BreakException.desc = validateItemRow.errors.all();
+              throw BreakException;
+            }
+          });
+        } catch (error) {
+          for (const [key, value] of Object.entries(error.desc)) {
+            // console.log(`${key}: ${value}`);
+            ctx.replyWithMarkdown(`Row *${error.rowIndex}* Error *${value}*`);
           }
-        });
+          console.log(error);
+        }
       }
-      ctx.replyWithMarkdown(`In sheet *${doc.title + " " + (sheet.rowCount - 1)}* rows found`);
     } catch (error) {
-      ctx.replyWithMarkdown(`Error *${error}*`);
+      ctx.replyWithMarkdown(`Sheet Error *${error}*`);
     }
   } else {
     ctx.replyWithMarkdown(`Sheet *${ctx.message.text}* not found, please enter valid url or sheet ID`);
