@@ -46,9 +46,9 @@ upload.on("text", async (ctx) => {
         const BreakException = {};
         try {
           rows.forEach((row) => {
-            // validate data
+            // validate data if ID and NAME set org Name and PRICE
             const item = {
-              id: row.id.toLowerCase(),
+              id: row.id,
               name: row.name,
               price: row.price ? Number(row.price.replace(",", ".")) : "",
             };
@@ -58,21 +58,16 @@ upload.on("text", async (ctx) => {
               price: "required|numeric",
             };
             const validateItemRow = new Validator(item, rulesItemRow);
-            if ( validateItemRow.fails() ) {
-              console.log(row.id, row.name, row.price, row.group);
-              // throw validateItemRow.errors.first("price");
+            if ( validateItemRow.fails() && ((row.id && row.name) || (row.name && row.price)) ) {
               BreakException.rowIndex = row.rowIndex;
-              BreakException.item = item;
               BreakException.desc = validateItemRow.errors.all();
               throw BreakException;
             }
           });
         } catch (error) {
           for (const [key, value] of Object.entries(error.desc)) {
-            // console.log(`${key}: ${value}`);
-            ctx.replyWithMarkdown(`Row *${error.rowIndex}* Error *${value}*`);
+            ctx.replyWithMarkdown(`Row *${error.rowIndex}* Column *${key}* Error *${value}*`);
           }
-          console.log(error);
         }
       }
     } catch (error) {
