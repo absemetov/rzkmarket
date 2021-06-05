@@ -40,8 +40,6 @@ DATE: *${+date.getDate()+"/"+(date.getMonth()+1)+
   }
 });
 
-firebase.initializeApp();
-
 async function updateData(currenciesFirestore) {
   try {
     // get data from monobank

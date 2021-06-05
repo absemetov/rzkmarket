@@ -1,5 +1,5 @@
 const functions = require("firebase-functions");
-
+const firebase = require("firebase-admin");
 const {Telegraf, session, Scenes: {Stage}} = require("telegraf");
 
 const {start} = require("./bot_start_scene");
@@ -9,6 +9,8 @@ const {mono} = require("./bot_mono_scene");
 const {upload} = require("./bot_upload_scene");
 
 const {getMainKeyboard} = require("./bot_keyboards.js");
+
+firebase.initializeApp();
 
 const token = functions.config().bot.token;
 

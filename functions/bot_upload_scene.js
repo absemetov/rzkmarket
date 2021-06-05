@@ -1,3 +1,4 @@
+const firebase = require("firebase-admin");
 const {Scenes: {Stage, BaseScene}} = require("telegraf");
 const {getMainKeyboard, getBackKeyboard} = require("./bot_keyboards.js");
 const {GoogleSpreadsheet} = require("google-spreadsheet");
@@ -45,7 +46,7 @@ upload.on("text", async (ctx) => {
         const rows = await sheet.getRows({limit: perPage, offset: i});
         const BreakException = {};
         try {
-          rows.forEach((row) => {
+          rows.forEach(async (row) => {
             // validate data if ID and NAME set org Name and PRICE
             const item = {
               id: row.id,
@@ -58,13 +59,22 @@ upload.on("text", async (ctx) => {
               price: "required|numeric",
             };
             const validateItemRow = new Validator(item, rulesItemRow);
-            if ( validateItemRow.fails() && ((row.id && row.name) || (row.name && row.price)) ) {
+            if (validateItemRow.fails() && ((row.id && row.name) || (row.name && row.price))) {
               BreakException.rowIndex = row.rowIndex;
               BreakException.desc = validateItemRow.errors.all();
               throw BreakException;
             }
+            // save data to firestore
+            if (validateItemRow.passes()) {
+              console.log(item);
+              await firebase.firestore().collection("products").doc(item.id).set({
+                "name": item.name,
+                "price": item.price,
+              });
+            }
           });
         } catch (error) {
+          console.log(error);
           for (const [key, value] of Object.entries(error.desc)) {
             ctx.replyWithMarkdown(`Row *${error.rowIndex}* Column *${key}* Error *${value}*`);
           }
