@@ -37,7 +37,12 @@ if (process.env.FUNCTIONS_EMULATOR) {
   bot.launch();
 }
 
-exports.bot = functions.https.onRequest(async (req, res) => {
+const runtimeOpts = {
+  timeoutSeconds: 540,
+  memory: "1GB",
+};
+
+exports.bot = functions.runWith(runtimeOpts).https.onRequest(async (req, res) => {
   try {
     await bot.handleUpdate(req.body);
   } finally {
