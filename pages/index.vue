@@ -93,10 +93,17 @@ export default {
   async asyncData ({ params, $http, $fire }) {
     // const users = await $http.$get(`https://jsonplaceholder.typicode.com/users`);
     const snapshot = await $fire.firestore.collection('currencies').get()
+
     const currencies = snapshot.docs.map((doc) => {
       return { id: doc.id, ...doc.data() }
     })
-    return { currencies }
+    const productsSnapshot = await $fire.firestore.collection('products').limit(10).get()
+
+    const products = productsSnapshot.docs.map((doc) => {
+      return { id: doc.id, ...doc.data() }
+    })
+
+    return { currencies, products }
   }
 }
 </script>
