@@ -9,6 +9,28 @@ const {leave} = Stage;
 
 const mono = new BaseScene("mono");
 
+const TelegrafStatelessQuestion = require("telegraf-stateless-question");
+
+const monoQuestion = new TelegrafStatelessQuestion("mono", async (ctx) => {
+  console.log("Mono :", ctx.message.text);
+  const currencyObj = await getCurrency();
+  const currency = currencyObj[ctx.message.text];
+  if (currency) {
+    const date = new Date(currency.date*1000);
+    return ctx.replyWithMarkdown(`CURRENCY: *${ctx.message.text}*
+RATE BUY: *${currency.rateBuy}*
+RATE SELL: *${currency.rateSell}*
+DATE: *${+date.getDate()+"/"+(date.getMonth()+1)+
+    "/"+date.getFullYear()+
+    " "+date.getHours()+
+    ":"+date.getMinutes()+
+    ":"+date.getSeconds()}*`);
+  } else {
+    ctx.replyWithMarkdown(`Currency *${ctx.message.text}* not found`);
+  }
+});
+
+
 mono.enter((ctx) => {
   ctx.reply("Выберите валюту", getMonoKeyboard);
 });
@@ -101,3 +123,4 @@ async function getCurrency(currencyName) {
 }
 
 exports.mono = mono;
+exports.monoQuestion = monoQuestion;

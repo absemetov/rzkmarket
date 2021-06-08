@@ -9169,6 +9169,13 @@ teeny-request@^7.0.0:
     stream-events "^1.0.5"
     uuid "^8.0.0"
 
+telegraf-inline-menu@^6.2.1:
+  version "6.2.1"
+  resolved "https://registry.yarnpkg.com/telegraf-inline-menu/-/telegraf-inline-menu-6.2.1.tgz#500af72ecc40b7919a8ad01a0929f2945587cd04"
+  integrity sha512-DMxt0xK7bB49JCifrl/eqPjrPfAl0Wpls7d3H/X+93pOCGO7MlguhG9V+9FVaZy2m2SvQ9WtqLZDc3DTWR0rXQ==
+  dependencies:
+    typegram "^3.0.2"
+
 telegraf-stateless-question@^2.0.1:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/telegraf-stateless-question/-/telegraf-stateless-question-2.0.1.tgz#74cf2e9cfa32e375577d107fa16a1ef84970eb63"
@@ -9432,6 +9439,11 @@ typedarray@^0.0.6:
   version "0.0.6"
   resolved "https://registry.yarnpkg.com/typedarray/-/typedarray-0.0.6.tgz#867ac74e3864187b1d3d47d996a78ec5c8830777"
   integrity sha1-hnrHTjhkGHsdPUfZlqeOxciDB3c=
+
+typegram@^3.0.2:
+  version "3.3.1"
+  resolved "https://registry.yarnpkg.com/typegram/-/typegram-3.3.1.tgz#af1ca857350a270ed065fb708c19bab36e0d61a7"
+  integrity sha512-Y1bR17IZ9Shj1Ih8wTLtrmOOMHJ20ve0Bd5SPymmw53uO4WLp/JjNM55s2b6PEziBvMISRdCQSZ+m6JiUKEobA==
 
 typegram@^3.2.0:
   version "3.2.3"
