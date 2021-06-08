@@ -9169,6 +9169,13 @@ teeny-request@^7.0.0:
     stream-events "^1.0.5"
     uuid "^8.0.0"
 
+telegraf-stateless-question@^2.0.1:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/telegraf-stateless-question/-/telegraf-stateless-question-2.0.1.tgz#74cf2e9cfa32e375577d107fa16a1ef84970eb63"
+  integrity sha512-gTtEGTNokmfuvUBK5adrFWHtXNzT23ffUmt8+6oZL7LmudXgUV/wSCdTTeEQE21M4c9jkl25k/rGNEfORY1gZQ==
+  dependencies:
+    telegram-format "^2.0.0"
+
 telegraf@^4.3.0:
   version "4.3.0"
   resolved "https://registry.yarnpkg.com/telegraf/-/telegraf-4.3.0.tgz#c9683192bdb81e7c7fbb04cf1ce750fb34de7149"
@@ -9183,6 +9190,11 @@ telegraf@^4.3.0:
     safe-compare "^1.1.4"
     sandwich-stream "^2.0.2"
     typegram "^3.2.0"
+
+telegram-format@^2.0.0:
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/telegram-format/-/telegram-format-2.0.2.tgz#f0ef223f4a81c180f823622499b408c6593a1133"
+  integrity sha512-OE0SHR8pINftjFt01QfHq+Ujedbqna5CInw+PwdbS1/ySrvIBhPZSGo7uas6ktaPv0mnoPKNJR+seouOSXFZiA==
 
 terser-webpack-plugin@^1.4.3:
   version "1.4.5"
