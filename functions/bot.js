@@ -6,6 +6,8 @@ const TelegrafStatelessQuestion = require("telegraf-stateless-question");
 
 const {MenuTemplate, MenuMiddleware} = require("telegraf-inline-menu");
 
+const firestoreSession = require("telegraf-session-firestore");
+
 const {start} = require("./bot_start_scene");
 
 const {mono, monoQuestion} = require("./bot_mono_scene");
@@ -22,6 +24,9 @@ const bot = new Telegraf(token);
 
 const stage = new Stage([start, mono, upload]);
 
+const firestore = firebase.firestore();
+
+bot.use(firestoreSession(firestore.collection("sessions")));
 
 bot.use(monoQuestion.middleware());
 
@@ -72,7 +77,7 @@ bot.command("superman", async ctx => {
 });
 
 // test
-bot.use(session());
+// bot.use(session());
 
 bot.use(stage.middleware());
 
