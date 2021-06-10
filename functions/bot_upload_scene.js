@@ -1,10 +1,9 @@
 const firebase = require("firebase-admin");
-const {Scenes: {Stage, BaseScene}} = require("telegraf");
+const {Scenes: {BaseScene}} = require("telegraf");
 const {getMainKeyboard, getBackKeyboard} = require("./bot_keyboards.js");
 const {GoogleSpreadsheet} = require("google-spreadsheet");
 const creds = require("./rzk-com-ua-d1d3248b8410.json");
 const Validator = require("validatorjs");
-const {leave} = Stage;
 
 const upload = new BaseScene("upload");
 
@@ -18,7 +17,13 @@ upload.leave((ctx) => {
 
 upload.hears("where", (ctx) => ctx.reply("You are in upload scene"));
 
-upload.hears("back", leave());
+let i = 0;
+const maxRows = 10000;
+
+upload.hears("back", (ctx) => {
+  i = maxRows;
+  ctx.scene.leave();
+});
 
 // upload goods from sheet
 upload.on("text", async (ctx) => {
@@ -37,12 +42,15 @@ upload.on("text", async (ctx) => {
       await doc.loadInfo(); // loads document properties and worksheets
       const sheet = doc.sheetsByIndex[0];
       ctx.replyWithMarkdown(`Load goods from sheet *${doc.title + " with " + (sheet.rowCount - 1)}* rows`);
-      // read rows
-
-      const perPage = 100;
+      // check max rows
       const rowCount = sheet.rowCount;
+      if (rowCount > maxRows) {
+        throw new Error("Max rows limit 10000 rows");
+      }
+      // read rows
+      const perPage = 100;
       let countUploadGoods = 0;
-      for (let i = 0; i < rowCount - 1; i += perPage) {
+      for (i; i < rowCount - 1; i += perPage) {
         console.log(`rowCount ${sheet.rowCount - 1}, limit: ${perPage}, offset: ${i}`);
         const rows = await sheet.getRows({limit: perPage, offset: i});
 

@@ -1,8 +1,6 @@
 const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
-const {Telegraf, session, Scenes: {Stage}} = require("telegraf");
-
-const TelegrafStatelessQuestion = require("telegraf-stateless-question");
+const {Telegraf, Scenes: {Stage}} = require("telegraf");
 
 const {MenuTemplate, MenuMiddleware} = require("telegraf-inline-menu");
 
@@ -10,7 +8,7 @@ const firestoreSession = require("telegraf-session-firestore");
 
 const {start} = require("./bot_start_scene");
 
-const {mono, monoQuestion} = require("./bot_mono_scene");
+const {mono} = require("./bot_mono_scene");
 
 const {upload} = require("./bot_upload_scene");
 
@@ -28,57 +26,6 @@ const firestore = firebase.firestore();
 
 bot.use(firestoreSession(firestore.collection("sessions")));
 
-bot.use(monoQuestion.middleware());
-
-bot.hears("mono", (ctx) => {
-  return monoQuestion.replyWithMarkdown(ctx, "Выберите валюту /USD, /EUR, /RUB");
-});
-
-bot.command("rainbows", async (ctx) => {
-  return unicornQuestion.replyWithMarkdown(ctx, "What are unicorns doing? /USD");
-});
-
-const unicornQuestion = new TelegrafStatelessQuestion("unicorns", async (ctx) => {
-  console.log("User thinks unicorns are doing:", ctx.message.text);
-});
-
-// Dont forget to use the middleware
-bot.use(unicornQuestion.middleware());
-
-bot.command("rainbows", async (ctx) => {
-  return unicornQuestion.replyWithMarkdown(ctx, "What are unicorns doing? /USD");
-});
-
-// Or send your question manually (make sure to use a parse_mode and force_reply!)
-// Or send your question manually (make sure to use a parse_mode and force_reply!)
-// bot.command("unicorn", async (ctx) => {
-//   ctx.replyWithMarkdown("What are unicorns doing?" + unicornQuestion.messageSuffixMarkdown(),
-//       {parse_mode: "Markdown", reply_markup: {force_reply: true}});
-// });
-
-bot.command("unicorn", async (ctx) => {
-  ctx.replyWithHTML("What are unicorns doing?" + unicornQuestion.messageSuffixHTML(),
-      {parse_mode: "HTML", reply_markup: {force_reply: true}});
-});
-
-const locationQuestion = new TelegrafStatelessQuestion("target", (ctx, additionalState) => {
-  console.log("Location of", additionalState, "is", ctx.message.text);
-});
-
-// Dont forget to use the middleware
-bot.use(locationQuestion.middleware())
-
-bot.command("batman", async (ctx) => {
-  return locationQuestion.replyWithMarkdown(ctx, "Where is Batman?", "batman");
-});
-
-bot.command("superman", async ctx => {
-  return locationQuestion.replyWithMarkdown(ctx, "Where is superman?", "superman");
-});
-
-// test
-// bot.use(session());
-
 bot.use(stage.middleware());
 
 bot.start((ctx) => ctx.scene.enter("start"));
@@ -95,9 +42,6 @@ bot.on("text", async (ctx) => ctx.reply("Menu", getMainKeyboard));
 if (process.env.FUNCTIONS_EMULATOR) {
   bot.launch();
 }
-
-// test quest stat
-
 
 const runtimeOpts = {
   timeoutSeconds: 540,

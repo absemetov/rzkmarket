@@ -20,14 +20,13 @@
     "currency-codes": "^2.1.0",
     "firebase": "^8.4.1",
     "firebase-admin": "^9.2.0",
-    "firebase-functions": "^3.11.0",
+    "firebase-functions": "^3.14.1",
     "google-spreadsheet": "^3.1.15",
     "nuxt": "^2.15.3",
     "nuxt-start": "^2.15.4",
     "telegraf": "^4.3.0",
     "telegraf-inline-menu": "^6.2.1",
     "telegraf-session-firestore": "^4.0.0",
-    "telegraf-stateless-question": "^2.0.1",
     "validatorjs": "^3.22.1"
   },
   "devDependencies": {
