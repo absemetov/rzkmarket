@@ -25,14 +25,12 @@ mono.on("text", async (ctx) => {
   const currency = currencyObj[ctx.message.text];
   if (currency) {
     const date = new Date(currency.date*1000);
-    return ctx.replyWithMarkdown(`CURRENCY: *${ctx.message.text}*
-RATE BUY: *${currency.rateBuy}*
-RATE SELL: *${currency.rateSell}*
-DATE: *${+date.getDate()+"/"+(date.getMonth()+1)+
-    "/"+date.getFullYear()+
-    " "+date.getHours()+
-    ":"+date.getMinutes()+
-    ":"+date.getSeconds()}*`);
+    const dateFormat = `${date.getDate()}/${(date.getMonth()+1)}/${date.getFullYear()}, `+
+    `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
+    return ctx.replyWithMarkdown(`CURRENCY: *${ctx.message.text}*\n`+
+    `RATE BUY: *${currency.rateBuy}*\n`+
+    `RATE SELL: *${currency.rateSell}*\n`+
+    `DATE:${dateFormat}`);
   } else {
     ctx.replyWithMarkdown(`Currency *${ctx.message.text}* not found`);
   }

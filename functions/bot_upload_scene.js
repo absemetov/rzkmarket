@@ -17,15 +17,15 @@ upload.leave((ctx) => {
 
 upload.hears("where", (ctx) => ctx.reply("You are in upload scene"));
 
-let i = 0;
-const maxRows = 10000;
-
 upload.hears("back", (ctx) => {
-  i = maxRows;
   ctx.scene.leave();
 });
 
 // upload goods from sheet
+// upload.on("text", (ctx) => {
+//   setInterval(() => ctx.replyWithMarkdown("sdd"), 5000);
+// });
+
 upload.on("text", async (ctx) => {
   // parse url
   let sheetId;
@@ -42,16 +42,18 @@ upload.on("text", async (ctx) => {
       await doc.loadInfo(); // loads document properties and worksheets
       const sheet = doc.sheetsByIndex[0];
       ctx.replyWithMarkdown(`Load goods from sheet *${doc.title + " with " + (sheet.rowCount - 1)}* rows`);
-      // check max rows
-      const rowCount = sheet.rowCount;
-      if (rowCount > maxRows) {
-        throw new Error("Max rows limit 10000 rows");
-      }
+      const rowCount = ctx.session.rowCount; // sheet.rowCount;
+      const maxUploadGoods = 5000;
       // read rows
       const perPage = 100;
       let countUploadGoods = 0;
-      for (i; i < rowCount - 1; i += perPage) {
+      for (let i = 0; i < rowCount - 1; i += perPage) {
+        // check limit
+        if (countUploadGoods > maxUploadGoods) {
+          throw new Error(`Limit ${maxUploadGoods} goods!`);
+        }
         console.log(`rowCount ${sheet.rowCount - 1}, limit: ${perPage}, offset: ${i}`);
+        // get rows data
         const rows = await sheet.getRows({limit: perPage, offset: i});
 
         for (let j = 0; j < rows.length; j++) {
@@ -67,13 +69,16 @@ upload.on("text", async (ctx) => {
             price: "required|numeric",
           };
           const validateItemRow = new Validator(item, rulesItemRow);
+          // check fails
           if (validateItemRow.fails() && ((rows[j].id && rows[j].name) || (rows[j].name && rows[j].price))) {
+            let errorRow = `In row *${rows[j].rowIndex}* \n`;
             for (const [key, error] of Object.entries(validateItemRow.errors.all())) {
-              ctx.replyWithMarkdown(`Row *${rows[j].rowIndex}* Column *${key}* Error *${error}*`);
+              errorRow += `Column *${key}* => *${error}* \n`;
             }
             // disable parent loop
-            i = rowCount;
-            break;
+            // i = rowCount;
+            // break;
+            throw new Error(errorRow);
           }
           // save data to firestore
           if (validateItemRow.passes()) {
@@ -91,7 +96,7 @@ upload.on("text", async (ctx) => {
         ctx.replyWithMarkdown(`*${countUploadGoods}* goods uploaded`);
       }
     } catch (error) {
-      ctx.replyWithMarkdown(`Sheet Error *${error}*`);
+      ctx.replyWithMarkdown(`Sheet ${error}`);
     }
   } else {
     ctx.replyWithMarkdown(`Sheet *${ctx.message.text}* not found, please enter valid url or sheet ID`);
