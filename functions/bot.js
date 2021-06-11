@@ -18,7 +18,9 @@ firebase.initializeApp();
 
 const token = functions.config().bot.token;
 
-const bot = new Telegraf(token);
+const bot = new Telegraf(token, {
+  handlerTimeout: 540000,
+});
 
 const stage = new Stage([start, mono, upload]);
 

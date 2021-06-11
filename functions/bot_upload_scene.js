@@ -21,11 +21,6 @@ upload.hears("back", (ctx) => {
   ctx.scene.leave();
 });
 
-// upload goods from sheet
-// upload.on("text", (ctx) => {
-//   setInterval(() => ctx.replyWithMarkdown("sdd"), 5000);
-// });
-
 upload.on("text", async (ctx) => {
   // parse url
   let sheetId;
@@ -41,8 +36,8 @@ upload.on("text", async (ctx) => {
       await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
       await doc.loadInfo(); // loads document properties and worksheets
       const sheet = doc.sheetsByIndex[0];
-      ctx.replyWithMarkdown(`Load goods from sheet *${doc.title + " with " + (sheet.rowCount - 1)}* rows`);
-      const rowCount = ctx.session.rowCount; // sheet.rowCount;
+      await ctx.replyWithMarkdown(`Load goods from sheet *${doc.title + " with " + (sheet.rowCount - 1)}* rows`);
+      const rowCount = sheet.rowCount;
       const maxUploadGoods = 5000;
       // read rows
       const perPage = 100;
@@ -89,17 +84,17 @@ upload.on("text", async (ctx) => {
             });
           }
         }
-        ctx.replyWithMarkdown(`*${i + perPage}* rows scan from *${sheet.rowCount - 1}*`);
+        // await ctx.replyWithMarkdown(`*${i + perPage}* rows scan from *${sheet.rowCount - 1}*`);
       }
       // show count upload goods
       if (countUploadGoods) {
-        ctx.replyWithMarkdown(`*${countUploadGoods}* goods uploaded`);
+        await ctx.replyWithMarkdown(`*${countUploadGoods}* goods uploaded`);
       }
     } catch (error) {
-      ctx.replyWithMarkdown(`Sheet ${error}`);
+      await ctx.replyWithMarkdown(`Sheet ${error}`);
     }
   } else {
-    ctx.replyWithMarkdown(`Sheet *${ctx.message.text}* not found, please enter valid url or sheet ID`);
+    await ctx.replyWithMarkdown(`Sheet *${ctx.message.text}* not found, please enter valid url or sheet ID`);
   }
 });
 
