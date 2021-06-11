@@ -19,7 +19,8 @@ firebase.initializeApp();
 const token = functions.config().bot.token;
 
 const bot = new Telegraf(token, {
-  handlerTimeout: 540000,
+  handlerTimeout: 200000,
+  telegram: {webhookReply: false},
 });
 
 const stage = new Stage([start, mono, upload]);
@@ -52,11 +53,15 @@ const runtimeOpts = {
 
 exports.bot = functions.runWith(runtimeOpts).https.onRequest(async (req, res) => {
   try {
-    await bot.handleUpdate(req.body);
+    await bot.handleUpdate(req.body, res);
   } finally {
     res.status(200).end();
   }
 });
+
+// Enable graceful stop
+process.once("SIGINT", () => bot.stop("SIGINT"));
+process.once("SIGTERM", () => bot.stop("SIGTERM"));
 
 // bot.start((ctx) => ctx.reply("Welcome to RZK Market Ukraine!", Markup.keyboard([
 //   "sheet", "USD", "EUR", "RUB"]).resize(),

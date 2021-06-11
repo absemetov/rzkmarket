@@ -21,6 +21,12 @@ upload.hears("back", (ctx) => {
   ctx.scene.leave();
 });
 
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 upload.on("text", async (ctx) => {
   // parse url
   let sheetId;
@@ -29,7 +35,13 @@ upload.on("text", async (ctx) => {
       sheetId = section;
     }
   });
-  if (sheetId) {
+
+  const session = await ctx.session;
+  if (sheetId && !session.uploading) {
+    // set session var
+    console.log(session.uploading);
+    ctx.session.uploading = true;
+    console.log("uploaded!!! start");
     // load goods
     const doc = new GoogleSpreadsheet(sheetId);
     try {
@@ -78,13 +90,14 @@ upload.on("text", async (ctx) => {
           // save data to firestore
           if (validateItemRow.passes()) {
             countUploadGoods++;
-            await firebase.firestore().collection("products").doc(item.id).set({
-              "name": item.name,
-              "price": item.price,
-            });
+            // await firebase.firestore().collection("products").doc(item.id).set({
+            //   "name": item.name,
+            //   "price": item.price,
+            // });
           }
         }
-        // await ctx.replyWithMarkdown(`*${i + perPage}* rows scan from *${sheet.rowCount - 1}*`);
+        await sleep(5000);
+        await ctx.replyWithMarkdown(`*${i + perPage}* rows scan from *${sheet.rowCount - 1}*`);
       }
       // show count upload goods
       if (countUploadGoods) {
@@ -93,6 +106,8 @@ upload.on("text", async (ctx) => {
     } catch (error) {
       await ctx.replyWithMarkdown(`Sheet ${error}`);
     }
+    ctx.session.uploading = false;
+    console.log("uploaded!!! finish");
   } else {
     await ctx.replyWithMarkdown(`Sheet *${ctx.message.text}* not found, please enter valid url or sheet ID`);
   }
