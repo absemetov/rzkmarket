@@ -28,6 +28,10 @@ function sleep(ms) {
 }
 
 upload.on("text", async (ctx) => {
+  // working with session
+  const session = await ctx.session;
+  // session.uploadPass = true;
+  console.log(session.uploadPass);
   // parse url
   let sheetId;
   ctx.message.text.split("/").forEach((section) => {
@@ -36,12 +40,10 @@ upload.on("text", async (ctx) => {
     }
   });
 
-  const session = await ctx.session;
-  if (sheetId && !session.uploading) {
-    // set session var
-    console.log(session.uploading);
-    ctx.session.uploading = true;
-    console.log("uploaded!!! start");
+  if (sheetId && !session.uploadPass) {
+    // start upload
+    ctx.session.uploadPass = true;
+    console.log("upload start");
     // load goods
     const doc = new GoogleSpreadsheet(sheetId);
     try {
@@ -49,7 +51,7 @@ upload.on("text", async (ctx) => {
       await doc.loadInfo(); // loads document properties and worksheets
       const sheet = doc.sheetsByIndex[0];
       await ctx.replyWithMarkdown(`Load goods from sheet *${doc.title + " with " + (sheet.rowCount - 1)}* rows`);
-      const rowCount = sheet.rowCount;
+      const rowCount = 500; // sheet.rowCount;
       const maxUploadGoods = 5000;
       // read rows
       const perPage = 100;
@@ -96,20 +98,22 @@ upload.on("text", async (ctx) => {
             // });
           }
         }
-        await sleep(5000);
+        await sleep(3000);
         await ctx.replyWithMarkdown(`*${i + perPage}* rows scan from *${sheet.rowCount - 1}*`);
       }
       // show count upload goods
       if (countUploadGoods) {
-        await ctx.replyWithMarkdown(`*${countUploadGoods}* goods uploaded`);
+        await ctx.replyWithMarkdown(`*${countUploadGoods}* goods uploaded`, getBackKeyboard);
       }
+      // end upload
+      (await ctx.session).uploadPass = false;
+      console.log("upload finish");
     } catch (error) {
-      await ctx.replyWithMarkdown(`Sheet ${error}`);
+      await ctx.replyWithMarkdown(`Sheet ${error}`, getBackKeyboard);
     }
-    ctx.session.uploading = false;
-    console.log("uploaded!!! finish");
   } else {
-    await ctx.replyWithMarkdown(`Sheet *${ctx.message.text}* not found, please enter valid url or sheet ID`);
+    await ctx.replyWithMarkdown(`Sheet *${ctx.message.text}* not found, please enter valid url or sheet ID`,
+        getBackKeyboard);
   }
 });
 
