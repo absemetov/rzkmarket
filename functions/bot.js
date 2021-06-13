@@ -19,8 +19,7 @@ firebase.initializeApp();
 const token = functions.config().bot.token;
 
 const bot = new Telegraf(token, {
-  handlerTimeout: 200000,
-  telegram: {webhookReply: false},
+  handlerTimeout: 540000,
 });
 
 const stage = new Stage([start, mono, upload]);
@@ -35,12 +34,18 @@ bot.start((ctx) => ctx.scene.enter("start"));
 
 bot.hears("mono", (ctx) => ctx.scene.enter("mono"));
 
-bot.hears("upload", (ctx) => ctx.scene.enter("upload"));
+bot.hears("upload", async (ctx) => ctx.scene.enter("upload"));
 
 bot.hears("where", (ctx) => ctx.reply("You are in outside"));
 
 // if session destroyed show main keyboard
 bot.on("text", async (ctx) => ctx.reply("Menu", getMainKeyboard));
+
+bot.telegram.sendMessage(94899148, "Bot Rzk.com.ua ready!" );
+
+bot.catch((err) => {
+  console.log("Ooops", err);
+});
 
 if (process.env.FUNCTIONS_EMULATOR) {
   bot.launch();
@@ -48,12 +53,12 @@ if (process.env.FUNCTIONS_EMULATOR) {
 
 const runtimeOpts = {
   timeoutSeconds: 540,
-  memory: "1GB",
+  // memory: "1GB",
 };
 
 exports.bot = functions.runWith(runtimeOpts).https.onRequest(async (req, res) => {
   try {
-    await bot.handleUpdate(req.body, res);
+    await bot.handleUpdate(req.body);
   } finally {
     res.status(200).end();
   }

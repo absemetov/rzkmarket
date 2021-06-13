@@ -28,10 +28,6 @@ function sleep(ms) {
 }
 
 upload.on("text", async (ctx) => {
-  // working with session
-  const session = await ctx.session;
-  // session.uploadPass = true;
-  console.log(session.uploadPass);
   // parse url
   let sheetId;
   ctx.message.text.split("/").forEach((section) => {
@@ -40,18 +36,28 @@ upload.on("text", async (ctx) => {
     }
   });
 
-  if (sheetId && !session.uploadPass) {
-    // start upload
-    ctx.session.uploadPass = true;
+  if (!sheetId) {
+    await ctx.replyWithMarkdown(`Sheet *${ctx.message.text}* not found, please enter valid url or sheet ID`,
+        getBackKeyboard);
+  }
+  // get data for check upload process
+  const docRef = await firebase.firestore().collection("sessions").doc(`${ctx.from.id}`).get();
+  if (sheetId && !docRef.data().uploadPass) {
     console.log("upload start");
+    const start = new Date();
+    // set data for check upload process
+    await firebase.firestore().collection("sessions").doc(`${ctx.from.id}`).set({
+      uploadPass: true,
+    });
     // load goods
     const doc = new GoogleSpreadsheet(sheetId);
     try {
+      // start upload
       await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
       await doc.loadInfo(); // loads document properties and worksheets
       const sheet = doc.sheetsByIndex[0];
-      await ctx.replyWithMarkdown(`Load goods from sheet *${doc.title + " with " + (sheet.rowCount - 1)}* rows`);
-      const rowCount = 500; // sheet.rowCount;
+      await ctx.replyWithMarkdown(`Load goods from Sheet *${doc.title + " with " + (sheet.rowCount - 1)}* rows`);
+      const rowCount = 100; // sheet.rowCount;
       const maxUploadGoods = 5000;
       // read rows
       const perPage = 100;
@@ -61,7 +67,6 @@ upload.on("text", async (ctx) => {
         if (countUploadGoods > maxUploadGoods) {
           throw new Error(`Limit ${maxUploadGoods} goods!`);
         }
-        console.log(`rowCount ${sheet.rowCount - 1}, limit: ${perPage}, offset: ${i}`);
         // get rows data
         const rows = await sheet.getRows({limit: perPage, offset: i});
 
@@ -98,22 +103,22 @@ upload.on("text", async (ctx) => {
             // });
           }
         }
-        await sleep(3000);
+        await sleep(10000);
         await ctx.replyWithMarkdown(`*${i + perPage}* rows scan from *${sheet.rowCount - 1}*`);
       }
       // show count upload goods
       if (countUploadGoods) {
-        await ctx.replyWithMarkdown(`*${countUploadGoods}* goods uploaded`, getBackKeyboard);
+        const ms = new Date() - start;
+        await ctx.replyWithMarkdown(`*${countUploadGoods}* goods uploaded in ${Math.floor(ms/1000)}s`, getBackKeyboard);
       }
-      // end upload
-      (await ctx.session).uploadPass = false;
-      console.log("upload finish");
     } catch (error) {
       await ctx.replyWithMarkdown(`Sheet ${error}`, getBackKeyboard);
     }
-  } else {
-    await ctx.replyWithMarkdown(`Sheet *${ctx.message.text}* not found, please enter valid url or sheet ID`,
-        getBackKeyboard);
+    // set data for check upload process
+    await firebase.firestore().collection("sessions").doc(`${ctx.from.id}`).set({
+      uploadPass: false,
+    });
+    console.log("upload finish");
   }
 });
 
