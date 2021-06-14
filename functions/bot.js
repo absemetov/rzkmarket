@@ -1,18 +1,13 @@
 const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
 const {Telegraf, Scenes: {Stage}} = require("telegraf");
-
-const {MenuTemplate, MenuMiddleware} = require("telegraf-inline-menu");
-
 const firestoreSession = require("telegraf-session-firestore");
-
 const {start} = require("./bot_start_scene");
-
-const {mono} = require("./bot_mono_scene");
-
+const {mono, menuMono} = require("./bot_mono_scene");
 const {upload} = require("./bot_upload_scene");
-
 const {getMainKeyboard} = require("./bot_keyboards.js");
+
+const {MenuTemplate, MenuMiddleware, createBackMainMenuButtons} = require("telegraf-inline-menu");
 
 firebase.initializeApp();
 
@@ -38,13 +33,75 @@ bot.hears("upload", async (ctx) => ctx.scene.enter("upload"));
 
 bot.hears("where", (ctx) => ctx.reply("You are in outside"));
 
+// test menu
+const menu = new MenuTemplate(() => "Main Menu\n" + new Date().toISOString());
+
+menu.url("Absemetov.org.ua", "https://absemetov.org.ua");
+let mainMenuToggle = false;
+
+menu.toggle("Checkbox", "toggle me", {
+  set: (_, newState) => {
+    console.log(newState);
+    mainMenuToggle = newState;
+    // Update the menu afterwards
+    return true;
+  },
+  isSet: () => mainMenuToggle,
+});
+menu.interact('interaction', 'interact', {
+	hide: () => mainMenuToggle,
+	do: async ctx => {
+		await ctx.answerCbQuery('you clicked me!')
+		// Do not update the menu afterwards
+		return false
+	}
+})
+menu.interact('update after action', 'update afterwards', {
+	joinLastRow: true,
+	hide: () => mainMenuToggle,
+	do: async ctx => {
+		await ctx.answerCbQuery('I will update the menu now…')
+
+		return true
+
+		// You can return true to update the same menu or use a relative path
+		// For example '.' for the same menu or '..' for the parent menu
+		// return '.'
+	}
+})
+let selectedKey = 'b'
+menu.select('select', ['A', 'B', 'C'], {
+	set: async (ctx, key) => {
+		selectedKey = key
+		await ctx.answerCbQuery(`you selected ${key}`)
+		return true
+	},
+	isSet: (_, key) => key === selectedKey
+})
+
+
+menu.submenu('Mono Currency', 'mono', menuMono)
+const menuMiddleware = new MenuMiddleware("/", menu);
+console.log(menuMiddleware.tree());
+
+bot.use(async (ctx, next) => {
+  if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
+    console.log("another callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
+  }
+  return next();
+});
+
+bot.command("startmenu", async (ctx) => menuMiddleware.replyToContext(ctx));
+bot.use(menuMiddleware.middleware());
+// test menu
+
 // if session destroyed show main keyboard
 bot.on("text", async (ctx) => ctx.reply("Menu", getMainKeyboard));
 
 bot.telegram.sendMessage(94899148, "Bot Rzk.com.ua ready!" );
 
 bot.catch((err) => {
-  console.log("Ooops", err);
+  console.log("Telegram error", err);
 });
 
 if (process.env.FUNCTIONS_EMULATOR) {
@@ -53,7 +110,7 @@ if (process.env.FUNCTIONS_EMULATOR) {
 
 const runtimeOpts = {
   timeoutSeconds: 540,
-  // memory: "1GB",
+  memory: "256MB",
 };
 
 exports.bot = functions.runWith(runtimeOpts).https.onRequest(async (req, res) => {

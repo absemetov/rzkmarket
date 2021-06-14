@@ -1,10 +1,9 @@
 const firebase = require("firebase-admin");
 const axios = require("axios");
 const cc = require("currency-codes");
-
 const {Scenes: {BaseScene}} = require("telegraf");
 const {getMainKeyboard, getMonoKeyboard} = require("./bot_keyboards.js");
-
+const {MenuTemplate, createBackMainMenuButtons} = require("telegraf-inline-menu");
 const mono = new BaseScene("mono");
 
 mono.enter((ctx) => {
@@ -96,4 +95,29 @@ async function getCurrency(currencyName) {
   return currencyResult;
 }
 
+// menu
+const menuMono = new MenuTemplate(() => 'Mono Menu\n' + new Date().toISOString());
+menuMono.url('EdJoPaTo.de', 'https://edjopato.de')
+menuMono.select('select currency', ['USD', 'EUR', 'RUB'], {
+	set: async (ctx, newState) => {
+    const currencyObj = await getCurrency();
+  const currency = currencyObj[key];
+  if (currency) {
+    const date = new Date(currency.date*1000);
+    const dateFormat = `${date.getDate()}/${(date.getMonth()+1)}/${date.getFullYear()}, `+
+    `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
+    await ctx.answerCbQuery(`${key} RATE BUY: ${currency.rateBuy} RATE SELL: ${currency.rateSell} DATE:${dateFormat}`)
+  } else {
+    await ctx.answerCbQuery(`Currency dont found`)
+  }
+  // await ctx.reply('As am I!')
+		// You can also go back to the parent menu afterwards for some 'quick' interactions in submenus
+		return true
+	}
+})
+menuMono.manualRow(createBackMainMenuButtons())
+// menu
+
 exports.mono = mono;
+exports.menuMono = menuMono;
+

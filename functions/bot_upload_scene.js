@@ -57,7 +57,7 @@ upload.on("text", async (ctx) => {
       await doc.loadInfo(); // loads document properties and worksheets
       const sheet = doc.sheetsByIndex[0];
       await ctx.replyWithMarkdown(`Load goods from Sheet *${doc.title + " with " + (sheet.rowCount - 1)}* rows`);
-      const rowCount = 100; // sheet.rowCount;
+      const rowCount = sheet.rowCount;
       const maxUploadGoods = 5000;
       // read rows
       const perPage = 100;
