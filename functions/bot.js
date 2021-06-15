@@ -34,12 +34,10 @@ bot.hears("upload", async (ctx) => ctx.scene.enter("upload"));
 bot.hears("where", (ctx) => ctx.reply("You are in outside"));
 
 // test menu
-let textData = "yaya"
-const menu = new MenuTemplate(() => "Main Menu\n" + textData);
 
+const menu = new MenuTemplate(() => "Main Menu");
 menu.url("Absemetov.org.ua", "https://absemetov.org.ua");
 let mainMenuToggle = false;
-
 menu.toggle("Checkbox", "toggle me", {
   set: (_, newState) => {
     console.log(newState);
@@ -87,7 +85,7 @@ menu.select('select', ['A', 'B', 'C'], {
 })
 
 
-menu.submenu('Mono Currency', 'mono', menuMono)
+menu.submenu("Mono Currency", "mono", menuMono)
 const menuMiddleware = new MenuMiddleware("/", menu);
 console.log(menuMiddleware.tree());
 

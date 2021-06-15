@@ -23,17 +23,22 @@ mono.on("text", async (ctx) => {
   const currencyObj = await getCurrency();
   const currency = currencyObj[ctx.message.text];
   if (currency) {
-    const date = new Date(currency.date*1000);
-    const dateFormat = `${date.getDate()}/${(date.getMonth()+1)}/${date.getFullYear()}, `+
-    `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
-    return ctx.replyWithMarkdown(`CURRENCY: *${ctx.message.text}*\n`+
-    `RATE BUY: *${currency.rateBuy}*\n`+
-    `RATE SELL: *${currency.rateSell}*\n`+
-    `DATE:${dateFormat}`);
+    ctx.replyWithMarkdown(monoMarkdown(currency));
   } else {
     ctx.replyWithMarkdown(`Currency *${ctx.message.text}* not found`);
   }
 });
+
+function monoMarkdown(currency) {
+  const currencyCode = cc.number(currency.currencyCodeA).code;
+  const date = new Date(currency.date*1000);
+  const dateFormat = `${date.getDate()}/${(date.getMonth()+1)}/${date.getFullYear()}, `+
+  `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
+  return `CURRENCY: *${currencyCode}*\n`+
+  `RATE BUY: *${currency.rateBuy}*\n`+
+  `RATE SELL: *${currency.rateSell}*\n`+
+  `DATE:${dateFormat}`;
+}
 
 async function updateData(currenciesFirestore) {
   try {
@@ -96,38 +101,17 @@ async function getCurrency(currencyName) {
 }
 
 // menu
-let menuText = "Выберите валюту";
-const menuMono = new MenuTemplate(() => menuText);
-menuMono.url("Monobank.com.ua", "https://monobank.com.ua");
-menuMono.choose("select currency", ["USD", "EUR", "RUB"], {
-  do: async (ctx, key) => {
-    const currencyObj = await getCurrency();
-    const currency = currencyObj[key];
-    if (currency) {
-      const date = new Date(currency.date*1000);
-      const dateFormat = `${date.getDate()}/${(date.getMonth()+1)}/${date.getFullYear()}, `+
-      `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
-      menuText = `${key} RATE BUY: ${currency.rateBuy} RATE SELL: ${currency.rateSell} DATE:${dateFormat}`;
-    } else {
-      await ctx.answerCbQuery(`Currency dont found`)
-    }
-    // await ctx.reply('As am I!')
-    // You can also go back to the parent menu afterwards for some 'quick' interactions in submenus
-    return true;
-  },
+const menuMono = new MenuTemplate(() => "Выберите валюту");
+const submenuTemplate = new MenuTemplate(async (ctx) => {
+  const currencyObj = await getCurrency();
+  const currency = currencyObj[ctx.match[1]];
+  const text = monoMarkdown(currency);
+  return {text, parse_mode: "Markdown"};
 });
+submenuTemplate.manualRow(createBackMainMenuButtons());
+menuMono.chooseIntoSubmenu("currency", ["USD", "EUR", "RUB"], submenuTemplate);
+menuMono.url("Monobank.com.ua", "https://monobank.com.ua");
 menuMono.manualRow(createBackMainMenuButtons());
-const submenuTemplate = new MenuTemplate(ctx => `You chose city ${ctx.match[1]}`)
-submenuTemplate.interact('Text', 'unique', {
-	do: async ctx => {
-		console.log('Take a look at ctx.match. It contains the chosen city', ctx.match)
-		await ctx.answerCbQuery('You hit a button in a submenu')
-		return false
-	}
-})
-submenuTemplate.manualRow(createBackMainMenuButtons())
-
-menuMono.chooseIntoSubmenu('unique', ['Gotham', 'Mos Eisley', 'Springfield'], submenuTemplate)
 // menu
 
 exports.mono = mono;
