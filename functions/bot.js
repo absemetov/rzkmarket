@@ -34,7 +34,8 @@ bot.hears("upload", async (ctx) => ctx.scene.enter("upload"));
 bot.hears("where", (ctx) => ctx.reply("You are in outside"));
 
 // test menu
-const menu = new MenuTemplate(() => "Main Menu\n" + new Date().toISOString());
+let textData = "yaya"
+const menu = new MenuTemplate(() => "Main Menu\n" + textData);
 
 menu.url("Absemetov.org.ua", "https://absemetov.org.ua");
 let mainMenuToggle = false;
@@ -54,6 +55,12 @@ menu.interact('interaction', 'interact', {
 		await ctx.answerCbQuery('you clicked me!')
 		// Do not update the menu afterwards
 		return false
+	}
+})
+menu.select('unique', ['human', 'bird'], {
+	isSet: (ctx, key) => ctx.session.choice === key,
+	set: (ctx, key) => {
+    return true
 	}
 })
 menu.interact('update after action', 'update afterwards', {
