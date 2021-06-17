@@ -87,7 +87,7 @@ menu.select('select', ['A', 'B', 'C'], {
 
 menu.submenu("Mono Currency", "mono", menuMono)
 const menuMiddleware = new MenuMiddleware("/", menu);
-console.log(menuMiddleware.tree());
+// console.log(menuMiddleware.tree());
 
 bot.use(async (ctx, next) => {
   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
@@ -103,7 +103,7 @@ bot.use(menuMiddleware.middleware());
 // if session destroyed show main keyboard
 bot.on("text", async (ctx) => ctx.reply("Menu", getMainKeyboard));
 
-bot.telegram.sendMessage(94899148, "Bot Rzk.com.ua ready!" );
+// bot.telegram.sendMessage(94899148, "Bot Rzk.com.ua ready!" );
 
 bot.catch((err) => {
   console.log("Telegram error", err);
