@@ -9,37 +9,38 @@
         </h1>
       </li>
     </ul>
-    <button @click="paginate">
-      Refresh
-    </button>
-    <NuxtLink :to="{ name: 'p', query: { startAfter: lastDoc.id }}">
-      Next {{ query.startAfter }}
+    <NuxtLink :to="{ name: 'p', query: { startAfter: next }}">
+      Next {{ next }}
     </NuxtLink>
   </v-alert>
 </template>
 <script>
 export default {
-  async asyncData ({ params, query, $http, $fire }) {
-    const productsSnapshot = await $fire.firestore.collection('products').limit(10).get()
-    const lastDoc = productsSnapshot.docs[productsSnapshot.docs.length - 1]
-    // Keep track of the last loaded document.
-    const products = productsSnapshot.docs.map((doc) => {
+  data () {
+    return {
+      products: [],
+      next: null
+    }
+  },
+  async fetch () {
+    let query = this.$fire.firestore.collection('products').limit(10)
+    // get lastDoc if reload page
+    if (this.$route.query.startAfter) {
+      const lastDoc = await this.$fire.firestore.collection('products').doc(this.$route.query.startAfter).get()
+      query = query.startAfter(lastDoc)
+    }
+    const productsSnapshot = await query.get()
+    this.next = productsSnapshot.docs[productsSnapshot.docs.length - 1].id
+    this.products = productsSnapshot.docs.map((doc) => {
       return { id: doc.id, ...doc.data() }
     })
-    console.info(query)
-    // const productsSnapshot = await $fire.firestore.collection('products').orderBy('name').startAfter('21111025').limit(10).get()
-    // const productsSnapshot1 = await $fire.firestore.collection('products').limit(10).startAfter(lastDoc).get()
-    // const productsSnapshot = await $fire.firestore.collection('products').orderBy('name').startAfter('21111025').limit(10).get()
-    // Keep track of the last loaded document.
-    // const products = productsSnapshot1.docs.map((doc) => {
-    //   return { id: doc.id, ...doc.data() }
-    // })
-    return { products, lastDoc, query }
   },
-  methods: {
-    paginate () {
-      alert('tetet')
-    }
+  watch: {
+    '$route.query': '$fetch'
+  },
+  mounted () {
+    // eslint-disable-next-line no-console
+    console.log(this.next)
   }
 }
 </script>

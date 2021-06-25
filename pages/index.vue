@@ -73,11 +73,6 @@
         </v-card-actions>
       </v-card>
     </v-col>
-    <ul>
-      <li v-for="currency of currencies" :key="currency.id">
-        <h1>{{ currency.id }} {{ currency.rateBuy }} / {{ currency.rateSell }}</h1>
-      </li>
-    </ul>
   </v-row>
 </template>
 
@@ -89,21 +84,6 @@ export default {
   components: {
     Logo,
     VuetifyLogo
-  },
-  async asyncData ({ params, $http, $fire }) {
-    // const users = await $http.$get(`https://jsonplaceholder.typicode.com/users`);
-    const snapshot = await $fire.firestore.collection('currencies').get()
-
-    const currencies = snapshot.docs.map((doc) => {
-      return { id: doc.id, ...doc.data() }
-    })
-    const productsSnapshot = await $fire.firestore.collection('products').limit(10).get()
-
-    const products = productsSnapshot.docs.map((doc) => {
-      return { id: doc.id, ...doc.data() }
-    })
-
-    return { currencies, products }
   }
 }
 </script>
