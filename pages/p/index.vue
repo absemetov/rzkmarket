@@ -13,7 +13,7 @@
       </li>
     </ul>
     <NuxtLink :to="{ name: 'p', query: { startAfter: nextId }}">
-      Next {{ nextId }}
+      Load more
     </NuxtLink>
   </v-alert>
 </template>
@@ -53,9 +53,16 @@ export default {
       console.log('client side lastDoc changed', this.lastDoc)
     }
     // generate products array
-    this.products = productsSnapshot.docs.map((doc) => {
-      return { id: doc.id, ...doc.data() }
-    })
+    // this.products = productsSnapshot.docs.map((doc) => {
+    //   return { id: doc.id, ...doc.data() }
+    // })
+    // load more
+    for (const doc of productsSnapshot.docs) {
+      this.products.push({
+        id: doc.id,
+        ...doc.data()
+      })
+    }
   },
   watch: {
     '$route.query': '$fetch'
