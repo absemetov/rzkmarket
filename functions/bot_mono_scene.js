@@ -61,9 +61,9 @@ async function updateData(currenciesFirestore) {
 
     const dateUpdated = Math.floor(Date.now() / 1000);
 
-    await firebase.firestore().doc("currencies/USD").set({updated_at: dateUpdated, ...usdRate});
-    await firebase.firestore().doc("currencies/EUR").set({updated_at: dateUpdated, ...eurRate});
-    await firebase.firestore().doc("currencies/RUB").set({updated_at: dateUpdated, ...rubRate});
+    await firebase.firestore().doc("currencies/USD").set({updatedAt: dateUpdated, ...usdRate});
+    await firebase.firestore().doc("currencies/EUR").set({updatedAt: dateUpdated, ...eurRate});
+    await firebase.firestore().doc("currencies/RUB").set({updatedAt: dateUpdated, ...rubRate});
 
     return {USD: usdRate, EUR: eurRate, RUB: rubRate};
   } catch (error) {
@@ -80,7 +80,7 @@ async function getCurrency(currencyName) {
   const dateTimestamp = Math.floor(Date.now() / 1000);
 
   currenciesFirestore.forEach((doc) => {
-    const timeDiff = dateTimestamp - doc.data().updated_at;
+    const timeDiff = dateTimestamp - doc.data().updatedAt;
     if (timeDiff < 3600) {
       currencyResult[doc.id] = doc.data();
     } else {

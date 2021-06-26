@@ -54,11 +54,11 @@ upload.hears("shop", async (ctx) => {
   console.log(res.data);
 });
 
-function sleep(ms) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
+// function sleep(ms) {
+//   return new Promise((resolve) => {
+//     setTimeout(resolve, ms);
+//   });
+// }
 
 upload.on("text", async (ctx) => {
   // parse url
@@ -91,7 +91,7 @@ upload.on("text", async (ctx) => {
       const sheet = doc.sheetsByIndex[0];
       await ctx.replyWithMarkdown(`Load goods from Sheet *${doc.title + " with " + (sheet.rowCount - 1)}* rows`);
       const rowCount = sheet.rowCount;
-      const maxUploadGoods = 5000;
+      const maxUploadGoods = 100;
       // read rows
       const perPage = 100;
       let countUploadGoods = 0;
@@ -130,13 +130,13 @@ upload.on("text", async (ctx) => {
           // save data to firestore
           if (validateItemRow.passes()) {
             countUploadGoods++;
-            // await firebase.firestore().collection("products").doc(item.id).set({
-            //   "name": item.name,
-            //   "price": item.price,
-            // });
+            await firebase.firestore().collection("products").doc(item.id).set({
+              "name": item.name,
+              "price": item.price,
+            });
           }
         }
-        await sleep(10000);
+        // await sleep(10000);
         await ctx.replyWithMarkdown(`*${i + perPage}* rows scan from *${sheet.rowCount - 1}*`);
       }
       // show count upload goods
