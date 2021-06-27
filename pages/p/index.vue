@@ -12,8 +12,8 @@
         </h1>
       </li>
     </ul>
-    <NuxtLink :to="{ name: 'p', query: { startAfter: nextId }}">
-      Load more
+    <NuxtLink v-if="nextProductId" :to="{ name: 'p', query: { startAfter: nextProductId }}">
+      Next
     </NuxtLink>
   </v-alert>
 </template>
@@ -22,56 +22,64 @@ export default {
   data () {
     return {
       products: [],
-      nextId: null,
-      lastDoc: null
+      nextProductId: null,
+      lastProduct: null
     }
   },
   async fetch () {
     let query = this.$fire.firestore.collection('products').limit(10)
-    // get lastDoc if reload page
-    if (this.$route.query.startAfter && !this.lastDoc) {
-      // get lastDoc
-      const lastDoc = await this.$fire.firestore.collection('products').doc(this.$route.query.startAfter).get()
-      query = query.startAfter(lastDoc)
+    // get lastProduct if reload page
+    if (this.$route.query.startAfter && !this.lastProduct) {
+      // get lastProduct
+      const lastProduct = await this.$fire.firestore.collection('products').doc(this.$route.query.startAfter).get()
+      query = query.startAfter(lastProduct)
       // eslint-disable-next-line no-console
-      console.log('server side', lastDoc)
+      console.log('server side', lastProduct)
     }
     // in client side
-    if (this.$route.query.startAfter && this.lastDoc) {
+    if (this.$route.query.startAfter && this.lastProduct) {
       // eslint-disable-next-line no-console
-      console.log('client side', this.lastDoc)
-      query = query.startAfter(this.lastDoc)
+      console.log('client side', this.lastProduct)
+      query = query.startAfter(this.lastProduct)
     }
-
+    // get all products
     const productsSnapshot = await query.get()
     // get next product ID
-    this.nextId = productsSnapshot.docs[productsSnapshot.docs.length - 1].id
-    // in client side save lastDoc
-    if (process.client) {
-      this.lastDoc = productsSnapshot.docs[productsSnapshot.docs.length - 1]
-      // eslint-disable-next-line no-console
-      console.log('client side lastDoc changed', this.lastDoc)
+    if (productsSnapshot.size < 10) {
+      this.nextProductId = null
+    } else {
+      this.nextProductId = productsSnapshot.docs[productsSnapshot.docs.length - 1].id
+      // in client side save lastProduct
+      if (process.client) {
+        this.lastProduct = productsSnapshot.docs[productsSnapshot.docs.length - 1]
+        // eslint-disable-next-line no-console
+        console.log('client side lastProduct changed', this.lastProduct)
+      }
     }
     // generate products array
-    // this.products = productsSnapshot.docs.map((doc) => {
-    //   return { id: doc.id, ...doc.data() }
-    // })
+    this.products = productsSnapshot.docs.map((doc) => {
+      return { id: doc.id, ...doc.data() }
+    })
     // load more
-    for (const doc of productsSnapshot.docs) {
-      this.products.push({
-        id: doc.id,
-        ...doc.data()
-      })
-    }
+    // for (const doc of productsSnapshot.docs) {
+    //   // if use back button check exist items
+    //   const found = this.products.some(el => el.id === doc.id)
+    //   if (!found) {
+    //     this.products.push({
+    //       id: doc.id,
+    //       ...doc.data()
+    //     })
+    //   }
+    // }
   },
   watch: {
     '$route.query': '$fetch'
   },
   mounted () {
-    // every load page for lastDoc make query not profitable
-    // this.lastDoc = await this.$fire.firestore.collection('products').doc(this.nextId).get()
+    // every load page for lastProduct make query not profitable
+    // this.lastProduct = await this.$fire.firestore.collection('products').doc(this.nextProductId).get()
     // eslint-disable-next-line no-console
-    // console.log('mounted', this.lastDoc)
+    // console.log('mounted', this.lastProduct)
   }
 }
 </script>
