@@ -96,14 +96,14 @@ upload.on("text", async (ctx) => {
       const perPage = 100;
       let countUploadGoods = 0;
       for (let i = 0; i < rowCount - 1; i += perPage) {
-        // check limit
-        if (countUploadGoods > maxUploadGoods) {
-          throw new Error(`Limit ${maxUploadGoods} goods!`);
-        }
         // get rows data
         const rows = await sheet.getRows({limit: perPage, offset: i});
 
         for (let j = 0; j < rows.length; j++) {
+          // check limit
+          if (countUploadGoods > maxUploadGoods) {
+            throw new Error(`Limit ${maxUploadGoods} goods!`);
+          }
           // validate data if ID and NAME set org Name and PRICE
           const item = {
             id: rows[j].id,

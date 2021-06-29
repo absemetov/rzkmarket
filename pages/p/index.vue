@@ -13,7 +13,10 @@
       <span class="loading" />
     </p>
     <NuxtLink v-if="nextProductId" :to="{ name: 'p', query: { startAfter: nextProductId }}">
-      Load More
+      Prev 10
+    </NuxtLink>
+    <NuxtLink v-if="nextProductId" :to="{ name: 'p', query: { startAfter: nextProductId }}">
+      Next 10
     </NuxtLink>
   </v-alert>
 </template>
@@ -23,8 +26,7 @@ export default {
     return {
       products: [],
       nextProductId: null,
-      lastProduct: null,
-      i: 1
+      lastProduct: null
     }
   },
   async fetch () {
@@ -35,56 +37,44 @@ export default {
       const lastProduct = await this.$fire.firestore.collection('products').doc(this.$route.query.startAfter).get()
       query = query.startAfter(lastProduct)
       // eslint-disable-next-line no-console
-      console.log('server side', lastProduct)
+      console.log('server side lastProduct set')
     }
     // in client side
-    // if use back browser check ids
-    let backButtonClick = false
     if (this.$route.query.startAfter && this.lastProduct) {
-      if (this.lastProduct.id !== this.$route.query.startAfter) {
-        backButtonClick = true
-      }
       // eslint-disable-next-line no-console
       console.log('client side', this.lastProduct.id, this.$route.query.startAfter)
       query = query.startAfter(this.lastProduct)
     }
-    // get all products
-    if (!backButtonClick) {
-      const productsSnapshot = await query.get()
+    // get query prodycts
+    const productsSnapshot = await query.get()
 
-      // get next product ID
-      if (productsSnapshot.size < 10) {
-        this.nextProductId = null
-      } else {
-        this.nextProductId = productsSnapshot.docs[productsSnapshot.docs.length - 1].id
-        // in client side save lastProduct
-        if (process.client) {
-          this.lastProduct = productsSnapshot.docs[productsSnapshot.docs.length - 1]
-          // eslint-disable-next-line no-console
-          console.log('client side lastProduct changed', this.lastProduct)
-        }
-      }
-      // generate products array
-      // this.products = productsSnapshot.docs.map((doc) => {
-      //   return { id: doc.id, ...doc.data() }
-      // })
-      // load more
-      // if show index page clear products
-      if (process.client && !this.$route.query.startAfter) {
-        this.products = []
-      }
-      for (const doc of productsSnapshot.docs) {
-        // if use back button check exist items
-        const found = this.products.some(el => el.id === doc.id)
-        if (!found) {
-          this.products.push({
-            id: doc.id,
-            i: this.i++,
-            ...doc.data()
-          })
-        }
+    // get next product ID
+    if (productsSnapshot.size < 10) {
+      this.nextProductId = null
+    } else {
+      this.nextProductId = productsSnapshot.docs[productsSnapshot.docs.length - 1].id
+      // in client side save lastProduct
+      if (process.client) {
+        this.lastProduct = productsSnapshot.docs[productsSnapshot.docs.length - 1]
+        // eslint-disable-next-line no-console
+        console.log('client side lastProduct changed', this.lastProduct)
       }
     }
+    // generate products array
+    this.products = productsSnapshot.docs.map((doc) => {
+      return { id: doc.id, ...doc.data() }
+    })
+    // load more
+    // for (const doc of productsSnapshot.docs) {
+    //   // if use back button check exist items
+    //   // const found = this.products.some(el => el.id === doc.id)
+    //   // if (!found) {
+    //   this.products.push({
+    //     id: doc.id,
+    //     ...doc.data()
+    //   })
+    //   // }
+    // }
   },
   watch: {
     '$route.query': '$fetch'
