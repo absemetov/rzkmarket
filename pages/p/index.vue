@@ -12,7 +12,7 @@
     <p v-if="$fetchState.pending">
       <span class="loading" />
     </p>
-    <NuxtLink v-if="nextProductId" :to="{ name: 'p', query: { startAfter: nextProductId }}">
+    <NuxtLink v-if="nextProductId" :to="{ name: 'p', query: { endBefore: nextProductId }}">
       Prev 10
     </NuxtLink>
     <NuxtLink v-if="nextProductId" :to="{ name: 'p', query: { startAfter: nextProductId }}">
@@ -26,24 +26,30 @@ export default {
     return {
       products: [],
       nextProductId: null,
-      lastProduct: null
+      snapshots: []
     }
   },
   async fetch () {
     let query = this.$fire.firestore.collection('products').limit(10)
-    // get lastProduct if reload page server side
-    if (this.$route.query.startAfter && !this.lastProduct) {
-      // get lastProduct
-      const lastProduct = await this.$fire.firestore.collection('products').doc(this.$route.query.startAfter).get()
+    // make query Next link
+    if (this.$route.query.startAfter) {
+      let lastProduct = null
+      // // in client side
+      if (this.snapshots[this.$route.query.startAfter]) {
+        lastProduct = this.snapshots[this.$route.query.startAfter]
+      } else {
+        lastProduct = await this.$fire.firestore.collection('products').doc(this.$route.query.startAfter).get()
+      }
+      // if back button click
+      //   if (this.$route.query.startAfter === this.lastProduct.id) {
+      //     lastProduct = this.lastProduct
+      //   } else {
+      //     lastProduct = await this.$fire.firestore.collection('products').doc(this.$route.query.startAfter).get()
+      //   }
+      // } else {
+      // get lastProduct on server
+      // }
       query = query.startAfter(lastProduct)
-      // eslint-disable-next-line no-console
-      console.log('server side lastProduct set')
-    }
-    // in client side
-    if (this.$route.query.startAfter && this.lastProduct) {
-      // eslint-disable-next-line no-console
-      console.log('client side', this.lastProduct.id, this.$route.query.startAfter)
-      query = query.startAfter(this.lastProduct)
     }
     // get query prodycts
     const productsSnapshot = await query.get()
@@ -55,26 +61,30 @@ export default {
       this.nextProductId = productsSnapshot.docs[productsSnapshot.docs.length - 1].id
       // in client side save lastProduct
       if (process.client) {
-        this.lastProduct = productsSnapshot.docs[productsSnapshot.docs.length - 1]
-        // eslint-disable-next-line no-console
-        console.log('client side lastProduct changed', this.lastProduct)
+        this.snapshots[this.nextProductId] = productsSnapshot.docs[productsSnapshot.docs.length - 1]
       }
     }
     // generate products array
-    this.products = productsSnapshot.docs.map((doc) => {
-      return { id: doc.id, ...doc.data() }
-    })
+    // this.products = productsSnapshot.docs.map((doc) => {
+    //   return { id: doc.id, ...doc.data() }
+    // })
     // load more
-    // for (const doc of productsSnapshot.docs) {
-    //   // if use back button check exist items
-    //   // const found = this.products.some(el => el.id === doc.id)
-    //   // if (!found) {
-    //   this.products.push({
-    //     id: doc.id,
-    //     ...doc.data()
-    //   })
-    //   // }
-    // }
+    if (this.$route.query.fullPath === '/p') {
+      // eslint-disable-next-line no-console
+      console.log('snap detect', typeof this.$route.fullPath)
+      this.products = []
+      this.snapshots = []
+    }
+    for (const doc of productsSnapshot.docs) {
+      // if use back button check exist items
+      const found = this.products.some(el => el.id === doc.id)
+      if (!found) {
+        this.products.push({
+          id: doc.id,
+          ...doc.data()
+        })
+      }
+    }
   },
   watch: {
     '$route.query': '$fetch'
