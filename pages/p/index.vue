@@ -63,13 +63,13 @@ export default {
       this.nextProductId = null
     } else {
       this.nextProductId = productsSnapshot.docs[productsSnapshot.docs.length - 1].id
-      // in client side save lastProduct
+      // in client side save lastProduct, in server side problem hidrate data
       if (process.client) {
         this.lastProduct = productsSnapshot.docs[productsSnapshot.docs.length - 1]
       }
     }
     // clear data on index page
-    if (!this.$route.query.startAfter) {
+    if (process.client && !this.$route.query.startAfter) {
       this.products = []
       this.lastPage = false
     }
