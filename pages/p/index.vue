@@ -12,7 +12,7 @@
     <p v-if="$fetchState.pending">
       <span class="loading" />
     </p>
-    <NuxtLink v-if="nextProductId" :prefetch="false" :to="{ name: 'p', query: { startAfter: nextProductId }}">
+    <NuxtLink v-if="nextProductId&&!$fetchState.pending" :prefetch="false" :to="{ name: 'p', query: { startAfter: nextProductId }}">
       Load more ...
     </NuxtLink>
   </v-alert>
@@ -28,7 +28,7 @@ export default {
     }
   },
   async fetch () {
-    let query = this.$fire.firestore.collection('products').limit(10)
+    let query = this.$fire.firestore.collection('products').orderBy('timestamp', 'asc').limit(10)
     // make query Next link
     if (this.$route.query.startAfter) {
       let lastProduct = null

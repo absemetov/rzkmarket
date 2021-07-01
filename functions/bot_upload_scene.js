@@ -133,6 +133,7 @@ upload.on("text", async (ctx) => {
             await firebase.firestore().collection("products").doc(item.id).set({
               "name": item.name,
               "price": item.price,
+              "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
             });
           }
         }
