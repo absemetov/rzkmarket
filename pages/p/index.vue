@@ -28,7 +28,7 @@ export default {
     }
   },
   async fetch () {
-    let query = this.$fire.firestore.collection('products').orderBy('timestamp', 'asc').limit(10)
+    let query = this.$fire.firestore.collection('products').orderBy('timestamp').limit(10)
     // make query Next link
     if (this.$route.query.startAfter) {
       let lastProduct = null
