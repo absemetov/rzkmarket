@@ -18,9 +18,10 @@ export default {
     const catalogSnapshot = await $fire.firestore.collection('catalogs').doc(params.id).get()
     const catalog = { id: catalogSnapshot.id, ...catalogSnapshot.data() }
     const items = []
-    items.push({ text: 'Main', exact: true, to: { name: 'c' } })
     if (catalog.parentId) {
-      items.push({ text: '..', to: { name: 'c-id', params: { id: catalog.parentId } } })
+      items.push({ text: 'Back', to: { name: 'c-id', params: { id: catalog.parentId } } })
+    } else {
+      items.push({ text: 'Back', exact: true, to: { name: 'c' } })
     }
     items.push({ text: catalog.name, to: { name: 'c-id', params: { id: catalog.id } } })
     const catalogsSnapshot = await $fire.firestore.collection('catalogs').where('parentId', '==', catalog.id).get()
