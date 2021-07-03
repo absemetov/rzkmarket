@@ -110,6 +110,11 @@ export default {
           icon: 'mdi-chart-bubble',
           title: 'Products',
           to: '/p'
+        },
+        {
+          icon: 'mdi-chart-bubble',
+          title: 'Catalogs',
+          to: '/c'
         }
       ],
       miniVariant: false,
