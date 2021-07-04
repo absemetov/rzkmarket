@@ -91,7 +91,7 @@ upload.on("text", async (ctx) => {
       const sheet = doc.sheetsByIndex[0];
       await ctx.replyWithMarkdown(`Load goods from Sheet *${doc.title + " with " + (sheet.rowCount - 1)}* rows`);
       const rowCount = sheet.rowCount;
-      const maxUploadGoods = 100;
+      const maxUploadGoods = 10;
       // read rows
       const perPage = 100;
       let countUploadGoods = 0;
@@ -105,15 +105,21 @@ upload.on("text", async (ctx) => {
             throw new Error(`Limit ${maxUploadGoods} goods!`);
           }
           // validate data if ID and NAME set org Name and PRICE
+          const groupArray [];
+          if (rows[j].group) {
+            groupArray = rows[j].group.split("#");
+          }
           const item = {
             id: rows[j].id,
             name: rows[j].name,
             price: rows[j].price ? Number(rows[j].price.replace(",", ".")) : "",
+            group: groupArray,
           };
           const rulesItemRow = {
-            id: "required|alpha_dash",
-            name: "required|string",
-            price: "required|numeric",
+            "id": "required|alpha_dash",
+            "name": "required|string",
+            "price": "required|numeric",
+            "group.*": "required|alpha_dash",
           };
           const validateItemRow = new Validator(item, rulesItemRow);
           // check fails
@@ -130,11 +136,11 @@ upload.on("text", async (ctx) => {
           // save data to firestore
           if (validateItemRow.passes()) {
             countUploadGoods++;
-            await firebase.firestore().collection("products").doc(item.id).set({
-              "name": item.name,
-              "price": item.price,
-              "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
-            });
+            // await firebase.firestore().collection("products").doc(item.id).set({
+            //   "name": item.name,
+            //   "price": item.price,
+            //   "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
+            // });
           }
         }
         // await sleep(10000);
