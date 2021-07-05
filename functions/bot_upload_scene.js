@@ -5,6 +5,7 @@ const {GoogleSpreadsheet} = require("google-spreadsheet");
 const creds = require("./rzk-com-ua-d1d3248b8410.json");
 const Validator = require("validatorjs");
 const {google} = require("googleapis");
+const CyrillicToTranslit = require("cyrillic-to-translit-js");
 
 const upload = new BaseScene("upload");
 
@@ -92,6 +93,7 @@ upload.on("text", async (ctx) => {
       await ctx.replyWithMarkdown(`Load goods from Sheet *${doc.title + " with " + (sheet.rowCount - 1)}* rows`);
       const rowCount = sheet.rowCount;
       const maxUploadGoods = 10;
+      const cyrillicToTranslit = new CyrillicToTranslit();
       // read rows
       const perPage = 100;
       let countUploadGoods = 0;
@@ -105,9 +107,11 @@ upload.on("text", async (ctx) => {
             throw new Error(`Limit ${maxUploadGoods} goods!`);
           }
           // validate data if ID and NAME set org Name and PRICE
-          const groupArray [];
+          // validate group
+          let groupArray = [];
           if (rows[j].group) {
             groupArray = rows[j].group.split("#");
+            console.log(cyrillicToTranslit.transform("Привет Мир!", "_").toLowerCase());
           }
           const item = {
             id: rows[j].id,
