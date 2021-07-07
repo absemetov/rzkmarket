@@ -110,9 +110,22 @@ upload.on("text", async (ctx) => {
           // validate group
           let groupArray = [];
           if (rows[j].group) {
+            // generate Ids
             groupArray = rows[j].group.split("#");
-            console.log(cyrillicToTranslit.transform("Привет Мир!", "_").toLowerCase());
+            groupArray = groupArray.map((catalogName, index) => {
+              let parentId = null;
+              if (index !== 0) {
+                // Parent exist
+                parentId = cyrillicToTranslit.transform(groupArray[index - 1].trim(), "-").toLowerCase();
+              }
+              return {
+                name: catalogName.trim(),
+                id: cyrillicToTranslit.transform(catalogName.trim(), "-").toLowerCase(),
+                parentId: parentId,
+              };
+            });
           }
+          console.log(groupArray);
           const item = {
             id: rows[j].id,
             name: rows[j].name,
@@ -123,7 +136,7 @@ upload.on("text", async (ctx) => {
             "id": "required|alpha_dash",
             "name": "required|string",
             "price": "required|numeric",
-            "group.*": "required|alpha_dash",
+            "group.*.id": "required|alpha_dash",
           };
           const validateItemRow = new Validator(item, rulesItemRow);
           // check fails
@@ -145,6 +158,13 @@ upload.on("text", async (ctx) => {
             //   "price": item.price,
             //   "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
             // });
+            groupArray.forEach(async (catalog) => {
+              await firebase.firestore().collection("catalogs").doc(catalog.id).set({
+                "name": catalog.name,
+                "parentId": catalog.parentId,
+                "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
+              });
+            });
           }
         }
         // await sleep(10000);
