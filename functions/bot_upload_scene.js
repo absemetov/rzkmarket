@@ -92,7 +92,8 @@ upload.on("text", async (ctx) => {
       const sheet = doc.sheetsByIndex[0];
       await ctx.replyWithMarkdown(`Load goods from Sheet *${doc.title + " with " + (sheet.rowCount - 1)}* rows`);
       const rowCount = sheet.rowCount;
-      const maxUploadGoods = 10;
+      // Max upload goods
+      const maxUploadGoods = 100;
       const cyrillicToTranslit = new CyrillicToTranslit();
       // read rows
       const perPage = 100;
@@ -152,17 +153,17 @@ upload.on("text", async (ctx) => {
           }
           // save data to firestore
           if (validateItemRow.passes()) {
-            countUploadGoods++;
-            // await firebase.firestore().collection("products").doc(item.id).set({
-            //   "name": item.name,
-            //   "price": item.price,
-            //   "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
-            // });
+            countUploadGoods ++;
+            await firebase.firestore().collection("products").doc(item.id).set({
+              "name": item.name,
+              "price": item.price,
+              "orderNumber": countUploadGoods,
+            });
             groupArray.forEach(async (catalog) => {
               await firebase.firestore().collection("catalogs").doc(catalog.id).set({
                 "name": catalog.name,
                 "parentId": catalog.parentId,
-                "timestamp": firebase.firestore.FieldValue.serverTimestamp(),
+                "orderNumber": countUploadGoods,
               });
             });
           }

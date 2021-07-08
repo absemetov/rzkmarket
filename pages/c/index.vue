@@ -14,7 +14,7 @@
 <script>
 export default {
   async asyncData ({ params, $fire }) {
-    const catalogsSnapshot = await $fire.firestore.collection('catalogs').where('parentId', '==', null).orderBy('timestamp').get()
+    const catalogsSnapshot = await $fire.firestore.collection('catalogs').where('parentId', '==', null).orderBy('orderNumber').get()
     // generate catalogs array
     const catalogs = catalogsSnapshot.docs.map((doc) => {
       return { id: doc.id, ...doc.data() }

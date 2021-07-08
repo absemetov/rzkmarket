@@ -24,7 +24,7 @@ export default {
       items.push({ text: 'Back', exact: true, to: { name: 'c' } })
     }
     items.push({ text: catalog.name, to: { name: 'c-id', params: { id: catalog.id } } })
-    const catalogsSnapshot = await $fire.firestore.collection('catalogs').where('parentId', '==', catalog.id).orderBy('timestamp').get()
+    const catalogsSnapshot = await $fire.firestore.collection('catalogs').where('parentId', '==', catalog.id).orderBy('orderNumber').get()
     // generate catalogs array
     const catalogs = catalogsSnapshot.docs.map((doc) => {
       return { id: doc.id, ...doc.data() }
