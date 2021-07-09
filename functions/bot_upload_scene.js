@@ -151,18 +151,23 @@ upload.on("text", async (ctx) => {
             throw new Error(errorRow);
           }
           // save data to firestore
+          const dateTimestamp = Math.floor(Date.now() / 1000);
           if (validateItemRow.passes()) {
             countUploadGoods ++;
             await firebase.firestore().collection("products").doc(item.id).set({
               "name": item.name,
               "price": item.price,
               "orderNumber": countUploadGoods,
+              "createdAt": dateTimestamp,
+              "updatedAt": dateTimestamp,
             });
             groupArray.forEach(async (catalog) => {
               await firebase.firestore().collection("catalogs").doc(catalog.id).set({
                 "name": catalog.name,
                 "parentId": catalog.parentId,
                 "orderNumber": countUploadGoods,
+                "createdAt": dateTimestamp,
+                "updatedAt": dateTimestamp,
               });
             });
           }
