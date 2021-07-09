@@ -93,7 +93,7 @@ upload.on("text", async (ctx) => {
       await ctx.replyWithMarkdown(`Load goods from Sheet *${doc.title + " with " + (sheet.rowCount - 1)}* rows`);
       const rowCount = sheet.rowCount;
       // Max upload goods
-      const maxUploadGoods = 100;
+      const maxUploadGoods = 1;
       const cyrillicToTranslit = new CyrillicToTranslit();
       // read rows
       const perPage = 100;
@@ -126,7 +126,6 @@ upload.on("text", async (ctx) => {
               };
             });
           }
-          console.log(groupArray);
           const item = {
             id: rows[j].id,
             name: rows[j].name,
