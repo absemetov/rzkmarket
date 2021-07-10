@@ -62,6 +62,8 @@ upload.hears("shop", async (ctx) => {
 // }
 
 upload.on("text", async (ctx) => {
+  // Max upload goods
+  const maxUploadGoods = 1;
   // parse url
   let sheetId;
   ctx.message.text.split("/").forEach((section) => {
@@ -76,7 +78,11 @@ upload.on("text", async (ctx) => {
   }
   // get data for check upload process
   const docRef = await firebase.firestore().collection("sessions").doc(`${ctx.from.id}`).get();
-  if (sheetId && !docRef.data().uploadPass) {
+  let uploadPass = false;
+  if (docRef.exists) {
+    uploadPass = docRef.data().uploadPass;
+  }
+  if (sheetId && !uploadPass) {
     console.log("upload start");
     const start = new Date();
     // set data for check upload process
@@ -92,8 +98,6 @@ upload.on("text", async (ctx) => {
       const sheet = doc.sheetsByIndex[0];
       await ctx.replyWithMarkdown(`Load goods from Sheet *${doc.title + " with " + (sheet.rowCount - 1)}* rows`);
       const rowCount = sheet.rowCount;
-      // Max upload goods
-      const maxUploadGoods = 1;
       const cyrillicToTranslit = new CyrillicToTranslit();
       // read rows
       const perPage = 100;
@@ -103,10 +107,6 @@ upload.on("text", async (ctx) => {
         const rows = await sheet.getRows({limit: perPage, offset: i});
 
         for (let j = 0; j < rows.length; j++) {
-          // check limit
-          if (countUploadGoods > maxUploadGoods) {
-            throw new Error(`Limit ${maxUploadGoods} goods!`);
-          }
           // validate data if ID and NAME set org Name and PRICE
           // validate group
           let groupArray = [];
@@ -154,6 +154,10 @@ upload.on("text", async (ctx) => {
           const dateTimestamp = Math.floor(Date.now() / 1000);
           if (validateItemRow.passes()) {
             countUploadGoods ++;
+            // check limit
+            if (countUploadGoods > maxUploadGoods) {
+              throw new Error(`Limit ${maxUploadGoods} goods!`);
+            }
             await firebase.firestore().collection("products").doc(item.id).set({
               "name": item.name,
               "price": item.price,
@@ -188,6 +192,8 @@ upload.on("text", async (ctx) => {
       uploadPass: false,
     });
     console.log("upload finish");
+  } else {
+    await ctx.replyWithMarkdown("Processing, please wait");
   }
 });
 
