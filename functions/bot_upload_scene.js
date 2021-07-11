@@ -63,7 +63,7 @@ upload.hears("shop", async (ctx) => {
 
 upload.on("text", async (ctx) => {
   // Max upload goods
-  const maxUploadGoods = 1;
+  const maxUploadGoods = 3;
   // parse url
   let sheetId;
   ctx.message.text.split("/").forEach((section) => {
@@ -102,6 +102,7 @@ upload.on("text", async (ctx) => {
       // read rows
       const perPage = 100;
       let countUploadGoods = 0;
+      const serverTimestamp = firebase.firestore.FieldValue.serverTimestamp();
       for (let i = 0; i < rowCount - 1; i += perPage) {
         // get rows data
         const rows = await sheet.getRows({limit: perPage, offset: i});
@@ -151,29 +152,26 @@ upload.on("text", async (ctx) => {
             throw new Error(errorRow);
           }
           // save data to firestore
-          const dateTimestamp = Math.floor(Date.now() / 1000);
           if (validateItemRow.passes()) {
-            countUploadGoods ++;
             // check limit
-            if (countUploadGoods > maxUploadGoods) {
+            if (countUploadGoods === maxUploadGoods) {
               throw new Error(`Limit ${maxUploadGoods} goods!`);
             }
             await firebase.firestore().collection("products").doc(item.id).set({
               "name": item.name,
               "price": item.price,
               "orderNumber": countUploadGoods,
-              "createdAt": dateTimestamp,
-              "updatedAt": dateTimestamp,
-            });
+              "updatedAt": serverTimestamp,
+            }, {merge: true});
             groupArray.forEach(async (catalog) => {
               await firebase.firestore().collection("catalogs").doc(catalog.id).set({
                 "name": catalog.name,
                 "parentId": catalog.parentId,
                 "orderNumber": countUploadGoods,
-                "createdAt": dateTimestamp,
-                "updatedAt": dateTimestamp,
-              });
+                "updatedAt": serverTimestamp,
+              }, {merge: true});
             });
+            countUploadGoods ++;
           }
         }
         // await sleep(10000);

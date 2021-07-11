@@ -6,25 +6,39 @@ exports.bot = bot.bot;
 
 const functions = require("firebase-functions");
 
-exports.myFunction = functions.firestore
+exports.productCreatedAt = functions.firestore
     .document("catalogs/{docId}")
     .onWrite((change, context) => {
-      // Retrieve the current and previous value
-      const data = change.after.data();
-      const previousData = change.before.data();
-      console.log("data", data);
-      console.log("prevData", previousData);
+      const newValue = change.after.data();
+      if (newValue.name === "Karre") {
+        console.log("catalog Karre updated!");
+      }
       return null;
-      // We'll only update if the name has changed.
-      // This is crucial to prevent infinite loops.
-      // if (data.name == previousData.name) {
-      //   return null;
-      // }
-      // Then return a promise of a set operation to update the count
-      // return change.after.ref.set({
-      //   name_change_count: count + 1
-      // }, {merge: true});
-    });
+});
+
+exports.productSetCreatedAt = functions.firestore
+    .document("products/{docId}")
+    .onCreate((snap, context) => {
+      const newValue = snap.data();
+      if (!newValue.createdAt) {
+        return snap.ref.set({
+          createdAt: newValue.updatedAt,
+        }, {merge: true});
+      }
+      return null;
+});
+
+exports.catalogSetCreatedAt = functions.firestore
+    .document("catalogs/{docId}")
+    .onCreate((snap, context) => {
+      const newValue = snap.data();
+      if (!newValue.createdAt) {
+        return snap.ref.set({
+          createdAt: newValue.updatedAt,
+        }, {merge: true});
+      }
+      return null;
+});
 // // Create and Deploy Your First Cloud Functions
 // // https://firebase.google.com/docs/functions/write-firebase-functions
 //
