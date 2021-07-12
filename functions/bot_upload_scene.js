@@ -64,6 +64,8 @@ upload.hears("shop", async (ctx) => {
 upload.on("text", async (ctx) => {
   // Max upload goods
   const maxUploadGoods = 3;
+  // Catalogs set array
+  const catalogsIsSet = [];
   // parse url
   let sheetId;
   ctx.message.text.split("/").forEach((section) => {
@@ -164,12 +166,17 @@ upload.on("text", async (ctx) => {
               "updatedAt": serverTimestamp,
             }, {merge: true});
             groupArray.forEach(async (catalog) => {
-              await firebase.firestore().collection("catalogs").doc(catalog.id).set({
-                "name": catalog.name,
-                "parentId": catalog.parentId,
-                "orderNumber": countUploadGoods,
-                "updatedAt": serverTimestamp,
-              }, {merge: true});
+              console.log("group", catalog.id);
+              if (!catalogsIsSet.find((item) => item.id === catalog.id)) {
+                await firebase.firestore().collection("catalogs").doc(catalog.id).set({
+                  "name": catalog.name,
+                  "parentId": catalog.parentId,
+                  "orderNumber": countUploadGoods,
+                  "updatedAt": serverTimestamp,
+                }, {merge: true});
+                catalogsIsSet.push({id: catalog.id});
+                console.log(catalogsIsSet);
+              }
             });
             countUploadGoods ++;
           }
