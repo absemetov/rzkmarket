@@ -7,7 +7,7 @@ const {mono, menuMono} = require("./bot_mono_scene");
 const {upload} = require("./bot_upload_scene");
 const {getMainKeyboard} = require("./bot_keyboards.js");
 
-const {MenuTemplate, MenuMiddleware, createBackMainMenuButtons} = require("telegraf-inline-menu");
+const {MenuTemplate, MenuMiddleware} = require("telegraf-inline-menu");
 
 firebase.initializeApp();
 
@@ -34,58 +34,8 @@ bot.hears("upload", async (ctx) => ctx.scene.enter("upload"));
 bot.hears("where", (ctx) => ctx.reply("You are in outside"));
 
 // test menu
-
 const menu = new MenuTemplate(() => "Main Menu");
-menu.url("Absemetov.org.ua", "https://absemetov.org.ua");
-let mainMenuToggle = false;
-menu.toggle("Checkbox", "toggle me", {
-  set: (_, newState) => {
-    console.log(newState);
-    mainMenuToggle = newState;
-    // Update the menu afterwards
-    return true;
-  },
-  isSet: () => mainMenuToggle,
-});
-menu.interact('interaction', 'interact', {
-	hide: () => mainMenuToggle,
-	do: async ctx => {
-		await ctx.answerCbQuery('you clicked me!')
-		// Do not update the menu afterwards
-		return false
-	}
-})
-menu.select('unique', ['human', 'bird'], {
-	isSet: (ctx, key) => ctx.session.choice === key,
-	set: (ctx, key) => {
-    return true
-	}
-})
-menu.interact('update after action', 'update afterwards', {
-	joinLastRow: true,
-	hide: () => mainMenuToggle,
-	do: async ctx => {
-		await ctx.answerCbQuery('I will update the menu now…')
-
-		return true
-
-		// You can return true to update the same menu or use a relative path
-		// For example '.' for the same menu or '..' for the parent menu
-		// return '.'
-	}
-})
-let selectedKey = 'b'
-menu.select('select', ['A', 'B', 'C'], {
-	set: async (ctx, key) => {
-		selectedKey = key
-		await ctx.answerCbQuery(`you selected ${key}`)
-		return true
-	},
-	isSet: (_, key) => key === selectedKey
-})
-
-
-menu.submenu("Mono Currency", "mono", menuMono)
+menu.submenu("Mono Currency", "mono", menuMono);
 const menuMiddleware = new MenuMiddleware("/", menu);
 // console.log(menuMiddleware.tree());
 
@@ -111,12 +61,17 @@ bot.catch((err) => {
 
 if (process.env.FUNCTIONS_EMULATOR) {
   bot.launch();
+  console.log("Bot launch!");
 }
 
 const runtimeOpts = {
   timeoutSeconds: 540,
   memory: "256MB",
 };
+
+// Enable graceful stop
+process.once("SIGINT", () => bot.stop("SIGINT"));
+process.once("SIGTERM", () => bot.stop("SIGTERM"));
 
 exports.bot = functions.runWith(runtimeOpts).https.onRequest(async (req, res) => {
   try {
@@ -125,10 +80,6 @@ exports.bot = functions.runWith(runtimeOpts).https.onRequest(async (req, res) =>
     res.status(200).end();
   }
 });
-
-// Enable graceful stop
-process.once("SIGINT", () => bot.stop("SIGINT"));
-process.once("SIGTERM", () => bot.stop("SIGTERM"));
 
 // bot.start((ctx) => ctx.reply("Welcome to RZK Market Ukraine!", Markup.keyboard([
 //   "sheet", "USD", "EUR", "RUB"]).resize(),
