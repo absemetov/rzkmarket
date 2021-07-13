@@ -34,10 +34,10 @@ function monoMarkdown(currency) {
   const date = new Date(currency.date*1000);
   const dateFormat = `${date.getDate()}/${(date.getMonth()+1)}/${date.getFullYear()}, `+
   `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
-  return `CURRENCY: *${currencyCode}*\n`+
-  `RATE BUY: *${currency.rateBuy}*\n`+
-  `RATE SELL: *${currency.rateSell}*\n`+
-  `DATE:${dateFormat}`;
+  return `CURRENCY: *${currencyCode}*
+  RATE BUY: *${currency.rateBuy}*
+  RATE SELL: *${currency.rateSell}*
+  DATE:${dateFormat}`;
 }
 
 async function updateData(currenciesFirestore) {

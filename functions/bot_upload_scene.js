@@ -65,7 +65,8 @@ upload.on("text", async (ctx) => {
   // Max upload goods
   const maxUploadGoods = 3;
   // Catalogs set array
-  const catalogsIsSet = [];
+  const catalogsIsSet = new Set();
+  let countUploadGoods = 0;
   // parse url
   let sheetId;
   ctx.message.text.split("/").forEach((section) => {
@@ -85,7 +86,6 @@ upload.on("text", async (ctx) => {
     uploadPass = docRef.data().uploadPass;
   }
   if (sheetId && !uploadPass) {
-    console.log("upload start");
     const start = new Date();
     // set data for check upload process
     await firebase.firestore().collection("sessions").doc(`${ctx.from.id}`).set({
@@ -103,7 +103,6 @@ upload.on("text", async (ctx) => {
       const cyrillicToTranslit = new CyrillicToTranslit();
       // read rows
       const perPage = 100;
-      let countUploadGoods = 0;
       const serverTimestamp = firebase.firestore.FieldValue.serverTimestamp();
       for (let i = 0; i < rowCount - 1; i += perPage) {
         // get rows data
@@ -165,38 +164,36 @@ upload.on("text", async (ctx) => {
               "orderNumber": countUploadGoods,
               "updatedAt": serverTimestamp,
             }, {merge: true});
-            groupArray.forEach(async (catalog) => {
-              console.log("group", catalog.id);
-              if (!catalogsIsSet.find((item) => item.id === catalog.id)) {
+            for (const catalog of groupArray) {
+              if (!catalogsIsSet.has(catalog.id)) {
                 await firebase.firestore().collection("catalogs").doc(catalog.id).set({
                   "name": catalog.name,
                   "parentId": catalog.parentId,
                   "orderNumber": countUploadGoods,
                   "updatedAt": serverTimestamp,
                 }, {merge: true});
-                catalogsIsSet.push({id: catalog.id});
-                console.log(catalogsIsSet);
+                catalogsIsSet.add(catalog.id);
               }
-            });
+            }
             countUploadGoods ++;
           }
         }
         // await sleep(10000);
         await ctx.replyWithMarkdown(`*${i + perPage}* rows scan from *${sheet.rowCount - 1}*`);
       }
-      // show count upload goods
-      if (countUploadGoods) {
-        const ms = new Date() - start;
-        await ctx.replyWithMarkdown(`*${countUploadGoods}* goods uploaded in ${Math.floor(ms/1000)}s`, getBackKeyboard);
-      }
     } catch (error) {
       await ctx.replyWithMarkdown(`Sheet ${error}`, getBackKeyboard);
+    }
+    // show count upload goods
+    if (countUploadGoods) {
+      const ms = new Date() - start;
+      await ctx.replyWithHTML(`<b>${countUploadGoods}</b> goods and<br>
+      *${catalogsIsSet.size}* catalogs uploaded in ${Math.floor(ms/1000)}s`, getBackKeyboard);
     }
     // set data for check upload process
     await firebase.firestore().collection("sessions").doc(`${ctx.from.id}`).set({
       uploadPass: false,
     });
-    console.log("upload finish");
   } else {
     await ctx.replyWithMarkdown("Processing, please wait");
   }
