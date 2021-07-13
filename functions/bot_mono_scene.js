@@ -35,9 +35,9 @@ function monoMarkdown(currency) {
   const dateFormat = `${date.getDate()}/${(date.getMonth()+1)}/${date.getFullYear()}, `+
   `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
   return `CURRENCY: *${currencyCode}*
-  RATE BUY: *${currency.rateBuy}*
-  RATE SELL: *${currency.rateSell}*
-  DATE:${dateFormat}`;
+RATE BUY: *${currency.rateBuy}*
+RATE SELL: *${currency.rateSell}*
+DATE:${dateFormat}`;
 }
 
 async function updateData(currenciesFirestore) {

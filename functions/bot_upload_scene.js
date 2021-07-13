@@ -6,7 +6,7 @@ const creds = require("./rzk-com-ua-d1d3248b8410.json");
 const Validator = require("validatorjs");
 const {google} = require("googleapis");
 const CyrillicToTranslit = require("cyrillic-to-translit-js");
-
+const cyrillicToTranslit = new CyrillicToTranslit();
 const upload = new BaseScene("upload");
 
 upload.enter((ctx) => {
@@ -62,11 +62,15 @@ upload.hears("shop", async (ctx) => {
 // }
 
 upload.on("text", async (ctx) => {
+  const start = new Date();
   // Max upload goods
   const maxUploadGoods = 3;
   // Catalogs set array
   const catalogsIsSet = new Set();
   let countUploadGoods = 0;
+  // const serverTimestamp = firebase.firestore.FieldValue.serverTimestamp();
+  const serverTimestamp = Math.floor(Date.now() / 1000);
+  const perPage = 100;
   // parse url
   let sheetId;
   ctx.message.text.split("/").forEach((section) => {
@@ -86,10 +90,10 @@ upload.on("text", async (ctx) => {
     uploadPass = docRef.data().uploadPass;
   }
   if (sheetId && !uploadPass) {
-    const start = new Date();
     // set data for check upload process
     await firebase.firestore().collection("sessions").doc(`${ctx.from.id}`).set({
       uploadPass: true,
+      uploadTimestamp: serverTimestamp,
     });
     // load goods
     const doc = new GoogleSpreadsheet(sheetId);
@@ -98,12 +102,11 @@ upload.on("text", async (ctx) => {
       await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
       await doc.loadInfo(); // loads document properties and worksheets
       const sheet = doc.sheetsByIndex[0];
-      await ctx.replyWithMarkdown(`Load goods from Sheet *${doc.title + " with " + (sheet.rowCount - 1)}* rows`);
+      await ctx.replyWithMarkdown(`Load goods from ...
+Sheet name: *${doc.title}*
+Count rows: *${sheet.rowCount - 1}*`);
       const rowCount = sheet.rowCount;
-      const cyrillicToTranslit = new CyrillicToTranslit();
       // read rows
-      const perPage = 100;
-      const serverTimestamp = firebase.firestore.FieldValue.serverTimestamp();
       for (let i = 0; i < rowCount - 1; i += perPage) {
         // get rows data
         const rows = await sheet.getRows({limit: perPage, offset: i});
@@ -156,7 +159,7 @@ upload.on("text", async (ctx) => {
           if (validateItemRow.passes()) {
             // check limit
             if (countUploadGoods === maxUploadGoods) {
-              throw new Error(`Limit ${maxUploadGoods} goods!`);
+              throw new Error(`Limit *${maxUploadGoods}* goods!`);
             }
             await firebase.firestore().collection("products").doc(item.id).set({
               "name": item.name,
@@ -182,18 +185,20 @@ upload.on("text", async (ctx) => {
         await ctx.replyWithMarkdown(`*${i + perPage}* rows scan from *${sheet.rowCount - 1}*`);
       }
     } catch (error) {
-      await ctx.replyWithMarkdown(`Sheet ${error}`, getBackKeyboard);
+      await ctx.replyWithMarkdown(`Sheet
+${error}`, getBackKeyboard);
     }
     // show count upload goods
     if (countUploadGoods) {
       const ms = new Date() - start;
-      await ctx.replyWithHTML(`<b>${countUploadGoods}</b> goods and<br>
-      *${catalogsIsSet.size}* catalogs uploaded in ${Math.floor(ms/1000)}s`, getBackKeyboard);
+      await ctx.replyWithMarkdownV2(`Data uploaded in *${Math.floor(ms/1000)}*s:
+Goods: *${countUploadGoods}*
+Catalogs: *${catalogsIsSet.size}*`, getBackKeyboard);
     }
     // set data for check upload process
     await firebase.firestore().collection("sessions").doc(`${ctx.from.id}`).set({
       uploadPass: false,
-    });
+    }, {merge: true});
   } else {
     await ctx.replyWithMarkdown("Processing, please wait");
   }

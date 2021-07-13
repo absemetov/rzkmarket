@@ -1,15 +1,5 @@
 const functions = require("firebase-functions");
 
-exports.productCreatedAt = functions.firestore
-    .document("catalogs/{docId}")
-    .onWrite((change, context) => {
-      const newValue = change.after.data();
-      if (newValue.name === "Karre") {
-        console.log("catalog Karre updated!");
-      }
-      return true;
-    });
-
 exports.productSetCreatedAt = functions.firestore
     .document("products/{docId}")
     .onCreate((snap, context) => {
