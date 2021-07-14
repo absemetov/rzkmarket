@@ -61,7 +61,6 @@ bot.catch((err) => {
 
 if (process.env.FUNCTIONS_EMULATOR) {
   bot.launch();
-  console.log("Bot launch!");
 }
 
 const runtimeOpts = {

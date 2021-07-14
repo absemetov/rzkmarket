@@ -54,13 +54,7 @@ upload.hears("shop", async (ctx) => {
   });
   console.log(res.data);
 });
-
-// function sleep(ms) {
-//   return new Promise((resolve) => {
-//     setTimeout(resolve, ms);
-//   });
-// }
-
+// upload from googleSheet
 upload.on("text", async (ctx) => {
   const start = new Date();
   // Max upload goods
@@ -71,7 +65,7 @@ upload.on("text", async (ctx) => {
   // const serverTimestamp = firebase.firestore.FieldValue.serverTimestamp();
   const serverTimestamp = Math.floor(Date.now() / 1000);
   const perPage = 100;
-  // parse url
+  // Get sheetId parse url
   let sheetId;
   ctx.message.text.split("/").forEach((section) => {
     if (section.length === 44) {
@@ -84,14 +78,21 @@ upload.on("text", async (ctx) => {
         getBackKeyboard);
   }
   // get data for check upload process
-  const docRef = await firebase.firestore().collection("sessions").doc(`${ctx.from.id}`).get();
+  const sessionUser = firebase.firestore().collection("sessions").doc(`${ctx.from.id}`);
+  const docRef = await sessionUser.get();
   let uploadPass = false;
   if (docRef.exists) {
     uploadPass = docRef.data().uploadPass;
+    const timeDiff = serverTimestamp - docRef.data().uploadTimestamp;
+    // if happend error, after 570s clear rewrite uploadPass
+    console.log(timeDiff);
+    if (uploadPass && timeDiff > 570) {
+      uploadPass = false;
+    }
   }
-  if (sheetId && !uploadPass) {
+  if (!uploadPass) {
     // set data for check upload process
-    await firebase.firestore().collection("sessions").doc(`${ctx.from.id}`).set({
+    await sessionUser.set({
       uploadPass: true,
       uploadTimestamp: serverTimestamp,
     });
@@ -181,7 +182,6 @@ Count rows: *${sheet.rowCount - 1}*`);
             countUploadGoods ++;
           }
         }
-        // await sleep(10000);
         await ctx.replyWithMarkdown(`*${i + perPage}* rows scan from *${sheet.rowCount - 1}*`);
       }
     } catch (error) {
@@ -191,12 +191,12 @@ ${error}`, getBackKeyboard);
     // show count upload goods
     if (countUploadGoods) {
       const ms = new Date() - start;
-      await ctx.replyWithMarkdownV2(`Data uploaded in *${Math.floor(ms/1000)}*s:
+      await ctx.replyWithMarkdown(`Data uploaded in *${Math.floor(ms/1000)}*s:
 Goods: *${countUploadGoods}*
 Catalogs: *${catalogsIsSet.size}*`, getBackKeyboard);
     }
-    // set data for check upload process
-    await firebase.firestore().collection("sessions").doc(`${ctx.from.id}`).set({
+    // set data for check upload process done!
+    await sessionUser.set({
       uploadPass: false,
     }, {merge: true});
   } else {
