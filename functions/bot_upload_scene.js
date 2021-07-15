@@ -60,7 +60,7 @@ upload.on("text", async (ctx) => {
   // Max upload goods
   const maxUploadGoods = 3;
   // Catalogs set array
-  const catalogsIsSet = new Set();
+  const catalogsIsSet = new Map();
   let countUploadGoods = 0;
   // const serverTimestamp = firebase.firestore.FieldValue.serverTimestamp();
   const serverTimestamp = Math.floor(Date.now() / 1000);
@@ -76,6 +76,7 @@ upload.on("text", async (ctx) => {
   if (!sheetId) {
     await ctx.replyWithMarkdown(`Sheet *${ctx.message.text}* not found, please enter valid url or sheet ID`,
         getBackKeyboard);
+    return false;
   }
   // get data for check upload process
   const sessionUser = firebase.firestore().collection("sessions").doc(`${ctx.from.id}`);
@@ -85,7 +86,6 @@ upload.on("text", async (ctx) => {
     uploadPass = docRef.data().uploadPass;
     const timeDiff = serverTimestamp - docRef.data().uploadTimestamp;
     // if happend error, after 570s clear rewrite uploadPass
-    console.log(timeDiff);
     if (uploadPass && timeDiff > 570) {
       uploadPass = false;
     }
@@ -98,6 +98,8 @@ upload.on("text", async (ctx) => {
     });
     // load goods
     const doc = new GoogleSpreadsheet(sheetId);
+    // Get a new write batch
+    const batch = firebase.firestore().batch();
     try {
       // start upload
       await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
@@ -162,7 +164,8 @@ Count rows: *${sheet.rowCount - 1}*`);
             if (countUploadGoods === maxUploadGoods) {
               throw new Error(`Limit *${maxUploadGoods}* goods!`);
             }
-            await firebase.firestore().collection("products").doc(item.id).set({
+            const productRef = firebase.firestore().collection("products").doc(item.id);
+            batch.set(productRef, {
               "name": item.name,
               "price": item.price,
               "orderNumber": countUploadGoods,
@@ -176,17 +179,23 @@ Count rows: *${sheet.rowCount - 1}*`);
                   "orderNumber": countUploadGoods,
                   "updatedAt": serverTimestamp,
                 }, {merge: true});
-                catalogsIsSet.add(catalog.id);
+                catalogsIsSet.set(catalog.id, catalog.parentId);
+              }
+              // Check if catalog moved
+              if (catalogsIsSet.get(catalog.id) !== catalog.parentId) {
+                throw new Error(`Goods *${item.name}* in row *${rows[j].rowIndex}*,
+Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id)}* to  *${catalog.parentId}*, `);
               }
             }
             countUploadGoods ++;
           }
         }
+        // commit batch
+        await batch.commit();
         await ctx.replyWithMarkdown(`*${i + perPage}* rows scan from *${sheet.rowCount - 1}*`);
       }
     } catch (error) {
-      await ctx.replyWithMarkdown(`Sheet
-${error}`, getBackKeyboard);
+      await ctx.replyWithMarkdown(`Sheet ${error}`, getBackKeyboard);
     }
     // show count upload goods
     if (countUploadGoods) {
