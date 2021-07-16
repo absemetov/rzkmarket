@@ -64,7 +64,7 @@ upload.on("text", async (ctx) => {
   let countUploadGoods = 0;
   // const serverTimestamp = firebase.firestore.FieldValue.serverTimestamp();
   const serverTimestamp = Math.floor(Date.now() / 1000);
-  const perPage = 100;
+  const perPage = 500;
   // Get sheetId parse url
   let sheetId;
   ctx.message.text.split("/").forEach((section) => {
@@ -108,12 +108,16 @@ Sheet name: *${doc.title}*
 Count rows: *${sheet.rowCount - 1}*`);
       let rowCount = sheet.rowCount;
       // read rows
+      // batches 500
       for (let i = 0; i < rowCount - 1; i += perPage) {
         // get rows data
         const rows = await sheet.getRows({limit: perPage, offset: i});
         // Get a new write batch
         const batchGoods = firebase.firestore().batch();
-        const batchCatalogs = firebase.firestore().batch();
+        // catalog parallel batched writes
+        const batchCatalogsArray = [];
+        let batchCatalogs = firebase.firestore().batch();
+        let batchCatalogsCount = 0;
         for (let j = 0; j < rows.length; j++) {
           // validate data if ID and NAME set org Name and PRICE
           // validate group
@@ -122,6 +126,7 @@ Count rows: *${sheet.rowCount - 1}*`);
             rowCount = 0;
             break;
           }
+          // generate catalogs array
           let groupArray = [];
           if (rows[j].group) {
             // generate Ids
@@ -139,40 +144,41 @@ Count rows: *${sheet.rowCount - 1}*`);
               };
             });
           }
-          const item = {
+          const product = {
             id: rows[j].id,
             name: rows[j].name,
             price: rows[j].price ? Number(rows[j].price.replace(",", ".")) : "",
             group: groupArray,
           };
-          const rulesItemRow = {
+          const rulesProductRow = {
             "id": "required|alpha_dash",
             "name": "required|string",
             "price": "required|numeric",
             "group.*.id": "required|alpha_dash",
           };
-          const validateItemRow = new Validator(item, rulesItemRow);
+          const validateProductRow = new Validator(product, rulesProductRow);
           // check fails
-          if (validateItemRow.fails() && ((rows[j].id && rows[j].name) || (rows[j].name && rows[j].price))) {
+          if (validateProductRow.fails() && ((rows[j].id && rows[j].name) || (rows[j].name && rows[j].price))) {
             let errorRow = `In row *${rows[j].rowIndex}* \n`;
-            for (const [key, error] of Object.entries(validateItemRow.errors.all())) {
+            for (const [key, error] of Object.entries(validateProductRow.errors.all())) {
               errorRow += `Column *${key}* => *${error}* \n`;
             }
             throw new Error(errorRow);
           }
           // save data to firestore
-          if (validateItemRow.passes()) {
+          if (validateProductRow.passes()) {
             // check limit goods
             if (countUploadGoods === maxUploadGoods) {
               throw new Error(`Limit *${maxUploadGoods}* goods!`);
             }
-            const productRef = firebase.firestore().collection("products").doc(item.id);
+            const productRef = firebase.firestore().collection("products").doc(product.id);
             batchGoods.set(productRef, {
-              "name": item.name,
-              "price": item.price,
+              "name": product.name,
+              "price": product.price,
               "orderNumber": countUploadGoods,
               "updatedAt": serverTimestamp,
             }, {merge: true});
+            // save catalogs with batch
             for (const catalog of groupArray) {
               if (!catalogsIsSet.has(catalog.id)) {
                 const catalogRef = firebase.firestore().collection("catalogs").doc(catalog.id);
@@ -182,23 +188,29 @@ Count rows: *${sheet.rowCount - 1}*`);
                   "orderNumber": countUploadGoods,
                   "updatedAt": serverTimestamp,
                 }, {merge: true});
+                if (++batchCatalogsCount == 500) {
+                  batchCatalogsArray.push(batchCatalogs.commit());
+                  batchCatalogs = firebase.firestore().batch();
+                  batchCatalogsCount = 0;
+                }
                 catalogsIsSet.set(catalog.id, catalog.parentId);
               }
               // Check if catalog moved
               if (catalogsIsSet.get(catalog.id) !== catalog.parentId) {
-                throw new Error(`Goods *${item.name}* in row *${rows[j].rowIndex}*,
+                throw new Error(`Goods *${product.name}* in row *${rows[j].rowIndex}*,
 Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id)}* to  *${catalog.parentId}*, `);
               }
             }
             countUploadGoods ++;
           }
         }
-        // commit batches
+        // commit batch products
         await batchGoods.commit();
-        await batchCatalogs.commit();
+        // commit parallel bathes catalogs
+        await Promise.all(batchCatalogsArray);
         await ctx.replyWithMarkdown(`*${i + perPage}* rows scan and saved from *${sheet.rowCount - 1}*`);
       }
-      // show count upload goods
+      // after upload show upload info
       if (countUploadGoods) {
         const ms = new Date() - start;
         await ctx.replyWithMarkdown(`Data uploaded in *${Math.floor(ms/1000)}*s:
