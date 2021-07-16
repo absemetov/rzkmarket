@@ -58,7 +58,7 @@ upload.hears("shop", async (ctx) => {
 upload.on("text", async (ctx) => {
   const start = new Date();
   // Max upload goods
-  const maxUploadGoods = 3;
+  const maxUploadGoods = 100;
   // Catalogs set array
   const catalogsIsSet = new Map();
   let countUploadGoods = 0;
@@ -98,8 +98,6 @@ upload.on("text", async (ctx) => {
     });
     // load goods
     const doc = new GoogleSpreadsheet(sheetId);
-    // Get a new write batch
-    const batch = firebase.firestore().batch();
     try {
       // start upload
       await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
@@ -108,15 +106,22 @@ upload.on("text", async (ctx) => {
       await ctx.replyWithMarkdown(`Load goods from ...
 Sheet name: *${doc.title}*
 Count rows: *${sheet.rowCount - 1}*`);
-      const rowCount = sheet.rowCount;
+      let rowCount = sheet.rowCount;
       // read rows
       for (let i = 0; i < rowCount - 1; i += perPage) {
         // get rows data
         const rows = await sheet.getRows({limit: perPage, offset: i});
-
+        // Get a new write batch
+        const batchGoods = firebase.firestore().batch();
+        const batchCatalogs = firebase.firestore().batch();
         for (let j = 0; j < rows.length; j++) {
           // validate data if ID and NAME set org Name and PRICE
           // validate group
+          // stop scaning if catalog empty
+          if (!rows[j].group) {
+            rowCount = 0;
+            break;
+          }
           let groupArray = [];
           if (rows[j].group) {
             // generate Ids
@@ -153,19 +158,16 @@ Count rows: *${sheet.rowCount - 1}*`);
             for (const [key, error] of Object.entries(validateItemRow.errors.all())) {
               errorRow += `Column *${key}* => *${error}* \n`;
             }
-            // disable parent loop
-            // i = rowCount;
-            // break;
             throw new Error(errorRow);
           }
           // save data to firestore
           if (validateItemRow.passes()) {
-            // check limit
+            // check limit goods
             if (countUploadGoods === maxUploadGoods) {
               throw new Error(`Limit *${maxUploadGoods}* goods!`);
             }
             const productRef = firebase.firestore().collection("products").doc(item.id);
-            batch.set(productRef, {
+            batchGoods.set(productRef, {
               "name": item.name,
               "price": item.price,
               "orderNumber": countUploadGoods,
@@ -173,7 +175,8 @@ Count rows: *${sheet.rowCount - 1}*`);
             }, {merge: true});
             for (const catalog of groupArray) {
               if (!catalogsIsSet.has(catalog.id)) {
-                await firebase.firestore().collection("catalogs").doc(catalog.id).set({
+                const catalogRef = firebase.firestore().collection("catalogs").doc(catalog.id);
+                batchCatalogs.set(catalogRef, {
                   "name": catalog.name,
                   "parentId": catalog.parentId,
                   "orderNumber": countUploadGoods,
@@ -190,24 +193,47 @@ Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id)}* to  *${
             countUploadGoods ++;
           }
         }
-        // commit batch
-        await batch.commit();
-        await ctx.replyWithMarkdown(`*${i + perPage}* rows scan from *${sheet.rowCount - 1}*`);
+        // commit batches
+        await batchGoods.commit();
+        await batchCatalogs.commit();
+        await ctx.replyWithMarkdown(`*${i + perPage}* rows scan and saved from *${sheet.rowCount - 1}*`);
+      }
+      // show count upload goods
+      if (countUploadGoods) {
+        const ms = new Date() - start;
+        await ctx.replyWithMarkdown(`Data uploaded in *${Math.floor(ms/1000)}*s:
+Goods: *${countUploadGoods}*
+Catalogs: *${catalogsIsSet.size}*`, getBackKeyboard);
       }
     } catch (error) {
       await ctx.replyWithMarkdown(`Sheet ${error}`, getBackKeyboard);
-    }
-    // show count upload goods
-    if (countUploadGoods) {
-      const ms = new Date() - start;
-      await ctx.replyWithMarkdown(`Data uploaded in *${Math.floor(ms/1000)}*s:
-Goods: *${countUploadGoods}*
-Catalogs: *${catalogsIsSet.size}*`, getBackKeyboard);
     }
     // set data for check upload process done!
     await sessionUser.set({
       uploadPass: false,
     }, {merge: true});
+    // delete old Products
+    const batchProductsDelete = firebase.firestore().batch();
+    const productsDeleteSnapshot = await firebase.firestore().collection("products")
+        .where("updatedAt", "!=", serverTimestamp).limit(500).get();
+    productsDeleteSnapshot.forEach((doc) =>{
+      batchProductsDelete.delete(doc.ref);
+    });
+    await batchProductsDelete.commit();
+    if (productsDeleteSnapshot.size) {
+      ctx.replyWithMarkdown(`*${productsDeleteSnapshot.size}* products deleted`);
+    }
+    // delete old catalogs
+    const batchCatalogsDelete = firebase.firestore().batch();
+    const catalogsDeleteSnapshot = await firebase.firestore().collection("catalogs")
+        .where("updatedAt", "!=", serverTimestamp).limit(500).get();
+    catalogsDeleteSnapshot.forEach((doc) =>{
+      batchCatalogsDelete.delete(doc.ref);
+    });
+    await batchCatalogsDelete.commit();
+    if (catalogsDeleteSnapshot.size) {
+      ctx.replyWithMarkdown(`*${catalogsDeleteSnapshot.size}* catalogs deleted`);
+    }
   } else {
     await ctx.replyWithMarkdown("Processing, please wait");
   }
