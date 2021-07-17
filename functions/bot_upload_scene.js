@@ -113,9 +113,9 @@ Count rows: *${sheet.rowCount - 1}*`);
         // get rows data
         const rows = await sheet.getRows({limit: perPage, offset: i});
         // Get a new write batch
+        const batchArray = [];
         const batchGoods = firebase.firestore().batch();
         // catalog parallel batched writes
-        const batchCatalogsArray = [];
         let batchCatalogs = firebase.firestore().batch();
         let batchCatalogsCount = 0;
         for (let j = 0; j < rows.length; j++) {
@@ -171,11 +171,13 @@ Count rows: *${sheet.rowCount - 1}*`);
             if (countUploadGoods === maxUploadGoods) {
               throw new Error(`Limit *${maxUploadGoods}* goods!`);
             }
+            // add products in batch
             const productRef = firebase.firestore().collection("products").doc(product.id);
             batchGoods.set(productRef, {
               "name": product.name,
               "price": product.price,
               "orderNumber": countUploadGoods,
+              "catalog": groupArray[groupArray.length - 1],
               "updatedAt": serverTimestamp,
             }, {merge: true});
             // save catalogs with batch
@@ -188,12 +190,13 @@ Count rows: *${sheet.rowCount - 1}*`);
                   "orderNumber": countUploadGoods,
                   "updatedAt": serverTimestamp,
                 }, {merge: true});
-                if (++batchCatalogsCount == 500) {
-                  batchCatalogsArray.push(batchCatalogs.commit());
+                catalogsIsSet.set(catalog.id, catalog.parentId);
+                // check batch limit 500
+                if (++batchCatalogsCount === perPage) {
+                  batchArray.push(batchCatalogs.commit());
                   batchCatalogs = firebase.firestore().batch();
                   batchCatalogsCount = 0;
                 }
-                catalogsIsSet.set(catalog.id, catalog.parentId);
               }
               // Check if catalog moved
               if (catalogsIsSet.get(catalog.id) !== catalog.parentId) {
@@ -205,17 +208,41 @@ Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id)}* to  *${
           }
         }
         // commit batch products
-        await batchGoods.commit();
-        // commit parallel bathes catalogs
-        await Promise.all(batchCatalogsArray);
+        batchArray.push(batchGoods.commit());
+        // commit last bath catalog
+        if (batchCatalogsCount > 0 && batchCatalogsCount !== perPage) {
+          batchArray.push(batchCatalogs.commit());
+        }
+        // commit all bathes parallel
+        await Promise.all(batchArray);
         await ctx.replyWithMarkdown(`*${i + perPage}* rows scan and saved from *${sheet.rowCount - 1}*`);
       }
       // after upload show upload info
-      if (countUploadGoods) {
-        const ms = new Date() - start;
-        await ctx.replyWithMarkdown(`Data uploaded in *${Math.floor(ms/1000)}*s:
+      const ms = new Date() - start;
+      await ctx.replyWithMarkdown(`Data uploaded in *${Math.floor(ms/1000)}*s:
 Goods: *${countUploadGoods}*
 Catalogs: *${catalogsIsSet.size}*`, getBackKeyboard);
+      // delete old Products
+      const batchProductsDelete = firebase.firestore().batch();
+      const productsDeleteSnapshot = await firebase.firestore().collection("products")
+          .where("updatedAt", "!=", serverTimestamp).limit(perPage).get();
+      productsDeleteSnapshot.forEach((doc) =>{
+        batchProductsDelete.delete(doc.ref);
+      });
+      await batchProductsDelete.commit();
+      if (productsDeleteSnapshot.size) {
+        ctx.replyWithMarkdown(`*${productsDeleteSnapshot.size}* products deleted`);
+      }
+      // delete old catalogs
+      const batchCatalogsDelete = firebase.firestore().batch();
+      const catalogsDeleteSnapshot = await firebase.firestore().collection("catalogs")
+          .where("updatedAt", "!=", serverTimestamp).limit(perPage).get();
+      catalogsDeleteSnapshot.forEach((doc) =>{
+        batchCatalogsDelete.delete(doc.ref);
+      });
+      await batchCatalogsDelete.commit();
+      if (catalogsDeleteSnapshot.size) {
+        ctx.replyWithMarkdown(`*${catalogsDeleteSnapshot.size}* catalogs deleted`);
       }
     } catch (error) {
       await ctx.replyWithMarkdown(`Sheet ${error}`, getBackKeyboard);
@@ -224,28 +251,6 @@ Catalogs: *${catalogsIsSet.size}*`, getBackKeyboard);
     await sessionUser.set({
       uploadPass: false,
     }, {merge: true});
-    // delete old Products
-    const batchProductsDelete = firebase.firestore().batch();
-    const productsDeleteSnapshot = await firebase.firestore().collection("products")
-        .where("updatedAt", "!=", serverTimestamp).limit(500).get();
-    productsDeleteSnapshot.forEach((doc) =>{
-      batchProductsDelete.delete(doc.ref);
-    });
-    await batchProductsDelete.commit();
-    if (productsDeleteSnapshot.size) {
-      ctx.replyWithMarkdown(`*${productsDeleteSnapshot.size}* products deleted`);
-    }
-    // delete old catalogs
-    const batchCatalogsDelete = firebase.firestore().batch();
-    const catalogsDeleteSnapshot = await firebase.firestore().collection("catalogs")
-        .where("updatedAt", "!=", serverTimestamp).limit(500).get();
-    catalogsDeleteSnapshot.forEach((doc) =>{
-      batchCatalogsDelete.delete(doc.ref);
-    });
-    await batchCatalogsDelete.commit();
-    if (catalogsDeleteSnapshot.size) {
-      ctx.replyWithMarkdown(`*${catalogsDeleteSnapshot.size}* catalogs deleted`);
-    }
   } else {
     await ctx.replyWithMarkdown("Processing, please wait");
   }

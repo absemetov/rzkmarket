@@ -1,5 +1,8 @@
 <template>
   <v-alert>
+    <p v-if="$fetchState.pending">
+      <span class="loading" />
+    </p>
     <ul>
       <li v-for="catalog of catalogs" :key="catalog.id">
         <h1>
@@ -13,13 +16,33 @@
 </template>
 <script>
 export default {
-  async asyncData ({ params, $fire }) {
-    const catalogsSnapshot = await $fire.firestore.collection('catalogs').where('parentId', '==', null).orderBy('orderNumber').get()
+  data () {
+    return {
+      catalogs: []
+    }
+  },
+  async fetch () {
+    const catalogsSnapshot = await this.$fire.firestore.collection('catalogs').where('parentId', '==', null).orderBy('orderNumber').get()
     // generate catalogs array
-    const catalogs = catalogsSnapshot.docs.map((doc) => {
+    this.catalogs = catalogsSnapshot.docs.map((doc) => {
       return { id: doc.id, ...doc.data() }
     })
-    return { catalogs }
   }
 }
 </script>
+<style scoped>
+.loading {
+  display: inline-block;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 4px solid rgba(9, 133, 81, 0.705);
+  border-radius: 50%;
+  border-top-color: #158876;
+  animation: spin 1s ease-in-out infinite;
+}
+@keyframes spin {
+  to {
+    -webkit-transform: rotate(360deg);
+  }
+}
+</style>
