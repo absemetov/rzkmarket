@@ -138,10 +138,22 @@ Count rows: *${sheet.rowCount - 1}*`);
                 parentId = cyrillicToTranslit.transform(groupArray[index - 1].trim(), "-").toLowerCase();
               }
               return {
-                name: catalogName.trim(),
                 id: cyrillicToTranslit.transform(catalogName.trim(), "-").toLowerCase(),
+                name: catalogName.trim(),
                 parentId: parentId,
               };
+            });
+          }
+          // generate tags array
+          let tagsArray = [];
+          const tags = [];
+          const tagsNames = {};
+          if (rows[j].tags) {
+            // generate Ids
+            tagsArray = rows[j].tags.split(",");
+            tagsArray.forEach((tagName) => {
+              tags.push(cyrillicToTranslit.transform(tagName.trim(), "-").toLowerCase());
+              tagsNames[cyrillicToTranslit.transform(tagName.trim(), "-").toLowerCase()] = tagName;
             });
           }
           const product = {
@@ -149,12 +161,14 @@ Count rows: *${sheet.rowCount - 1}*`);
             name: rows[j].name,
             price: rows[j].price ? Number(rows[j].price.replace(",", ".")) : "",
             group: groupArray,
+            tags: tags,
           };
           const rulesProductRow = {
             "id": "required|alpha_dash",
             "name": "required|string",
             "price": "required|numeric",
             "group.*.id": "required|alpha_dash",
+            "tags.*": "required|alpha_dash",
           };
           const validateProductRow = new Validator(product, rulesProductRow);
           // check fails
@@ -178,6 +192,8 @@ Count rows: *${sheet.rowCount - 1}*`);
               "price": product.price,
               "orderNumber": countUploadGoods,
               "catalog": groupArray[groupArray.length - 1],
+              "tags": tags,
+              "tagsNames": tagsNames,
               "updatedAt": serverTimestamp,
             }, {merge: true});
             // save catalogs with batch
