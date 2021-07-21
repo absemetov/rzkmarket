@@ -28,7 +28,8 @@ export default {
     }
   },
   async fetch () {
-    let query = this.$fire.firestore.collection('products').orderBy('orderNumber').limit(10)
+    let query = this.$fire.firestore.collection('products').where('tags.Тип.Розетка', '==', true)
+      .where('tags.Цвет.Белый', '==', true).limit(10)
     // make query Next link
     if (this.$route.query.startAfter) {
       let lastProduct = null

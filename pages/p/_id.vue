@@ -3,6 +3,9 @@
     <h1>
       Product {{ product }} {{ product.name }} {{ product.price }}
     </h1>
+    <div v-for="key of Object.keys(product.tags)" :key="key">
+      {{ key }} => {{ Object.keys(product.tags[key])[0] }}
+    </div>
   </v-alert>
 </template>
 <script>
