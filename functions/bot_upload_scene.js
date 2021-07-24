@@ -147,13 +147,16 @@ Count rows: *${sheet.rowCount - 1}*`);
           // generate tags array
           let tagsArray = [];
           const tags = [];
-          const tagsNames = {};
+          const tagsNames = [];
           if (rows[j].tags) {
             // generate Ids
             tagsArray = rows[j].tags.split(",");
             tagsArray.forEach((tagName) => {
               tags.push(cyrillicToTranslit.transform(tagName.trim(), "-").toLowerCase());
-              tagsNames[cyrillicToTranslit.transform(tagName.trim(), "-").toLowerCase()] = tagName;
+              tagsNames.push({
+                id: cyrillicToTranslit.transform(tagName.trim(), "-").toLowerCase(),
+                name: tagName,
+              });
             });
           }
           const product = {
@@ -193,7 +196,6 @@ Count rows: *${sheet.rowCount - 1}*`);
               "orderNumber": countUploadGoods,
               "catalog": groupArray[groupArray.length - 1],
               "tags": tags,
-              "tagsNames": tagsNames,
               "updatedAt": serverTimestamp,
             }, {merge: true});
             // save catalogs with batch
@@ -204,6 +206,7 @@ Count rows: *${sheet.rowCount - 1}*`);
                   "name": catalog.name,
                   "parentId": catalog.parentId,
                   "orderNumber": countUploadGoods,
+                  "tagsNames": firebase.firestore.FieldValue.arrayUnion(tagsNames),
                   "updatedAt": serverTimestamp,
                 }, {merge: true});
                 catalogsIsSet.set(catalog.id, catalog.parentId);

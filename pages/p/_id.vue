@@ -1,10 +1,10 @@
 <template>
   <v-alert>
     <h1>
-      Product {{ product }} {{ product.name }} {{ product.price }}
+      Product {{ product }}
     </h1>
-    <div v-for="key of Object.keys(product.tags)" :key="key">
-      {{ key }} => {{ Object.keys(product.tags[key])[0] }}
+    <div v-for="tag of product.tagsNames" :key="tag">
+      {{ tag.id }} => {{ tag.name }}
     </div>
   </v-alert>
 </template>
