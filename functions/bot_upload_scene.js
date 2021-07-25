@@ -196,6 +196,7 @@ Count rows: *${sheet.rowCount - 1}*`);
               "orderNumber": countUploadGoods,
               "catalog": groupArray[groupArray.length - 1],
               "tags": tags,
+              "tagsNames": tagsNames,
               "updatedAt": serverTimestamp,
             }, {merge: true});
             // save catalogs with batch
@@ -206,7 +207,6 @@ Count rows: *${sheet.rowCount - 1}*`);
                   "name": catalog.name,
                   "parentId": catalog.parentId,
                   "orderNumber": countUploadGoods,
-                  "tagsNames": firebase.firestore.FieldValue.arrayUnion(tagsNames),
                   "updatedAt": serverTimestamp,
                 }, {merge: true});
                 catalogsIsSet.set(catalog.id, catalog.parentId);

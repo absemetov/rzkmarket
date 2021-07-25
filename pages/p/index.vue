@@ -6,6 +6,9 @@
           <NuxtLink :to="{ name: 'p-id', params: { id: product.id } }">
             {{ product.i }} {{ product.id }} {{ product.name }}  {{ product.price }}
           </NuxtLink>
+          <div v-for="tag of product.tagsNames" :key="tag">
+            {{ tag.id }} => {{ tag.name }}
+          </div>
         </h1>
       </li>
     </ul>

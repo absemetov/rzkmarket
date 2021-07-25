@@ -4,22 +4,16 @@ exports.productSetCreatedAt = functions.firestore
     .document("products/{docId}")
     .onCreate((snap, context) => {
       const newValue = snap.data();
-      if (!newValue.createdAt) {
-        return snap.ref.set({
-          createdAt: newValue.updatedAt,
-        }, {merge: true});
-      }
-      return true;
+      return snap.ref.set({
+        createdAt: newValue.updatedAt,
+      }, {merge: true});
     });
 
 exports.catalogSetCreatedAt = functions.firestore
     .document("catalogs/{docId}")
     .onCreate((snap, context) => {
       const newValue = snap.data();
-      if (!newValue.createdAt) {
-        return snap.ref.set({
-          createdAt: newValue.updatedAt,
-        }, {merge: true});
-      }
-      return true;
+      return snap.ref.set({
+        createdAt: newValue.updatedAt,
+      }, {merge: true});
     });
