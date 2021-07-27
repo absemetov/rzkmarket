@@ -225,20 +225,26 @@ Count rows: *${sheet.rowCount - 1}*`);
                 throw new Error(`Goods *${product.name}* in row *${rows[j].rowIndex}*,
 Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id)}* to  *${catalog.parentId}*, `);
               }
-              // save tags to Catalogs
+            }
+            // save tags to Catalogs
+            if (tagsNames.length) {
               if (catalogsTags.has(groupArray[groupArray.length - 1].id)) {
                 const catalogsTagsArray = catalogsTags.get(groupArray[groupArray.length - 1].id);
-                const newArray = [...catalogsTagsArray, ""];
-                console.log("test", newArray);
-                newArray.push("test");
-                catalogsTags.set(groupArray[groupArray.length - 1].id, newArray);
-                // console.log(catalogsTagsArray);
-                // catalogsTagsArray.push(tagsNames);
-                // catalogsTags.set(groupArray[groupArray.length - 1].id, catalogsTagsArray);
+                // copy array to edit
+                const tagsArrayTmp = [...catalogsTagsArray];
+                const oldArrayLength = tagsArrayTmp.length;
+                for (const tagsRow of tagsNames) {
+                  if (tagsRow.id.substring(0, 2) !== "--" && !tagsArrayTmp.find((tag) => tag.id === tagsRow.id)) {
+                    tagsArrayTmp.push(tagsRow);
+                  }
+                }
+                const newArrayLength = tagsArrayTmp.length;
+                if (newArrayLength > oldArrayLength) {
+                  catalogsTags.set(groupArray[groupArray.length - 1].id, tagsArrayTmp);
+                }
               } else {
                 catalogsTags.set(groupArray[groupArray.length - 1].id, tagsNames);
               }
-              // add items array
             }
             countUploadGoods ++;
           }
