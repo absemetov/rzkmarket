@@ -61,6 +61,7 @@ upload.on("text", async (ctx) => {
   const maxUploadGoods = 100;
   // Catalogs set array
   const catalogsIsSet = new Map();
+  const catalogsTags = new Map();
   let countUploadGoods = 0;
   // const serverTimestamp = firebase.firestore.FieldValue.serverTimestamp();
   const serverTimestamp = Math.floor(Date.now() / 1000);
@@ -118,6 +119,7 @@ Count rows: *${sheet.rowCount - 1}*`);
         // catalog parallel batched writes
         let batchCatalogs = firebase.firestore().batch();
         let batchCatalogsCount = 0;
+        // loop rows from SHEET
         for (let j = 0; j < rows.length; j++) {
           // validate data if ID and NAME set org Name and PRICE
           // validate group
@@ -201,6 +203,7 @@ Count rows: *${sheet.rowCount - 1}*`);
             }, {merge: true});
             // save catalogs with batch
             for (const catalog of groupArray) {
+              // check if catalog added to batch
               if (!catalogsIsSet.has(catalog.id)) {
                 const catalogRef = firebase.firestore().collection("catalogs").doc(catalog.id);
                 batchCatalogs.set(catalogRef, {
@@ -222,11 +225,26 @@ Count rows: *${sheet.rowCount - 1}*`);
                 throw new Error(`Goods *${product.name}* in row *${rows[j].rowIndex}*,
 Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id)}* to  *${catalog.parentId}*, `);
               }
+              // save tags to Catalogs
+              if (catalogsTags.has(groupArray[groupArray.length - 1].id)) {
+                const catalogsTagsArray = catalogsTags.get(groupArray[groupArray.length - 1].id);
+                const newArray = [...catalogsTagsArray, ""];
+                console.log("test", newArray);
+                newArray.push("test");
+                catalogsTags.set(groupArray[groupArray.length - 1].id, newArray);
+                // console.log(catalogsTagsArray);
+                // catalogsTagsArray.push(tagsNames);
+                // catalogsTags.set(groupArray[groupArray.length - 1].id, catalogsTagsArray);
+              } else {
+                catalogsTags.set(groupArray[groupArray.length - 1].id, tagsNames);
+              }
+              // add items array
             }
             countUploadGoods ++;
           }
         }
-        // commit batch products
+        console.log(catalogsTags);
+        // add bath goods to array
         batchArray.push(batchGoods.commit());
         // commit last bath catalog
         if (batchCatalogsCount > 0 && batchCatalogsCount !== perPage) {
