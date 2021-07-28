@@ -61,7 +61,6 @@ upload.on("text", async (ctx) => {
   const maxUploadGoods = 100;
   // Catalogs set array
   const catalogsIsSet = new Map();
-  const catalogsTags = new Map();
   let countUploadGoods = 0;
   // const serverTimestamp = firebase.firestore.FieldValue.serverTimestamp();
   const serverTimestamp = Math.floor(Date.now() / 1000);
@@ -154,11 +153,20 @@ Count rows: *${sheet.rowCount - 1}*`);
             // generate Ids
             tagsArray = rows[j].tags.split(",");
             tagsArray.forEach((tagName) => {
-              tags.push(cyrillicToTranslit.transform(tagName.trim(), "-").toLowerCase());
+              tagName = tagName.trim();
+              let tagId = cyrillicToTranslit.transform(tagName, "-").toLowerCase();
+              let tagHidden = false;
+              if (tagId.substring(0, 2) === "--") {
+                tagHidden = true;
+                tagId = tagId.substring(2);
+                tagName = tagName.substring(2);
+              }
               tagsNames.push({
-                id: cyrillicToTranslit.transform(tagName.trim(), "-").toLowerCase(),
+                id: tagId,
                 name: tagName,
+                hidden: tagHidden,
               });
+              tags.push(tagId);
             });
           }
           const product = {
@@ -201,7 +209,7 @@ Count rows: *${sheet.rowCount - 1}*`);
               "tagsNames": tagsNames,
               "updatedAt": serverTimestamp,
             }, {merge: true});
-            // save catalogs with batch
+            // save catalogs to batch
             for (const catalog of groupArray) {
               // check if catalog added to batch
               if (!catalogsIsSet.has(catalog.id)) {
@@ -211,6 +219,7 @@ Count rows: *${sheet.rowCount - 1}*`);
                   "parentId": catalog.parentId,
                   "orderNumber": countUploadGoods,
                   "updatedAt": serverTimestamp,
+                  "tags": [],
                 }, {merge: true});
                 catalogsIsSet.set(catalog.id, catalog.parentId);
                 // check batch limit 500
@@ -226,30 +235,25 @@ Count rows: *${sheet.rowCount - 1}*`);
 Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id)}* to  *${catalog.parentId}*, `);
               }
             }
-            // save tags to Catalogs
+            // add tags Catalogs
             if (tagsNames.length) {
-              if (catalogsTags.has(groupArray[groupArray.length - 1].id)) {
-                const catalogsTagsArray = catalogsTags.get(groupArray[groupArray.length - 1].id);
-                // copy array to edit
-                const tagsArrayTmp = [...catalogsTagsArray];
-                const oldArrayLength = tagsArrayTmp.length;
-                for (const tagsRow of tagsNames) {
-                  if (tagsRow.id.substring(0, 2) !== "--" && !tagsArrayTmp.find((tag) => tag.id === tagsRow.id)) {
-                    tagsArrayTmp.push(tagsRow);
-                  }
+              for (const tagsRow of tagsNames) {
+                // if first items -- not save
+                if (!tagsRow.hidden) {
+                  const catalogRef = firebase.firestore().collection("catalogs")
+                      .doc(groupArray[groupArray.length - 1].id);
+                  batchCatalogs.update(catalogRef, {
+                    "tags": firebase.firestore.FieldValue.arrayUnion({
+                      id: tagsRow.id,
+                      name: tagsRow.name,
+                    }),
+                  });
                 }
-                const newArrayLength = tagsArrayTmp.length;
-                if (newArrayLength > oldArrayLength) {
-                  catalogsTags.set(groupArray[groupArray.length - 1].id, tagsArrayTmp);
-                }
-              } else {
-                catalogsTags.set(groupArray[groupArray.length - 1].id, tagsNames);
               }
             }
             countUploadGoods ++;
           }
         }
-        console.log(catalogsTags);
         // add bath goods to array
         batchArray.push(batchGoods.commit());
         // commit last bath catalog
