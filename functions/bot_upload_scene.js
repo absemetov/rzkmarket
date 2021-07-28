@@ -238,7 +238,7 @@ Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id)}* to  *${
             // add tags Catalogs
             if (tagsNames.length) {
               for (const tagsRow of tagsNames) {
-                // if first items -- not save
+                // if hidden tag not save
                 if (!tagsRow.hidden) {
                   const catalogRef = firebase.firestore().collection("catalogs")
                       .doc(groupArray[groupArray.length - 1].id);

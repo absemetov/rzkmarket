@@ -2,6 +2,13 @@
   <v-alert>
     <v-breadcrumbs :items="breadcrumbs" large />
     <ul>
+      <li v-for="tag of currentCatalog.tags" :key="tag.id">
+        <NuxtLink :to="{ name: 'c-id', query: { tag: tag.id }}">
+          {{ tag.name }}
+        </NuxtLink>
+      </li>
+    </ul>
+    <ul>
       <li v-for="catalog of catalogs" :key="catalog.id">
         <h1>
           <NuxtLink :to="{ name: 'c-id', params: { id: catalog.id } }">
@@ -10,7 +17,7 @@
         </h1>
       </li>
     </ul>
-    <ul>
+    <ul v-if="!$fetchState.pending">
       <li v-for="product of products" :key="product.id">
         <h1>
           <NuxtLink :to="{ name: 'p-id', params: { id: product.id } }">
@@ -22,7 +29,7 @@
     <p v-if="$fetchState.pending">
       <span class="loading" />
     </p>
-    <NuxtLink v-if="nextProductId&&!$fetchState.pending" :prefetch="false" :to="{ name: 'c-id', query: { startAfter: nextProductId }}">
+    <NuxtLink v-if="nextProductId&&!$fetchState.pending" :prefetch="false" :to="{ name: 'c-id', query: { startAfter: nextProductId, tag: 'rozetka' }}">
       Load more ...
     </NuxtLink>
   </v-alert>
@@ -32,6 +39,7 @@ export default {
   data () {
     return {
       catalogs: [],
+      currentCatalog: {},
       breadcrumbs: [],
       products: [],
       nextProductId: null,
@@ -40,22 +48,26 @@ export default {
     }
   },
   async fetch () {
-    const catalogSnapshot = await this.$fire.firestore.collection('catalogs').doc(this.$route.params.id).get()
-    const currentCatalog = { id: catalogSnapshot.id, ...catalogSnapshot.data() }
+    const currentCatalogSnapshot = await this.$fire.firestore.collection('catalogs').doc(this.$route.params.id).get()
+    this.currentCatalog = { id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data() }
     this.breadcrumbs = []
-    if (currentCatalog.parentId) {
-      this.breadcrumbs.push({ text: 'Back', to: { name: 'c-id', params: { id: currentCatalog.parentId } } })
+    if (this.currentCatalog.parentId) {
+      this.breadcrumbs.push({ text: 'Back', to: { name: 'c-id', params: { id: this.currentCatalog.parentId } } })
     } else {
       this.breadcrumbs.push({ text: 'Back', exact: true, to: { name: 'c' } })
     }
-    this.breadcrumbs.push({ text: currentCatalog.name, to: { name: 'c-id', params: { id: catalogSnapshot.id } } })
-    const catalogsSnapshot = await this.$fire.firestore.collection('catalogs').where('parentId', '==', currentCatalog.id).orderBy('orderNumber').get()
+    this.breadcrumbs.push({ text: this.currentCatalog.name, to: { name: 'c-id', params: { id: currentCatalogSnapshot.id } } })
+    const catalogsSnapshot = await this.$fire.firestore.collection('catalogs').where('parentId', '==', this.currentCatalog.id).orderBy('orderNumber').get()
     // generate catalogs array
-    for (const item of catalogsSnapshot.docs) {
-      this.catalogs.push({ id: item.id, ...item.data() })
+    for (const catalog of catalogsSnapshot.docs) {
+      this.catalogs.push({ id: catalog.id, ...catalog.data() })
     }
     // generate products array
-    let query = this.$fire.firestore.collection('products').where('catalog.id', '==', currentCatalog.id).orderBy('orderNumber').limit(10)
+    let query = this.$fire.firestore.collection('products').where('catalog.id', '==', currentCatalogSnapshot.id).orderBy('orderNumber').limit(10)
+    // filter by tag
+    if (this.$route.query.tag) {
+      query = query.where('tags', 'array-contains', this.$route.query.tag)
+    }
     // make query Next link
     if (this.$route.query.startAfter) {
       let lastProduct = null
