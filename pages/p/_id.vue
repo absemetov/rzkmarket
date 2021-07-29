@@ -3,7 +3,7 @@
     <h1>
       Product {{ product }}
     </h1>
-    <div v-for="tag of product.tagsNames" :key="tag">
+    <div v-for="tag of product.tagsNames" :key="tag.id">
       {{ tag.id }} => {{ tag.name }}
     </div>
   </v-alert>

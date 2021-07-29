@@ -8,6 +8,12 @@
         </NuxtLink>
       </li>
     </ul>
+    <div v-if="$route.query.tag">
+      Your choise: <b>{{ $route.query.tag }}</b>
+      <NuxtLink :to="{ name: 'c-id' }">
+        Delete
+      </NuxtLink>
+    </div>
     <ul>
       <li v-for="catalog of catalogs" :key="catalog.id">
         <h1>
@@ -29,7 +35,7 @@
     <p v-if="$fetchState.pending">
       <span class="loading" />
     </p>
-    <NuxtLink v-if="nextProductId&&!$fetchState.pending" :prefetch="false" :to="{ name: 'c-id', query: { startAfter: nextProductId, tag: 'rozetka' }}">
+    <NuxtLink v-if="nextProductId&&!$fetchState.pending" :prefetch="false" :to="{ name: 'c-id', query: { startAfter: nextProductId, tag: $route.query.tag }}">
       Load more ...
     </NuxtLink>
   </v-alert>
@@ -38,6 +44,7 @@
 export default {
   data () {
     return {
+      limit: 10,
       catalogs: [],
       currentCatalog: {},
       breadcrumbs: [],
@@ -50,6 +57,7 @@ export default {
   async fetch () {
     const currentCatalogSnapshot = await this.$fire.firestore.collection('catalogs').doc(this.$route.params.id).get()
     this.currentCatalog = { id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data() }
+    // clear breadcrumbs before
     this.breadcrumbs = []
     if (this.currentCatalog.parentId) {
       this.breadcrumbs.push({ text: 'Back', to: { name: 'c-id', params: { id: this.currentCatalog.parentId } } })
@@ -63,7 +71,7 @@ export default {
       this.catalogs.push({ id: catalog.id, ...catalog.data() })
     }
     // generate products array
-    let query = this.$fire.firestore.collection('products').where('catalog.id', '==', currentCatalogSnapshot.id).orderBy('orderNumber').limit(10)
+    let query = this.$fire.firestore.collection('products').where('catalog.id', '==', currentCatalogSnapshot.id).orderBy('orderNumber').limit(this.limit)
     // filter by tag
     if (this.$route.query.tag) {
       query = query.where('tags', 'array-contains', this.$route.query.tag)
@@ -75,20 +83,13 @@ export default {
       if (this.lastProduct || this.lastPage) {
         // back button click
         if (this.$route.query.startAfter !== this.nextProductId) {
-          // eslint-disable-next-line no-console
-          console.log('back button detect', this.$route.query.startAfter, this.nextProductId)
           this.products = []
           lastProduct = await this.$fire.firestore.collection('products').doc(this.$route.query.startAfter).get()
-          // return false
         } else {
-          // eslint-disable-next-line no-console
-          console.log('snap detect +++', this.$route.query.startAfter, this.nextProductId)
           lastProduct = this.lastProduct
         }
       } else {
         // server side get last snapshot
-        // eslint-disable-next-line no-console
-        console.log('server res', this.$route.query.startAfter, this.nextProductId)
         lastProduct = await this.$fire.firestore.collection('products').doc(this.$route.query.startAfter).get()
       }
       query = query.startAfter(lastProduct)
@@ -97,7 +98,7 @@ export default {
     const productsSnapshot = await query.get()
 
     // get next product ID
-    if (productsSnapshot.size < 10) {
+    if (productsSnapshot.size < this.limit) {
       this.lastPage = true
       this.nextProductId = null
     } else {

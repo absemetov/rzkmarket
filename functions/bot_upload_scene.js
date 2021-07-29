@@ -219,7 +219,6 @@ Count rows: *${sheet.rowCount - 1}*`);
                   "parentId": catalog.parentId,
                   "orderNumber": countUploadGoods,
                   "updatedAt": serverTimestamp,
-                  "tags": [],
                 }, {merge: true});
                 catalogsIsSet.set(catalog.id, catalog.parentId);
                 // check batch limit 500
