@@ -23,7 +23,7 @@
         </h1>
       </li>
     </ul>
-    <ul v-if="!$fetchState.pending">
+    <ul>
       <li v-for="product of products" :key="product.id">
         <h1>
           <NuxtLink :to="{ name: 'p-id', params: { id: product.id } }">
@@ -32,10 +32,13 @@
         </h1>
       </li>
     </ul>
-    <p v-if="$fetchState.pending">
-      <span class="loading" />
-    </p>
-    <NuxtLink v-if="nextProductId&&!$fetchState.pending" :prefetch="false" :to="{ name: 'c-id', query: { startAfter: nextProductId, tag: $route.query.tag }}">
+    <div v-if="$fetchState.pending" class="text-center">
+      <v-progress-circular
+        indeterminate
+        color="primary"
+      />
+    </div>
+    <NuxtLink v-if="nextProductId&&!$fetchState.pending" :to="{ name: 'c-id', query: { startAfter: nextProductId, tag: $route.query.tag }}">
       Load more ...
     </NuxtLink>
   </v-alert>
@@ -55,6 +58,11 @@ export default {
     }
   },
   async fetch () {
+    // clear data on index page
+    if (process.client && !this.$route.query.startAfter) {
+      this.products = []
+      this.lastPage = false
+    }
     const currentCatalogSnapshot = await this.$fire.firestore.collection('catalogs').doc(this.$route.params.id).get()
     this.currentCatalog = { id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data() }
     // clear breadcrumbs before
@@ -108,11 +116,6 @@ export default {
         this.lastProduct = productsSnapshot.docs[productsSnapshot.docs.length - 1]
       }
     }
-    // clear data on index page
-    if (process.client && !this.$route.query.startAfter) {
-      this.products = []
-      this.lastPage = false
-    }
     // generate products array
     for (const doc of productsSnapshot.docs) {
       this.products.push({
@@ -127,19 +130,3 @@ export default {
 }
 </script>
 </script>
-<style scoped>
-.loading {
-  display: inline-block;
-  width: 1.5rem;
-  height: 1.5rem;
-  border: 4px solid rgba(9, 133, 81, 0.705);
-  border-radius: 50%;
-  border-top-color: #158876;
-  animation: spin 1s ease-in-out infinite;
-}
-@keyframes spin {
-  to {
-    -webkit-transform: rotate(360deg);
-  }
-}
-</style>
