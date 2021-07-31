@@ -33,12 +33,11 @@ bot.hears("upload", async (ctx) => ctx.scene.enter("upload"));
 
 bot.hears("where", (ctx) => ctx.reply("You are in outside"));
 
-// test menu
+// Menu Catalog and Goods
 const menu = new MenuTemplate(() => "Main Menu");
 menu.submenu("Mono Currency", "mono", menuMono);
-const menuMiddleware = new MenuMiddleware("/", menu);
+const monoMiddleware = new MenuMiddleware("/", menuMono);
 // console.log(menuMiddleware.tree());
-
 bot.use(async (ctx, next) => {
   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
     console.log("another callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
@@ -46,9 +45,9 @@ bot.use(async (ctx, next) => {
   return next();
 });
 
-bot.command("startmenu", async (ctx) => menuMiddleware.replyToContext(ctx));
-bot.use(menuMiddleware.middleware());
-// test menu
+bot.command("mono", async (ctx) => monoMiddleware.replyToContext(ctx));
+bot.use(monoMiddleware.middleware());
+// Menu Catalog and Goods
 
 // if session destroyed show main keyboard
 bot.on("text", async (ctx) => ctx.reply("Menu", getMainKeyboard));
