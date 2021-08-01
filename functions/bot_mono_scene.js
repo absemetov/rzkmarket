@@ -101,17 +101,36 @@ async function getCurrency(currencyName) {
 }
 
 // menu
-const menuMono = new MenuTemplate(() => "Выберите валюту");
-const submenuTemplate = new MenuTemplate(async (ctx) => {
-  const currencyObj = await getCurrency();
-  const currency = currencyObj[ctx.match[1]];
-  const text = monoMarkdown(currency);
+// const menuMono = new MenuTemplate(() => "Выберите валюту");
+// const submenuTemplate = new MenuTemplate(async (ctx) => {
+//   const currencyObj = await getCurrency();
+//   const currency = currencyObj[ctx.match[1]];
+//   const text = monoMarkdown(currency);
+//   return {text, parse_mode: "Markdown"};
+// });
+// submenuTemplate.manualRow(createBackMainMenuButtons());
+// menuMono.chooseIntoSubmenu("currency", ["USD", "EUR", "RUB"], submenuTemplate);
+// menuMono.url("Monobank.com.ua", "https://monobank.com.ua");
+// menuMono.manualRow(createBackMainMenuButtons());
+const menuMono = new MenuTemplate(async (ctx) => {
+  let text = "";
+  if (ctx.state.currency) {
+    const currencyObj = await getCurrency();
+    text = monoMarkdown(currencyObj[ctx.state.currency]);
+  } else {
+    text = "Выберите валюту!";
+  }
   return {text, parse_mode: "Markdown"};
 });
-submenuTemplate.manualRow(createBackMainMenuButtons());
-menuMono.chooseIntoSubmenu("currency", ["USD", "EUR", "RUB"], submenuTemplate);
+menuMono.choose("currency", ["USD", "EUR", "RUB"], {
+  do: (ctx, key) => {
+    // const keyTemp = key;
+    // await ctx.reply("As am I!");
+    ctx.state.currency = key;
+    return true;
+  },
+});
 menuMono.url("Monobank.com.ua", "https://monobank.com.ua");
-menuMono.manualRow(createBackMainMenuButtons());
 // menu
 
 exports.mono = mono;
