@@ -1,13 +1,13 @@
 const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
-const {Telegraf, Scenes: {Stage}} = require("telegraf");
+const {Telegraf, Markup, Scenes: {Stage}} = require("telegraf");
 const firestoreSession = require("telegraf-session-firestore");
 const {start} = require("./bot_start_scene");
 const {mono, menuMono} = require("./bot_mono_scene");
 const {upload} = require("./bot_upload_scene");
 const {getMainKeyboard} = require("./bot_keyboards.js");
 
-const {MenuTemplate, MenuMiddleware} = require("telegraf-inline-menu");
+const {MenuMiddleware} = require("telegraf-inline-menu");
 
 firebase.initializeApp();
 
@@ -33,9 +33,7 @@ bot.hears("upload", async (ctx) => ctx.scene.enter("upload"));
 
 bot.hears("where", (ctx) => ctx.reply("You are in outside"));
 
-// Menu Catalog and Goods
-const menu = new MenuTemplate(() => "Main Menu");
-menu.submenu("Mono Currency", "mono", menuMono);
+// mono menu
 const monoMiddleware = new MenuMiddleware("/", menuMono);
 // console.log(menuMiddleware.tree());
 bot.use(async (ctx, next) => {
@@ -44,10 +42,49 @@ bot.use(async (ctx, next) => {
   }
   return next();
 });
-
 bot.command("mono", async (ctx) => monoMiddleware.replyToContext(ctx));
 bot.use(monoMiddleware.middleware());
-// Menu Catalog and Goods
+// mono menu
+
+// Catalog menu
+bot.command("catalog", async (ctx) => {
+  const catalogsSnapshot = await firestore.collection("catalogs")
+      .where("parentId", "==", null).orderBy("orderNumber").get();
+  // generate catalogs array
+  const catalogsArray = [];
+  catalogsSnapshot.docs.forEach((doc) => {
+    catalogsArray.push(Markup.button.callback(doc.data().name, `c/${doc.id}`));
+  });
+  return ctx.reply("RZK Market Catalog", Markup.inlineKeyboard(catalogsArray));
+});
+
+bot.action(/c\/([a-zA-Z0-9-_]+)?/, async (ctx) => {
+  await ctx.answerCbQuery();
+  // generate catalogs array
+  const catalogsArray = [];
+  console.log(ctx.match[1]);
+  if (ctx.match[1]) {
+    const currentCatalogSnapshot = await firestore.collection("catalogs").doc(ctx.match[1]).get();
+    const catalogsSnapshot = await firestore.collection("catalogs")
+        .where("parentId", "==", currentCatalogSnapshot.id).orderBy("orderNumber").get();
+    // generate catalogs array
+    catalogsSnapshot.docs.forEach((doc) => {
+      catalogsArray.push(Markup.button.callback(doc.data().name, `c/${doc.id}`));
+    });
+    catalogsArray.push(Markup.button.callback("Back", "c/"));
+    await ctx.editMessageText(`${ctx.match[1]}`,
+        Markup.inlineKeyboard(catalogsArray));
+  } else {
+    await ctx.editMessageText(`${ctx.match[1]}`,
+        Markup.inlineKeyboard([
+          Markup.button.callback("Viko", "c/vi-ko"),
+          Markup.button.callback("Gunsan", "c/gun_san"),
+          Markup.button.callback("Schneider", "c/Schneider"),
+          Markup.button.callback("Back", "c/"),
+        ]));
+  }
+});
+// Catalog menu
 
 // if session destroyed show main keyboard
 bot.on("text", async (ctx) => ctx.reply("Menu", getMainKeyboard));
