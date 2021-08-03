@@ -55,34 +55,50 @@ bot.command("catalog", async (ctx) => {
   catalogsSnapshot.docs.forEach((doc) => {
     catalogsArray.push(Markup.button.callback(doc.data().name, `c/${doc.id}`));
   });
-  return ctx.reply("RZK Market Catalog", Markup.inlineKeyboard(catalogsArray));
+  return ctx.replyWithMarkdown("RZK Market Catalog", Markup.inlineKeyboard(catalogsArray));
 });
 
-bot.action(/c\/([a-zA-Z0-9-_]+)?/, async (ctx) => {
-  await ctx.answerCbQuery();
-  // generate catalogs array
+bot.action(/c\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
   const catalogsArray = [];
-  console.log(ctx.match[1]);
+  const productsArray = [];
+  let currentCatalog = null;
+  let textMessage = "";
   if (ctx.match[1]) {
     const currentCatalogSnapshot = await firestore.collection("catalogs").doc(ctx.match[1]).get();
-    const catalogsSnapshot = await firestore.collection("catalogs")
-        .where("parentId", "==", currentCatalogSnapshot.id).orderBy("orderNumber").get();
-    // generate catalogs array
-    catalogsSnapshot.docs.forEach((doc) => {
-      catalogsArray.push(Markup.button.callback(doc.data().name, `c/${doc.id}`));
-    });
-    catalogsArray.push(Markup.button.callback("Back", "c/"));
-    await ctx.editMessageText(`${ctx.match[1]}`,
-        Markup.inlineKeyboard(catalogsArray));
-  } else {
-    await ctx.editMessageText(`${ctx.match[1]}`,
-        Markup.inlineKeyboard([
-          Markup.button.callback("Viko", "c/vi-ko"),
-          Markup.button.callback("Gunsan", "c/gun_san"),
-          Markup.button.callback("Schneider", "c/Schneider"),
-          Markup.button.callback("Back", "c/"),
-        ]));
+    currentCatalog = {id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data()};
   }
+  // generate catalogs
+  const catalogsSnapshot = await firestore.collection("catalogs")
+      .where("parentId", "==", currentCatalog ? currentCatalog.id : null).orderBy("orderNumber").get();
+  catalogsSnapshot.docs.forEach((doc) => {
+    catalogsArray.push(Markup.button.callback(doc.data().name, `c/${doc.id}`));
+  });
+  // add back button
+  if (currentCatalog) {
+    textMessage = `Catalog *${currentCatalog.name}*`;
+    if (currentCatalog.parentId) {
+      catalogsArray.push(Markup.button.callback("Back", `c/${currentCatalog.parentId}`));
+    } else {
+      catalogsArray.push(Markup.button.callback("Back", "c"));
+    }
+  } else {
+    textMessage = "RZK Market Catalog";
+  }
+  // generate Products array
+  const query = firestore.collection("products").where("catalog.id", "==", currentCatalog.id)
+      .orderBy("orderNumber").limit(10);
+  // get query prodycts
+  const productsSnapshot = await query.get();
+  // generate products array
+  for (const doc of productsSnapshot.docs) {
+    productsArray.push(Markup.button.callback(doc.data().name, `c/${doc.id}`));
+  }
+  const extraObject = {
+    parse_mode: "Markdown",
+    ...Markup.inlineKeyboard([...catalogsArray, ...productsArray]),
+  };
+  await ctx.editMessageText(`${textMessage}`, extraObject);
+  await ctx.answerCbQuery();
 });
 // Catalog menu
 
