@@ -63,6 +63,7 @@ bot.action(/c\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
   const productsArray = [];
   let currentCatalog = null;
   let textMessage = "";
+  let backButton = "";
   if (ctx.match[1]) {
     const currentCatalogSnapshot = await firestore.collection("catalogs").doc(ctx.match[1]).get();
     currentCatalog = {id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data()};
@@ -71,31 +72,34 @@ bot.action(/c\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
   const catalogsSnapshot = await firestore.collection("catalogs")
       .where("parentId", "==", currentCatalog ? currentCatalog.id : null).orderBy("orderNumber").get();
   catalogsSnapshot.docs.forEach((doc) => {
-    catalogsArray.push(Markup.button.callback(doc.data().name, `c/${doc.id}`));
+    catalogsArray.push(Markup.button.callback("Catalog: " + doc.data().name, `c/${doc.id}`));
   });
   // add back button
   if (currentCatalog) {
-    textMessage = `Catalog *${currentCatalog.name}*`;
+    textMessage = `RZK Market Catalog *${currentCatalog.name}*`;
     if (currentCatalog.parentId) {
-      catalogsArray.push(Markup.button.callback("Back", `c/${currentCatalog.parentId}`));
+      backButton = Markup.button.callback("Back", `c/${currentCatalog.parentId}`);
     } else {
-      catalogsArray.push(Markup.button.callback("Back", "c"));
+      backButton = Markup.button.callback("Back", "c");
     }
   } else {
     textMessage = "RZK Market Catalog";
   }
   // generate Products array
   const query = firestore.collection("products").where("catalog.id", "==", currentCatalog.id)
-      .orderBy("orderNumber").limit(10);
+      .orderBy("orderNumber").limit(20);
   // get query prodycts
   const productsSnapshot = await query.get();
   // generate products array
   for (const doc of productsSnapshot.docs) {
-    productsArray.push(Markup.button.callback(doc.data().name, `c/${doc.id}`));
+    productsArray.push(Markup.button.callback("Product: " + doc.data().name, `c/${doc.id}`));
   }
   const extraObject = {
     parse_mode: "Markdown",
-    ...Markup.inlineKeyboard([...catalogsArray, ...productsArray]),
+    ...Markup.inlineKeyboard([...catalogsArray, ...productsArray, backButton],
+        {wrap: (btn, index, currentRow) => {
+          return index <= 20;
+        }}),
   };
   await ctx.editMessageText(`${textMessage}`, extraObject);
   await ctx.answerCbQuery();
@@ -121,8 +125,8 @@ const runtimeOpts = {
 };
 
 // Enable graceful stop
-process.once("SIGINT", () => bot.stop("SIGINT"));
-process.once("SIGTERM", () => bot.stop("SIGTERM"));
+// process.once("SIGINT", () => bot.stop("SIGINT"));
+// process.once("SIGTERM", () => bot.stop("SIGTERM"));
 
 exports.bot = functions.runWith(runtimeOpts).https.onRequest(async (req, res) => {
   try {
