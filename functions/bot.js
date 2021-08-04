@@ -59,11 +59,11 @@ bot.command("catalog", async (ctx) => {
 });
 
 bot.action(/c\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
-  const catalogsArray = [];
-  const productsArray = [];
+  const inlineKeyboardArray =[];
   let currentCatalog = null;
   let textMessage = "";
   let backButton = "";
+  console.log(ctx.match[1]);
   if (ctx.match[1]) {
     const currentCatalogSnapshot = await firestore.collection("catalogs").doc(ctx.match[1]).get();
     currentCatalog = {id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data()};
@@ -72,31 +72,33 @@ bot.action(/c\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
   const catalogsSnapshot = await firestore.collection("catalogs")
       .where("parentId", "==", currentCatalog ? currentCatalog.id : null).orderBy("orderNumber").get();
   catalogsSnapshot.docs.forEach((doc) => {
-    catalogsArray.push(Markup.button.callback("Catalog: " + doc.data().name, `c/${doc.id}`));
+    inlineKeyboardArray.push(Markup.button.callback("Catalog: " + doc.data().name, `c/${doc.id}`));
   });
   // add back button
   if (currentCatalog) {
     textMessage = `RZK Market Catalog *${currentCatalog.name}*`;
+    // generate Products array
+    const query = firestore.collection("products").where("catalog.id", "==", currentCatalog.id)
+        .orderBy("orderNumber").limit(20);
+    // get query prodycts
+    const productsSnapshot = await query.get();
+    // generate products array
+    for (const doc of productsSnapshot.docs) {
+      inlineKeyboardArray.push(Markup.button.callback("Product: " + doc.data().name, `c/${doc.id}`));
+    }
+    // add back button
     if (currentCatalog.parentId) {
       backButton = Markup.button.callback("Back", `c/${currentCatalog.parentId}`);
     } else {
       backButton = Markup.button.callback("Back", "c");
     }
+    inlineKeyboardArray.push(backButton);
   } else {
     textMessage = "RZK Market Catalog";
   }
-  // generate Products array
-  const query = firestore.collection("products").where("catalog.id", "==", currentCatalog.id)
-      .orderBy("orderNumber").limit(20);
-  // get query prodycts
-  const productsSnapshot = await query.get();
-  // generate products array
-  for (const doc of productsSnapshot.docs) {
-    productsArray.push(Markup.button.callback("Product: " + doc.data().name, `c/${doc.id}`));
-  }
   const extraObject = {
     parse_mode: "Markdown",
-    ...Markup.inlineKeyboard([...catalogsArray, ...productsArray, backButton],
+    ...Markup.inlineKeyboard(inlineKeyboardArray,
         {wrap: (btn, index, currentRow) => {
           return index <= 20;
         }}),
