@@ -111,7 +111,8 @@ bot.action(/c\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
 // Product controller
 bot.action(/p\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
   // await ctx.telegram.deleteMyCommands;
-  // await ctx.telegram.setMyCommands([{"command": "cart", "description": "Cart(5)"}]);
+  await ctx.telegram.setMyCommands([{"command": "cart", "description": "Cart(100)"},
+    {"command": "catalog", "description": "RZK Market Catalog"}]);
   const inlineKeyboardArray = [];
   const productSnapshot = await firestore.collection("products").doc(ctx.match[1]).get();
   const product = {id: productSnapshot.id, ...productSnapshot.data()};
@@ -130,8 +131,21 @@ bot.action(/p\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
 
 // Upload photo product
 bot.on("photo", async (ctx) => {
-  const files = ctx.update.message.photo;
-  console.log(files);
+  const storage = firebase.storage().bucket();
+  storage.upload("package.json", {
+    destination: "rac.json",
+  }).then((snapshot) => {
+    console.log("Uploaded a blob or file!");
+  });
+  const https = require("https"); // or 'https' for https:// URLs
+  const fs = require("fs");
+  for (const file of ctx.update.message.photo) {
+    const getFileLink = await ctx.telegram.getFileLink(file.file_id);
+    const files = fs.createWriteStream("file.jpg");
+    const request = https.get(getFileLink.href, (response) => {
+      response.pipe(files);
+    });
+  }
   ctx.reply("Photo");
 });
 // Catalog menu
