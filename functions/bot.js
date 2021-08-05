@@ -58,6 +58,7 @@ bot.command("catalog", async (ctx) => {
   return ctx.replyWithMarkdown("RZK Market Catalog", Markup.inlineKeyboard(catalogsArray));
 });
 
+// Catalog controller
 bot.action(/c\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
   const inlineKeyboardArray =[];
   let currentCatalog = null;
@@ -79,12 +80,12 @@ bot.action(/c\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
     textMessage = `RZK Market Catalog *${currentCatalog.name}*`;
     // generate Products array
     const query = firestore.collection("products").where("catalog.id", "==", currentCatalog.id)
-        .orderBy("orderNumber").limit(20);
+        .orderBy("orderNumber").limit(5);
     // get query prodycts
     const productsSnapshot = await query.get();
     // generate products array
-    for (const doc of productsSnapshot.docs) {
-      inlineKeyboardArray.push(Markup.button.callback("Product: " + doc.data().name, `c/${doc.id}`));
+    for (const product of productsSnapshot.docs) {
+      inlineKeyboardArray.push(Markup.button.callback("Product: " + product.data().name, `p/${product.id}`));
     }
     // add back button
     if (currentCatalog.parentId) {
@@ -105,6 +106,33 @@ bot.action(/c\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
   };
   await ctx.editMessageText(`${textMessage}`, extraObject);
   await ctx.answerCbQuery();
+});
+
+// Product controller
+bot.action(/p\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
+  // await ctx.telegram.deleteMyCommands;
+  // await ctx.telegram.setMyCommands([{"command": "cart", "description": "Cart(5)"}]);
+  const inlineKeyboardArray = [];
+  const productSnapshot = await firestore.collection("products").doc(ctx.match[1]).get();
+  const product = {id: productSnapshot.id, ...productSnapshot.data()};
+  inlineKeyboardArray.push(Markup.button.callback("Add photo" + product.name, `photo/${product.id}`));
+  inlineKeyboardArray.push(Markup.button.callback("Back", `c/${product.catalog.id}`));
+  const extraObject = {
+    parse_mode: "Markdown",
+    ...Markup.inlineKeyboard(inlineKeyboardArray,
+        {wrap: (btn, index, currentRow) => {
+          return index <= 20;
+        }}),
+  };
+  await ctx.editMessageText(`${product.name} ${product.price}`, extraObject);
+  await ctx.answerCbQuery();
+});
+
+// Upload photo product
+bot.on("photo", async (ctx) => {
+  const files = ctx.update.message.photo;
+  console.log(files);
+  ctx.reply("Photo");
 });
 // Catalog menu
 
