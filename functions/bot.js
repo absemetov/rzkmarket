@@ -6,8 +6,8 @@ const {start} = require("./bot_start_scene");
 const {mono, menuMono} = require("./bot_mono_scene");
 const {upload} = require("./bot_upload_scene");
 const {getMainKeyboard} = require("./bot_keyboards.js");
-
 const {MenuMiddleware} = require("telegraf-inline-menu");
+const download = require("./download.js");
 
 firebase.initializeApp();
 
@@ -131,22 +131,24 @@ bot.action(/p\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
 
 // Upload photo product
 bot.on("photo", async (ctx) => {
-  const storage = firebase.storage().bucket();
-  storage.upload("package.json", {
-    destination: "rac.json",
-  }).then((snapshot) => {
-    console.log("Uploaded a blob or file!");
-  });
-  const https = require("https"); // or 'https' for https:// URLs
-  const fs = require("fs");
+  const bucket = firebase.storage().bucket();
   for (const file of ctx.update.message.photo) {
-    const getFileLink = await ctx.telegram.getFileLink(file.file_id);
-    const files = fs.createWriteStream("file.jpg");
-    const request = https.get(getFileLink.href, (response) => {
-      response.pipe(files);
-    });
+    try {
+      const url = await ctx.telegram.getFileLink(file.file_id);
+      // console.log(url.href);
+      const filePath = await download(url.href);
+      // bucket.upload(filePath, {
+      //   destination: `7978${filePath}`,
+      // }).then((snapshot) => {
+      //   console.log("Uploaded a blob or file!");
+      // });
+      await bucket.file(`7978${filePath}`).delete();
+      ctx.reply(`Download done ${filePath}`);
+    } catch (e) {
+      console.log("Download failed");
+      console.log(e.message);
+    }
   }
-  ctx.reply("Photo");
 });
 // Catalog menu
 
