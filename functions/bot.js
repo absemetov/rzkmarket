@@ -8,6 +8,7 @@ const {upload} = require("./bot_upload_scene");
 const {getMainKeyboard} = require("./bot_keyboards.js");
 const {MenuMiddleware} = require("telegraf-inline-menu");
 const download = require("./download.js");
+const fs = require("fs");
 
 firebase.initializeApp();
 
@@ -116,7 +117,7 @@ bot.action(/p\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
   const inlineKeyboardArray = [];
   const productSnapshot = await firestore.collection("products").doc(ctx.match[1]).get();
   const product = {id: productSnapshot.id, ...productSnapshot.data()};
-  inlineKeyboardArray.push(Markup.button.callback("Add photo" + product.name, `photo/${product.id}`));
+  inlineKeyboardArray.push(Markup.button.callback("Add photo", `setPhoto/${product.id}`));
   inlineKeyboardArray.push(Markup.button.callback("Back", `c/${product.catalog.id}`));
   const extraObject = {
     parse_mode: "Markdown",
@@ -130,24 +131,80 @@ bot.action(/p\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
 });
 
 // Upload photo product
+bot.action(/setPhoto\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
+  ctx.session.productId = ctx.match[1];
+  ctx.reply(`Please add photos to productId ${ctx.session.productId}`);
+  await ctx.answerCbQuery();
+});
+
 bot.on("photo", async (ctx) => {
-  const bucket = firebase.storage().bucket();
-  for (const file of ctx.update.message.photo) {
-    try {
-      const url = await ctx.telegram.getFileLink(file.file_id);
-      // console.log(url.href);
-      const filePath = await download(url.href);
-      // bucket.upload(filePath, {
-      //   destination: `7978${filePath}`,
-      // }).then((snapshot) => {
-      //   console.log("Uploaded a blob or file!");
-      // });
-      await bucket.file(`7978${filePath}`).delete();
-      ctx.reply(`Download done ${filePath}`);
-    } catch (e) {
-      console.log("Download failed");
-      console.log(e.message);
+  if (ctx.session.productId) {
+    const bucket = firebase.storage().bucket();
+    // make bucket is public
+    // await bucket.makePublic();
+    // sort photos to 3, 1
+    const countPhotos = ctx.update.message.photo.length;
+    let thumbnail = null;
+    let origin = null;
+    switch (countPhotos) {
+      case 4:
+        thumbnail = ctx.update.message.photo[1];
+        origin = ctx.update.message.photo[3];
+        break;
+      case 3:
+        thumbnail = ctx.update.message.photo[1];
+        origin = ctx.update.message.photo[2];
+        break;
+      default:
+        thumbnail = ctx.update.message.photo[1];
+        origin = ctx.update.message.photo[1];
     }
+    // download photos from telegram
+    if (origin) {
+      try {
+        const originUrl = await ctx.telegram.getFileLink(origin.file_id);
+        const originFilePath = await download(originUrl.href);
+        const thumbnailUrl = await ctx.telegram.getFileLink(thumbnail.file_id);
+        const thumbnailFilePath = await download(thumbnailUrl.href);
+        // delete download file
+        fs.unlinkSync(originFilePath);
+        fs.unlinkSync(thumbnailFilePath);
+      } catch (e) {
+        console.log("Download failed");
+        console.log(e.message);
+        ctx.reply(`Error upload photos ${e.message}`);
+        return false;
+      }
+    }
+    for (const file of ctx.update.message.photo) {
+      try {
+        // const url = await ctx.telegram.getFileLink(file.file_id);
+        // ctx.update.callback_query.message
+        // console.log(ctx.update);
+        console.log("file", file.file_id, file.width, file.height);
+        // sort photos
+        // console.log(url.href);
+        // download from telegram and upload photos to Firebase Storage
+        // const filePath = await download(url.href);
+        // bucket.upload(filePath, {
+        //   destination: `photos/products/${ctx.session.productId}/main/`,
+        // }).then((snapshot) => {
+        //   console.log("Photo uploaded!");
+        // });
+        // delete()
+        // const publicUrl = bucket.file(`photos${filePath}`).publicUrl();
+        // ctx.reply(`Product ID ${ctx.session.productId} Download done ${publicUrl}`);
+      } catch (e) {
+        console.log("Download failed");
+        console.log(e.message);
+        ctx.reply(`Error upload photos ${e.message}`);
+        return false;
+      }
+    }
+    // when upload complite then set productId null
+    ctx.session.productId = null;
+  } else {
+    ctx.reply("Please select a product to upload Photos /catalog");
   }
 });
 // Catalog menu
