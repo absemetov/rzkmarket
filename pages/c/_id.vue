@@ -25,6 +25,12 @@
     </ul>
     <ul>
       <li v-for="product of products" :key="product.id">
+        <v-img
+          lazy-src="https://picsum.photos/id/11/10/6"
+          max-height="255"
+          max-width="250"
+          :src="product.mainPhoto.thumbnail"
+        />
         <h1>
           <NuxtLink :to="{ name: 'p-id', params: { id: product.id } }">
             {{ product.name }} {{ product.updatedAt }}
@@ -117,10 +123,25 @@ export default {
       }
     }
     // generate products array
-    for (const doc of productsSnapshot.docs) {
+    for (const product of productsSnapshot.docs) {
+      let mainPhoto = null
+      if (product.data().mainPhoto) {
+        mainPhoto = {
+          thumbnail: `https://storage.googleapis.com/rzk-market-ua.appspot.com/photos/products/${product.id}/1/${product.data().mainPhoto[1]}.jpg`,
+          origin: `https://storage.googleapis.com/rzk-market-ua.appspot.com/photos/products/${product.id}/3/${product.data().mainPhoto[3]}.jpg`
+        }
+      } else {
+        // default img
+        mainPhoto = {
+          thumbnail: 'https://s3.eu-central-1.amazonaws.com/rzk.com.ua/250.56ad1e10bf4a01b1ff3af88752fd3412.jpg',
+          origin: 'https://s3.eu-central-1.amazonaws.com/rzk.com.ua/250.56ad1e10bf4a01b1ff3af88752fd3412.jpg'
+        }
+      }
       this.products.push({
-        id: doc.id,
-        ...doc.data()
+        id: product.id,
+        mainPhoto,
+        name: product.data().name,
+        updatedAt: product.data().updatedAt
       })
     }
   },

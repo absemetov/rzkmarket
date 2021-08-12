@@ -112,7 +112,7 @@ bot.action(/c\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
 // Product controller
 bot.action(/p\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
   // await ctx.telegram.deleteMyCommands;
-  await ctx.telegram.setMyCommands([{"command": "cart", "description": "Cart(100)"},
+  await ctx.telegram.setMyCommands([{"command": "mono", "description": "Monobank exchange rates "},
     {"command": "catalog", "description": "RZK Market Catalog"}]);
   const inlineKeyboardArray = [];
   const productSnapshot = await firestore.collection("products").doc(ctx.match[1]).get();
@@ -139,70 +139,60 @@ bot.action(/setPhoto\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
 
 bot.on("photo", async (ctx) => {
   if (ctx.session.productId) {
+    // init storage
     const bucket = firebase.storage().bucket();
     // make bucket is public
     // await bucket.makePublic();
-    // sort photos to 3, 1
-    const countPhotos = ctx.update.message.photo.length;
-    let thumbnail = null;
-    let origin = null;
-    switch (countPhotos) {
-      case 4:
-        thumbnail = ctx.update.message.photo[1];
-        origin = ctx.update.message.photo[3];
-        break;
-      case 3:
-        thumbnail = ctx.update.message.photo[1];
-        origin = ctx.update.message.photo[2];
-        break;
-      default:
-        thumbnail = ctx.update.message.photo[1];
-        origin = ctx.update.message.photo[1];
-    }
-    // download photos from telegram
+    // get 720*1280 photo[3] and 1
+    const origin = ctx.update.message.photo[3];
+    const thumbnail = ctx.update.message.photo[1];
     if (origin) {
       try {
+        // get url and download photo from telegram
         const originUrl = await ctx.telegram.getFileLink(origin.file_id);
-        const originFilePath = await download(originUrl.href);
         const thumbnailUrl = await ctx.telegram.getFileLink(thumbnail.file_id);
+        const originFilePath = await download(originUrl.href);
         const thumbnailFilePath = await download(thumbnailUrl.href);
+        // get Product data and check mainPhoto
+        const productRef = firestore.collection("products").doc(ctx.session.productId);
+        const productSnapshot = await productRef.get();
+        const product = {id: productSnapshot.id, ...productSnapshot.data()};
+        if (product.mainPhoto) {
+          // delete old files in bucket
+          await bucket.deleteFiles(`photos/products/${product.id}/3/${product.mainPhoto.originFileId}.jpg`);
+          await bucket.deleteFiles(`photos/products/${product.id}/1/${product.mainPhoto.thumbnailFailId}.jpg`);
+        }
+        // save new photoId
+        await productRef.set({
+          mainPhoto: {
+            1: thumbnail.file_id,
+            3: origin.file_id,
+          },
+        }, {merge: true});
+        // upload photo file
+        await bucket.upload(originFilePath, {
+          destination: `photos/products/${product.id}/3/${origin.file_id}.jpg`,
+        });
+        await bucket.upload(thumbnailFilePath, {
+          destination: `photos/products/${product.id}/1/${thumbnail.file_id}.jpg`,
+        });
         // delete download file
         fs.unlinkSync(originFilePath);
         fs.unlinkSync(thumbnailFilePath);
+        // when upload complite then set productId null
+        const publicUrl3 = bucket.file(`photos/products/${product.id}/3/${origin.file_id}.jpg`)
+            .publicUrl();
+        const publicUrl1 = bucket.file(`photos/products/${product.id}/1/${thumbnail.file_id}.jpg`)
+            .publicUrl();
+        await ctx.reply(`Photo succesfuly updated 1 zoom ${publicUrl1}`);
+        await ctx.reply(`Photo succesfuly updated 3 zoom ${publicUrl3}`);
+        ctx.session.productId = null;
       } catch (e) {
         console.log("Download failed");
         console.log(e.message);
-        ctx.reply(`Error upload photos ${e.message}`);
-        return false;
+        await ctx.reply(`Error upload photos ${e.message}`);
       }
     }
-    for (const file of ctx.update.message.photo) {
-      try {
-        // const url = await ctx.telegram.getFileLink(file.file_id);
-        // ctx.update.callback_query.message
-        // console.log(ctx.update);
-        console.log("file", file.file_id, file.width, file.height);
-        // sort photos
-        // console.log(url.href);
-        // download from telegram and upload photos to Firebase Storage
-        // const filePath = await download(url.href);
-        // bucket.upload(filePath, {
-        //   destination: `photos/products/${ctx.session.productId}/main/`,
-        // }).then((snapshot) => {
-        //   console.log("Photo uploaded!");
-        // });
-        // delete()
-        // const publicUrl = bucket.file(`photos${filePath}`).publicUrl();
-        // ctx.reply(`Product ID ${ctx.session.productId} Download done ${publicUrl}`);
-      } catch (e) {
-        console.log("Download failed");
-        console.log(e.message);
-        ctx.reply(`Error upload photos ${e.message}`);
-        return false;
-      }
-    }
-    // when upload complite then set productId null
-    ctx.session.productId = null;
   } else {
     ctx.reply("Please select a product to upload Photos /catalog");
   }
@@ -238,155 +228,3 @@ exports.bot = functions.runWith(runtimeOpts).https.onRequest(async (req, res) =>
     res.status(200).end();
   }
 });
-
-// bot.start((ctx) => ctx.reply("Welcome to RZK Market Ukraine!", Markup.keyboard([
-//   "sheet", "USD", "EUR", "RUB"]).resize(),
-// ));
-
-// bot.hears("hi", (ctx) => ctx.reply("Hey there", Markup.keyboard([
-//   "sheet", "USD", "EUR", "RUB", "hi"]).resize(),
-// ));
-
-// in local dev true in prod undefined
-
-// const admin = require("firebase-admin");
-
-// const axios = require("axios");
-// const cc = require("currency-codes");
-// const { GoogleSpreadsheet } = require('google-spreadsheet');
-// const Validator = require('validatorjs');
-
-// const mono = require('./mono');
-
-// // spreadsheet key is the long id in the sheets URL
-// const doc = new GoogleSpreadsheet('1NdlYGQb3qUiS5D7rkouhZZ8Q7KvoJ6kTpKMtF2o5oVM');
-
-
-// functions:config:set bot.token = "1359239824:AAFqbJhFQxm3kgItUKiq6tdui5j3jPc5UEw"
-
-
-// bot.use(async (ctx, next_call) => {
-//   const start = new Date();
-//   await next_call();
-//   const ms = new Date() - start;
-//   console.log('Response time: %sms', ms);
-//   ctx.reply(`Response time: ${ms}ms`);
-//   return;
-// });
-
-
-//   //Test Tags
-//   /* eslint-disable promise/always-return*/
-//   bot.hears('tags', async (ctx) => {
-//     admin.firestore().collection("products")
-//       .where("tags.a1", "==", true)
-//       .where("tags.c1", "==", true)
-//       .where("tags.b1", "==", true)
-//       .where("tags.Изделие", "==", "Выключатель")
-//       .get()
-//       .then((querySnapshot) => {
-//           querySnapshot.forEach((doc) => {
-//               // doc.data() is never undefined for query doc snapshots
-//               console.log(doc.id, " => ", doc.data());
-//           });
-//       })
-//       .catch((error) => {
-//           console.log("Error getting documents: ", error);
-//     });
-
-//     return ctx.reply("Tags rzk.com.ua Smart!", Markup.keyboard([
-//       'tags', 'sheet', 'USD', 'EUR', 'RUB'
-//     ]).resize().extra());
-
-//   });
-
-
-//   //Test Google Sheets
-//   bot.hears('sheet', async (ctx) => {
-//     await doc.useServiceAccountAuth(require('./telegram-bot-4e05c-885ebd800760.json'));
-
-//     await doc.loadInfo();// loads document properties and worksheets
-
-//     const sheet = doc.sheetsByIndex[0]; // or use doc.sheetsById[id] or doc.sheetsByTitle[title]
-
-//     /* eslint-disable no-await-in-loop */
-//     let per_page = 100;
-
-//     for (let i = 0; i < sheet.rowCount - 1; i += per_page) {
-
-//       console.log(`rowCount ${sheet.rowCount - 1}, limit: ${per_page}, offset: ${i}`);
-
-//       try {
-//         const rows = await sheet.getRows({ limit: per_page, offset: i });
-//         //check if empty data
-//         if(rows.length === 0) {
-//           break;
-//         }
-
-//         // eslint-disable-next-line no-loop-func
-//         rows.forEach(async (row) => {
-//           //Validate
-//           let item = {
-//             id: row.ID,
-//             name: row.NAME,
-//             price: Number(row.PRICE),
-//             purchase_price: Number(row.PURCHASE_PRICE),
-//             unit: row.UNIT,
-//             group: row.GROUP,
-//           };
-
-//           let rules_is_item = {
-//             id: 'required',
-//             name: 'required',
-//             price: 'required',
-//           };
-
-//           let validation_is_item = new Validator(item, rules_is_item);
-
-//           if( validation_is_item.passes() ) {
-
-//             let rules_check_item = {
-//               id: 'alpha_dash',
-//               name: 'string',
-//               price: 'numeric',
-//             };
-
-//             let validation_check_item = new Validator(item, rules_check_item);
-
-//             if (validation_check_item.passes()) {
-//               console.log(item.id);
-//             }
-
-//             // await admin.firestore().doc('products/' + row.ID).update({
-//             //   "name": row.NAME,
-//             //   "purchase_price": Number(row.PURCHASE_PRICE),
-//             //   "price": Number(row.PRICE)
-//             // });
-//           }
-//           // ctx.replyWithHTML(`
-//           //   ${index}\n
-//           //   <b>${row.ID}</b>
-//           //   ${row.NAME}
-//           //   ${row.PURCHASE_PRICE}
-//           //   ${row.PRICE}
-//           // `);
-//         });
-//       } catch (error) {
-//         console.log(error);
-//         break;
-//       }
-//     }
-//   });
-
-//   //listen all text messages
-//   bot.on('text', async (ctx) => {
-
-//     currency = await mono.mono();
-
-//     return ctx.replyWithMarkdown(`
-//     CURRENCY: *${currency[ctx.message.text]}*
-//   RATE BUY: *${currency[ctx.message.text].rateBuy}*
-//   RATE SELL: *${currency[ctx.message.text].rateSell}*
-//     `);
-
-//   });
