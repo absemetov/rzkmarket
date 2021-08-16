@@ -51,18 +51,16 @@
 </template>
 <script>
 export default {
-  data () {
-    return {
-      limit: 10,
-      catalogs: [],
-      currentCatalog: {},
-      breadcrumbs: [],
-      products: [],
-      nextProductId: null,
-      lastProduct: null,
-      lastPage: false
-    }
-  },
+  data: () => ({
+    limit: 10,
+    catalogs: [],
+    currentCatalog: {},
+    breadcrumbs: [],
+    products: [],
+    nextProductId: null,
+    lastProduct: null,
+    lastPage: false
+  }),
   async fetch () {
     // clear data on index page
     if (process.client && !this.$route.query.startAfter) {

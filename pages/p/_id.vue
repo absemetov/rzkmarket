@@ -1,15 +1,5 @@
 <template>
-  <v-alert>
-    <v-overlay :value="overlay">
-      <v-img
-        lazy-src="https://picsum.photos/id/11/10/6"
-        :src="product.mainPhoto.origin"
-      />
-      <v-btn
-        color="success"
-        @click="overlay = false"
-      />
-    </v-overlay>
+  <div>
     <v-img
       lazy-src="https://picsum.photos/id/11/10/6"
       max-height="255"
@@ -17,16 +7,26 @@
       :src="product.mainPhoto.thumbnail"
       @click="overlay = !overlay"
     />
+    <v-overlay :value="overlay">
+      <v-btn class="hide-button" color="primary" @click="overlay = false">
+        Hide Overlay
+      </v-btn>
+    </v-overlay>
     <h1>{{ product.name }}</h1>
     <div v-for="tag of product.tagsNames" :key="tag.id">
       {{ tag.id }} => {{ tag.name }}
     </div>
-  </v-alert>
+  </div>
 </template>
 <script>
 export default {
-  async asyncData ({ params, $fire }) {
-    const productData = await $fire.firestore.collection('products').doc(params.id).get()
+  data: () => ({
+    product: null,
+    overlay: false,
+    items: []
+  }),
+  async fetch () {
+    const productData = await this.$fire.firestore.collection('products').doc(this.$route.params.id).get()
     let mainPhoto = null
     if (productData.data().mainPhoto) {
       mainPhoto = {
@@ -46,17 +46,20 @@ export default {
       name: productData.data().name,
       tagsNames: productData.data().tagsNames
     }
-    return { product }
+    // this.items.push({ src: mainPhoto.origin })
+    this.product = product
   },
-  data: () => ({
-    overlay: false
-  }),
-  watch: {
-    overlay (val) {
-      val && setTimeout(() => {
-        this.overlay = false
-      }, 2000)
+  methods: {
+    onClickOutside () {
+      this.overlay = false
     }
   }
 }
 </script>
+<style scoped>
+.hide-button {
+  display: fixed;
+  top: 16px;
+  left: 16px;
+}
+</style>

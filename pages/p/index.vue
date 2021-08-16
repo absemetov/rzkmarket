@@ -22,14 +22,12 @@
 </template>
 <script>
 export default {
-  data () {
-    return {
-      products: [],
-      nextProductId: null,
-      lastProduct: null,
-      lastPage: false
-    }
-  },
+  data: () => ({
+    products: [],
+    nextProductId: null,
+    lastProduct: null,
+    lastPage: false
+  }),
   async fetch () {
     let query = this.$fire.firestore.collection('products').where('tags', 'array-contains', 'belii')
       .orderBy('orderNumber').limit(10)
