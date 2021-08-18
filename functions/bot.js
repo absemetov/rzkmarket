@@ -145,13 +145,16 @@ bot.on("photo", async (ctx) => {
     // await bucket.makePublic();
     // get 720*1280 photo[3] and 1
     const origin = ctx.update.message.photo[3];
+    const big = ctx.update.message.photo[2];
     const thumbnail = ctx.update.message.photo[1];
     if (origin) {
       try {
         // get url and download photo from telegram
         const originUrl = await ctx.telegram.getFileLink(origin.file_id);
+        const bigUrl = await ctx.telegram.getFileLink(big.file_id);
         const thumbnailUrl = await ctx.telegram.getFileLink(thumbnail.file_id);
         const originFilePath = await download(originUrl.href);
+        const bigFilePath = await download(bigUrl.href);
         const thumbnailFilePath = await download(thumbnailUrl.href);
         // get Product data and check mainPhoto
         const productRef = firestore.collection("products").doc(ctx.session.productId);
@@ -160,12 +163,14 @@ bot.on("photo", async (ctx) => {
         if (product.mainPhoto) {
           // delete old files in bucket
           await bucket.deleteFiles(`photos/products/${product.id}/3/${product.mainPhoto.originFileId}.jpg`);
+          await bucket.deleteFiles(`photos/products/${product.id}/3/${product.mainPhoto.bigFileId}.jpg`);
           await bucket.deleteFiles(`photos/products/${product.id}/1/${product.mainPhoto.thumbnailFailId}.jpg`);
         }
         // save new photoId
         await productRef.set({
           mainPhoto: {
             1: thumbnail.file_id,
+            2: big.file_id,
             3: origin.file_id,
           },
         }, {merge: true});
@@ -173,18 +178,25 @@ bot.on("photo", async (ctx) => {
         await bucket.upload(originFilePath, {
           destination: `photos/products/${product.id}/3/${origin.file_id}.jpg`,
         });
+        await bucket.upload(bigFilePath, {
+          destination: `photos/products/${product.id}/2/${big.file_id}.jpg`,
+        });
         await bucket.upload(thumbnailFilePath, {
           destination: `photos/products/${product.id}/1/${thumbnail.file_id}.jpg`,
         });
         // delete download file
         fs.unlinkSync(originFilePath);
+        fs.unlinkSync(bigFilePath);
         fs.unlinkSync(thumbnailFilePath);
         // when upload complite then set productId null
         const publicUrl3 = bucket.file(`photos/products/${product.id}/3/${origin.file_id}.jpg`)
             .publicUrl();
+        const publicUrl2 = bucket.file(`photos/products/${product.id}/2/${big.file_id}.jpg`)
+            .publicUrl();
         const publicUrl1 = bucket.file(`photos/products/${product.id}/1/${thumbnail.file_id}.jpg`)
             .publicUrl();
         await ctx.reply(`Photo succesfuly updated 1 zoom ${publicUrl1}`);
+        await ctx.reply(`Photo succesfuly updated 2 zoom ${publicUrl2}`);
         await ctx.reply(`Photo succesfuly updated 3 zoom ${publicUrl3}`);
         ctx.session.productId = null;
       } catch (e) {
