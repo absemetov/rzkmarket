@@ -60,7 +60,7 @@ bot.command("catalog", async (ctx) => {
 });
 
 // Catalog controller
-bot.action(/c\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
+bot.action(/c\/([a-zA-Z0-9-_]+)/, async (ctx) => {
   const inlineKeyboardArray =[];
   let currentCatalog = null;
   let textMessage = "";
@@ -110,13 +110,14 @@ bot.action(/c\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
 });
 
 // Product controller
-bot.action(/p\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
+bot.action(/p\/([a-zA-Z0-9-_]+)/, async (ctx) => {
   // await ctx.telegram.deleteMyCommands;
   await ctx.telegram.setMyCommands([{"command": "mono", "description": "Monobank exchange rates "},
     {"command": "catalog", "description": "RZK Market Catalog"}]);
   const inlineKeyboardArray = [];
   const productSnapshot = await firestore.collection("products").doc(ctx.match[1]).get();
   const product = {id: productSnapshot.id, ...productSnapshot.data()};
+  console.log("prod", product);
   inlineKeyboardArray.push(Markup.button.callback("Upload main photo", `uploadMainPhoto/${product.id}`));
   inlineKeyboardArray.push(Markup.button.callback("Upload photos", `uploadPhotos/${product.id}`));
   inlineKeyboardArray.push(Markup.button.callback("Back", `c/${product.catalog.id}`));
@@ -132,7 +133,7 @@ bot.action(/p\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
 });
 
 // Upload Main photo product
-bot.action(/uploadMainPhoto\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
+bot.action(/uploadMainPhoto\/([a-zA-Z0-9-_]+)/, async (ctx) => {
   ctx.session.productId = ctx.match[1];
   ctx.session.uploadMainPhoto = true;
   ctx.reply(`Please add main photo to productId ${ctx.session.productId}`);
@@ -140,8 +141,9 @@ bot.action(/uploadMainPhoto\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
 });
 
 // upload photos limit 4
-bot.action(/uploadPhotos\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
+bot.action(/uploadPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
   ctx.session.productId = ctx.match[1];
+  ctx.session.uploadMainPhoto = false;
   ctx.reply(`Please add photos to productId ${ctx.session.productId}`);
   await ctx.answerCbQuery();
 });
@@ -152,7 +154,18 @@ bot.on("photo", async (ctx) => {
     const bucket = firebase.storage().bucket();
     // make bucket is public
     // await bucket.makePublic();
+    // get photo sizes
+    // file_id: 'AgACAgIAAxkBAAJKe2Eeb3sz3VbX5NP2xB0MphISptBEAAIjtTEbNKZhSJTK4DMrPuXqAQADAgADcwADIAQ',
+    // file_unique_id: 'AQADI7UxGzSmYUh4',
+    // file_size: 912,
+    // width: 90,
+    // height: 51
     // upload main photo
+    //
+    // get Product data and check mainPhoto
+    const productRef = firestore.collection("products").doc(ctx.session.productId);
+    const productSnapshot = await productRef.get();
+    const product = {id: productSnapshot.id, ...productSnapshot.data()};
     if (ctx.session.uploadMainPhoto) {
       // get 720*1280 photo[3] and 1
       const origin = ctx.update.message.photo[3];
@@ -167,10 +180,6 @@ bot.on("photo", async (ctx) => {
           const originFilePath = await download(originUrl.href);
           const bigFilePath = await download(bigUrl.href);
           const thumbnailFilePath = await download(thumbnailUrl.href);
-          // get Product data and check mainPhoto
-          const productRef = firestore.collection("products").doc(ctx.session.productId);
-          const productSnapshot = await productRef.get();
-          const product = {id: productSnapshot.id, ...productSnapshot.data()};
           if (product.mainPhoto) {
             // delete old files in bucket
             await bucket.deleteFiles(`photos/products/${product.id}/3/${product.mainPhoto.originFileId}.jpg`);
@@ -210,6 +219,7 @@ bot.on("photo", async (ctx) => {
           await ctx.reply(`Photo succesfuly updated 2 zoom ${publicUrl2}`);
           await ctx.reply(`Photo succesfuly updated 3 zoom ${publicUrl3}`);
           ctx.session.productId = null;
+          ctx.session.uploadMainPhoto = false;
         } catch (e) {
           console.log("Download failed");
           console.log(e.message);
@@ -217,9 +227,9 @@ bot.on("photo", async (ctx) => {
         }
       }
     } else {
-      // upload ather photos
-      const photos = ctx.update.message.photo;
-      console.log(photos);
+      // upload other photos
+      // get count photos to check limits 4 photos
+      console.log(product.photos.length);
     }
   } else {
     ctx.reply("Please select a product to upload Photos /catalog");
