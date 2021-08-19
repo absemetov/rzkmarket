@@ -117,7 +117,8 @@ bot.action(/p\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
   const inlineKeyboardArray = [];
   const productSnapshot = await firestore.collection("products").doc(ctx.match[1]).get();
   const product = {id: productSnapshot.id, ...productSnapshot.data()};
-  inlineKeyboardArray.push(Markup.button.callback("Add photo", `setPhoto/${product.id}`));
+  inlineKeyboardArray.push(Markup.button.callback("Upload main photo", `uploadMainPhoto/${product.id}`));
+  inlineKeyboardArray.push(Markup.button.callback("Upload photos", `uploadPhotos/${product.id}`));
   inlineKeyboardArray.push(Markup.button.callback("Back", `c/${product.catalog.id}`));
   const extraObject = {
     parse_mode: "Markdown",
@@ -130,8 +131,16 @@ bot.action(/p\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
   await ctx.answerCbQuery();
 });
 
-// Upload photo product
-bot.action(/setPhoto\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
+// Upload Main photo product
+bot.action(/uploadMainPhoto\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
+  ctx.session.productId = ctx.match[1];
+  ctx.session.uploadMainPhoto = true;
+  ctx.reply(`Please add main photo to productId ${ctx.session.productId}`);
+  await ctx.answerCbQuery();
+});
+
+// upload photos limit 4
+bot.action(/uploadPhotos\/?([a-zA-Z0-9-_]+)?/, async (ctx) => {
   ctx.session.productId = ctx.match[1];
   ctx.reply(`Please add photos to productId ${ctx.session.productId}`);
   await ctx.answerCbQuery();
@@ -143,67 +152,74 @@ bot.on("photo", async (ctx) => {
     const bucket = firebase.storage().bucket();
     // make bucket is public
     // await bucket.makePublic();
-    // get 720*1280 photo[3] and 1
-    const origin = ctx.update.message.photo[3];
-    const big = ctx.update.message.photo[2];
-    const thumbnail = ctx.update.message.photo[1];
-    if (origin) {
-      try {
-        // get url and download photo from telegram
-        const originUrl = await ctx.telegram.getFileLink(origin.file_id);
-        const bigUrl = await ctx.telegram.getFileLink(big.file_id);
-        const thumbnailUrl = await ctx.telegram.getFileLink(thumbnail.file_id);
-        const originFilePath = await download(originUrl.href);
-        const bigFilePath = await download(bigUrl.href);
-        const thumbnailFilePath = await download(thumbnailUrl.href);
-        // get Product data and check mainPhoto
-        const productRef = firestore.collection("products").doc(ctx.session.productId);
-        const productSnapshot = await productRef.get();
-        const product = {id: productSnapshot.id, ...productSnapshot.data()};
-        if (product.mainPhoto) {
-          // delete old files in bucket
-          await bucket.deleteFiles(`photos/products/${product.id}/3/${product.mainPhoto.originFileId}.jpg`);
-          await bucket.deleteFiles(`photos/products/${product.id}/3/${product.mainPhoto.bigFileId}.jpg`);
-          await bucket.deleteFiles(`photos/products/${product.id}/1/${product.mainPhoto.thumbnailFailId}.jpg`);
+    // upload main photo
+    if (ctx.session.uploadMainPhoto) {
+      // get 720*1280 photo[3] and 1
+      const origin = ctx.update.message.photo[3];
+      const big = ctx.update.message.photo[2];
+      const thumbnail = ctx.update.message.photo[1];
+      if (origin) {
+        try {
+          // get url and download photo from telegram
+          const originUrl = await ctx.telegram.getFileLink(origin.file_id);
+          const bigUrl = await ctx.telegram.getFileLink(big.file_id);
+          const thumbnailUrl = await ctx.telegram.getFileLink(thumbnail.file_id);
+          const originFilePath = await download(originUrl.href);
+          const bigFilePath = await download(bigUrl.href);
+          const thumbnailFilePath = await download(thumbnailUrl.href);
+          // get Product data and check mainPhoto
+          const productRef = firestore.collection("products").doc(ctx.session.productId);
+          const productSnapshot = await productRef.get();
+          const product = {id: productSnapshot.id, ...productSnapshot.data()};
+          if (product.mainPhoto) {
+            // delete old files in bucket
+            await bucket.deleteFiles(`photos/products/${product.id}/3/${product.mainPhoto.originFileId}.jpg`);
+            await bucket.deleteFiles(`photos/products/${product.id}/3/${product.mainPhoto.bigFileId}.jpg`);
+            await bucket.deleteFiles(`photos/products/${product.id}/1/${product.mainPhoto.thumbnailFailId}.jpg`);
+          }
+          // save new photoId
+          await productRef.set({
+            mainPhoto: {
+              1: thumbnail.file_id,
+              2: big.file_id,
+              3: origin.file_id,
+            },
+          }, {merge: true});
+          // upload photo file
+          await bucket.upload(originFilePath, {
+            destination: `photos/products/${product.id}/3/${origin.file_id}.jpg`,
+          });
+          await bucket.upload(bigFilePath, {
+            destination: `photos/products/${product.id}/2/${big.file_id}.jpg`,
+          });
+          await bucket.upload(thumbnailFilePath, {
+            destination: `photos/products/${product.id}/1/${thumbnail.file_id}.jpg`,
+          });
+          // delete download file
+          fs.unlinkSync(originFilePath);
+          fs.unlinkSync(bigFilePath);
+          fs.unlinkSync(thumbnailFilePath);
+          // when upload complite then set productId null
+          const publicUrl3 = bucket.file(`photos/products/${product.id}/3/${origin.file_id}.jpg`)
+              .publicUrl();
+          const publicUrl2 = bucket.file(`photos/products/${product.id}/2/${big.file_id}.jpg`)
+              .publicUrl();
+          const publicUrl1 = bucket.file(`photos/products/${product.id}/1/${thumbnail.file_id}.jpg`)
+              .publicUrl();
+          await ctx.reply(`Photo succesfuly updated 1 zoom ${publicUrl1}`);
+          await ctx.reply(`Photo succesfuly updated 2 zoom ${publicUrl2}`);
+          await ctx.reply(`Photo succesfuly updated 3 zoom ${publicUrl3}`);
+          ctx.session.productId = null;
+        } catch (e) {
+          console.log("Download failed");
+          console.log(e.message);
+          await ctx.reply(`Error upload photos ${e.message}`);
         }
-        // save new photoId
-        await productRef.set({
-          mainPhoto: {
-            1: thumbnail.file_id,
-            2: big.file_id,
-            3: origin.file_id,
-          },
-        }, {merge: true});
-        // upload photo file
-        await bucket.upload(originFilePath, {
-          destination: `photos/products/${product.id}/3/${origin.file_id}.jpg`,
-        });
-        await bucket.upload(bigFilePath, {
-          destination: `photos/products/${product.id}/2/${big.file_id}.jpg`,
-        });
-        await bucket.upload(thumbnailFilePath, {
-          destination: `photos/products/${product.id}/1/${thumbnail.file_id}.jpg`,
-        });
-        // delete download file
-        fs.unlinkSync(originFilePath);
-        fs.unlinkSync(bigFilePath);
-        fs.unlinkSync(thumbnailFilePath);
-        // when upload complite then set productId null
-        const publicUrl3 = bucket.file(`photos/products/${product.id}/3/${origin.file_id}.jpg`)
-            .publicUrl();
-        const publicUrl2 = bucket.file(`photos/products/${product.id}/2/${big.file_id}.jpg`)
-            .publicUrl();
-        const publicUrl1 = bucket.file(`photos/products/${product.id}/1/${thumbnail.file_id}.jpg`)
-            .publicUrl();
-        await ctx.reply(`Photo succesfuly updated 1 zoom ${publicUrl1}`);
-        await ctx.reply(`Photo succesfuly updated 2 zoom ${publicUrl2}`);
-        await ctx.reply(`Photo succesfuly updated 3 zoom ${publicUrl3}`);
-        ctx.session.productId = null;
-      } catch (e) {
-        console.log("Download failed");
-        console.log(e.message);
-        await ctx.reply(`Error upload photos ${e.message}`);
       }
+    } else {
+      // upload ather photos
+      const photos = ctx.update.message.photo;
+      console.log(photos);
     }
   } else {
     ctx.reply("Please select a product to upload Photos /catalog");

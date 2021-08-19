@@ -1,15 +1,13 @@
 <template>
   <div>
     <v-img
-      lazy-src="https://picsum.photos/id/11/10/6"
-      max-height="255"
-      max-width="250"
+      max-width="180"
       :src="mainPhoto.thumbnail"
       @click="overlay = !overlay"
     />
     <v-dialog
       v-model="overlay"
-      width="1280"
+      width="800"
     >
       <v-col class="text-right">
         <v-btn
@@ -20,12 +18,12 @@
           <v-icon>mdi-close</v-icon>
         </v-btn>
       </v-col>
-      <v-carousel height="auto">
+      <v-carousel height="auto" :show-arrows="showArrows" :hide-delimiters="hideDelimiters">
         <v-carousel-item
           v-for="(item,i) in items"
           :key="i"
         >
-          <v-img class="mx-auto" :src="item.src" max-height="800" max-width="450" />
+          <v-img class="mx-auto" :src="item.src" max-width="450" />
         </v-carousel-item>
       </v-carousel>
     </v-dialog>
@@ -41,7 +39,9 @@ export default {
     product: {},
     mainPhoto: {},
     overlay: false,
-    items: []
+    items: [],
+    showArrows: false,
+    hideDelimiters: true
   }),
   async fetch () {
     const productData = await this.$fire.firestore.collection('products').doc(this.$route.params.id).get()
@@ -62,8 +62,12 @@ export default {
       name: productData.data().name,
       tagsNames: productData.data().tagsNames
     }
-    this.items.push({ src: this.mainPhoto.big })
     this.product = product
+    this.items.push({ src: this.mainPhoto.big })
+    if (this.items.length > 1) {
+      this.hideDelimiters = false
+      this.showArrows = true
+    }
   },
   methods: {
     onClickOutside () {
