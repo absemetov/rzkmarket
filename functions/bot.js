@@ -60,7 +60,7 @@ bot.command("catalog", async (ctx) => {
 });
 
 // Catalog controller
-bot.action(/c\/([a-zA-Z0-9-_]+)/, async (ctx) => {
+bot.action(/c\/([a-zA-Z0-9-_]+)?/, async (ctx) => {
   const inlineKeyboardArray =[];
   let currentCatalog = null;
   let textMessage = "";
@@ -92,7 +92,7 @@ bot.action(/c\/([a-zA-Z0-9-_]+)/, async (ctx) => {
     if (currentCatalog.parentId) {
       backButton = Markup.button.callback("Back", `c/${currentCatalog.parentId}`);
     } else {
-      backButton = Markup.button.callback("Back", "c");
+      backButton = Markup.button.callback("Back", "c/");
     }
     inlineKeyboardArray.push(backButton);
   } else {
@@ -166,27 +166,30 @@ bot.on("photo", async (ctx) => {
     const productRef = firestore.collection("products").doc(ctx.session.productId);
     const productSnapshot = await productRef.get();
     const product = {id: productSnapshot.id, ...productSnapshot.data()};
+    console.log(product.photos);
+    // get photos data
+    const origin = ctx.update.message.photo[3];
+    const big = ctx.update.message.photo[2];
+    const thumbnail = ctx.update.message.photo[1];
     if (ctx.session.uploadMainPhoto) {
       // get 720*1280 photo[3] and 1
-      const origin = ctx.update.message.photo[3];
-      const big = ctx.update.message.photo[2];
-      const thumbnail = ctx.update.message.photo[1];
       if (origin) {
         try {
-          // get url and download photo from telegram
+          // get photos url
           const originUrl = await ctx.telegram.getFileLink(origin.file_id);
           const bigUrl = await ctx.telegram.getFileLink(big.file_id);
           const thumbnailUrl = await ctx.telegram.getFileLink(thumbnail.file_id);
+          // download photos from telegram server
           const originFilePath = await download(originUrl.href);
           const bigFilePath = await download(bigUrl.href);
           const thumbnailFilePath = await download(thumbnailUrl.href);
+          // delete old files in bucket
           if (product.mainPhoto) {
-            // delete old files in bucket
             await bucket.deleteFiles(`photos/products/${product.id}/3/${product.mainPhoto.originFileId}.jpg`);
             await bucket.deleteFiles(`photos/products/${product.id}/3/${product.mainPhoto.bigFileId}.jpg`);
             await bucket.deleteFiles(`photos/products/${product.id}/1/${product.mainPhoto.thumbnailFailId}.jpg`);
           }
-          // save new photoId
+          // save new photoId in Firestore
           await productRef.set({
             mainPhoto: {
               1: thumbnail.file_id,
@@ -208,7 +211,10 @@ bot.on("photo", async (ctx) => {
           fs.unlinkSync(originFilePath);
           fs.unlinkSync(bigFilePath);
           fs.unlinkSync(thumbnailFilePath);
-          // when upload complite then set productId null
+          // when upload complite then set productId and flag to null, false
+          ctx.session.productId = null;
+          ctx.session.uploadMainPhoto = false;
+          // show upload images
           const publicUrl3 = bucket.file(`photos/products/${product.id}/3/${origin.file_id}.jpg`)
               .publicUrl();
           const publicUrl2 = bucket.file(`photos/products/${product.id}/2/${big.file_id}.jpg`)
@@ -218,8 +224,6 @@ bot.on("photo", async (ctx) => {
           await ctx.reply(`Photo succesfuly updated 1 zoom ${publicUrl1}`);
           await ctx.reply(`Photo succesfuly updated 2 zoom ${publicUrl2}`);
           await ctx.reply(`Photo succesfuly updated 3 zoom ${publicUrl3}`);
-          ctx.session.productId = null;
-          ctx.session.uploadMainPhoto = false;
         } catch (e) {
           console.log("Download failed");
           console.log(e.message);
@@ -229,10 +233,22 @@ bot.on("photo", async (ctx) => {
     } else {
       // upload other photos
       // get count photos to check limits 4 photos
-      console.log(product.photos.length);
+      console.log("i", product.photos.length++);
+      if (product.photos && product.photos.length > 1) {
+        await productRef.set({
+          photos: firebase.firestore.FieldValue.arrayRemove(product.photos[0]),
+        }, {merge: true});
+        console.log("photos limit 4", product.photos.length);
+      } else {
+        // save fileID to Firestore
+        await productRef.set({
+          photos: firebase.firestore.FieldValue.arrayUnion(origin.file_id),
+        }, {merge: true});
+        console.log("photos <4", product.photos.length);
+      }
     }
   } else {
-    ctx.reply("Please select a product to upload Photos /catalog");
+    ctx.reply("Please select a product to upload Photos go to /catalog");
   }
 });
 // Catalog menu
