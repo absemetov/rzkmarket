@@ -149,6 +149,7 @@ bot.action(/uploadPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
 });
 
 bot.on("photo", async (ctx) => {
+  console.log(ctx.update.message.media_group_id);
   if (ctx.session.productId) {
     // init storage
     const bucket = firebase.storage().bucket();
@@ -166,7 +167,7 @@ bot.on("photo", async (ctx) => {
     const productRef = firestore.collection("products").doc(ctx.session.productId);
     const productSnapshot = await productRef.get();
     const product = {id: productSnapshot.id, ...productSnapshot.data()};
-    console.log(product.photos);
+    console.log(productSnapshot.data());
     // get photos data
     const origin = ctx.update.message.photo[3];
     const big = ctx.update.message.photo[2];
@@ -233,18 +234,17 @@ bot.on("photo", async (ctx) => {
     } else {
       // upload other photos
       // get count photos to check limits 4 photos
-      console.log("i", product.photos.length++);
       if (product.photos && product.photos.length > 1) {
-        await productRef.set({
+        await productRef.update({
           photos: firebase.firestore.FieldValue.arrayRemove(product.photos[0]),
-        }, {merge: true});
-        console.log("photos limit 4", product.photos.length);
+        });
+        console.log(product.photos);
       } else {
         // save fileID to Firestore
-        await productRef.set({
+        await productRef.update({
           photos: firebase.firestore.FieldValue.arrayUnion(origin.file_id),
-        }, {merge: true});
-        console.log("photos <4", product.photos.length);
+        });
+        console.log(product.photos);
       }
     }
   } else {
