@@ -43,6 +43,7 @@ bot.use(async (ctx, next) => {
   }
   return next();
 });
+
 bot.command("mono", async (ctx) => monoMiddleware.replyToContext(ctx));
 bot.use(monoMiddleware.middleware());
 // mono menu
@@ -117,9 +118,11 @@ bot.action(/p\/([a-zA-Z0-9-_]+)/, async (ctx) => {
   const inlineKeyboardArray = [];
   const productSnapshot = await firestore.collection("products").doc(ctx.match[1]).get();
   const product = {id: productSnapshot.id, ...productSnapshot.data()};
-  console.log("prod", product);
   inlineKeyboardArray.push(Markup.button.callback("Upload main photo", `uploadMainPhoto/${product.id}`));
   inlineKeyboardArray.push(Markup.button.callback("Upload photos", `uploadPhotos/${product.id}`));
+  if (product.photos) {
+    inlineKeyboardArray.push(Markup.button.callback("Show photos", `showPhotos/${product.id}`));
+  }
   inlineKeyboardArray.push(Markup.button.callback("Back", `c/${product.catalog.id}`));
   const extraObject = {
     parse_mode: "Markdown",
@@ -129,6 +132,18 @@ bot.action(/p\/([a-zA-Z0-9-_]+)/, async (ctx) => {
         }}),
   };
   await ctx.editMessageText(`${product.name} ${product.price}`, extraObject);
+  await ctx.answerCbQuery();
+});
+
+// Upload Main photo product
+bot.action(/showPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
+  const productId = ctx.match[1];
+  const productRef = firestore.collection("products").doc(productId);
+  const productSnapshot = await productRef.get();
+  const product = {id: productSnapshot.id, ...productSnapshot.data()};
+  for (const photo of product.photos) {
+    ctx.reply(`Photo ${photo}`);
+  }
   await ctx.answerCbQuery();
 });
 
@@ -143,109 +158,136 @@ bot.action(/uploadMainPhoto\/([a-zA-Z0-9-_]+)/, async (ctx) => {
 // upload photos limit 4
 bot.action(/uploadPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
   ctx.session.productId = ctx.match[1];
-  ctx.session.uploadMainPhoto = false;
+  ctx.session.uploadPhotos = true;
   ctx.reply(`Please add photos to productId ${ctx.session.productId}`);
   await ctx.answerCbQuery();
 });
 
-bot.on("photo", async (ctx) => {
-  console.log(ctx.update.message.media_group_id);
+bot.on("photo", async (ctx, next) => {
   if (ctx.session.productId) {
+    // upload only one photo!!!
+    if (ctx.message.media_group_id) {
+      await ctx.reply("Choose only one Photo!");
+      return next();
+    }
+    // get telegram file_id photos data
+    const origin = ctx.message.photo[3];
+    const big = ctx.message.photo[2];
+    const thumbnail = ctx.message.photo[1];
+    // get photos url
+    const originUrl = await ctx.telegram.getFileLink(origin.file_id);
+    const bigUrl = await ctx.telegram.getFileLink(big.file_id);
+    const thumbnailUrl = await ctx.telegram.getFileLink(thumbnail.file_id);
+    // If 720*1280 photo[3] empty
+    if (!origin) {
+      await ctx.reply("Choose large photo!");
+      return next();
+    }
     // init storage
     const bucket = firebase.storage().bucket();
     // make bucket is public
     // await bucket.makePublic();
-    // get photo sizes
     // file_id: 'AgACAgIAAxkBAAJKe2Eeb3sz3VbX5NP2xB0MphISptBEAAIjtTEbNKZhSJTK4DMrPuXqAQADAgADcwADIAQ',
     // file_unique_id: 'AQADI7UxGzSmYUh4',
     // file_size: 912,
     // width: 90,
     // height: 51
-    // upload main photo
-    //
-    // get Product data and check mainPhoto
+    // get Product data
     const productRef = firestore.collection("products").doc(ctx.session.productId);
     const productSnapshot = await productRef.get();
     const product = {id: productSnapshot.id, ...productSnapshot.data()};
-    console.log(productSnapshot.data());
-    // get photos data
-    const origin = ctx.update.message.photo[3];
-    const big = ctx.update.message.photo[2];
-    const thumbnail = ctx.update.message.photo[1];
+    // upload main photo
     if (ctx.session.uploadMainPhoto) {
-      // get 720*1280 photo[3] and 1
-      if (origin) {
+      try {
+        // download photos from telegram server
+        const originFilePath = await download(originUrl.href);
+        const bigFilePath = await download(bigUrl.href);
+        const thumbnailFilePath = await download(thumbnailUrl.href);
+        // upload photo file
+        await bucket.upload(originFilePath, {
+          destination: `photos/products/${product.id}/3/${origin.file_id}.jpg`,
+        });
+        await bucket.upload(bigFilePath, {
+          destination: `photos/products/${product.id}/2/${origin.file_id}.jpg`,
+        });
+        await bucket.upload(thumbnailFilePath, {
+          destination: `photos/products/${product.id}/1/${origin.file_id}.jpg`,
+        });
+        // delete download file
+        fs.unlinkSync(originFilePath);
+        fs.unlinkSync(bigFilePath);
+        fs.unlinkSync(thumbnailFilePath);
+      } catch (e) {
+        console.log("Download failed");
+        console.log(e.message);
+        await ctx.reply(`Error upload photos ${e.message}`);
+      }
+      // delete old files in bucket
+      if (product.mainPhoto) {
+        await bucket.deleteFiles(`photos/products/${product.id}/3/${product.mainPhoto}.jpg`);
+        await bucket.deleteFiles(`photos/products/${product.id}/3/${product.mainPhoto}.jpg`);
+        await bucket.deleteFiles(`photos/products/${product.id}/1/${product.mainPhoto}.jpg`);
+      }
+      // save new photoId in Firestore
+      await productRef.set({
+        mainPhoto: origin.file_id,
+      }, {merge: true});
+      // when upload complite then set productId and flag to null, false
+      ctx.session.productId = null;
+      ctx.session.uploadMainPhoto = false;
+      // show upload images
+      const publicUrl3 = bucket.file(`photos/products/${product.id}/3/${origin.file_id}.jpg`)
+          .publicUrl();
+      const publicUrl2 = bucket.file(`photos/products/${product.id}/2/${origin.file_id}.jpg`)
+          .publicUrl();
+      const publicUrl1 = bucket.file(`photos/products/${product.id}/1/${origin.file_id}.jpg`)
+          .publicUrl();
+      await ctx.reply(`Photo succesfuly updated 1 zoom ${publicUrl1}`);
+      await ctx.reply(`Photo succesfuly updated 2 zoom ${publicUrl2}`);
+      await ctx.reply(`Photo succesfuly updated 3 zoom ${publicUrl3}`);
+    }
+    // upload other Photos
+    if (ctx.session.uploadPhotos) {
+      // get count photos to check limits 4 photos
+      if (product.photos && product.photos.length > 3) {
+        // await productRef.update({
+        //   photos: firebase.firestore.FieldValue.arrayRemove(product.photos[0]),
+        // });
+        await ctx.reply("Limit 4 photos");
+      } else {
         try {
-          // get photos url
-          const originUrl = await ctx.telegram.getFileLink(origin.file_id);
-          const bigUrl = await ctx.telegram.getFileLink(big.file_id);
-          const thumbnailUrl = await ctx.telegram.getFileLink(thumbnail.file_id);
           // download photos from telegram server
           const originFilePath = await download(originUrl.href);
           const bigFilePath = await download(bigUrl.href);
           const thumbnailFilePath = await download(thumbnailUrl.href);
-          // delete old files in bucket
-          if (product.mainPhoto) {
-            await bucket.deleteFiles(`photos/products/${product.id}/3/${product.mainPhoto.originFileId}.jpg`);
-            await bucket.deleteFiles(`photos/products/${product.id}/3/${product.mainPhoto.bigFileId}.jpg`);
-            await bucket.deleteFiles(`photos/products/${product.id}/1/${product.mainPhoto.thumbnailFailId}.jpg`);
-          }
-          // save new photoId in Firestore
-          await productRef.set({
-            mainPhoto: {
-              1: thumbnail.file_id,
-              2: big.file_id,
-              3: origin.file_id,
-            },
-          }, {merge: true});
           // upload photo file
           await bucket.upload(originFilePath, {
             destination: `photos/products/${product.id}/3/${origin.file_id}.jpg`,
           });
           await bucket.upload(bigFilePath, {
-            destination: `photos/products/${product.id}/2/${big.file_id}.jpg`,
+            destination: `photos/products/${product.id}/2/${origin.file_id}.jpg`,
           });
           await bucket.upload(thumbnailFilePath, {
-            destination: `photos/products/${product.id}/1/${thumbnail.file_id}.jpg`,
+            destination: `photos/products/${product.id}/1/${origin.file_id}.jpg`,
           });
           // delete download file
           fs.unlinkSync(originFilePath);
           fs.unlinkSync(bigFilePath);
           fs.unlinkSync(thumbnailFilePath);
-          // when upload complite then set productId and flag to null, false
-          ctx.session.productId = null;
-          ctx.session.uploadMainPhoto = false;
-          // show upload images
-          const publicUrl3 = bucket.file(`photos/products/${product.id}/3/${origin.file_id}.jpg`)
-              .publicUrl();
-          const publicUrl2 = bucket.file(`photos/products/${product.id}/2/${big.file_id}.jpg`)
-              .publicUrl();
-          const publicUrl1 = bucket.file(`photos/products/${product.id}/1/${thumbnail.file_id}.jpg`)
-              .publicUrl();
-          await ctx.reply(`Photo succesfuly updated 1 zoom ${publicUrl1}`);
-          await ctx.reply(`Photo succesfuly updated 2 zoom ${publicUrl2}`);
-          await ctx.reply(`Photo succesfuly updated 3 zoom ${publicUrl3}`);
         } catch (e) {
           console.log("Download failed");
           console.log(e.message);
           await ctx.reply(`Error upload photos ${e.message}`);
         }
-      }
-    } else {
-      // upload other photos
-      // get count photos to check limits 4 photos
-      if (product.photos && product.photos.length > 1) {
-        await productRef.update({
-          photos: firebase.firestore.FieldValue.arrayRemove(product.photos[0]),
-        });
-        console.log(product.photos);
-      } else {
         // save fileID to Firestore
         await productRef.update({
           photos: firebase.firestore.FieldValue.arrayUnion(origin.file_id),
         });
-        console.log(product.photos);
+        return ctx.replyWithMarkdown(`Photo upload to ${product.id}, upload again`,
+            Markup.inlineKeyboard([Markup.button.callback("Upload photos", `uploadPhotos/${product.id}`)]));
       }
+      ctx.session.productId = null;
+      ctx.session.uploadPhotos = false;
     }
   } else {
     ctx.reply("Please select a product to upload Photos go to /catalog");
