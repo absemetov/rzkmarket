@@ -26,7 +26,6 @@
     <ul>
       <li v-for="product of products" :key="product.id">
         <v-img
-          lazy-src="https://picsum.photos/id/11/10/6"
           max-height="255"
           max-width="250"
           :src="product.mainPhoto.thumbnail"
@@ -125,8 +124,8 @@ export default {
       let mainPhoto = null
       if (product.data().mainPhoto) {
         mainPhoto = {
-          thumbnail: `https://storage.googleapis.com/rzk-market-ua.appspot.com/photos/products/${product.id}/1/${product.data().mainPhoto[1]}.jpg`,
-          origin: `https://storage.googleapis.com/rzk-market-ua.appspot.com/photos/products/${product.id}/3/${product.data().mainPhoto[3]}.jpg`
+          thumbnail: `https://storage.googleapis.com/rzk-market-ua.appspot.com/photos/products/${product.id}/1/${product.data().mainPhoto}.jpg`,
+          origin: `https://storage.googleapis.com/rzk-market-ua.appspot.com/photos/products/${product.id}/3/${product.data().mainPhoto}.jpg`
         }
       } else {
         // default img
