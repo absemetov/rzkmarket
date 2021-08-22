@@ -144,6 +144,7 @@ bot.action(/showPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
   for (const photoId of product.photos) {
     const publicUrl = bucket.file(`photos/products/${product.id}/2/${photoId}.jpg`)
         .publicUrl();
+    console.log(publicUrl);
     await ctx.replyWithPhoto({url: publicUrl}, {
       caption: product.mainPhoto === photoId ? `Main Photo ${product.name}` : `${product.name}`,
       parse_mode: "Markdown",
@@ -187,9 +188,9 @@ bot.action(/deletePhoto\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)/, async (ctx) => {
       photos: firebase.firestore.FieldValue.arrayRemove(deleteFileId),
     });
   }
-  await bucket.deleteFiles(`photos/products/${productId}/3/${deleteFileId}.jpg`);
-  await bucket.deleteFiles(`photos/products/${productId}/2/${deleteFileId}.jpg`);
-  await bucket.deleteFiles(`photos/products/${productId}/1/${deleteFileId}.jpg`);
+  await bucket.file(`photos/products/${productId}/3/${deleteFileId}.jpg`).delete();
+  await bucket.file(`photos/products/${productId}/2/${deleteFileId}.jpg`).delete();
+  await bucket.file(`photos/products/${productId}/1/${deleteFileId}.jpg`).delete();
   ctx.deleteMessage();
   await ctx.answerCbQuery();
 });

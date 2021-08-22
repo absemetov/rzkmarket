@@ -25,11 +25,13 @@
     </ul>
     <ul>
       <li v-for="product of products" :key="product.id">
-        <v-img
-          max-height="255"
-          max-width="250"
-          :src="product.mainPhoto.thumbnail"
-        />
+        <NuxtLink :to="{ name: 'p-id', params: { id: product.id } }">
+          <v-img
+            max-height="255"
+            max-width="250"
+            :src="product.mainPhoto.thumbnail"
+          />
+        </NuxtLink>
         <h1>
           <NuxtLink :to="{ name: 'p-id', params: { id: product.id } }">
             {{ product.name }} {{ product.updatedAt }}

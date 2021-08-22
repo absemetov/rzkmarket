@@ -24,10 +24,10 @@
           v-for="(item,i) in items"
           :key="i"
         >
-          <v-img class="mx-auto" :src="item.src" max-width="450" />
+          <a :href="item.origin" target="_blank">origin photo</a>
+          <v-img class="mx-auto" :lazy-src="item.thumbnail" :src="item.big" max-width="450" />
         </v-carousel-item>
       </v-carousel>
-      <a :href="mainPhoto.origin" target="_blank">origin photo</a>
     </v-dialog>
     <h1>{{ product.name }}</h1>
     <div v-for="tag of product.tagsNames" :key="tag.id">
@@ -65,8 +65,17 @@ export default {
       id: productData.id,
       ...productData.data()
     }
+    // first add main photo
+    this.items.push(this.mainPhoto)
+    // add other photos
     for (const photoId of this.product.photos) {
-      this.items.push({ src: `https://storage.googleapis.com/rzk-market-ua.appspot.com/photos/products/${this.product.id}/2/${photoId}.jpg` })
+      if (this.product.mainPhoto !== photoId) {
+        this.items.push({
+          thumbnail: `https://storage.googleapis.com/rzk-market-ua.appspot.com/photos/products/${productData.id}/1/${photoId}.jpg`,
+          big: `https://storage.googleapis.com/rzk-market-ua.appspot.com/photos/products/${productData.id}/2/${photoId}.jpg`,
+          origin: `https://storage.googleapis.com/rzk-market-ua.appspot.com/photos/products/${productData.id}/3/${photoId}.jpg`
+        })
+      }
     }
     if (this.items.length > 1) {
       this.hideDelimiters = false
