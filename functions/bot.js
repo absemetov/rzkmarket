@@ -5,6 +5,7 @@ const firestoreSession = require("telegraf-session-firestore");
 const {start} = require("./bot_start_scene");
 const {mono, menuMono} = require("./bot_mono_scene");
 const {upload} = require("./bot_upload_scene");
+const {catalog} = require("./bot_catalog_scene");
 const {getMainKeyboard} = require("./bot_keyboards.js");
 const {MenuMiddleware} = require("telegraf-inline-menu");
 const download = require("./download.js");
@@ -17,8 +18,8 @@ const token = functions.config().bot.token;
 const bot = new Telegraf(token, {
   handlerTimeout: 540000,
 });
-
-const stage = new Stage([start, mono, upload]);
+// Stage scenes
+const stage = new Stage([start, mono, upload, catalog]);
 
 const firestore = firebase.firestore();
 
@@ -48,90 +49,9 @@ bot.command("mono", async (ctx) => monoMiddleware.replyToContext(ctx));
 bot.use(monoMiddleware.middleware());
 // mono menu
 
-// Catalog menu
+// Catalog scene
 bot.command("catalog", async (ctx) => {
-  const catalogsSnapshot = await firestore.collection("catalogs")
-      .where("parentId", "==", null).orderBy("orderNumber").get();
-  // generate catalogs array
-  const catalogsArray = [];
-  catalogsSnapshot.docs.forEach((doc) => {
-    catalogsArray.push(Markup.button.callback(doc.data().name, `c/${doc.id}`));
-  });
-  return ctx.replyWithMarkdown("RZK Market Catalog", Markup.inlineKeyboard(catalogsArray));
-});
-
-// Catalog controller
-bot.action(/c\/([a-zA-Z0-9-_]+)?/, async (ctx) => {
-  const inlineKeyboardArray =[];
-  let currentCatalog = null;
-  let textMessage = "";
-  let backButton = "";
-  console.log(ctx.match[1]);
-  if (ctx.match[1]) {
-    const currentCatalogSnapshot = await firestore.collection("catalogs").doc(ctx.match[1]).get();
-    currentCatalog = {id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data()};
-  }
-  // generate catalogs
-  const catalogsSnapshot = await firestore.collection("catalogs")
-      .where("parentId", "==", currentCatalog ? currentCatalog.id : null).orderBy("orderNumber").get();
-  catalogsSnapshot.docs.forEach((doc) => {
-    inlineKeyboardArray.push(Markup.button.callback("Catalog: " + doc.data().name, `c/${doc.id}`));
-  });
-  // add back button
-  if (currentCatalog) {
-    textMessage = `RZK Market Catalog *${currentCatalog.name}*`;
-    // generate Products array
-    const query = firestore.collection("products").where("catalog.id", "==", currentCatalog.id)
-        .orderBy("orderNumber").limit(5);
-    // get query prodycts
-    const productsSnapshot = await query.get();
-    // generate products array
-    for (const product of productsSnapshot.docs) {
-      inlineKeyboardArray.push(Markup.button.callback("Product: " + product.data().name, `p/${product.id}`));
-    }
-    // add back button
-    if (currentCatalog.parentId) {
-      backButton = Markup.button.callback("Back", `c/${currentCatalog.parentId}`);
-    } else {
-      backButton = Markup.button.callback("Back", "c/");
-    }
-    inlineKeyboardArray.push(backButton);
-  } else {
-    textMessage = "RZK Market Catalog";
-  }
-  const extraObject = {
-    parse_mode: "Markdown",
-    ...Markup.inlineKeyboard(inlineKeyboardArray,
-        {wrap: (btn, index, currentRow) => {
-          return index <= 20;
-        }}),
-  };
-  await ctx.editMessageText(`${textMessage}`, extraObject);
-  await ctx.answerCbQuery();
-});
-
-// Product controller
-bot.action(/p\/([a-zA-Z0-9-_]+)/, async (ctx) => {
-  // await ctx.telegram.deleteMyCommands;
-  await ctx.telegram.setMyCommands([{"command": "mono", "description": "Monobank exchange rates "},
-    {"command": "catalog", "description": "RZK Market Catalog"}]);
-  const inlineKeyboardArray = [];
-  const productSnapshot = await firestore.collection("products").doc(ctx.match[1]).get();
-  const product = {id: productSnapshot.id, ...productSnapshot.data()};
-  inlineKeyboardArray.push(Markup.button.callback("Upload photo", `uploadPhotos/${product.id}`));
-  if (product.photos && product.photos.length) {
-    inlineKeyboardArray.push(Markup.button.callback("Show photos", `showPhotos/${product.id}`));
-  }
-  inlineKeyboardArray.push(Markup.button.callback("Back", `c/${product.catalog.id}`));
-  const extraObject = {
-    parse_mode: "Markdown",
-    ...Markup.inlineKeyboard(inlineKeyboardArray,
-        {wrap: (btn, index, currentRow) => {
-          return index <= 20;
-        }}),
-  };
-  await ctx.editMessageText(`${product.name} ${product.price}`, extraObject);
-  await ctx.answerCbQuery();
+  ctx.scene.enter("catalog");
 });
 
 // Upload Main photo product
@@ -145,14 +65,18 @@ bot.action(/showPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
     const publicUrl = bucket.file(`photos/products/${product.id}/2/${photoId}.jpg`)
         .publicUrl();
     console.log(publicUrl);
-    await ctx.replyWithPhoto({url: publicUrl}, {
-      caption: product.mainPhoto === photoId ? `Main Photo ${product.name}` : `${product.name}`,
-      parse_mode: "Markdown",
-      ...Markup.inlineKeyboard([
-        Markup.button.callback("Set main", `setMainPhoto/${product.id}/${photoId}`),
-        Markup.button.callback("Delete", `deletePhoto/${product.id}/${photoId}`),
-      ]),
-    });
+    const photoExists = await bucket.file(`photos/products/${product.id}/2/${photoId}.jpg`)
+        .exists();
+    if (photoExists) {
+      await ctx.replyWithPhoto({url: publicUrl}, {
+        caption: product.mainPhoto === photoId ? `Main Photo ${product.name}` : `${product.name}`,
+        parse_mode: "Markdown",
+        ...Markup.inlineKeyboard([
+          Markup.button.callback("Set main", `setMainPhoto/${product.id}/${photoId}`),
+          Markup.button.callback("Delete", `deletePhoto/${product.id}/${photoId}`),
+        ]),
+      });
+    }
   }
   await ctx.answerCbQuery();
 });
@@ -188,6 +112,9 @@ bot.action(/deletePhoto\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)/, async (ctx) => {
       photos: firebase.firestore.FieldValue.arrayRemove(deleteFileId),
     });
   }
+  // await bucket.deleteFiles({
+  //   prefix: `photos/products/${productId}`,
+  // });
   await bucket.file(`photos/products/${productId}/3/${deleteFileId}.jpg`).delete();
   await bucket.file(`photos/products/${productId}/2/${deleteFileId}.jpg`).delete();
   await bucket.file(`photos/products/${productId}/1/${deleteFileId}.jpg`).delete();
@@ -288,7 +215,7 @@ bot.on("photo", async (ctx, next) => {
 // Catalog menu
 
 // if session destroyed show main keyboard
-bot.on("text", async (ctx) => ctx.reply("Menu", getMainKeyboard));
+bot.on("text", async (ctx) => ctx.reply("Menu test", getMainKeyboard));
 
 // bot.telegram.sendMessage(94899148, "Bot Rzk.com.ua ready!" );
 

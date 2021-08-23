@@ -68,13 +68,15 @@ export default {
     // first add main photo
     this.items.push(this.mainPhoto)
     // add other photos
-    for (const photoId of this.product.photos) {
-      if (this.product.mainPhoto !== photoId) {
-        this.items.push({
-          thumbnail: `https://storage.googleapis.com/rzk-market-ua.appspot.com/photos/products/${productData.id}/1/${photoId}.jpg`,
-          big: `https://storage.googleapis.com/rzk-market-ua.appspot.com/photos/products/${productData.id}/2/${photoId}.jpg`,
-          origin: `https://storage.googleapis.com/rzk-market-ua.appspot.com/photos/products/${productData.id}/3/${photoId}.jpg`
-        })
+    if (this.product.photos) {
+      for (const photoId of this.product.photos) {
+        if (this.product.mainPhoto !== photoId) {
+          this.items.push({
+            thumbnail: `https://storage.googleapis.com/rzk-market-ua.appspot.com/photos/products/${productData.id}/1/${photoId}.jpg`,
+            big: `https://storage.googleapis.com/rzk-market-ua.appspot.com/photos/products/${productData.id}/2/${photoId}.jpg`,
+            origin: `https://storage.googleapis.com/rzk-market-ua.appspot.com/photos/products/${productData.id}/3/${photoId}.jpg`
+          })
+        }
       }
     }
     if (this.items.length > 1) {

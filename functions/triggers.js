@@ -16,7 +16,7 @@ exports.productPhotoDelete = functions.firestore
       const bucket = firebase.storage().bucket();
       const productId = context.params.productId;
       await bucket.deleteFiles({
-        prefix: `photos/products/${productId}/`,
+        prefix: `photos/products/${productId}`,
       });
       return null;
     });
