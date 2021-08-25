@@ -1,7 +1,13 @@
 const firebase = require("firebase-admin");
+const download = require("./download.js");
+const fs = require("fs");
+const bucket = firebase.storage().bucket();
+// make bucket is public
+// await bucket.makePublic();
 const {Markup, Scenes: {BaseScene}} = require("telegraf");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 const catalog = new BaseScene("catalog");
+
 // enter to scene
 catalog.enter(async (ctx) => {
   const catalogsSnapshot = await firebase.firestore().collection("catalogs")
@@ -31,7 +37,7 @@ catalog.hears("back", (ctx) => {
   ctx.scene.leave();
 });
 
-// Catalog controller
+// Show Catalogs and goods
 catalog.action(/c\/([a-zA-Z0-9-_]+)?/, async (ctx) => {
   await ctx.answerCbQuery("");
   const inlineKeyboardArray =[];
@@ -117,7 +123,6 @@ catalog.action(/p\/([a-zA-Z0-9-_]+)/, async (ctx) => {
   // Get main photo url
   let publicUrl = "";
   if (product.mainPhoto) {
-    const bucket = firebase.storage().bucket();
     const photoExists = await bucket.file(`photos/products/${product.id}/2/${product.mainPhoto}.jpg`).exists();
     if (photoExists[0]) {
       publicUrl = bucket.file(`photos/products/${product.id}/2/${product.mainPhoto}.jpg`).publicUrl();
@@ -144,7 +149,6 @@ catalog.action(/showPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
   const productRef = firebase.firestore().collection("products").doc(productId);
   const productSnapshot = await productRef.get();
   const product = {id: productSnapshot.id, ...productSnapshot.data()};
-  const bucket = firebase.storage().bucket();
   for (const photoId of product.photos) {
     // check if file exists
     let publicUrl = "";
@@ -169,7 +173,6 @@ catalog.action(/showPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
 // delete Photo
 catalog.action(/deletePhoto\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)/, async (ctx) => {
   // init storage
-  const bucket = firebase.storage().bucket();
   const productId = ctx.match[1];
   const deleteFileId = ctx.match[2];
   const productRef = firebase.firestore().collection("products").doc(productId);
@@ -196,6 +199,115 @@ catalog.action(/deletePhoto\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)/, async (ctx) =>
   }
   ctx.deleteMessage();
   await ctx.answerCbQuery();
+});
+
+// upload photos limit 5
+catalog.action(/uploadPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
+  ctx.session.productId = ctx.match[1];
+  const productRef = firebase.firestore().collection("products").doc(ctx.session.productId);
+  const productSnapshot = await productRef.get();
+  const product = {id: productSnapshot.id, ...productSnapshot.data()};
+  ctx.reply(`Please add photo to ${product.name} (${product.id})`);
+  await ctx.answerCbQuery();
+});
+
+// Set Main photo product
+catalog.action(/setMainPhoto\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)/, async (ctx) => {
+  const productId = ctx.match[1];
+  const photoId = ctx.match[2];
+  const productRef = firebase.firestore().collection("products").doc(productId);
+  const productSnapshot = await productRef.get();
+  await productRef.update({
+    mainPhoto: photoId,
+  });
+  // ctx.reply(`Main photo updated, productId ${productId} ${fileId}`);
+  await ctx.editMessageCaption(`Main photo updated, ${productSnapshot.data().name} ${productId}`,
+      {...Markup.inlineKeyboard([
+        Markup.button.callback("Set main", `setMainPhoto/${productId}/${photoId}`),
+        Markup.button.callback("Delete", `deletePhoto/${productId}/${photoId}`),
+      ])});
+  await ctx.answerCbQuery();
+});
+
+// Upload product photos
+catalog.on("photo", async (ctx, next) => {
+  if (ctx.session.productId) {
+    // file_id: 'AgACAgIAAxkBAAJKe2Eeb3sz3VbX5NP2xB0MphISptBEAAIjtTEbNKZhSJTK4DMrPuXqAQADAgADcwADIAQ',
+    // file_unique_id: 'AQADI7UxGzSmYUh4',
+    // file_size: 912,
+    // width: 90,
+    // height: 51
+    // get Product data
+    const productRef = firebase.firestore().collection("products").doc(ctx.session.productId);
+    const productSnapshot = await productRef.get();
+    const product = {id: productSnapshot.id, ...productSnapshot.data()};
+    // get count photos to check limits 5 photos
+    if (product.photos && product.photos.length > 4) {
+      await ctx.reply("Limit 5 photos");
+    } else {
+      // upload Photo
+      // upload only one photo!!!
+      if (ctx.message.media_group_id) {
+        await ctx.reply("Choose only one Photo!");
+        return next();
+      }
+      // get telegram file_id photos data
+      const origin = ctx.message.photo[3];
+      const big = ctx.message.photo[2];
+      const thumbnail = ctx.message.photo[1];
+      // If 720*1280 photo[3] empty
+      if (!origin) {
+        await ctx.reply("Choose large photo!");
+        return next();
+      }
+      // get photos url
+      const originUrl = await ctx.telegram.getFileLink(origin.file_id);
+      const bigUrl = await ctx.telegram.getFileLink(big.file_id);
+      const thumbnailUrl = await ctx.telegram.getFileLink(thumbnail.file_id);
+      try {
+        // download photos from telegram server
+        const originFilePath = await download(originUrl.href);
+        const bigFilePath = await download(bigUrl.href);
+        const thumbnailFilePath = await download(thumbnailUrl.href);
+        // upload photo file
+        await bucket.upload(originFilePath, {
+          destination: `photos/products/${product.id}/3/${origin.file_unique_id}.jpg`,
+        });
+        await bucket.upload(bigFilePath, {
+          destination: `photos/products/${product.id}/2/${origin.file_unique_id}.jpg`,
+        });
+        await bucket.upload(thumbnailFilePath, {
+          destination: `photos/products/${product.id}/1/${origin.file_unique_id}.jpg`,
+        });
+        // delete download file
+        fs.unlinkSync(originFilePath);
+        fs.unlinkSync(bigFilePath);
+        fs.unlinkSync(thumbnailFilePath);
+      } catch (e) {
+        console.log("Download failed");
+        console.log(e.message);
+        await ctx.reply(`Error upload photos ${e.message}`);
+      }
+      // save fileID to Firestore
+      if (!product.mainPhoto) {
+        await productRef.update({
+          mainPhoto: origin.file_unique_id,
+          photos: firebase.firestore.FieldValue.arrayUnion(origin.file_unique_id),
+        });
+      } else {
+        await productRef.update({
+          photos: firebase.firestore.FieldValue.arrayUnion(origin.file_unique_id),
+        });
+      }
+      await ctx.replyWithMarkdown(`${product.name} (${product.id}) photo uploaded`,
+          Markup.inlineKeyboard([Markup.button.callback("Upload photos", `uploadPhotos/${product.id}`),
+            Markup.button.callback("Show photos", `showPhotos/${product.id}`),
+          ]));
+    }
+    ctx.session.productId = null;
+  } else {
+    ctx.reply("Please select a product to upload Photos go to /catalog");
+  }
 });
 
 exports.catalog = catalog;
