@@ -38,15 +38,24 @@ catalog.hears("back", (ctx) => {
 });
 
 // Show Catalogs and goods
-catalog.action(/c\/([a-zA-Z0-9-_]+)?/, async (ctx) => {
+catalog.action(/c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
   await ctx.answerCbQuery("");
   const inlineKeyboardArray =[];
   let currentCatalog = null;
   let textMessage = "";
   let backButton = "";
-  console.log(ctx.match[1]);
-  if (ctx.match[1]) {
-    const currentCatalogSnapshot = await firebase.firestore().collection("catalogs").doc(ctx.match[1]).get();
+  const catalogId = ctx.match[1];
+  // parse url params
+  const params = new Map();
+  if (ctx.match[2]) {
+    for (const paramsData of ctx.match[2].split("&")) {
+      params.set(paramsData.split("=")[0], paramsData.split("=")[1]);
+    }
+  }
+  console.log(params.get("startAfter"));
+  // set currentCatalog data
+  if (catalogId) {
+    const currentCatalogSnapshot = await firebase.firestore().collection("catalogs").doc(catalogId).get();
     currentCatalog = {id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data()};
   }
   // generate catalogs
@@ -61,7 +70,7 @@ catalog.action(/c\/([a-zA-Z0-9-_]+)?/, async (ctx) => {
     // generate Products array
     const query = firebase.firestore().collection("products").where("catalog.id", "==", currentCatalog.id)
         .orderBy("orderNumber").limit(5);
-    // get query prodycts
+    // get Products
     const productsSnapshot = await query.get();
     // generate products array
     for (const product of productsSnapshot.docs) {
@@ -69,10 +78,14 @@ catalog.action(/c\/([a-zA-Z0-9-_]+)?/, async (ctx) => {
           `p/${product.id}`));
     }
     // Get Last product
+    // ====
     // inlineKeyboardArray.push(`Last Product ${productsSnapshot.docs[3]}`);
     if (productsSnapshot.docs && productsSnapshot.docs.length) {
-      console.log(productsSnapshot.docs[4].data());
+      const lastProduct = productsSnapshot.docs[productsSnapshot.docs.length-1];
+      inlineKeyboardArray.push(Markup.button.callback(`Load more ... startAfter=${lastProduct.id}`,
+          `c/${currentCatalog.id}?startAfter=${productsSnapshot.docs[productsSnapshot.docs.length-1].id}`));
     }
+    // =====
     // add back button
     if (currentCatalog.parentId) {
       backButton = Markup.button.callback("Back", `c/${currentCatalog.parentId}`);
