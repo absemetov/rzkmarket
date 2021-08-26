@@ -68,6 +68,11 @@ catalog.action(/c\/([a-zA-Z0-9-_]+)?/, async (ctx) => {
       inlineKeyboardArray.push(Markup.button.callback(`Product: ${product.data().name} (${product.id})`,
           `p/${product.id}`));
     }
+    // Get Last product
+    // inlineKeyboardArray.push(`Last Product ${productsSnapshot.docs[3]}`);
+    if (productsSnapshot.docs && productsSnapshot.docs.length) {
+      console.log(productsSnapshot.docs[4].data());
+    }
     // add back button
     if (currentCatalog.parentId) {
       backButton = Markup.button.callback("Back", `c/${currentCatalog.parentId}`);
@@ -99,7 +104,7 @@ catalog.action(/c\/([a-zA-Z0-9-_]+)?/, async (ctx) => {
   });
 });
 
-// Product controller
+// show product
 catalog.action(/p\/([a-zA-Z0-9-_]+)/, async (ctx) => {
   await ctx.answerCbQuery();
   // await ctx.telegram.deleteMyCommands;
@@ -149,7 +154,7 @@ catalog.action(/showPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
   const productRef = firebase.firestore().collection("products").doc(productId);
   const productSnapshot = await productRef.get();
   const product = {id: productSnapshot.id, ...productSnapshot.data()};
-  for (const photoId of product.photos) {
+  for (const [index, photoId] of product.photos.entries()) {
     // check if file exists
     let publicUrl = "";
     const photoExists = await bucket.file(`photos/products/${product.id}/2/${photoId}.jpg`).exists();
@@ -159,8 +164,8 @@ catalog.action(/showPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
       publicUrl = "https://s3.eu-central-1.amazonaws.com/rzk.com.ua/250.56ad1e10bf4a01b1ff3af88752fd3412.jpg";
     }
     await ctx.replyWithPhoto({url: publicUrl}, {
-      caption: product.mainPhoto === photoId ? `Main Photo ${product.name} (${product.id})` :
-        `${product.name} (${product.id})`,
+      caption: product.mainPhoto === photoId ? `Photo #${index + 1} (Main Photo) ${product.name} (${product.id})` :
+        `Photo #${index + 1} ${product.name} (${product.id})`,
       parse_mode: "Markdown",
       ...Markup.inlineKeyboard([
         Markup.button.callback("Set main", `setMainPhoto/${product.id}/${photoId}`),
