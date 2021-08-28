@@ -52,7 +52,6 @@ catalog.action(/c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
       params.set(paramsData.split("=")[0], paramsData.split("=")[1]);
     }
   }
-  console.log(params.get("startAfter"));
   // set currentCatalog data
   if (catalogId) {
     const currentCatalogSnapshot = await firebase.firestore().collection("catalogs").doc(catalogId).get();
@@ -67,9 +66,22 @@ catalog.action(/c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
   // add back button
   if (currentCatalog) {
     textMessage = `RZK Market Catalog *${currentCatalog.name}*`;
+
     // generate Products array
-    const query = firebase.firestore().collection("products").where("catalog.id", "==", currentCatalog.id)
-        .orderBy("orderNumber").limit(5);
+    let query = firebase.firestore().collection("products").where("catalog.id", "==", currentCatalog.id)
+        .orderBy("orderNumber");
+
+    // Paginate goods
+    if (params.get("startAfter")) {
+      const startAfterProduct = await firebase.firestore().collection("products").doc(params.get("startAfter")).get();
+      query = query.startAfter(startAfterProduct);
+    }
+    if (params.get("endBefore")) {
+      const endBeforeProduct = await firebase.firestore().collection("products").doc(params.get("endBefore")).get();
+      query = query.startAfter(endBeforeProduct).limitToLast(10);
+    } else {
+      query = query.limit(10);
+    }
     // get Products
     const productsSnapshot = await query.get();
     // generate products array
@@ -77,13 +89,17 @@ catalog.action(/c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
       inlineKeyboardArray.push(Markup.button.callback(`Product: ${product.data().name} (${product.id})`,
           `p/${product.id}`));
     }
-    // Get Last product
+    // Set load more button
     // ====
-    // inlineKeyboardArray.push(`Last Product ${productsSnapshot.docs[3]}`);
-    if (productsSnapshot.docs && productsSnapshot.docs.length) {
-      const lastProduct = productsSnapshot.docs[productsSnapshot.docs.length-1];
-      inlineKeyboardArray.push(Markup.button.callback(`Load more ... startAfter=${lastProduct.id}`,
-          `c/${currentCatalog.id}?startAfter=${productsSnapshot.docs[productsSnapshot.docs.length-1].id}`));
+    if (productsSnapshot.docs && productsSnapshot.docs.length === 10) {
+      // startAfter
+      const startAfter = productsSnapshot.docs[productsSnapshot.docs.length - 1];
+      inlineKeyboardArray.push(Markup.button.callback(`Load more ... startAfter=${startAfter.id}`,
+          `c/${currentCatalog.id}?startAfter=${startAfter.id}`));
+      // endBefore prev button
+      const endBefore = productsSnapshot.docs[0];
+      inlineKeyboardArray.push(Markup.button.callback(`endBefore=${endBefore.id}`,
+          `c/${currentCatalog.id}?endBefore=${endBefore.id}`));
     }
     // =====
     // add back button
