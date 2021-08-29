@@ -76,9 +76,10 @@ catalog.action(/c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
       const startAfterProduct = await firebase.firestore().collection("products").doc(params.get("startAfter")).get();
       query = query.startAfter(startAfterProduct);
     }
+    // prev button
     if (params.get("endBefore")) {
       const endBeforeProduct = await firebase.firestore().collection("products").doc(params.get("endBefore")).get();
-      query = query.startAfter(endBeforeProduct).limitToLast(10);
+      query = query.endBefore(endBeforeProduct).limitToLast(10);
     } else {
       query = query.limit(10);
     }
@@ -87,19 +88,30 @@ catalog.action(/c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
     // generate products array
     for (const product of productsSnapshot.docs) {
       inlineKeyboardArray.push(Markup.button.callback(`Product: ${product.data().name} (${product.id})`,
-          `p/${product.id}`));
+          `p/${product.id}?$callbackQuery={ctx.callbackQuery.data}`));
     }
     // Set load more button
     // ====
-    if (productsSnapshot.docs && productsSnapshot.docs.length === 10) {
+    if (!productsSnapshot.empty) {
       // startAfter
       const startAfter = productsSnapshot.docs[productsSnapshot.docs.length - 1];
-      inlineKeyboardArray.push(Markup.button.callback(`Load more ... startAfter=${startAfter.id}`,
-          `c/${currentCatalog.id}?startAfter=${startAfter.id}`));
+      const ifAfterProducts = await firebase.firestore().collection("products")
+          .where("catalog.id", "==", currentCatalog.id).orderBy("orderNumber")
+          .startAfter(startAfter).limit(1).get();
+      if (!ifAfterProducts.empty) {
+        inlineKeyboardArray.push(Markup.button.callback(`Load more ... startAfter=${startAfter.id}`,
+            `c/${currentCatalog.id}?startAfter=${startAfter.id}`));
+      }
       // endBefore prev button
       const endBefore = productsSnapshot.docs[0];
-      inlineKeyboardArray.push(Markup.button.callback(`endBefore=${endBefore.id}`,
-          `c/${currentCatalog.id}?endBefore=${endBefore.id}`));
+      const ifBeforeProducts = await firebase.firestore().collection("products")
+          .where("catalog.id", "==", currentCatalog.id).orderBy("orderNumber")
+          .endBefore(endBefore).limitToLast(1).get();
+      console.log(ctx.callbackQuery.data);
+      if (!ifBeforeProducts.empty) {
+        inlineKeyboardArray.push(Markup.button.callback(`endBefore=${endBefore.id}`,
+            `c/${currentCatalog.id}?endBefore=${endBefore.id}`));
+      }
     }
     // =====
     // add back button
