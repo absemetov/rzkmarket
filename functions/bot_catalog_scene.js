@@ -45,9 +45,8 @@ catalog.hears("back", (ctx) => {
 // Show Catalogs and goods
 catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
   const inlineKeyboardArray =[];
-  let currentCatalog = null;
-  let textMessage = "";
-  let backButton = "";
+  let currentCatalog = {};
+  let textMessage = "RZK Market Catalog";
   const catalogId = ctx.match[1];
   // parse url params
   const params = new Map();
@@ -61,21 +60,33 @@ catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
     const currentCatalogSnapshot = await firebase.firestore().collection("catalogs").doc(catalogId).get();
     currentCatalog = {id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data()};
   }
-  // generate catalogs
+  // Set Catalogs
   const catalogsSnapshot = await firebase.firestore().collection("catalogs")
       .where("parentId", "==", currentCatalog ? currentCatalog.id : null).orderBy("orderNumber").get();
   catalogsSnapshot.docs.forEach((doc) => {
     inlineKeyboardArray.push(Markup.button.callback("Catalog: " + doc.data().name, `c/${doc.id}`));
   });
-  // add back button
+  // Show catalog siblings
   if (currentCatalog) {
     textMessage = `RZK Market Catalog *${currentCatalog.name}*`;
-
-    // generate Products array
-    let query = firebase.firestore().collection("products").where("catalog.id", "==", currentCatalog.id)
+    // Add tags button
+    if (currentCatalog.tags) {
+      inlineKeyboardArray.push(Markup.button.callback(`Tags: ${currentCatalog.name}`,
+          `t/${currentCatalog.id}?tagSelected=${params.get("tag")}`));
+    }
+    // Products query
+    let mainQuery = firebase.firestore().collection("products").where("catalog.id", "==", currentCatalog.id)
         .orderBy("orderNumber");
-
+    let query = "";
+    // Filter by tag
+    console.log(params.get("tag"));
+    if (params.get("tag") && params.get("tag") !== "undefined") {
+      textMessage += `\nTag: *${params.get("tag")}*`;
+      mainQuery = mainQuery.where("tags", "array-contains", params.get("tag"));
+    }
     // Paginate goods
+    // copy main query
+    query = mainQuery;
     if (params.get("startAfter")) {
       const startAfterProduct = await firebase.firestore().collection("products").doc(params.get("startAfter")).get();
       query = query.startAfter(startAfterProduct);
@@ -99,33 +110,23 @@ catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
     if (!productsSnapshot.empty) {
       // startAfter
       const startAfter = productsSnapshot.docs[productsSnapshot.docs.length - 1];
-      const ifAfterProducts = await firebase.firestore().collection("products")
-          .where("catalog.id", "==", currentCatalog.id).orderBy("orderNumber")
-          .startAfter(startAfter).limit(1).get();
+      const ifAfterProducts = await mainQuery.startAfter(startAfter).limit(1).get();
       if (!ifAfterProducts.empty) {
         inlineKeyboardArray.push(Markup.button.callback(`Load more ... startAfter=${startAfter.id}`,
-            `c/${currentCatalog.id}?startAfter=${startAfter.id}`));
+            `c/${currentCatalog.id}?startAfter=${startAfter.id}&tag=${params.get("tag")}`));
       }
       // endBefore prev button
       const endBefore = productsSnapshot.docs[0];
-      const ifBeforeProducts = await firebase.firestore().collection("products")
-          .where("catalog.id", "==", currentCatalog.id).orderBy("orderNumber")
-          .endBefore(endBefore).limitToLast(1).get();
+      const ifBeforeProducts = await mainQuery.endBefore(endBefore).limitToLast(1).get();
       if (!ifBeforeProducts.empty) {
         inlineKeyboardArray.push(Markup.button.callback(`endBefore=${endBefore.id}`,
-            `c/${currentCatalog.id}?endBefore=${endBefore.id}`));
+            `c/${currentCatalog.id}?endBefore=${endBefore.id}&tag=${params.get("tag")}`));
       }
     }
     // =====
     // add back button
-    if (currentCatalog.parentId) {
-      backButton = Markup.button.callback("Back", `c/${currentCatalog.parentId}`);
-    } else {
-      backButton = Markup.button.callback("Back", "c/");
-    }
-    inlineKeyboardArray.push(backButton);
-  } else {
-    textMessage = "RZK Market Catalog";
+    inlineKeyboardArray.push(Markup.button.callback("Back",
+      currentCatalog.parentId ? `c/${currentCatalog.parentId}` : "c/"));
   }
   // const extraObject = {
   //   parse_mode: "Markdown",
@@ -186,6 +187,41 @@ catalog.action(/^p\/([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_=&\/?]+)?/, async (ctx) => {
     type: "photo",
     media: publicUrl,
     caption: `${product.name} (${product.id})`,
+    parse_mode: "Markdown",
+  }, {...Markup.inlineKeyboard(inlineKeyboardArray,
+      {wrap: (btn, index, currentRow) => {
+        return index <= 20;
+      }}),
+  });
+  await ctx.answerCbQuery();
+});
+
+// Tags
+catalog.action(/t\/([a-zA-Z0-9-_]+)\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
+  const inlineKeyboardArray = [];
+  const catalogId = ctx.match[1];
+  // parse url params
+  const params = new Map();
+  if (ctx.match[2]) {
+    for (const paramsData of ctx.match[2].split("&")) {
+      params.set(paramsData.split("=")[0], paramsData.split("=")[1]);
+    }
+  }
+  const currentCatalogSnapshot = await firebase.firestore().collection("catalogs").doc(catalogId).get();
+  const catalog = {id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data()};
+  for (const tag of catalog.tags) {
+    if (tag.id === params.get("tagSelected")) {
+      inlineKeyboardArray.push(Markup.button.callback(`Tag selected: ${tag.name}`, `c/${catalog.id}?tag=${tag.id}`));
+    } else {
+      inlineKeyboardArray.push(Markup.button.callback(`Tag: ${tag.name}`, `c/${catalog.id}?tag=${tag.id}`));
+    }
+  }
+  // Delete selected tag
+  inlineKeyboardArray.push(Markup.button.callback("Tag delete", `c/${catalog.id}`));
+  await ctx.editMessageMedia({
+    type: "photo",
+    media: "https://picsum.photos/200/200/?random",
+    caption: `RZK Market Catalog *${catalog.name}*\nChoose Tag`,
     parse_mode: "Markdown",
   }, {...Markup.inlineKeyboard(inlineKeyboardArray,
       {wrap: (btn, index, currentRow) => {
