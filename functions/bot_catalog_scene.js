@@ -7,7 +7,12 @@ const bucket = firebase.storage().bucket();
 const {Markup, Scenes: {BaseScene}} = require("telegraf");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 const catalog = new BaseScene("catalog");
-
+catalog.use(async (ctx, next) => {
+  if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
+    console.log("another callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
+  }
+  return next();
+});
 // enter to scene
 catalog.enter(async (ctx) => {
   const catalogsSnapshot = await firebase.firestore().collection("catalogs")
@@ -38,8 +43,7 @@ catalog.hears("back", (ctx) => {
 });
 
 // Show Catalogs and goods
-catalog.action(/c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
-  await ctx.answerCbQuery("");
+catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
   const inlineKeyboardArray =[];
   let currentCatalog = null;
   let textMessage = "";
@@ -85,10 +89,10 @@ catalog.action(/c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
     }
     // get Products
     const productsSnapshot = await query.get();
-    // generate products array
+    // generate products array, add callback path
     for (const product of productsSnapshot.docs) {
       inlineKeyboardArray.push(Markup.button.callback(`Product: ${product.data().name} (${product.id})`,
-          `p/${product.id}?$callbackQuery={ctx.callbackQuery.data}`));
+          `p/${product.id}/${ctx.callbackQuery.data}`));
     }
     // Set load more button
     // ====
@@ -107,7 +111,6 @@ catalog.action(/c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
       const ifBeforeProducts = await firebase.firestore().collection("products")
           .where("catalog.id", "==", currentCatalog.id).orderBy("orderNumber")
           .endBefore(endBefore).limitToLast(1).get();
-      console.log(ctx.callbackQuery.data);
       if (!ifBeforeProducts.empty) {
         inlineKeyboardArray.push(Markup.button.callback(`endBefore=${endBefore.id}`,
             `c/${currentCatalog.id}?endBefore=${endBefore.id}`));
@@ -143,12 +146,15 @@ catalog.action(/c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
         return index <= 20;
       }}),
   });
+  await ctx.answerCbQuery();
 });
 
 // show product
-catalog.action(/p\/([a-zA-Z0-9-_]+)/, async (ctx) => {
-  await ctx.answerCbQuery();
-  // await ctx.telegram.deleteMyCommands;
+// eslint-disable-next-line no-useless-escape
+catalog.action(/^p\/([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_=&\/?]+)?/, async (ctx) => {
+  // parse url params
+  const path = ctx.match[2];
+  // generate array
   const inlineKeyboardArray = [];
   const productSnapshot = await firebase.firestore().collection("products").doc(ctx.match[1]).get();
   const product = {id: productSnapshot.id, ...productSnapshot.data()};
@@ -157,7 +163,7 @@ catalog.action(/p\/([a-zA-Z0-9-_]+)/, async (ctx) => {
   if (product.photos && product.photos.length) {
     inlineKeyboardArray.push(Markup.button.callback("Show photos", `showPhotos/${product.id}`));
   }
-  inlineKeyboardArray.push(Markup.button.callback("Back", `c/${product.catalog.id}`));
+  inlineKeyboardArray.push(Markup.button.callback("Back", path));
   // const extraObject = {
   //   parse_mode: "Markdown",
   //   ...Markup.inlineKeyboard(inlineKeyboardArray,
@@ -186,6 +192,7 @@ catalog.action(/p\/([a-zA-Z0-9-_]+)/, async (ctx) => {
         return index <= 20;
       }}),
   });
+  await ctx.answerCbQuery();
 });
 
 // Show all photos
