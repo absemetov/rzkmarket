@@ -119,7 +119,7 @@ Count rows: *${sheet.rowCount - 1}*`);
         let batchCatalogs = firebase.firestore().batch();
         let batchCatalogsCount = 0;
         // catalog Tags batch
-        let batchCatalogsTags = firebase.firestore().batch();
+        const batchCatalogsTags = firebase.firestore().batch();
         // loop rows from SHEET
         for (let j = 0; j < rows.length; j++) {
           // validate data if ID and NAME set org Name and PRICE
@@ -250,12 +250,13 @@ Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id)}* to  *${
                   //     name: tagsRow.name,
                   //   }),
                   // });
+                  console.log(tagsRow.name);
                   batchCatalogsTags.set(catalogRef, {
                     "tags": firebase.firestore.FieldValue.arrayUnion({
                       id: tagsRow.id,
                       name: tagsRow.name,
                     }),
-                  });
+                  }, {merge: true});
                 }
               }
             }
@@ -268,11 +269,11 @@ Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id)}* to  *${
         if (batchCatalogsCount > 0 && batchCatalogsCount !== perPage) {
           batchArray.push(batchCatalogs.commit());
         }
-        // commit catalogs tags
-        batchArray.push(batchCatalogsTags.commit());
-        // commit all bathes parallel
+        // commit all bathes parallel with tags delete option
         await Promise.all(batchArray);
-        await ctx.replyWithMarkdown(`*${i + perPage}* rows scan and saved from *${sheet.rowCount - 1}*`);
+        // commit catalogs tags
+        await batchCatalogsTags.commit();
+        await ctx.replyWithMarkdown(`*${i + perPage}* rows scaned from *${sheet.rowCount - 1}*`);
       }
       // after upload show upload info
       const ms = new Date() - start;

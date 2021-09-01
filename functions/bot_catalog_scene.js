@@ -24,7 +24,7 @@ catalog.enter(async (ctx) => {
   });
   // return ctx.replyWithMarkdown("RZK Market Catalog", Markup.inlineKeyboard(catalogsArray));
   // reply with photo necessary to show ptoduct
-  return ctx.replyWithPhoto("https://picsum.photos/200/200/?random",
+  return ctx.replyWithPhoto("https://picsum.photos/450/150/?random",
       {
         caption: "Rzk.com.ru catalog",
         parse_mode: "Markdown",
@@ -79,7 +79,6 @@ catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
         .orderBy("orderNumber");
     let query = "";
     // Filter by tag
-    console.log(params.get("tag"));
     if (params.get("tag") && params.get("tag") !== "undefined") {
       textMessage += `\nTag: *${params.get("tag")}*`;
       mainQuery = mainQuery.where("tags", "array-contains", params.get("tag"));
@@ -139,7 +138,7 @@ catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
   // await ctx.editMessageCaption(`${textMessage}`, extraObject);
   await ctx.editMessageMedia({
     type: "photo",
-    media: "https://picsum.photos/200/200/?random",
+    media: "https://picsum.photos/450/150/?random",
     caption: textMessage,
     parse_mode: "Markdown",
   }, {...Markup.inlineKeyboard(inlineKeyboardArray,
