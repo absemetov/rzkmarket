@@ -118,6 +118,8 @@ Count rows: *${sheet.rowCount - 1}*`);
         // catalog parallel batched writes
         let batchCatalogs = firebase.firestore().batch();
         let batchCatalogsCount = 0;
+        // catalog Tags batch
+        let batchCatalogsTags = firebase.firestore().batch();
         // loop rows from SHEET
         for (let j = 0; j < rows.length; j++) {
           // validate data if ID and NAME set org Name and PRICE
@@ -219,6 +221,7 @@ Count rows: *${sheet.rowCount - 1}*`);
                   "parentId": catalog.parentId,
                   "orderNumber": countUploadGoods,
                   "updatedAt": serverTimestamp,
+                  "tags": firebase.firestore.FieldValue.delete(),
                 }, {merge: true});
                 catalogsIsSet.set(catalog.id, catalog.parentId);
                 // check batch limit 500
@@ -234,14 +237,20 @@ Count rows: *${sheet.rowCount - 1}*`);
 Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id)}* to  *${catalog.parentId}*, `);
               }
             }
-            // add tags Catalogs
+            // add tags Catalogs TODO delete TAGS!!!!
             if (tagsNames.length) {
               for (const tagsRow of tagsNames) {
                 // if hidden tag not save
                 if (!tagsRow.hidden) {
                   const catalogRef = firebase.firestore().collection("catalogs")
                       .doc(groupArray[groupArray.length - 1].id);
-                  batchCatalogs.update(catalogRef, {
+                  // batchCatalogs.update(catalogRef, {
+                  //   "tags": firebase.firestore.FieldValue.arrayUnion({
+                  //     id: tagsRow.id,
+                  //     name: tagsRow.name,
+                  //   }),
+                  // });
+                  batchCatalogsTags.set(catalogRef, {
                     "tags": firebase.firestore.FieldValue.arrayUnion({
                       id: tagsRow.id,
                       name: tagsRow.name,
@@ -255,10 +264,12 @@ Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id)}* to  *${
         }
         // add bath goods to array
         batchArray.push(batchGoods.commit());
-        // commit last bath catalog
+        // commit last batch catalog
         if (batchCatalogsCount > 0 && batchCatalogsCount !== perPage) {
           batchArray.push(batchCatalogs.commit());
         }
+        // commit catalogs tags
+        batchArray.push(batchCatalogsTags.commit());
         // commit all bathes parallel
         await Promise.all(batchArray);
         await ctx.replyWithMarkdown(`*${i + perPage}* rows scan and saved from *${sheet.rowCount - 1}*`);

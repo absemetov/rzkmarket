@@ -60,14 +60,14 @@ catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
     const currentCatalogSnapshot = await firebase.firestore().collection("catalogs").doc(catalogId).get();
     currentCatalog = {id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data()};
   }
-  // Set Catalogs
+  // Get catalogs
   const catalogsSnapshot = await firebase.firestore().collection("catalogs")
-      .where("parentId", "==", currentCatalog ? currentCatalog.id : null).orderBy("orderNumber").get();
+      .where("parentId", "==", currentCatalog.id ? currentCatalog.id : null).orderBy("orderNumber").get();
   catalogsSnapshot.docs.forEach((doc) => {
     inlineKeyboardArray.push(Markup.button.callback("Catalog: " + doc.data().name, `c/${doc.id}`));
   });
   // Show catalog siblings
-  if (currentCatalog) {
+  if (currentCatalog.id) {
     textMessage = `RZK Market Catalog *${currentCatalog.name}*`;
     // Add tags button
     if (currentCatalog.tags) {
@@ -197,7 +197,7 @@ catalog.action(/^p\/([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_=&\/?]+)?/, async (ctx) => {
 });
 
 // Tags
-catalog.action(/t\/([a-zA-Z0-9-_]+)\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
+catalog.action(/^t\/([a-zA-Z0-9-_]+)\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
   const inlineKeyboardArray = [];
   const catalogId = ctx.match[1];
   // parse url params
@@ -232,7 +232,7 @@ catalog.action(/t\/([a-zA-Z0-9-_]+)\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
 });
 
 // Show all photos
-catalog.action(/showPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
+catalog.action(/^showPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
   await ctx.answerCbQuery();
   const productId = ctx.match[1];
   const productRef = firebase.firestore().collection("products").doc(productId);
@@ -260,7 +260,7 @@ catalog.action(/showPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
 });
 
 // delete Photo
-catalog.action(/deletePhoto\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)/, async (ctx) => {
+catalog.action(/^deletePhoto\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)/, async (ctx) => {
   // init storage
   const productId = ctx.match[1];
   const deleteFileId = ctx.match[2];
@@ -291,7 +291,7 @@ catalog.action(/deletePhoto\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)/, async (ctx) =>
 });
 
 // upload photos limit 5
-catalog.action(/uploadPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
+catalog.action(/^uploadPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
   ctx.session.productId = ctx.match[1];
   const productRef = firebase.firestore().collection("products").doc(ctx.session.productId);
   const productSnapshot = await productRef.get();
@@ -301,7 +301,7 @@ catalog.action(/uploadPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
 });
 
 // Set Main photo product
-catalog.action(/setMainPhoto\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)/, async (ctx) => {
+catalog.action(/^setMainPhoto\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)/, async (ctx) => {
   const productId = ctx.match[1];
   const photoId = ctx.match[2];
   const productRef = firebase.firestore().collection("products").doc(productId);
