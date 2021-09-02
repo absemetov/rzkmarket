@@ -26,7 +26,7 @@ catalog.enter(async (ctx) => {
   // reply with photo necessary to show ptoduct
   return ctx.replyWithPhoto("https://picsum.photos/450/150/?random",
       {
-        caption: "Rzk Market Catalog 🗂",
+        caption: "Rzk Market Catalog 🇺🇦",
         parse_mode: "Markdown",
         ...Markup.inlineKeyboard(catalogsArray),
       });
@@ -68,20 +68,21 @@ catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
   });
   // Show catalog siblings
   if (currentCatalog.id) {
-    textMessage = `RZK Market Catalog *${currentCatalog.name}*`;
-    // Add tags button
-    if (currentCatalog.tags) {
-      inlineKeyboardArray.push(Markup.button.callback(`Tags: ${currentCatalog.name}`,
-          `t/${currentCatalog.id}?tagSelected=${params.get("tag")}`));
-    }
+    textMessage = `RZK Market Catalog 🇺🇦: *${currentCatalog.name}*`;
     // Products query
     let mainQuery = firebase.firestore().collection("products").where("catalog.id", "==", currentCatalog.id)
         .orderBy("orderNumber");
     let query = "";
     // Filter by tag
+    let selectedTag = "";
     if (params.get("tag") && params.get("tag") !== "undefined") {
-      textMessage += `\nTag: *${params.get("tag")}*`;
+      selectedTag = `(✅ ${params.get("tag")})`;
       mainQuery = mainQuery.where("tags", "array-contains", params.get("tag"));
+    }
+    // Add tags button
+    if (currentCatalog.tags) {
+      inlineKeyboardArray.push(Markup.button.callback(`📌 Tags ${selectedTag}`,
+          `t/${currentCatalog.id}?tagSelected=${params.get("tag")}`));
     }
     // Paginate goods
     // copy main query
@@ -101,7 +102,7 @@ catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
     const productsSnapshot = await query.get();
     // generate products array, add callback path
     for (const product of productsSnapshot.docs) {
-      inlineKeyboardArray.push(Markup.button.callback(`Product: ${product.data().name} (${product.id})`,
+      inlineKeyboardArray.push(Markup.button.callback(`📦 ${product.data().name} (${product.id})`,
           `p/${product.id}/${ctx.callbackQuery.data}`));
     }
     // Set load more button
@@ -111,20 +112,20 @@ catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
       const startAfter = productsSnapshot.docs[productsSnapshot.docs.length - 1];
       const ifAfterProducts = await mainQuery.startAfter(startAfter).limit(1).get();
       if (!ifAfterProducts.empty) {
-        inlineKeyboardArray.push(Markup.button.callback(`Load more ... startAfter=${startAfter.id}`,
+        inlineKeyboardArray.push(Markup.button.callback("🔜 Load more",
             `c/${currentCatalog.id}?startAfter=${startAfter.id}&tag=${params.get("tag")}`));
       }
       // endBefore prev button
       const endBefore = productsSnapshot.docs[0];
       const ifBeforeProducts = await mainQuery.endBefore(endBefore).limitToLast(1).get();
       if (!ifBeforeProducts.empty) {
-        inlineKeyboardArray.push(Markup.button.callback(`endBefore=${endBefore.id}`,
+        inlineKeyboardArray.push(Markup.button.callback(`🔙 Back`,
             `c/${currentCatalog.id}?endBefore=${endBefore.id}&tag=${params.get("tag")}`));
       }
     }
     // =====
     // add back button
-    inlineKeyboardArray.push(Markup.button.callback("🔙 Back",
+    inlineKeyboardArray.push(Markup.button.callback("🔝 Top catalog",
       currentCatalog.parentId ? `c/${currentCatalog.parentId}` : "c/"));
   }
   // const extraObject = {
@@ -210,17 +211,19 @@ catalog.action(/^t\/([a-zA-Z0-9-_]+)\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
   const catalog = {id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data()};
   for (const tag of catalog.tags) {
     if (tag.id === params.get("tagSelected")) {
-      inlineKeyboardArray.push(Markup.button.callback(`Tag selected: ${tag.name}`, `c/${catalog.id}?tag=${tag.id}`));
+      inlineKeyboardArray.push(Markup.button.callback(`✅ ${tag.name}`, `c/${catalog.id}?tag=${tag.id}`));
     } else {
-      inlineKeyboardArray.push(Markup.button.callback(`Tag: ${tag.name}`, `c/${catalog.id}?tag=${tag.id}`));
+      inlineKeyboardArray.push(Markup.button.callback(`📌 ${tag.name}`, `c/${catalog.id}?tag=${tag.id}`));
     }
   }
   // Delete selected tag
-  inlineKeyboardArray.push(Markup.button.callback("Tag delete", `c/${catalog.id}`));
+  if (params.get("tagSelected") && params.get("tagSelected") !== "undefined") {
+    inlineKeyboardArray.push(Markup.button.callback("❎ Tag delete", `c/${catalog.id}`));
+  }
   await ctx.editMessageMedia({
     type: "photo",
-    media: "https://picsum.photos/200/200/?random",
-    caption: `RZK Market Catalog *${catalog.name}*\nChoose Tag`,
+    media: "https://picsum.photos/450/150/?random",
+    caption: `Catalog *${catalog.name}* tags`,
     parse_mode: "Markdown",
   }, {...Markup.inlineKeyboard(inlineKeyboardArray,
       {wrap: (btn, index, currentRow) => {
