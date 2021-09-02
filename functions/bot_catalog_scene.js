@@ -20,13 +20,13 @@ catalog.enter(async (ctx) => {
   // generate catalogs array
   const catalogsArray = [];
   catalogsSnapshot.docs.forEach((doc) => {
-    catalogsArray.push(Markup.button.callback(doc.data().name, `c/${doc.id}`));
+    catalogsArray.push(Markup.button.callback(`🗂 ${doc.data().name}`, `c/${doc.id}`));
   });
   // return ctx.replyWithMarkdown("RZK Market Catalog", Markup.inlineKeyboard(catalogsArray));
   // reply with photo necessary to show ptoduct
   return ctx.replyWithPhoto("https://picsum.photos/450/150/?random",
       {
-        caption: "Rzk.com.ru catalog",
+        caption: "Rzk Market Catalog 🗂",
         parse_mode: "Markdown",
         ...Markup.inlineKeyboard(catalogsArray),
       });
@@ -64,7 +64,7 @@ catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
   const catalogsSnapshot = await firebase.firestore().collection("catalogs")
       .where("parentId", "==", currentCatalog.id ? currentCatalog.id : null).orderBy("orderNumber").get();
   catalogsSnapshot.docs.forEach((doc) => {
-    inlineKeyboardArray.push(Markup.button.callback("Catalog: " + doc.data().name, `c/${doc.id}`));
+    inlineKeyboardArray.push(Markup.button.callback(`🗂 ${doc.data().name}`, `c/${doc.id}`));
   });
   // Show catalog siblings
   if (currentCatalog.id) {
@@ -124,7 +124,7 @@ catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
     }
     // =====
     // add back button
-    inlineKeyboardArray.push(Markup.button.callback("Back",
+    inlineKeyboardArray.push(Markup.button.callback("🔙 Back",
       currentCatalog.parentId ? `c/${currentCatalog.parentId}` : "c/"));
   }
   // const extraObject = {

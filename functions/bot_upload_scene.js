@@ -1,6 +1,6 @@
 const firebase = require("firebase-admin");
 const {Scenes: {BaseScene}} = require("telegraf");
-const {getMainKeyboard, getBackKeyboard} = require("./bot_keyboards.js");
+// const {getMainKeyboard, getBackKeyboard} = require("./bot_keyboards.js");
 const {GoogleSpreadsheet} = require("google-spreadsheet");
 const creds = require("./rzk-com-ua-d1d3248b8410.json");
 const Validator = require("validatorjs");
@@ -8,21 +8,15 @@ const {google} = require("googleapis");
 const CyrillicToTranslit = require("cyrillic-to-translit-js");
 const cyrillicToTranslit = new CyrillicToTranslit();
 const upload = new BaseScene("upload");
-
-upload.enter((ctx) => {
-  ctx.reply("Вставьте ссылку Google Sheet", getBackKeyboard);
-});
-
-upload.leave((ctx) => {
-  ctx.reply("Menu", getMainKeyboard);
-});
-
+// enter scene
+upload.enter((ctx) => ctx.reply("Вставьте ссылку Google Sheet"));
+// upload.leave((ctx) => {
+//   ctx.reply("Menu", getMainKeyboard);
+// });
 upload.hears("where", (ctx) => ctx.reply("You are in upload scene"));
-
-upload.hears("back", (ctx) => {
-  ctx.scene.leave();
-});
-
+// upload.hears("back", (ctx) => {
+//   ctx.scene.leave();
+// });
 upload.hears("shop", async (ctx) => {
   const content = google.content("v2.1");
   // add scope content in admin.google!!!
@@ -55,7 +49,8 @@ upload.hears("shop", async (ctx) => {
   console.log(res.data);
 });
 // upload from googleSheet
-upload.on("text", async (ctx) => {
+// eslint-disable-next-line no-useless-escape
+upload.hears(/^[^\/]/, async (ctx) => {
   const start = new Date();
   // Max upload goods
   const maxUploadGoods = 100;
@@ -74,8 +69,7 @@ upload.on("text", async (ctx) => {
   });
 
   if (!sheetId) {
-    await ctx.replyWithMarkdown(`Sheet *${ctx.message.text}* not found, please enter valid url or sheet ID`,
-        getBackKeyboard);
+    await ctx.replyWithMarkdown(`Sheet *${ctx.message.text}* not found, please enter valid url or sheet ID`);
     return false;
   }
   // get data for check upload process
@@ -223,7 +217,7 @@ Count rows: *${sheet.rowCount - 1}*`);
                   "updatedAt": serverTimestamp,
                   "tags": firebase.firestore.FieldValue.delete(),
                 }, {merge: true});
-                catalogsIsSet.set(catalog.id, catalog.parentId);
+                catalogsIsSet.set(catalog.id, {parentId: catalog.parentId, tags: new Set()});
                 // check batch limit 500
                 if (++batchCatalogsCount === perPage) {
                   batchArray.push(batchCatalogs.commit());
@@ -232,32 +226,36 @@ Count rows: *${sheet.rowCount - 1}*`);
                 }
               }
               // Check if catalog moved
-              if (catalogsIsSet.get(catalog.id) !== catalog.parentId) {
+              if (catalogsIsSet.get(catalog.id).parentId !== catalog.parentId) {
                 throw new Error(`Goods *${product.name}* in row *${rows[j].rowIndex}*,
-Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id)}* to  *${catalog.parentId}*, `);
+Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id).parentId}* to  *${catalog.parentId}*, `);
               }
             }
             // add tags Catalogs TODO delete TAGS!!!!
             if (tagsNames.length) {
               for (const tagsRow of tagsNames) {
-                // if hidden tag not save
-                if (!tagsRow.hidden) {
-                  const catalogRef = firebase.firestore().collection("catalogs")
-                      .doc(groupArray[groupArray.length - 1].id);
-                  // batchCatalogs.update(catalogRef, {
-                  //   "tags": firebase.firestore.FieldValue.arrayUnion({
-                  //     id: tagsRow.id,
-                  //     name: tagsRow.name,
-                  //   }),
-                  // });
-                  console.log(tagsRow.name);
-                  batchCatalogsTags.set(catalogRef, {
-                    "tags": firebase.firestore.FieldValue.arrayUnion({
-                      id: tagsRow.id,
-                      name: tagsRow.name,
-                    }),
-                  }, {merge: true});
+                if (!catalogsIsSet.get(groupArray[groupArray.length - 1].id).tags.has(tagsRow.id)) {
+                  // if hidden tag not save
+                  if (!tagsRow.hidden) {
+                    const catalogRef = firebase.firestore().collection("catalogs")
+                        .doc(groupArray[groupArray.length - 1].id);
+                    // batchCatalogs.update(catalogRef, {
+                    //   "tags": firebase.firestore.FieldValue.arrayUnion({
+                    //     id: tagsRow.id,
+                    //     name: tagsRow.name,
+                    //   }),
+                    // });
+                    console.log(tagsRow.name);
+                    batchCatalogsTags.set(catalogRef, {
+                      "tags": firebase.firestore.FieldValue.arrayUnion({
+                        id: tagsRow.id,
+                        name: tagsRow.name,
+                      }),
+                    }, {merge: true});
+                  }
                 }
+                // Add tags value to tmp Map
+                catalogsIsSet.get(groupArray[groupArray.length - 1].id).tags.add(tagsRow.id);
               }
             }
             countUploadGoods ++;
@@ -279,7 +277,7 @@ Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id)}* to  *${
       const ms = new Date() - start;
       await ctx.replyWithMarkdown(`Data uploaded in *${Math.floor(ms/1000)}*s:
 Goods: *${countUploadGoods}*
-Catalogs: *${catalogsIsSet.size}*`, getBackKeyboard);
+Catalogs: *${catalogsIsSet.size}*`);
       // delete old Products
       const batchProductsDelete = firebase.firestore().batch();
       const productsDeleteSnapshot = await firebase.firestore().collection("products")
@@ -303,7 +301,7 @@ Catalogs: *${catalogsIsSet.size}*`, getBackKeyboard);
         ctx.replyWithMarkdown(`*${catalogsDeleteSnapshot.size}* catalogs deleted`);
       }
     } catch (error) {
-      await ctx.replyWithMarkdown(`Sheet ${error}`, getBackKeyboard);
+      await ctx.replyWithMarkdown(`Sheet ${error}`);
     }
     // set data for check upload process done!
     await sessionUser.set({

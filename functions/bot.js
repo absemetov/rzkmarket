@@ -7,7 +7,7 @@ const {start} = require("./bot_start_scene");
 const {mono, menuMono} = require("./bot_mono_scene");
 const {upload} = require("./bot_upload_scene");
 const {catalog} = require("./bot_catalog_scene");
-const {getMainKeyboard} = require("./bot_keyboards.js");
+// const {getMainKeyboard} = require("./bot_keyboards.js");
 const {MenuMiddleware} = require("telegraf-inline-menu");
 
 const token = functions.config().bot.token;
@@ -20,28 +20,26 @@ const stage = new Stage([start, mono, upload, catalog]);
 bot.use(firestoreSession(firebase.firestore().collection("sessions")));
 bot.use(stage.middleware());
 bot.start((ctx) => ctx.scene.enter("start"));
-bot.hears("mono", (ctx) => ctx.scene.enter("mono"));
-bot.hears("upload", async (ctx) => ctx.scene.enter("upload"));
+// bot.hears("mono", (ctx) => ctx.scene.enter("mono"));
 bot.hears("where", (ctx) => ctx.reply("You are in outside"));
 // mono menu
 const monoMiddleware = new MenuMiddleware("/", menuMono);
 // console.log(menuMiddleware.tree());
-bot.use(async (ctx, next) => {
-  if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
-    console.log("another callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
-  }
-  return next();
-});
+// bot.use(async (ctx, next) => {
+//   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
+//     console.log("another callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
+//   }
+//   return next();
+// });
 bot.command("mono", async (ctx) => monoMiddleware.replyToContext(ctx));
 bot.use(monoMiddleware.middleware());
-
+// Upload scene
+bot.command("upload", async (ctx) => ctx.scene.enter("upload"));
 // Catalog scene
-bot.command("catalog", async (ctx) => {
-  ctx.scene.enter("catalog");
-});
+bot.command("catalog", async (ctx) => ctx.scene.enter("catalog"));
 
 // if session destroyed show main keyboard
-bot.on("text", async (ctx) => ctx.reply("Menu test", getMainKeyboard));
+// bot.on("text", async (ctx) => ctx.reply("Menu test", getMainKeyboard));
 
 // bot.telegram.sendMessage(94899148, "Bot Rzk.com.ua ready!" );
 
