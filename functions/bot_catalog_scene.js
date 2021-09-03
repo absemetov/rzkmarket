@@ -14,23 +14,23 @@ catalog.use(async (ctx, next) => {
   return next();
 });
 // enter to scene
-catalog.enter(async (ctx) => {
-  const catalogsSnapshot = await firebase.firestore().collection("catalogs")
-      .where("parentId", "==", null).orderBy("orderNumber").get();
-  // generate catalogs array
-  const catalogsArray = [];
-  catalogsSnapshot.docs.forEach((doc) => {
-    catalogsArray.push(Markup.button.callback(`🗂 ${doc.data().name}`, `c/${doc.id}`));
-  });
-  // return ctx.replyWithMarkdown("RZK Market Catalog", Markup.inlineKeyboard(catalogsArray));
-  // reply with photo necessary to show ptoduct
-  return ctx.replyWithPhoto("https://picsum.photos/450/150/?random",
-      {
-        caption: "Rzk Market Catalog 🇺🇦",
-        parse_mode: "Markdown",
-        ...Markup.inlineKeyboard(catalogsArray),
-      });
-});
+// catalog.enter(async (ctx) => {
+//   const catalogsSnapshot = await firebase.firestore().collection("catalogs")
+//       .where("parentId", "==", null).orderBy("orderNumber").get();
+//   // generate catalogs array
+//   const catalogsArray = [];
+//   catalogsSnapshot.docs.forEach((doc) => {
+//     catalogsArray.push(Markup.button.callback(`🗂 ${doc.data().name}`, `c/${doc.id}`));
+//   });
+//   // return ctx.replyWithMarkdown("RZK Market Catalog", Markup.inlineKeyboard(catalogsArray));
+//   // reply with photo necessary to show ptoduct
+//   return ctx.replyWithPhoto("https://picsum.photos/450/150/?random",
+//       {
+//         caption: "Rzk Market Catalog 🇺🇦",
+//         parse_mode: "Markdown",
+//         ...Markup.inlineKeyboard(catalogsArray),
+//       });
+// });
 
 // catalog.leave((ctx) => {
 //   ctx.reply("Menu", getMainKeyboard);
@@ -46,7 +46,7 @@ catalog.hears("back", (ctx) => {
 catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
   const inlineKeyboardArray =[];
   let currentCatalog = {};
-  let textMessage = "RZK Market Catalog";
+  let textMessage = "RZK Market Catalog 🇺🇦";
   const catalogId = ctx.match[1];
   // parse url params
   const params = new Map();
@@ -68,7 +68,7 @@ catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
   });
   // Show catalog siblings
   if (currentCatalog.id) {
-    textMessage = `RZK Market Catalog 🇺🇦: *${currentCatalog.name}*`;
+    textMessage += `\n*${currentCatalog.name}*`;
     // Products query
     let mainQuery = firebase.firestore().collection("products").where("catalog.id", "==", currentCatalog.id)
         .orderBy("orderNumber");
@@ -112,20 +112,20 @@ catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
       const startAfter = productsSnapshot.docs[productsSnapshot.docs.length - 1];
       const ifAfterProducts = await mainQuery.startAfter(startAfter).limit(1).get();
       if (!ifAfterProducts.empty) {
-        inlineKeyboardArray.push(Markup.button.callback("🔜 Load more",
+        inlineKeyboardArray.push(Markup.button.callback("➡️ Load more",
             `c/${currentCatalog.id}?startAfter=${startAfter.id}&tag=${params.get("tag")}`));
       }
       // endBefore prev button
       const endBefore = productsSnapshot.docs[0];
       const ifBeforeProducts = await mainQuery.endBefore(endBefore).limitToLast(1).get();
       if (!ifBeforeProducts.empty) {
-        inlineKeyboardArray.push(Markup.button.callback(`🔙 Back`,
+        inlineKeyboardArray.push(Markup.button.callback("⬅️ Back",
             `c/${currentCatalog.id}?endBefore=${endBefore.id}&tag=${params.get("tag")}`));
       }
     }
     // =====
     // add back button
-    inlineKeyboardArray.push(Markup.button.callback("🔝 Top catalog",
+    inlineKeyboardArray.push(Markup.button.callback("⤴️ Parent catalog",
       currentCatalog.parentId ? `c/${currentCatalog.parentId}` : "c/"));
   }
   // const extraObject = {
@@ -159,12 +159,12 @@ catalog.action(/^p\/([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_=&\/?]+)?/, async (ctx) => {
   const inlineKeyboardArray = [];
   const productSnapshot = await firebase.firestore().collection("products").doc(ctx.match[1]).get();
   const product = {id: productSnapshot.id, ...productSnapshot.data()};
-  inlineKeyboardArray.push(Markup.button.callback("Upload photo", `uploadPhotos/${product.id}`));
+  inlineKeyboardArray.push(Markup.button.callback("📸 Upload photo", `uploadPhotos/${product.id}`));
   // chck photos
   if (product.photos && product.photos.length) {
-    inlineKeyboardArray.push(Markup.button.callback("Show photos", `showPhotos/${product.id}`));
+    inlineKeyboardArray.push(Markup.button.callback("🖼 Show photos", `showPhotos/${product.id}`));
   }
-  inlineKeyboardArray.push(Markup.button.callback("Back", path));
+  inlineKeyboardArray.push(Markup.button.callback("⤴️ Goto catalog", path));
   // const extraObject = {
   //   parse_mode: "Markdown",
   //   ...Markup.inlineKeyboard(inlineKeyboardArray,
@@ -216,14 +216,12 @@ catalog.action(/^t\/([a-zA-Z0-9-_]+)\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
       inlineKeyboardArray.push(Markup.button.callback(`📌 ${tag.name}`, `c/${catalog.id}?tag=${tag.id}`));
     }
   }
-  // Delete selected tag
-  if (params.get("tagSelected") && params.get("tagSelected") !== "undefined") {
-    inlineKeyboardArray.push(Markup.button.callback("❎ Tag delete", `c/${catalog.id}`));
-  }
+  // Delete or close selected tag
+  inlineKeyboardArray.push(Markup.button.callback("❎ Tag delete or close", `c/${catalog.id}`));
   await ctx.editMessageMedia({
     type: "photo",
     media: "https://picsum.photos/450/150/?random",
-    caption: `Catalog *${catalog.name}* tags`,
+    caption: `RZK Market Catalog 🇺🇦\n*${catalog.name}* Tags`,
     parse_mode: "Markdown",
   }, {...Markup.inlineKeyboard(inlineKeyboardArray,
       {wrap: (btn, index, currentRow) => {
@@ -254,13 +252,19 @@ catalog.action(/^showPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
         `Photo #${index + 1} ${product.name} (${product.id})`,
       parse_mode: "Markdown",
       ...Markup.inlineKeyboard([
-        Markup.button.callback("Set main", `setMainPhoto/${product.id}/${photoId}`),
-        Markup.button.callback("Delete", `deletePhoto/${product.id}/${photoId}`),
+        Markup.button.callback("🏷 Set main", `setMainPhoto/${product.id}/${photoId}`),
+        Markup.button.callback("❎ Close", "closePhoto"),
+        Markup.button.callback("🗑 Delete", `deletePhoto/${product.id}/${photoId}`),
       ]),
     });
   }
 });
 
+// close Photo
+catalog.action(/^closePhoto/, async (ctx) => {
+  await ctx.deleteMessage();
+  await ctx.answerCbQuery();
+});
 // delete Photo
 catalog.action(/^deletePhoto\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)/, async (ctx) => {
   // init storage
@@ -288,7 +292,7 @@ catalog.action(/^deletePhoto\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)/, async (ctx) =
     await bucket.file(`photos/products/${productId}/2/${deleteFileId}.jpg`).delete();
     await bucket.file(`photos/products/${productId}/1/${deleteFileId}.jpg`).delete();
   }
-  ctx.deleteMessage();
+  await ctx.deleteMessage();
   await ctx.answerCbQuery();
 });
 
@@ -314,8 +318,9 @@ catalog.action(/^setMainPhoto\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)/, async (ctx) 
   // ctx.reply(`Main photo updated, productId ${productId} ${fileId}`);
   await ctx.editMessageCaption(`Main photo updated, ${productSnapshot.data().name} ${productId}`,
       {...Markup.inlineKeyboard([
-        Markup.button.callback("Set main", `setMainPhoto/${productId}/${photoId}`),
-        Markup.button.callback("Delete", `deletePhoto/${productId}/${photoId}`),
+        Markup.button.callback("🏷 Set main", `setMainPhoto/${productId}/${photoId}`),
+        Markup.button.callback("❎ Close", "closePhoto"),
+        Markup.button.callback("🗑 Delete", `deletePhoto/${productId}/${photoId}`),
       ])});
   await ctx.answerCbQuery();
 });
@@ -391,13 +396,11 @@ catalog.on("photo", async (ctx, next) => {
         });
       }
       await ctx.replyWithMarkdown(`${product.name} (${product.id}) photo uploaded`,
-          Markup.inlineKeyboard([Markup.button.callback("Upload photos", `uploadPhotos/${product.id}`),
-            Markup.button.callback("Show photos", `showPhotos/${product.id}`),
-          ]));
+          Markup.inlineKeyboard([Markup.button.callback("📸 Upload more", `uploadPhotos/${product.id}`)]));
     }
     ctx.session.productId = null;
   } else {
-    ctx.reply("Please select a product to upload Photos go to /catalog");
+    ctx.reply("Please select a product to upload Photos go to Main page /start");
   }
 });
 
