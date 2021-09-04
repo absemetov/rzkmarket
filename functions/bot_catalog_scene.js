@@ -82,8 +82,10 @@ catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
     }
     // Add tags button
     if (currentCatalog.tags) {
-      inlineKeyboardArray.push(Markup.button.callback(`📌 Tags ${selectedTag}`,
-          `t/${currentCatalog.id}?tagSelected=${params.get("tag")}`));
+      // inlineKeyboardArray.push(Markup.button.callback(`📌 Tags ${selectedTag}`,
+      //    `t/${currentCatalog.id}?tagSelected=${params.get("tag")}`));
+      inlineKeyboardArray.push([{text: `📌 Tags ${selectedTag}`,
+        callback_data: `t/${currentCatalog.id}?tagSelected=${params.get("tag")}`}]);
     }
     // Paginate goods
     // copy main query
@@ -103,26 +105,38 @@ catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
     const productsSnapshot = await query.get();
     // generate products array, add callback path
     for (const product of productsSnapshot.docs) {
-      inlineKeyboardArray.push(Markup.button.callback(`📦 ${product.data().name} (${product.id})`,
-          `p/${product.id}/${ctx.callbackQuery.data}`));
+      // inlineKeyboardArray.push(Markup.button.callback(`📦 ${product.data().name} (${product.id})`,
+      //    `p/${product.id}/${ctx.callbackQuery.data}`));
+      inlineKeyboardArray.push([{text: `📦 ${product.data().name} (${product.id})`,
+        callback_data: `p/${product.id}/${ctx.callbackQuery.data}`}]);
     }
     // Set load more button
     // ====
     if (!productsSnapshot.empty) {
-      // startAfter
-      const startAfter = productsSnapshot.docs[productsSnapshot.docs.length - 1];
-      const ifAfterProducts = await mainQuery.startAfter(startAfter).limit(1).get();
-      if (!ifAfterProducts.empty) {
-        inlineKeyboardArray.push(Markup.button.callback("➡️ Load more",
-            `c/${currentCatalog.id}?startAfter=${startAfter.id}&tag=${params.get("tag")}`));
-      }
+      const prevNextArray = [];
       // endBefore prev button
       const endBefore = productsSnapshot.docs[0];
       const ifBeforeProducts = await mainQuery.endBefore(endBefore).limitToLast(1).get();
       if (!ifBeforeProducts.empty) {
-        inlineKeyboardArray.push(Markup.button.callback("⬅️ Back",
-            `c/${currentCatalog.id}?endBefore=${endBefore.id}&tag=${params.get("tag")}`));
+        // inlineKeyboardArray.push(Markup.button.callback("⬅️ Back",
+        //    `c/${currentCatalog.id}?endBefore=${endBefore.id}&tag=${params.get("tag")}`));
+        prevNextArray.push({
+          text: "⬅️ Back",
+          callback_data: `c/${currentCatalog.id}?endBefore=${endBefore.id}&tag=${params.get("tag")}`,
+        });
       }
+      // startAfter
+      const startAfter = productsSnapshot.docs[productsSnapshot.docs.length - 1];
+      const ifAfterProducts = await mainQuery.startAfter(startAfter).limit(1).get();
+      if (!ifAfterProducts.empty) {
+        // inlineKeyboardArray.push(Markup.button.callback("➡️ Load more",
+        //    `c/${currentCatalog.id}?startAfter=${startAfter.id}&tag=${params.get("tag")}`));
+        prevNextArray.push({
+          text: "➡️ Load more",
+          callback_data: `c/${currentCatalog.id}?startAfter=${startAfter.id}&tag=${params.get("tag")}`,
+        });
+      }
+      inlineKeyboardArray.push(prevNextArray);
     }
     // =====
     // add back button
@@ -147,12 +161,8 @@ catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
     parse_mode: "Markdown",
   }, {reply_markup: {
     inline_keyboard: [...inlineKeyboardArray],
+    // resize_keyboard: true,
   }});
-  // test buttons
-  console.log(Markup.inlineKeyboard(inlineKeyboardArray,
-      {wrap: (btn, index, currentRow) => {
-        return index <= 20;
-      }}));
   await ctx.answerCbQuery();
 });
 

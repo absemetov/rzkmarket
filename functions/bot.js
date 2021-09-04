@@ -23,7 +23,7 @@ bot.start((ctx) => ctx.scene.enter("start"));
 // bot.hears("mono", (ctx) => ctx.scene.enter("mono"));
 bot.hears("where", (ctx) => ctx.reply("You are in outside"));
 // mono menu
-const monoMiddleware = new MenuMiddleware("/", menuMono);
+const monoMiddleware = new MenuMiddleware("mono/", menuMono);
 // console.log(menuMiddleware.tree());
 // bot.use(async (ctx, next) => {
 //   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
