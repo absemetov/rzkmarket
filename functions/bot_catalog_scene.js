@@ -64,7 +64,8 @@ catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
   const catalogsSnapshot = await firebase.firestore().collection("catalogs")
       .where("parentId", "==", currentCatalog.id ? currentCatalog.id : null).orderBy("orderNumber").get();
   catalogsSnapshot.docs.forEach((doc) => {
-    inlineKeyboardArray.push(Markup.button.callback(`🗂 ${doc.data().name}`, `c/${doc.id}`));
+    // inlineKeyboardArray.push(Markup.button.callback(`🗂 ${doc.data().name}`, `c/${doc.id}`));
+    inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}`}]);
   });
   // Show catalog siblings
   if (currentCatalog.id) {
@@ -125,8 +126,10 @@ catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
     }
     // =====
     // add back button
-    inlineKeyboardArray.push(Markup.button.callback("⤴️ Parent catalog",
-      currentCatalog.parentId ? `c/${currentCatalog.parentId}` : "c/"));
+    // inlineKeyboardArray.push(Markup.button.callback("⤴️ Parent catalog",
+    //  currentCatalog.parentId ? `c/${currentCatalog.parentId}` : "c/"));
+    inlineKeyboardArray.push([{text: "⤴️ Parent catalog",
+      callback_data: currentCatalog.parentId ? `c/${currentCatalog.parentId}` : "c/"}]);
   }
   // const extraObject = {
   //   parse_mode: "Markdown",
@@ -142,11 +145,14 @@ catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
     media: "https://picsum.photos/450/150/?random",
     caption: textMessage,
     parse_mode: "Markdown",
-  }, {...Markup.inlineKeyboard(inlineKeyboardArray,
+  }, {reply_markup: {
+    inline_keyboard: [...inlineKeyboardArray],
+  }});
+  // test buttons
+  console.log(Markup.inlineKeyboard(inlineKeyboardArray,
       {wrap: (btn, index, currentRow) => {
         return index <= 20;
-      }}),
-  });
+      }}));
   await ctx.answerCbQuery();
 });
 
