@@ -2,32 +2,81 @@ const firebase = require("firebase-admin");
 const axios = require("axios");
 const cc = require("currency-codes");
 const {Scenes: {BaseScene}} = require("telegraf");
-const {getMainKeyboard, getMonoKeyboard} = require("./bot_keyboards.js");
-const {MenuTemplate, createBackMainMenuButtons} = require("telegraf-inline-menu");
-const mono = new BaseScene("mono");
+// const {getMainKeyboard, getMonoKeyboard} = require("./bot_keyboards.js");
+// const {MenuTemplate, createBackMainMenuButtons} = require("telegraf-inline-menu");
+const monoScene = new BaseScene("monoScene");
 
-mono.enter((ctx) => {
-  ctx.reply("Выберите валюту", getMonoKeyboard);
+monoScene.use(async (ctx, next) => {
+  if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
+    console.log("mono scene another callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
+  }
+  return next();
 });
 
-mono.leave((ctx) => {
-  ctx.reply("Menu", getMainKeyboard);
+monoScene.enter((ctx) => {
+  ctx.reply("Выберите валюту", {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {text: "USD", callback_data: "mono/USD"},
+          {text: "EUR", callback_data: "mono/EUR"},
+          {text: "RUB", callback_data: "mono/RUB"},
+        ],
+        [
+          {text: "Monobank.com.ua", url: "https://monobank.com.ua"},
+        ],
+      ],
+      // resize_keyboard: true,
+    }});
 });
 
-mono.hears("where", (ctx) => ctx.reply("You are in mono scene"));
+// Currency controller
+monoScene.action(/^mono\/([a-zA-Z0-9-_]+)/, async (ctx) => {
+  const currencyName = ctx.match[1];
+  const currencyObj = await getCurrency();
+  await ctx.editMessageText(monoMarkdown(currencyObj[currencyName]), {
+    parse_mode: "Markdown",
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {text: "USD", callback_data: "mono/USD"},
+          {text: "EUR", callback_data: "mono/EUR"},
+          {text: "RUB", callback_data: "mono/RUB"},
+        ],
+        [
+          {text: "Monobank.com.ua", url: "https://monobank.com.ua"},
+        ],
+      ],
+      // resize_keyboard: true,
+    }}).catch(catchMessageNotModified);
+  await ctx.answerCbQuery();
+});
 
-mono.hears("back", (ctx) => ctx.scene.leave());
+function catchMessageNotModified(error) {
+  if (error instanceof Error && error.message.includes("message is not modified")) {
+    // ignore
+    return false;
+  }
+  throw error;
+}
+// monoScene.leave((ctx) => {
+//   ctx.reply("Menu", getMainKeyboard);
+// });
+
+monoScene.hears("where", (ctx) => ctx.reply("You are in mono scene"));
+
+// monoScene.hears("back", (ctx) => ctx.scene.leave());
 
 // listen all text messages
-mono.on("text", async (ctx) => {
-  const currencyObj = await getCurrency();
-  const currency = currencyObj[ctx.message.text];
-  if (currency) {
-    ctx.replyWithMarkdown(monoMarkdown(currency));
-  } else {
-    ctx.replyWithMarkdown(`Currency *${ctx.message.text}* not found`);
-  }
-});
+// monoScene.on("text", async (ctx) => {
+//   const currencyObj = await getCurrency();
+//   const currency = currencyObj[ctx.message.text];
+//   if (currency) {
+//     ctx.replyWithMarkdown(monoMarkdown(currency));
+//   } else {
+//     ctx.replyWithMarkdown(`Currency *${ctx.message.text}* not found`);
+//   }
+// });
 
 function monoMarkdown(currency) {
   const currencyCode = cc.number(currency.currencyCodeA).code;
@@ -112,27 +161,27 @@ async function getCurrency(currencyName) {
 // menuMono.chooseIntoSubmenu("currency", ["USD", "EUR", "RUB"], submenuTemplate);
 // menuMono.url("Monobank.com.ua", "https://monobank.com.ua");
 // menuMono.manualRow(createBackMainMenuButtons());
-const menuMono = new MenuTemplate(async (ctx) => {
-  let text = "";
-  if (ctx.state.currency) {
-    const currencyObj = await getCurrency();
-    text = monoMarkdown(currencyObj[ctx.state.currency]);
-  } else {
-    text = "Выберите валюту!";
-  }
-  return {text, parse_mode: "Markdown"};
-});
-menuMono.choose("currency", ["USD", "EUR", "RUB"], {
-  do: (ctx, key) => {
-    // const keyTemp = key;
-    // await ctx.reply("As am I!");
-    ctx.state.currency = key;
-    return true;
-  },
-});
-menuMono.url("Monobank.com.ua", "https://monobank.com.ua");
+// const menuMono = new MenuTemplate(async (ctx) => {
+//   let text = "";
+//   if (ctx.state.currency) {
+//     const currencyObj = await getCurrency();
+//     text = monoMarkdown(currencyObj[ctx.state.currency]);
+//   } else {
+//     text = "Выберите валюту!";
+//   }
+//   return {text, parse_mode: "Markdown"};
+// });
+// menuMono.choose("currency", ["USD", "EUR", "RUB"], {
+//   do: (ctx, key) => {
+//     // const keyTemp = key;
+//     // await ctx.reply("As am I!");
+//     ctx.state.currency = key;
+//     return true;
+//   },
+// });
+// menuMono.url("Monobank.com.ua", "https://monobank.com.ua");
 // menu
 
-exports.mono = mono;
-exports.menuMono = menuMono;
+exports.monoScene = monoScene;
+// exports.menuMono = menuMono;
 

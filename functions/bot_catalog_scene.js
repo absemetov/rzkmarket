@@ -9,7 +9,7 @@ const {Markup, Scenes: {BaseScene}} = require("telegraf");
 const catalog = new BaseScene("catalog");
 catalog.use(async (ctx, next) => {
   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
-    console.log("another callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
+    console.log("Catalog scene another callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
   }
   return next();
 });
@@ -84,7 +84,7 @@ catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
     if (currentCatalog.tags) {
       // inlineKeyboardArray.push(Markup.button.callback(`📌 Tags ${selectedTag}`,
       //    `t/${currentCatalog.id}?tagSelected=${params.get("tag")}`));
-      inlineKeyboardArray.push([{text: `📌 Tags ${selectedTag}`,
+      inlineKeyboardArray.push([{text: `🔍 Tags ${selectedTag}`,
         callback_data: `t/${currentCatalog.id}?tagSelected=${params.get("tag")}`}]);
     }
     // Paginate goods
@@ -229,7 +229,7 @@ catalog.action(/^t\/([a-zA-Z0-9-_]+)\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
     if (tag.id === params.get("tagSelected")) {
       inlineKeyboardArray.push(Markup.button.callback(`✅ ${tag.name}`, `c/${catalog.id}?tag=${tag.id}`));
     } else {
-      inlineKeyboardArray.push(Markup.button.callback(`📌 ${tag.name}`, `c/${catalog.id}?tag=${tag.id}`));
+      inlineKeyboardArray.push(Markup.button.callback(`🔍 ${tag.name}`, `c/${catalog.id}?tag=${tag.id}`));
     }
   }
   // Delete or close selected tag

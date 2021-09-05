@@ -4,35 +4,37 @@ firebase.initializeApp();
 const {Telegraf, Scenes: {Stage}} = require("telegraf");
 const firestoreSession = require("telegraf-session-firestore");
 const {start} = require("./bot_start_scene");
-const {mono, menuMono} = require("./bot_mono_scene");
+const {monoScene} = require("./bot_mono_scene");
 const {upload} = require("./bot_upload_scene");
 const {catalog} = require("./bot_catalog_scene");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
-const {MenuMiddleware} = require("telegraf-inline-menu");
-
+// const {MenuMiddleware} = require("telegraf-inline-menu");
 const token = functions.config().bot.token;
 
 const bot = new Telegraf(token, {
   handlerTimeout: 540000,
 });
-// Stage scenes
-const stage = new Stage([start, mono, upload, catalog]);
+// Firestore session
 bot.use(firestoreSession(firebase.firestore().collection("sessions")));
+// Stage scenes
+const stage = new Stage([start, monoScene, upload, catalog]);
 bot.use(stage.middleware());
+bot.use(async (ctx, next) => {
+  if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
+    console.log(" Bot scene another callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
+  }
+  return next();
+});
 bot.start((ctx) => ctx.scene.enter("start"));
 // bot.hears("mono", (ctx) => ctx.scene.enter("mono"));
 bot.hears("where", (ctx) => ctx.reply("You are in outside"));
 // mono menu
-const monoMiddleware = new MenuMiddleware("mono/", menuMono);
+// const monoMiddleware = new MenuMiddleware("mono/", menuMono);
 // console.log(menuMiddleware.tree());
-// bot.use(async (ctx, next) => {
-//   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
-//     console.log("another callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
-//   }
-//   return next();
-// });
-bot.command("mono", async (ctx) => monoMiddleware.replyToContext(ctx));
-bot.use(monoMiddleware.middleware());
+// bot.command("mono", async (ctx) => monoMiddleware.replyToContext(ctx));
+// bot.use(monoMiddleware.middleware());
+// mono scene
+bot.command("mono", async (ctx) => ctx.scene.enter("monoScene"));
 // Upload scene
 bot.command("upload", async (ctx) => ctx.scene.enter("upload"));
 // Catalog scene
