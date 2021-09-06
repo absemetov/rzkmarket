@@ -77,15 +77,20 @@ catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
     // Filter by tag
     let selectedTag = "";
     if (params.get("tag") && params.get("tag") !== "undefined") {
-      selectedTag = `(✅ ${params.get("tag")})`;
+      selectedTag = `(${params.get("tag")})`;
       mainQuery = mainQuery.where("tags", "array-contains", params.get("tag"));
     }
     // Add tags button
     if (currentCatalog.tags) {
+      const tagsArray = [];
       // inlineKeyboardArray.push(Markup.button.callback(`📌 Tags ${selectedTag}`,
       //    `t/${currentCatalog.id}?tagSelected=${params.get("tag")}`));
-      inlineKeyboardArray.push([{text: `🔍 Tags ${selectedTag}`,
-        callback_data: `t/${currentCatalog.id}?tagSelected=${params.get("tag")}`}]);
+      tagsArray.push({text: "📌 Tags", callback_data: `t/${currentCatalog.id}?tagSelected=${params.get("tag")}`});
+      // Delete or close selected tag
+      if (selectedTag) {
+        tagsArray.push({text: `❎ Tag ${selectedTag}`, callback_data: `c/${currentCatalog.id}`});
+      }
+      inlineKeyboardArray.push(tagsArray);
     }
     // Paginate goods
     // copy main query
@@ -229,11 +234,9 @@ catalog.action(/^t\/([a-zA-Z0-9-_]+)\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
     if (tag.id === params.get("tagSelected")) {
       inlineKeyboardArray.push(Markup.button.callback(`✅ ${tag.name}`, `c/${catalog.id}?tag=${tag.id}`));
     } else {
-      inlineKeyboardArray.push(Markup.button.callback(`🔍 ${tag.name}`, `c/${catalog.id}?tag=${tag.id}`));
+      inlineKeyboardArray.push(Markup.button.callback(`📌 ${tag.name}`, `c/${catalog.id}?tag=${tag.id}`));
     }
   }
-  // Delete or close selected tag
-  inlineKeyboardArray.push(Markup.button.callback("❎ Tag delete or close", `c/${catalog.id}`));
   await ctx.editMessageMedia({
     type: "photo",
     media: "https://picsum.photos/450/150/?random",
