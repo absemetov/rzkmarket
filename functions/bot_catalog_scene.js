@@ -43,7 +43,7 @@ catalog.hears("back", (ctx) => {
 });
 
 // Show Catalogs and goods
-catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
+exports.catalogAction = async (ctx) => {
   const inlineKeyboardArray =[];
   let currentCatalog = {};
   let textMessage = "RZK Market Catalog 🇺🇦";
@@ -169,7 +169,7 @@ catalog.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
     // resize_keyboard: true,
   }});
   await ctx.answerCbQuery();
-});
+};
 
 // show product
 // eslint-disable-next-line no-useless-escape

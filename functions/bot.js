@@ -6,7 +6,7 @@ const firestoreSession = require("telegraf-session-firestore");
 const {start} = require("./bot_start_scene");
 const {monoScene} = require("./bot_mono_scene");
 const {upload} = require("./bot_upload_scene");
-const {catalog} = require("./bot_catalog_scene");
+const {catalog, catalogAction} = require("./bot_catalog_scene");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 // const {MenuMiddleware} = require("telegraf-inline-menu");
 const token = functions.config().bot.token;
@@ -40,6 +40,8 @@ bot.command("upload", async (ctx) => ctx.scene.enter("upload"));
 // Catalog scene
 bot.command("catalog", async (ctx) => ctx.scene.enter("catalog"));
 
+// Actions catalog
+bot.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, catalogAction);
 // if session destroyed show main keyboard
 // bot.on("text", async (ctx) => ctx.reply("Menu test", getMainKeyboard));
 
