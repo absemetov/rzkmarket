@@ -6,7 +6,7 @@ const firestoreSession = require("telegraf-session-firestore");
 const {start} = require("./bot_start_scene");
 const {monoScene} = require("./bot_mono_scene");
 const {upload} = require("./bot_upload_scene");
-const {catalog, catalogAction} = require("./bot_catalog_scene");
+const {catalogScene, catalogsActions} = require("./bot_catalog_scene");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 // const {MenuMiddleware} = require("telegraf-inline-menu");
 const token = functions.config().bot.token;
@@ -17,14 +17,18 @@ const bot = new Telegraf(token, {
 // Firestore session
 bot.use(firestoreSession(firebase.firestore().collection("sessions")));
 // Stage scenes
-const stage = new Stage([start, monoScene, upload, catalog]);
-bot.use(stage.middleware());
+const stage = new Stage([start, monoScene, upload, catalogScene]);
 bot.use(async (ctx, next) => {
   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
     console.log(" Bot scene another callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
   }
   return next();
 });
+// Actions catalog
+// catalog/(todo)/(param)?(args)
+bot.action(/^c\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, ...catalogsActions);
+
+bot.use(stage.middleware());
 bot.start((ctx) => ctx.scene.enter("start"));
 // bot.hears("mono", (ctx) => ctx.scene.enter("mono"));
 bot.hears("where", (ctx) => ctx.reply("You are in outside"));
@@ -40,8 +44,6 @@ bot.command("upload", async (ctx) => ctx.scene.enter("upload"));
 // Catalog scene
 bot.command("catalog", async (ctx) => ctx.scene.enter("catalog"));
 
-// Actions catalog
-bot.action(/^c\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, catalogAction);
 // if session destroyed show main keyboard
 // bot.on("text", async (ctx) => ctx.reply("Menu test", getMainKeyboard));
 

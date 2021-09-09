@@ -6,8 +6,8 @@ const bucket = firebase.storage().bucket();
 // await bucket.makePublic();
 const {Markup, Scenes: {BaseScene}} = require("telegraf");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
-const catalog = new BaseScene("catalog");
-catalog.use(async (ctx, next) => {
+const catalogScene = new BaseScene("catalog");
+catalogScene.use(async (ctx, next) => {
   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
     console.log("Catalog scene another callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
   }
@@ -36,14 +36,26 @@ catalog.use(async (ctx, next) => {
 //   ctx.reply("Menu", getMainKeyboard);
 // });
 
-catalog.hears("where", (ctx) => ctx.reply("You are in catalog scene"));
+catalogScene.hears("where", (ctx) => ctx.reply("You are in catalog scene"));
 
-catalog.hears("back", (ctx) => {
+catalogScene.hears("back", (ctx) => {
   ctx.scene.leave();
 });
 
+// test actions array
+const catalogsActions = [];
+catalogsActions.push(async (ctx, next) => {
+  await ctx.answerCbQuery("Action1");
+  return next();
+});
+
+catalogsActions.push(async (ctx, next) => {
+  await ctx.answerCbQuery("Action2");
+  return next();
+});
+
 // Show Catalogs and goods
-exports.catalogAction = async (ctx) => {
+catalogsActions.push(async (ctx, next) => {
   const inlineKeyboardArray =[];
   let currentCatalog = {};
   let textMessage = "RZK Market Catalog 🇺🇦";
@@ -169,11 +181,11 @@ exports.catalogAction = async (ctx) => {
     // resize_keyboard: true,
   }});
   await ctx.answerCbQuery();
-};
+});
 
 // show product
 // eslint-disable-next-line no-useless-escape
-catalog.action(/^p\/([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_=&\/?]+)?/, async (ctx) => {
+catalogScene.action(/^p\/([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_=&\/?]+)?/, async (ctx) => {
   // parse url params
   const path = ctx.match[2];
   // generate array
@@ -218,7 +230,7 @@ catalog.action(/^p\/([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_=&\/?]+)?/, async (ctx) => {
 });
 
 // Tags
-catalog.action(/^t\/([a-zA-Z0-9-_]+)\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
+catalogScene.action(/^t\/([a-zA-Z0-9-_]+)\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
   const inlineKeyboardArray = [];
   const catalogId = ctx.match[1];
   // parse url params
@@ -251,7 +263,7 @@ catalog.action(/^t\/([a-zA-Z0-9-_]+)\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
 });
 
 // Show all photos
-catalog.action(/^showPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
+catalogScene.action(/^showPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
   await ctx.answerCbQuery();
   const productId = ctx.match[1];
   const productRef = firebase.firestore().collection("products").doc(productId);
@@ -280,12 +292,12 @@ catalog.action(/^showPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
 });
 
 // close Photo
-catalog.action(/^closePhoto/, async (ctx) => {
+catalogScene.action(/^closePhoto/, async (ctx) => {
   await ctx.deleteMessage();
   await ctx.answerCbQuery();
 });
 // delete Photo
-catalog.action(/^deletePhoto\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)/, async (ctx) => {
+catalogScene.action(/^deletePhoto\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)/, async (ctx) => {
   // init storage
   const productId = ctx.match[1];
   const deleteFileId = ctx.match[2];
@@ -316,7 +328,7 @@ catalog.action(/^deletePhoto\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)/, async (ctx) =
 });
 
 // upload photos limit 5
-catalog.action(/^uploadPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
+catalogScene.action(/^uploadPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
   ctx.session.productId = ctx.match[1];
   const productRef = firebase.firestore().collection("products").doc(ctx.session.productId);
   const productSnapshot = await productRef.get();
@@ -326,7 +338,7 @@ catalog.action(/^uploadPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
 });
 
 // Set Main photo product
-catalog.action(/^setMainPhoto\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)/, async (ctx) => {
+catalogScene.action(/^setMainPhoto\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)/, async (ctx) => {
   const productId = ctx.match[1];
   const photoId = ctx.match[2];
   const productRef = firebase.firestore().collection("products").doc(productId);
@@ -345,7 +357,7 @@ catalog.action(/^setMainPhoto\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)/, async (ctx) 
 });
 
 // Upload product photos
-catalog.on("photo", async (ctx, next) => {
+catalogScene.on("photo", async (ctx, next) => {
   if (ctx.session.productId) {
     // file_id: 'AgACAgIAAxkBAAJKe2Eeb3sz3VbX5NP2xB0MphISptBEAAIjtTEbNKZhSJTK4DMrPuXqAQADAgADcwADIAQ',
     // file_unique_id: 'AQADI7UxGzSmYUh4',
@@ -423,4 +435,5 @@ catalog.on("photo", async (ctx, next) => {
   }
 });
 
-exports.catalog = catalog;
+exports.catalogScene = catalogScene;
+exports.catalogsActions = catalogsActions;
