@@ -8,9 +8,9 @@ start.enter(async (ctx) => {
   // reply with photo necessary to show ptoduct
   await ctx.replyWithPhoto("https://picsum.photos/450/150/?random",
       {
-        caption: "Rzk Market Ukraine 🇺🇦",
+        caption: "Welcome to Rzk Market Ukraine 🇺🇦",
         parse_mode: "Markdown",
-        ...Markup.inlineKeyboard([Markup.button.callback("📁 Catalog", "c/")]),
+        ...Markup.inlineKeyboard([Markup.button.callback("📁 Catalog", "c/c/")]),
       });
   // set commands
   await ctx.telegram.setMyCommands([

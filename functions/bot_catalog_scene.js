@@ -44,189 +44,200 @@ catalogScene.hears("back", (ctx) => {
 
 // test actions array
 const catalogsActions = [];
-catalogsActions.push(async (ctx, next) => {
-  await ctx.answerCbQuery("Action1");
-  return next();
-});
-
-catalogsActions.push(async (ctx, next) => {
-  await ctx.answerCbQuery("Action2");
-  return next();
-});
-
-// Show Catalogs and goods
-catalogsActions.push(async (ctx, next) => {
-  const inlineKeyboardArray =[];
-  let currentCatalog = {};
-  let textMessage = "RZK Market Catalog 🇺🇦";
-  const catalogId = ctx.match[1];
+// Parse callback data
+catalogsActions.push((ctx, next) => {
+  ctx.state.routeName = ctx.match[1];
+  ctx.state.param = ctx.match[2];
+  const args = ctx.match[3];
   // parse url params
   const params = new Map();
-  if (ctx.match[2]) {
-    for (const paramsData of ctx.match[2].split("&")) {
+  if (args) {
+    for (const paramsData of args.split("&")) {
       params.set(paramsData.split("=")[0], paramsData.split("=")[1]);
     }
   }
-  // set currentCatalog data
-  if (catalogId) {
-    const currentCatalogSnapshot = await firebase.firestore().collection("catalogs").doc(catalogId).get();
-    currentCatalog = {id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data()};
+  ctx.state.params = params;
+  return next();
+});
+// Show Catalogs and goods
+catalogsActions.push(async (ctx, next) => {
+  if (ctx.state.routeName === "c") {
+    const catalogId = ctx.state.param;
+    const inlineKeyboardArray =[];
+    let currentCatalog = {};
+    let textMessage = "RZK Market Catalog 🇺🇦";
+    // set currentCatalog data
+    if (catalogId) {
+      const currentCatalogSnapshot = await firebase.firestore().collection("catalogs").doc(catalogId).get();
+      currentCatalog = {id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data()};
+    }
+    // Get catalogs
+    const catalogsSnapshot = await firebase.firestore().collection("catalogs")
+        .where("parentId", "==", currentCatalog.id ? currentCatalog.id : null).orderBy("orderNumber").get();
+    catalogsSnapshot.docs.forEach((doc) => {
+      // inlineKeyboardArray.push(Markup.button.callback(`🗂 ${doc.data().name}`, `c/${doc.id}`));
+      inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/c/${doc.id}`}]);
+    });
+    // Show catalog siblings
+    if (currentCatalog.id) {
+      textMessage += `\n*${currentCatalog.name}*`;
+      // Products query
+      let mainQuery = firebase.firestore().collection("products").where("catalog.id", "==", currentCatalog.id)
+          .orderBy("orderNumber");
+      let query = "";
+      // Filter by tag
+      let selectedTag = "";
+      if (ctx.state.params.get("tag") && ctx.state.params.get("tag") !== "undefined") {
+        selectedTag = `(${ctx.state.params.get("tag")})`;
+        mainQuery = mainQuery.where("tags", "array-contains", ctx.state.params.get("tag"));
+      }
+      // Add tags button
+      if (currentCatalog.tags) {
+        const tagsArray = [];
+        // inlineKeyboardArray.push(Markup.button.callback(`📌 Tags ${selectedTag}`,
+        //    `t/${currentCatalog.id}?tagSelected=${params.get("tag")}`));
+        tagsArray.push({text: "📌 Tags",
+          callback_data: `t/${currentCatalog.id}?tagSelected=${ctx.state.params.get("tag")}`});
+        // Delete or close selected tag
+        if (selectedTag) {
+          tagsArray.push({text: `❎ Tag ${selectedTag}`, callback_data: `c/c/${currentCatalog.id}`});
+        }
+        inlineKeyboardArray.push(tagsArray);
+      }
+      // Paginate goods
+      // copy main query
+      query = mainQuery;
+      if (ctx.state.params.get("startAfter")) {
+        const startAfterProduct = await firebase.firestore().collection("products")
+            .doc(ctx.state.params.get("startAfter")).get();
+        query = query.startAfter(startAfterProduct);
+      }
+      // prev button
+      if (ctx.state.params.get("endBefore")) {
+        const endBeforeProduct = await firebase.firestore().collection("products")
+            .doc(ctx.state.params.get("endBefore")).get();
+        query = query.endBefore(endBeforeProduct).limitToLast(10);
+      } else {
+        query = query.limit(10);
+      }
+      // get Products
+      const productsSnapshot = await query.get();
+      // generate products array, add callback path
+      for (const product of productsSnapshot.docs) {
+        // inlineKeyboardArray.push(Markup.button.callback(`📦 ${product.data().name} (${product.id})`,
+        //    `p/${product.id}/${ctx.callbackQuery.data}`));
+        inlineKeyboardArray.push([{text: `📦 ${product.data().name} (${product.id})`,
+          callback_data: `c/p/${product.id}?path=${ctx.callbackQuery.data}`}]);
+      }
+      // Set load more button
+      // ====
+      if (!productsSnapshot.empty) {
+        const prevNextArray = [];
+        // endBefore prev button
+        const endBefore = productsSnapshot.docs[0];
+        const ifBeforeProducts = await mainQuery.endBefore(endBefore).limitToLast(1).get();
+        if (!ifBeforeProducts.empty) {
+          // inlineKeyboardArray.push(Markup.button.callback("⬅️ Back",
+          //    `c/${currentCatalog.id}?endBefore=${endBefore.id}&tag=${params.get("tag")}`));
+          prevNextArray.push({
+            text: "⬅️ Back",
+            callback_data: `c/c/${currentCatalog.id}?endBefore=${endBefore.id}&tag=${ctx.state.params.get("tag")}`,
+          });
+        }
+        // startAfter
+        const startAfter = productsSnapshot.docs[productsSnapshot.docs.length - 1];
+        const ifAfterProducts = await mainQuery.startAfter(startAfter).limit(1).get();
+        if (!ifAfterProducts.empty) {
+          // inlineKeyboardArray.push(Markup.button.callback("➡️ Load more",
+          //    `c/${currentCatalog.id}?startAfter=${startAfter.id}&tag=${params.get("tag")}`));
+          prevNextArray.push({
+            text: "➡️ Load more",
+            callback_data: `c/c/${currentCatalog.id}?startAfter=${startAfter.id}&tag=${ctx.state.params.get("tag")}`,
+          });
+        }
+        inlineKeyboardArray.push(prevNextArray);
+      }
+      // =====
+      // add back button
+      // inlineKeyboardArray.push(Markup.button.callback("⤴️ Parent catalog",
+      //  currentCatalog.parentId ? `c/${currentCatalog.parentId}` : "c/"));
+      inlineKeyboardArray.push([{text: "⤴️ Parent catalog",
+        callback_data: currentCatalog.parentId ? `c/c/${currentCatalog.parentId}` : "c/"}]);
+    }
+    // const extraObject = {
+    //   parse_mode: "Markdown",
+    //   ...Markup.inlineKeyboard(inlineKeyboardArray,
+    //       {wrap: (btn, index, currentRow) => {
+    //         return index <= 20;
+    //       }}),
+    // };
+    // await ctx.editMessageText(`${textMessage}`, extraObject);
+    // await ctx.editMessageCaption(`${textMessage}`, extraObject);
+    await ctx.editMessageMedia({
+      type: "photo",
+      media: "https://picsum.photos/450/150/?random",
+      caption: textMessage,
+      parse_mode: "Markdown",
+    }, {reply_markup: {
+      inline_keyboard: [...inlineKeyboardArray],
+      // resize_keyboard: true,
+    }});
+    await ctx.answerCbQuery();
+  } else {
+    return next();
   }
-  // Get catalogs
-  const catalogsSnapshot = await firebase.firestore().collection("catalogs")
-      .where("parentId", "==", currentCatalog.id ? currentCatalog.id : null).orderBy("orderNumber").get();
-  catalogsSnapshot.docs.forEach((doc) => {
-    // inlineKeyboardArray.push(Markup.button.callback(`🗂 ${doc.data().name}`, `c/${doc.id}`));
-    inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}`}]);
-  });
-  // Show catalog siblings
-  if (currentCatalog.id) {
-    textMessage += `\n*${currentCatalog.name}*`;
-    // Products query
-    let mainQuery = firebase.firestore().collection("products").where("catalog.id", "==", currentCatalog.id)
-        .orderBy("orderNumber");
-    let query = "";
-    // Filter by tag
-    let selectedTag = "";
-    if (params.get("tag") && params.get("tag") !== "undefined") {
-      selectedTag = `(${params.get("tag")})`;
-      mainQuery = mainQuery.where("tags", "array-contains", params.get("tag"));
-    }
-    // Add tags button
-    if (currentCatalog.tags) {
-      const tagsArray = [];
-      // inlineKeyboardArray.push(Markup.button.callback(`📌 Tags ${selectedTag}`,
-      //    `t/${currentCatalog.id}?tagSelected=${params.get("tag")}`));
-      tagsArray.push({text: "📌 Tags", callback_data: `t/${currentCatalog.id}?tagSelected=${params.get("tag")}`});
-      // Delete or close selected tag
-      if (selectedTag) {
-        tagsArray.push({text: `❎ Tag ${selectedTag}`, callback_data: `c/${currentCatalog.id}`});
-      }
-      inlineKeyboardArray.push(tagsArray);
-    }
-    // Paginate goods
-    // copy main query
-    query = mainQuery;
-    if (params.get("startAfter")) {
-      const startAfterProduct = await firebase.firestore().collection("products").doc(params.get("startAfter")).get();
-      query = query.startAfter(startAfterProduct);
-    }
-    // prev button
-    if (params.get("endBefore")) {
-      const endBeforeProduct = await firebase.firestore().collection("products").doc(params.get("endBefore")).get();
-      query = query.endBefore(endBeforeProduct).limitToLast(10);
-    } else {
-      query = query.limit(10);
-    }
-    // get Products
-    const productsSnapshot = await query.get();
-    // generate products array, add callback path
-    for (const product of productsSnapshot.docs) {
-      // inlineKeyboardArray.push(Markup.button.callback(`📦 ${product.data().name} (${product.id})`,
-      //    `p/${product.id}/${ctx.callbackQuery.data}`));
-      inlineKeyboardArray.push([{text: `📦 ${product.data().name} (${product.id})`,
-        callback_data: `p/${product.id}/${ctx.callbackQuery.data}`}]);
-    }
-    // Set load more button
-    // ====
-    if (!productsSnapshot.empty) {
-      const prevNextArray = [];
-      // endBefore prev button
-      const endBefore = productsSnapshot.docs[0];
-      const ifBeforeProducts = await mainQuery.endBefore(endBefore).limitToLast(1).get();
-      if (!ifBeforeProducts.empty) {
-        // inlineKeyboardArray.push(Markup.button.callback("⬅️ Back",
-        //    `c/${currentCatalog.id}?endBefore=${endBefore.id}&tag=${params.get("tag")}`));
-        prevNextArray.push({
-          text: "⬅️ Back",
-          callback_data: `c/${currentCatalog.id}?endBefore=${endBefore.id}&tag=${params.get("tag")}`,
-        });
-      }
-      // startAfter
-      const startAfter = productsSnapshot.docs[productsSnapshot.docs.length - 1];
-      const ifAfterProducts = await mainQuery.startAfter(startAfter).limit(1).get();
-      if (!ifAfterProducts.empty) {
-        // inlineKeyboardArray.push(Markup.button.callback("➡️ Load more",
-        //    `c/${currentCatalog.id}?startAfter=${startAfter.id}&tag=${params.get("tag")}`));
-        prevNextArray.push({
-          text: "➡️ Load more",
-          callback_data: `c/${currentCatalog.id}?startAfter=${startAfter.id}&tag=${params.get("tag")}`,
-        });
-      }
-      inlineKeyboardArray.push(prevNextArray);
-    }
-    // =====
-    // add back button
-    // inlineKeyboardArray.push(Markup.button.callback("⤴️ Parent catalog",
-    //  currentCatalog.parentId ? `c/${currentCatalog.parentId}` : "c/"));
-    inlineKeyboardArray.push([{text: "⤴️ Parent catalog",
-      callback_data: currentCatalog.parentId ? `c/${currentCatalog.parentId}` : "c/"}]);
-  }
-  // const extraObject = {
-  //   parse_mode: "Markdown",
-  //   ...Markup.inlineKeyboard(inlineKeyboardArray,
-  //       {wrap: (btn, index, currentRow) => {
-  //         return index <= 20;
-  //       }}),
-  // };
-  // await ctx.editMessageText(`${textMessage}`, extraObject);
-  // await ctx.editMessageCaption(`${textMessage}`, extraObject);
-  await ctx.editMessageMedia({
-    type: "photo",
-    media: "https://picsum.photos/450/150/?random",
-    caption: textMessage,
-    parse_mode: "Markdown",
-  }, {reply_markup: {
-    inline_keyboard: [...inlineKeyboardArray],
-    // resize_keyboard: true,
-  }});
-  await ctx.answerCbQuery();
 });
 
 // show product
 // eslint-disable-next-line no-useless-escape
-catalogScene.action(/^p\/([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_=&\/?]+)?/, async (ctx) => {
-  // parse url params
-  const path = ctx.match[2];
-  // generate array
-  const inlineKeyboardArray = [];
-  const productSnapshot = await firebase.firestore().collection("products").doc(ctx.match[1]).get();
-  const product = {id: productSnapshot.id, ...productSnapshot.data()};
-  inlineKeyboardArray.push(Markup.button.callback("📸 Upload photo", `uploadPhotos/${product.id}`));
-  // chck photos
-  if (product.photos && product.photos.length) {
-    inlineKeyboardArray.push(Markup.button.callback("🖼 Show photos", `showPhotos/${product.id}`));
-  }
-  inlineKeyboardArray.push(Markup.button.callback("⤴️ Goto catalog", path));
-  // const extraObject = {
-  //   parse_mode: "Markdown",
-  //   ...Markup.inlineKeyboard(inlineKeyboardArray,
-  //       {wrap: (btn, index, currentRow) => {
-  //         return index <= 20;
-  //       }}),
-  // };
-  // await ctx.editMessageText(`${product.name} ${product.price}`, extraObject);
-  // Get main photo url
-  let publicUrl = "";
-  if (product.mainPhoto) {
-    const photoExists = await bucket.file(`photos/products/${product.id}/2/${product.mainPhoto}.jpg`).exists();
-    if (photoExists[0]) {
-      publicUrl = bucket.file(`photos/products/${product.id}/2/${product.mainPhoto}.jpg`).publicUrl();
+catalogsActions.push( async (ctx, next) => {
+  if (ctx.state.routeName === "p") {
+    // parse url params
+    const path = ctx.state.params.get("path");
+    console.log(path);
+    // generate array
+    const inlineKeyboardArray = [];
+    const productSnapshot = await firebase.firestore().collection("products").doc(ctx.state.param).get();
+    const product = {id: productSnapshot.id, ...productSnapshot.data()};
+    // inlineKeyboardArray.push(Markup.button.callback("📸 Upload photo", `uploadPhotos/${product.id}`));
+    inlineKeyboardArray.push([{text: "📸 Upload photo", callback_data: `uploadPhotos/${product.id}`}]);
+    // chck photos
+    if (product.photos && product.photos.length) {
+      // inlineKeyboardArray.push(Markup.button.callback("🖼 Show photos", `showPhotos/${product.id}`));
+      inlineKeyboardArray.push([{text: "🖼 Show photos", callback_data: `showPhotos/${product.id}`}]);
     }
+    // inlineKeyboardArray.push(Markup.button.callback("⤴️ Goto catalog", path));
+    inlineKeyboardArray.push([{text: "⤴️ Goto catalog", callback_data: path}]);
+    // const extraObject = {
+    //   parse_mode: "Markdown",
+    //   ...Markup.inlineKeyboard(inlineKeyboardArray,
+    //       {wrap: (btn, index, currentRow) => {
+    //         return index <= 20;
+    //       }}),
+    // };
+    // await ctx.editMessageText(`${product.name} ${product.price}`, extraObject);
+    // Get main photo url
+    let publicUrl = "";
+    if (product.mainPhoto) {
+      const photoExists = await bucket.file(`photos/products/${product.id}/2/${product.mainPhoto}.jpg`).exists();
+      if (photoExists[0]) {
+        publicUrl = bucket.file(`photos/products/${product.id}/2/${product.mainPhoto}.jpg`).publicUrl();
+      }
+    } else {
+      publicUrl = "https://s3.eu-central-1.amazonaws.com/rzk.com.ua/250.56ad1e10bf4a01b1ff3af88752fd3412.jpg";
+    }
+    await ctx.editMessageMedia({
+      type: "photo",
+      media: publicUrl,
+      caption: `${product.name} (${product.id})`,
+      parse_mode: "Markdown",
+    }, {reply_markup: {
+      inline_keyboard: [...inlineKeyboardArray],
+    }});
+    await ctx.answerCbQuery();
   } else {
-    publicUrl = "https://s3.eu-central-1.amazonaws.com/rzk.com.ua/250.56ad1e10bf4a01b1ff3af88752fd3412.jpg";
+    return next();
   }
-  await ctx.editMessageMedia({
-    type: "photo",
-    media: publicUrl,
-    caption: `${product.name} (${product.id})`,
-    parse_mode: "Markdown",
-  }, {...Markup.inlineKeyboard(inlineKeyboardArray,
-      {wrap: (btn, index, currentRow) => {
-        return index <= 20;
-      }}),
-  });
-  await ctx.answerCbQuery();
 });
 
 // Tags
@@ -244,9 +255,9 @@ catalogScene.action(/^t\/([a-zA-Z0-9-_]+)\??([a-zA-Z0-9-_=&]+)?/, async (ctx) =>
   const catalog = {id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data()};
   for (const tag of catalog.tags) {
     if (tag.id === params.get("tagSelected")) {
-      inlineKeyboardArray.push(Markup.button.callback(`✅ ${tag.name}`, `c/${catalog.id}?tag=${tag.id}`));
+      inlineKeyboardArray.push(Markup.button.callback(`✅ ${tag.name}`, `c/c/${catalog.id}?tag=${tag.id}`));
     } else {
-      inlineKeyboardArray.push(Markup.button.callback(`📌 ${tag.name}`, `c/${catalog.id}?tag=${tag.id}`));
+      inlineKeyboardArray.push(Markup.button.callback(`📌 ${tag.name}`, `c/c/${catalog.id}?tag=${tag.id}`));
     }
   }
   await ctx.editMessageMedia({

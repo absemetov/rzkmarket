@@ -25,8 +25,9 @@ bot.use(async (ctx, next) => {
   return next();
 });
 // Actions catalog
-// catalog/(todo)/(param)?(args)
-bot.action(/^c\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&]+)?/, ...catalogsActions);
+// groupRoute/(route)/(param)?(args)
+// eslint-disable-next-line no-useless-escape
+bot.action(/^c\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/]+)?/, ...catalogsActions);
 
 bot.use(stage.middleware());
 bot.start((ctx) => ctx.scene.enter("start"));
