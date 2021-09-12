@@ -27,7 +27,7 @@ bot.use(async (ctx, next) => {
 // Actions catalog
 // groupRoute/(route)/(param)?(args)
 // eslint-disable-next-line no-useless-escape
-bot.action(/^c\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/]+)?/, ...catalogsActions);
+bot.action(/^c\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/, ...catalogsActions);
 
 bot.use(stage.middleware());
 bot.start((ctx) => ctx.scene.enter("start"));
@@ -50,8 +50,12 @@ bot.command("catalog", async (ctx) => ctx.scene.enter("catalog"));
 
 // bot.telegram.sendMessage(94899148, "Bot Rzk.com.ua ready!" );
 
-bot.catch((err) => {
-  console.log("Telegram error", err);
+bot.catch((error) => {
+  if (error instanceof Error && error.message.includes("message is not modified")) {
+    // ignore
+    return false;
+  }
+  throw error;
 });
 
 if (process.env.FUNCTIONS_EMULATOR) {

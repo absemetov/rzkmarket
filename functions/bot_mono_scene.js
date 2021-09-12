@@ -48,17 +48,10 @@ monoScene.action(/^mono\/([a-zA-Z0-9-_]+)/, async (ctx) => {
         ],
       ],
       // resize_keyboard: true,
-    }}).catch(catchMessageNotModified);
+    }});
   await ctx.answerCbQuery();
 });
 
-function catchMessageNotModified(error) {
-  if (error instanceof Error && error.message.includes("message is not modified")) {
-    // ignore
-    return false;
-  }
-  throw error;
-}
 // monoScene.leave((ctx) => {
 //   ctx.reply("Menu", getMainKeyboard);
 // });

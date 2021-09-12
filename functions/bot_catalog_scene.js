@@ -87,7 +87,7 @@ catalogsActions.push(async (ctx, next) => {
       let query = "";
       // Filter by tag
       let selectedTag = "";
-      if (ctx.state.params.get("tag") && ctx.state.params.get("tag") !== "undefined") {
+      if (ctx.state.params.get("tag")) {
         selectedTag = `(${ctx.state.params.get("tag")})`;
         mainQuery = mainQuery.where("tags", "array-contains", ctx.state.params.get("tag"));
       }
@@ -127,7 +127,8 @@ catalogsActions.push(async (ctx, next) => {
         // inlineKeyboardArray.push(Markup.button.callback(`📦 ${product.data().name} (${product.id})`,
         //    `p/${product.id}/${ctx.callbackQuery.data}`));
         inlineKeyboardArray.push([{text: `📦 ${product.data().name} (${product.id})`,
-          callback_data: `c/p/${product.id}?path=${ctx.callbackQuery.data}`}]);
+          callback_data: `c/p/${product.id}?path=${ctx.callbackQuery.data.replace("?", ":")
+              .replace(/=/g, "~").replace(/&/g, "+")}`}]);
       }
       // Set load more button
       // ====
@@ -141,7 +142,8 @@ catalogsActions.push(async (ctx, next) => {
           //    `c/${currentCatalog.id}?endBefore=${endBefore.id}&tag=${params.get("tag")}`));
           prevNextArray.push({
             text: "⬅️ Back",
-            callback_data: `c/c/${currentCatalog.id}?endBefore=${endBefore.id}&tag=${ctx.state.params.get("tag")}`,
+            callback_data: `c/c/${currentCatalog.id}?endBefore=${endBefore.id}` +
+              `${ctx.state.params.get("tag") ? "&tag=" + ctx.state.params.get("tag") : ""}`,
           });
         }
         // startAfter
@@ -152,7 +154,8 @@ catalogsActions.push(async (ctx, next) => {
           //    `c/${currentCatalog.id}?startAfter=${startAfter.id}&tag=${params.get("tag")}`));
           prevNextArray.push({
             text: "➡️ Load more",
-            callback_data: `c/c/${currentCatalog.id}?startAfter=${startAfter.id}&tag=${ctx.state.params.get("tag")}`,
+            callback_data: `c/c/${currentCatalog.id}?startAfter=${startAfter.id}` +
+              `${ctx.state.params.get("tag") ? "&tag=" + ctx.state.params.get("tag") : ""}`,
           });
         }
         inlineKeyboardArray.push(prevNextArray);
@@ -194,7 +197,6 @@ catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "p") {
     // parse url params
     const path = ctx.state.params.get("path");
-    console.log(path);
     // generate array
     const inlineKeyboardArray = [];
     const productSnapshot = await firebase.firestore().collection("products").doc(ctx.state.param).get();
@@ -207,7 +209,9 @@ catalogsActions.push( async (ctx, next) => {
       inlineKeyboardArray.push([{text: "🖼 Show photos", callback_data: `showPhotos/${product.id}`}]);
     }
     // inlineKeyboardArray.push(Markup.button.callback("⤴️ Goto catalog", path));
-    inlineKeyboardArray.push([{text: "⤴️ Goto catalog", callback_data: path}]);
+    // encode path c/c/karre-white?startAfter=32&tag=ramka
+    inlineKeyboardArray.push([{text: "⤴️ Goto catalog",
+      callback_data: path.replace(":", "?").replace(/~/g, "=").replace(/\+/g, "&")}]);
     // const extraObject = {
     //   parse_mode: "Markdown",
     //   ...Markup.inlineKeyboard(inlineKeyboardArray,
@@ -241,36 +245,40 @@ catalogsActions.push( async (ctx, next) => {
 });
 
 // Tags
-catalogScene.action(/^t\/([a-zA-Z0-9-_]+)\??([a-zA-Z0-9-_=&]+)?/, async (ctx) => {
-  const inlineKeyboardArray = [];
-  const catalogId = ctx.match[1];
-  // parse url params
-  const params = new Map();
-  if (ctx.match[2]) {
-    for (const paramsData of ctx.match[2].split("&")) {
-      params.set(paramsData.split("=")[0], paramsData.split("=")[1]);
+catalogsActions.push( async (ctx, next) => {
+  if (ctx.state.routeName === "t") {
+    const inlineKeyboardArray = [];
+    const catalogId = ctx.state.param;
+    // parse url params
+    const params = new Map();
+    if (ctx.match[2]) {
+      for (const paramsData of ctx.match[2].split("&")) {
+        params.set(paramsData.split("=")[0], paramsData.split("=")[1]);
+      }
     }
-  }
-  const currentCatalogSnapshot = await firebase.firestore().collection("catalogs").doc(catalogId).get();
-  const catalog = {id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data()};
-  for (const tag of catalog.tags) {
-    if (tag.id === params.get("tagSelected")) {
-      inlineKeyboardArray.push(Markup.button.callback(`✅ ${tag.name}`, `c/c/${catalog.id}?tag=${tag.id}`));
-    } else {
-      inlineKeyboardArray.push(Markup.button.callback(`📌 ${tag.name}`, `c/c/${catalog.id}?tag=${tag.id}`));
+    const currentCatalogSnapshot = await firebase.firestore().collection("catalogs").doc(catalogId).get();
+    const catalog = {id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data()};
+    for (const tag of catalog.tags) {
+      if (tag.id === ctx.state.params.get("tagSelected")) {
+        // inlineKeyboardArray.push(Markup.button.callback(`✅ ${tag.name}`, `c/c/${catalog.id}?tag=${tag.id}`));
+        inlineKeyboardArray.push([{text: `✅ ${tag.name}`, callback_data: `c/c/${catalog.id}?tag=${tag.id}`}]);
+      } else {
+        // inlineKeyboardArray.push(Markup.button.callback(`📌 ${tag.name}`, `c/c/${catalog.id}?tag=${tag.id}`));
+        inlineKeyboardArray.push([{text: `📌 ${tag.name}`, callback_data: `c/c/${catalog.id}?tag=${tag.id}`}]);
+      }
     }
+    await ctx.editMessageMedia({
+      type: "photo",
+      media: "https://picsum.photos/450/150/?random",
+      caption: `RZK Market Catalog 🇺🇦\n*${catalog.name}* Tags`,
+      parse_mode: "Markdown",
+    }, {reply_markup: {
+      inline_keyboard: [...inlineKeyboardArray],
+    }});
+    await ctx.answerCbQuery();
+  } else {
+    return next();
   }
-  await ctx.editMessageMedia({
-    type: "photo",
-    media: "https://picsum.photos/450/150/?random",
-    caption: `RZK Market Catalog 🇺🇦\n*${catalog.name}* Tags`,
-    parse_mode: "Markdown",
-  }, {...Markup.inlineKeyboard(inlineKeyboardArray,
-      {wrap: (btn, index, currentRow) => {
-        return index <= 20;
-      }}),
-  });
-  await ctx.answerCbQuery();
 });
 
 // Show all photos
