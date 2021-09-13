@@ -4,31 +4,30 @@ firebase.initializeApp();
 const {Telegraf, Scenes: {Stage}} = require("telegraf");
 const firestoreSession = require("telegraf-session-firestore");
 const {start} = require("./bot_start_scene");
-const {monoScene} = require("./bot_mono_scene");
+const {monoScene, monoActions} = require("./bot_mono_scene");
 const {upload} = require("./bot_upload_scene");
 const {catalogScene, catalogsActions} = require("./bot_catalog_scene");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 // const {MenuMiddleware} = require("telegraf-inline-menu");
+// Stage scenes
+const stage = new Stage([start, monoScene, upload, catalogScene]);
 const token = functions.config().bot.token;
-
 const bot = new Telegraf(token, {
   handlerTimeout: 540000,
 });
 // Firestore session
 bot.use(firestoreSession(firebase.firestore().collection("sessions")));
-// Stage scenes
-const stage = new Stage([start, monoScene, upload, catalogScene]);
 bot.use(async (ctx, next) => {
   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
     console.log(" Bot scene another callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
   }
   return next();
 });
-// Actions catalog
-// groupRoute/(route)/(param)?(args)
+// Actions catalog, mono
+// (routeName)/(param)?(args)
 // eslint-disable-next-line no-useless-escape
-bot.action(/^c\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/, ...catalogsActions);
-
+bot.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/, ...catalogsActions, ...monoActions);
+// scenes
 bot.use(stage.middleware());
 bot.start((ctx) => ctx.scene.enter("start"));
 // bot.hears("mono", (ctx) => ctx.scene.enter("mono"));

@@ -10,7 +10,7 @@ start.enter(async (ctx) => {
       {
         caption: "Welcome to Rzk Market Ukraine 🇺🇦",
         parse_mode: "Markdown",
-        ...Markup.inlineKeyboard([Markup.button.callback("📁 Catalog", "c/c/")]),
+        ...Markup.inlineKeyboard([Markup.button.callback("📁 Catalog", "c")]),
       });
   // set commands
   await ctx.telegram.setMyCommands([

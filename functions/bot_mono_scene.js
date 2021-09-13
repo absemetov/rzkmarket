@@ -5,7 +5,7 @@ const {Scenes: {BaseScene}} = require("telegraf");
 // const {getMainKeyboard, getMonoKeyboard} = require("./bot_keyboards.js");
 // const {MenuTemplate, createBackMainMenuButtons} = require("telegraf-inline-menu");
 const monoScene = new BaseScene("monoScene");
-
+const monoActions = [];
 monoScene.use(async (ctx, next) => {
   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
     console.log("mono scene another callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
@@ -18,9 +18,9 @@ monoScene.enter((ctx) => {
     reply_markup: {
       inline_keyboard: [
         [
-          {text: "USD", callback_data: "mono/USD"},
-          {text: "EUR", callback_data: "mono/EUR"},
-          {text: "RUB", callback_data: "mono/RUB"},
+          {text: "🇱🇷 USD", callback_data: "mono/USD"},
+          {text: "🇪🇺 EUR", callback_data: "mono/EUR"},
+          {text: "🇷🇺 RUB", callback_data: "mono/RUB"},
         ],
         [
           {text: "Monobank.com.ua", url: "https://monobank.com.ua"},
@@ -31,23 +31,22 @@ monoScene.enter((ctx) => {
 });
 
 // Currency controller
-monoScene.action(/^mono\/([a-zA-Z0-9-_]+)/, async (ctx) => {
-  const currencyName = ctx.match[1];
+monoActions.push(async (ctx) => {
+  const currencyName = ctx.state.param;
   const currencyObj = await getCurrency();
   await ctx.editMessageText(monoMarkdown(currencyObj[currencyName]), {
     parse_mode: "Markdown",
     reply_markup: {
       inline_keyboard: [
         [
-          {text: "USD", callback_data: "mono/USD"},
-          {text: "EUR", callback_data: "mono/EUR"},
-          {text: "RUB", callback_data: "mono/RUB"},
+          {text: "🇱🇷 USD", callback_data: "mono/USD"},
+          {text: "🇪🇺 EUR", callback_data: "mono/EUR"},
+          {text: "🇷🇺 RUB", callback_data: "mono/RUB"},
         ],
         [
           {text: "Monobank.com.ua", url: "https://monobank.com.ua"},
         ],
       ],
-      // resize_keyboard: true,
     }});
   await ctx.answerCbQuery();
 });
@@ -142,39 +141,5 @@ async function getCurrency(currencyName) {
   return currencyResult;
 }
 
-// menu
-// const menuMono = new MenuTemplate(() => "Выберите валюту");
-// const submenuTemplate = new MenuTemplate(async (ctx) => {
-//   const currencyObj = await getCurrency();
-//   const currency = currencyObj[ctx.match[1]];
-//   const text = monoMarkdown(currency);
-//   return {text, parse_mode: "Markdown"};
-// });
-// submenuTemplate.manualRow(createBackMainMenuButtons());
-// menuMono.chooseIntoSubmenu("currency", ["USD", "EUR", "RUB"], submenuTemplate);
-// menuMono.url("Monobank.com.ua", "https://monobank.com.ua");
-// menuMono.manualRow(createBackMainMenuButtons());
-// const menuMono = new MenuTemplate(async (ctx) => {
-//   let text = "";
-//   if (ctx.state.currency) {
-//     const currencyObj = await getCurrency();
-//     text = monoMarkdown(currencyObj[ctx.state.currency]);
-//   } else {
-//     text = "Выберите валюту!";
-//   }
-//   return {text, parse_mode: "Markdown"};
-// });
-// menuMono.choose("currency", ["USD", "EUR", "RUB"], {
-//   do: (ctx, key) => {
-//     // const keyTemp = key;
-//     // await ctx.reply("As am I!");
-//     ctx.state.currency = key;
-//     return true;
-//   },
-// });
-// menuMono.url("Monobank.com.ua", "https://monobank.com.ua");
-// menu
-
 exports.monoScene = monoScene;
-// exports.menuMono = menuMono;
-
+exports.monoActions = monoActions;

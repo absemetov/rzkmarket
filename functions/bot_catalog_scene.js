@@ -76,7 +76,7 @@ catalogsActions.push(async (ctx, next) => {
         .where("parentId", "==", currentCatalog.id ? currentCatalog.id : null).orderBy("orderNumber").get();
     catalogsSnapshot.docs.forEach((doc) => {
       // inlineKeyboardArray.push(Markup.button.callback(`🗂 ${doc.data().name}`, `c/${doc.id}`));
-      inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/c/${doc.id}`}]);
+      inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}`}]);
     });
     // Show catalog siblings
     if (currentCatalog.id) {
@@ -100,7 +100,7 @@ catalogsActions.push(async (ctx, next) => {
           callback_data: `t/${currentCatalog.id}?tagSelected=${ctx.state.params.get("tag")}`});
         // Delete or close selected tag
         if (selectedTag) {
-          tagsArray.push({text: `❎ Tag ${selectedTag}`, callback_data: `c/c/${currentCatalog.id}`});
+          tagsArray.push({text: `❎ Tag ${selectedTag}`, callback_data: `c/${currentCatalog.id}`});
         }
         inlineKeyboardArray.push(tagsArray);
       }
@@ -127,7 +127,7 @@ catalogsActions.push(async (ctx, next) => {
         // inlineKeyboardArray.push(Markup.button.callback(`📦 ${product.data().name} (${product.id})`,
         //    `p/${product.id}/${ctx.callbackQuery.data}`));
         inlineKeyboardArray.push([{text: `📦 ${product.data().name} (${product.id})`,
-          callback_data: `c/p/${product.id}?path=${ctx.callbackQuery.data.replace("?", ":")
+          callback_data: `p/${product.id}?path=${ctx.callbackQuery.data.replace("?", ":")
               .replace(/=/g, "~").replace(/&/g, "+")}`}]);
       }
       // Set load more button
@@ -142,7 +142,7 @@ catalogsActions.push(async (ctx, next) => {
           //    `c/${currentCatalog.id}?endBefore=${endBefore.id}&tag=${params.get("tag")}`));
           prevNextArray.push({
             text: "⬅️ Back",
-            callback_data: `c/c/${currentCatalog.id}?endBefore=${endBefore.id}` +
+            callback_data: `c/${currentCatalog.id}?endBefore=${endBefore.id}` +
               `${ctx.state.params.get("tag") ? "&tag=" + ctx.state.params.get("tag") : ""}`,
           });
         }
@@ -154,7 +154,7 @@ catalogsActions.push(async (ctx, next) => {
           //    `c/${currentCatalog.id}?startAfter=${startAfter.id}&tag=${params.get("tag")}`));
           prevNextArray.push({
             text: "➡️ Load more",
-            callback_data: `c/c/${currentCatalog.id}?startAfter=${startAfter.id}` +
+            callback_data: `c/${currentCatalog.id}?startAfter=${startAfter.id}` +
               `${ctx.state.params.get("tag") ? "&tag=" + ctx.state.params.get("tag") : ""}`,
           });
         }
@@ -165,7 +165,7 @@ catalogsActions.push(async (ctx, next) => {
       // inlineKeyboardArray.push(Markup.button.callback("⤴️ Parent catalog",
       //  currentCatalog.parentId ? `c/${currentCatalog.parentId}` : "c/"));
       inlineKeyboardArray.push([{text: "⤴️ Parent catalog",
-        callback_data: currentCatalog.parentId ? `c/c/${currentCatalog.parentId}` : "c/"}]);
+        callback_data: currentCatalog.parentId ? `c/${currentCatalog.parentId}` : "c"}]);
     }
     // const extraObject = {
     //   parse_mode: "Markdown",
@@ -261,10 +261,10 @@ catalogsActions.push( async (ctx, next) => {
     for (const tag of catalog.tags) {
       if (tag.id === ctx.state.params.get("tagSelected")) {
         // inlineKeyboardArray.push(Markup.button.callback(`✅ ${tag.name}`, `c/c/${catalog.id}?tag=${tag.id}`));
-        inlineKeyboardArray.push([{text: `✅ ${tag.name}`, callback_data: `c/c/${catalog.id}?tag=${tag.id}`}]);
+        inlineKeyboardArray.push([{text: `✅ ${tag.name}`, callback_data: `c/${catalog.id}?tag=${tag.id}`}]);
       } else {
         // inlineKeyboardArray.push(Markup.button.callback(`📌 ${tag.name}`, `c/c/${catalog.id}?tag=${tag.id}`));
-        inlineKeyboardArray.push([{text: `📌 ${tag.name}`, callback_data: `c/c/${catalog.id}?tag=${tag.id}`}]);
+        inlineKeyboardArray.push([{text: `📌 ${tag.name}`, callback_data: `c/${catalog.id}?tag=${tag.id}`}]);
       }
     }
     await ctx.editMessageMedia({
