@@ -57,6 +57,7 @@ catalogsActions.push((ctx, next) => {
     }
   }
   ctx.state.params = params;
+  // ctx.answerCbQuery();
   return next();
 });
 // Show Catalogs and goods
@@ -282,68 +283,82 @@ catalogsActions.push( async (ctx, next) => {
 });
 
 // Show all photos
-catalogScene.action(/^showPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
-  await ctx.answerCbQuery();
-  const productId = ctx.match[1];
-  const productRef = firebase.firestore().collection("products").doc(productId);
-  const productSnapshot = await productRef.get();
-  const product = {id: productSnapshot.id, ...productSnapshot.data()};
-  for (const [index, photoId] of product.photos.entries()) {
-    // check if file exists
-    let publicUrl = "";
-    const photoExists = await bucket.file(`photos/products/${product.id}/2/${photoId}.jpg`).exists();
-    if (photoExists[0]) {
-      publicUrl = bucket.file(`photos/products/${product.id}/2/${photoId}.jpg`).publicUrl();
-    } else {
-      publicUrl = "https://s3.eu-central-1.amazonaws.com/rzk.com.ua/250.56ad1e10bf4a01b1ff3af88752fd3412.jpg";
+catalogsActions.push( async (ctx, next) => {
+  if (ctx.state.routeName === "showPhotos") {
+    const productId = ctx.state.param;
+    const productRef = firebase.firestore().collection("products").doc(productId);
+    const productSnapshot = await productRef.get();
+    const product = {id: productSnapshot.id, ...productSnapshot.data()};
+    for (const [index, photoId] of product.photos.entries()) {
+      const inlineKeyboardArray = [];
+      // check if file exists
+      let publicUrl = "";
+      const photoExists = await bucket.file(`photos/products/${product.id}/2/${photoId}.jpg`).exists();
+      if (photoExists[0]) {
+        publicUrl = bucket.file(`photos/products/${product.id}/2/${photoId}.jpg`).publicUrl();
+      } else {
+        publicUrl = "https://s3.eu-central-1.amazonaws.com/rzk.com.ua/250.56ad1e10bf4a01b1ff3af88752fd3412.jpg";
+      }
+      inlineKeyboardArray.push([{text: "🏷 Set main", callback_data: `setMainPhoto/${product.id}?photoId=${photoId}`}]);
+      inlineKeyboardArray.push([{text: "❎ Close", callback_data: "closePhoto"}]);
+      inlineKeyboardArray.push([{text: "🗑 Delete", callback_data: `deletePhoto/${product.id}?photoId=${photoId}`}]);
+      await ctx.replyWithPhoto({url: publicUrl}, {
+        caption: product.mainPhoto === photoId ? `Photo #${index + 1} (Main Photo) ${product.name} (${product.id})` :
+          `Photo #${index + 1} ${product.name} (${product.id})`,
+        parse_mode: "Markdown",
+        reply_markup: {
+          inline_keyboard: [...inlineKeyboardArray],
+        },
+      });
     }
-    await ctx.replyWithPhoto({url: publicUrl}, {
-      caption: product.mainPhoto === photoId ? `Photo #${index + 1} (Main Photo) ${product.name} (${product.id})` :
-        `Photo #${index + 1} ${product.name} (${product.id})`,
-      parse_mode: "Markdown",
-      ...Markup.inlineKeyboard([
-        Markup.button.callback("🏷 Set main", `setMainPhoto/${product.id}/${photoId}`),
-        Markup.button.callback("❎ Close", "closePhoto"),
-        Markup.button.callback("🗑 Delete", `deletePhoto/${product.id}/${photoId}`),
-      ]),
-    });
+    await ctx.answerCbQuery();
+  } else {
+    return next();
   }
 });
 
 // close Photo
-catalogScene.action(/^closePhoto/, async (ctx) => {
-  await ctx.deleteMessage();
-  await ctx.answerCbQuery();
-});
-// delete Photo
-catalogScene.action(/^deletePhoto\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)/, async (ctx) => {
-  // init storage
-  const productId = ctx.match[1];
-  const deleteFileId = ctx.match[2];
-  const productRef = firebase.firestore().collection("products").doc(productId);
-  const productSnapshot = await productRef.get();
-  // if delete main Photo
-  if (productSnapshot.data().mainPhoto === deleteFileId) {
-    await productRef.update({
-      mainPhoto: firebase.firestore.FieldValue.delete(),
-      photos: firebase.firestore.FieldValue.arrayRemove(deleteFileId),
-    });
+catalogsActions.push( async (ctx, next) => {
+  if (ctx.state.routeName === "closePhoto") {
+    await ctx.deleteMessage();
+    await ctx.answerCbQuery();
   } else {
-    await productRef.update({
-      photos: firebase.firestore.FieldValue.arrayRemove(deleteFileId),
-    });
+    return next();
   }
-  // await bucket.deleteFiles({
-  //   prefix: `photos/products/${productId}`,
-  // });
-  const photoExists = await bucket.file(`photos/products/${productId}/1/${deleteFileId}.jpg`).exists();
-  if (photoExists[0]) {
-    await bucket.file(`photos/products/${productId}/3/${deleteFileId}.jpg`).delete();
-    await bucket.file(`photos/products/${productId}/2/${deleteFileId}.jpg`).delete();
-    await bucket.file(`photos/products/${productId}/1/${deleteFileId}.jpg`).delete();
+});
+
+// delete Photo
+catalogsActions.push( async (ctx, next) => {
+  if (ctx.state.routeName === "deletePhoto") {
+    const productId = ctx.state.param;
+    const deleteFileId = ctx.state.params.get("photoId");
+    const productRef = firebase.firestore().collection("products").doc(productId);
+    const productSnapshot = await productRef.get();
+    // if delete main Photo
+    if (productSnapshot.data().mainPhoto === deleteFileId) {
+      await productRef.update({
+        mainPhoto: firebase.firestore.FieldValue.delete(),
+        photos: firebase.firestore.FieldValue.arrayRemove(deleteFileId),
+      });
+    } else {
+      await productRef.update({
+        photos: firebase.firestore.FieldValue.arrayRemove(deleteFileId),
+      });
+    }
+    // await bucket.deleteFiles({
+    //   prefix: `photos/products/${productId}`,
+    // });
+    const photoExists = await bucket.file(`photos/products/${productId}/1/${deleteFileId}.jpg`).exists();
+    if (photoExists[0]) {
+      await bucket.file(`photos/products/${productId}/3/${deleteFileId}.jpg`).delete();
+      await bucket.file(`photos/products/${productId}/2/${deleteFileId}.jpg`).delete();
+      await bucket.file(`photos/products/${productId}/1/${deleteFileId}.jpg`).delete();
+    }
+    await ctx.deleteMessage();
+    await ctx.answerCbQuery();
+  } else {
+    return next();
   }
-  await ctx.deleteMessage();
-  await ctx.answerCbQuery();
 });
 
 // upload photos limit 5

@@ -17,18 +17,21 @@ const bot = new Telegraf(token, {
 });
 // Firestore session
 bot.use(firestoreSession(firebase.firestore().collection("sessions")));
+
 bot.use(async (ctx, next) => {
   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
     console.log(" Bot scene another callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
   }
   return next();
 });
+
 // Actions catalog, mono
 // (routeName)/(param)?(args)
 // eslint-disable-next-line no-useless-escape
 bot.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/, ...catalogsActions, ...monoActions);
 // scenes
 bot.use(stage.middleware());
+
 bot.start((ctx) => ctx.scene.enter("start"));
 // bot.hears("mono", (ctx) => ctx.scene.enter("mono"));
 bot.hears("where", (ctx) => ctx.reply("You are in outside"));

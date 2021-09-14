@@ -31,24 +31,28 @@ monoScene.enter((ctx) => {
 });
 
 // Currency controller
-monoActions.push(async (ctx) => {
-  const currencyName = ctx.state.param;
-  const currencyObj = await getCurrency();
-  await ctx.editMessageText(monoMarkdown(currencyObj[currencyName]), {
-    parse_mode: "Markdown",
-    reply_markup: {
-      inline_keyboard: [
-        [
-          {text: "🇱🇷 USD", callback_data: "mono/USD"},
-          {text: "🇪🇺 EUR", callback_data: "mono/EUR"},
-          {text: "🇷🇺 RUB", callback_data: "mono/RUB"},
+monoActions.push(async (ctx, next) => {
+  if (ctx.state.routeName === "mono") {
+    const currencyName = ctx.state.param;
+    const currencyObj = await getCurrency();
+    await ctx.editMessageText(monoMarkdown(currencyObj[currencyName]), {
+      parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {text: "🇱🇷 USD", callback_data: "mono/USD"},
+            {text: "🇪🇺 EUR", callback_data: "mono/EUR"},
+            {text: "🇷🇺 RUB", callback_data: "mono/RUB"},
+          ],
+          [
+            {text: "Monobank.com.ua", url: "https://monobank.com.ua"},
+          ],
         ],
-        [
-          {text: "Monobank.com.ua", url: "https://monobank.com.ua"},
-        ],
-      ],
-    }});
-  await ctx.answerCbQuery();
+      }});
+    await ctx.answerCbQuery();
+  } else {
+    return next();
+  }
 });
 
 // monoScene.leave((ctx) => {
