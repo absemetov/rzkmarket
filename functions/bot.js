@@ -28,7 +28,7 @@ bot.use(async (ctx, next) => {
 // Actions catalog, mono
 // (routeName)/(param)?(args)
 // Parse callback data
-const parseUrl = (ctx, next) => {
+const parseUrl = async (ctx, next) => {
   ctx.state.routeName = ctx.match[1];
   ctx.state.param = ctx.match[2];
   const args = ctx.match[3];

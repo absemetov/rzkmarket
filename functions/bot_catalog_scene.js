@@ -177,7 +177,6 @@ catalogsActions.push(async (ctx, next) => {
   }
 });
 // show product
-// eslint-disable-next-line no-useless-escape
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "p") {
     // parse url params
@@ -192,12 +191,10 @@ catalogsActions.push( async (ctx, next) => {
     inlineKeyboardArray.push([{text: "📸 Upload photo",
       callback_data: `uploadPhoto/${product.id}?path=${path}`}]);
     // chck photos
-    let reservImg = null;
     if (product.photos && product.photos.length) {
       // inlineKeyboardArray.push(Markup.button.callback("🖼 Show photos", `showPhotos/${product.id}`));
       inlineKeyboardArray.push([{text: `🖼 Show photos (${product.photos.length})`,
         callback_data: `showPhotos/${product.id}`}]);
-      reservImg = product.photos[0];
     }
     inlineKeyboardArray.push([{text: "⤴️ Goto catalog", callback_data: catalogUrl}]);
     // Get main photo url.
@@ -208,11 +205,7 @@ catalogsActions.push( async (ctx, next) => {
         publicImgUrl = bucket.file(`photos/products/${product.id}/2/${product.mainPhoto}.jpg`).publicUrl();
       }
     } else {
-      if (reservImg) {
-        publicImgUrl = bucket.file(`photos/products/${product.id}/2/${reservImg}.jpg`).publicUrl();
-      } else {
-        publicImgUrl = "https://s3.eu-central-1.amazonaws.com/rzk.com.ua/250.56ad1e10bf4a01b1ff3af88752fd3412.jpg";
-      }
+      publicImgUrl = "https://s3.eu-central-1.amazonaws.com/rzk.com.ua/250.56ad1e10bf4a01b1ff3af88752fd3412.jpg";
     }
     await ctx.editMessageMedia({
       type: "photo",
@@ -346,18 +339,29 @@ catalogsActions.push( async (ctx, next) => {
     const productSnapshot = await productRef.get();
     // if delete main Photo
     if (productSnapshot.data().mainPhoto === deleteFileId) {
-      await productRef.update({
-        mainPhoto: firebase.firestore.FieldValue.delete(),
-        photos: firebase.firestore.FieldValue.arrayRemove(deleteFileId),
-      });
+      // set new main photo inddex 1 or delete
+      if (productSnapshot.data().photos && productSnapshot.data().photos.length > 1) {
+        for (const photoId of productSnapshot.data().photos) {
+          if (photoId !== deleteFileId) {
+            await productRef.update({
+              mainPhoto: photoId,
+              photos: firebase.firestore.FieldValue.arrayRemove(deleteFileId),
+            });
+            break;
+          }
+        }
+      } else {
+        await productRef.update({
+          mainPhoto: firebase.firestore.FieldValue.delete(),
+          // mainPhoto: "",
+          photos: firebase.firestore.FieldValue.arrayRemove(deleteFileId),
+        });
+      }
     } else {
       await productRef.update({
         photos: firebase.firestore.FieldValue.arrayRemove(deleteFileId),
       });
     }
-    // await bucket.deleteFiles({
-    //   prefix: `photos/products/${productId}`,
-    // });
     const photoExists = await bucket.file(`photos/products/${productId}/1/${deleteFileId}.jpg`).exists();
     if (photoExists[0]) {
       await bucket.file(`photos/products/${productId}/3/${deleteFileId}.jpg`).delete();
@@ -465,6 +469,8 @@ catalogScene.on("photo", async (ctx, next) => {
             reply_markup: {
               inline_keyboard: [
                 [{text: "📸 Upload photo", callback_data: `uploadPhoto/${product.id}`}],
+                [{text: `🖼 Show photos (${product.photos.length + 1})`,
+                  callback_data: `showPhotos/${product.id}`}],
                 [{text: "⤴️ Goto catalog",
                   callback_data: ctx.session.catalogUrl}],
               ],
