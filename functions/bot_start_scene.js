@@ -1,4 +1,4 @@
-const {Markup, Scenes: {BaseScene}} = require("telegraf");
+const {Scenes: {BaseScene}} = require("telegraf");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 const start = new BaseScene("start");
 
@@ -10,13 +10,15 @@ start.enter(async (ctx) => {
       {
         caption: "Welcome to Rzk Market Ukraine 🇺🇦",
         parse_mode: "Markdown",
-        ...Markup.inlineKeyboard([Markup.button.callback("📁 Catalog", "c")]),
+        reply_markup: {
+          inline_keyboard: [[{text: "📁 Catalog", callback_data: "c"}]],
+        },
       });
   // set commands
   await ctx.telegram.setMyCommands([
-    {"command": "mono", "description": "Monobank exchange rates "},
     {"command": "start", "description": "RZK Market Shop"},
     {"command": "upload", "description": "Upload goods"},
+    {"command": "mono", "description": "Monobank exchange rates "},
   ]);
   ctx.scene.enter("catalog");
 });

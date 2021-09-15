@@ -27,8 +27,24 @@ bot.use(async (ctx, next) => {
 
 // Actions catalog, mono
 // (routeName)/(param)?(args)
+// Parse callback data
+const parseUrl = (ctx, next) => {
+  ctx.state.routeName = ctx.match[1];
+  ctx.state.param = ctx.match[2];
+  const args = ctx.match[3];
+  // parse url params
+  const params = new Map();
+  if (args) {
+    for (const paramsData of args.split("&")) {
+      params.set(paramsData.split("=")[0], paramsData.split("=")[1]);
+    }
+  }
+  ctx.state.params = params;
+  return next();
+};
 // eslint-disable-next-line no-useless-escape
-bot.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/, ...catalogsActions, ...monoActions);
+bot.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/,
+    parseUrl, ...catalogsActions, ...monoActions);
 // scenes
 bot.use(stage.middleware());
 
@@ -64,9 +80,10 @@ if (process.env.FUNCTIONS_EMULATOR) {
   bot.launch();
 }
 
+// memory value 128MB 256MB 512MB 1GB 2GB 4GB 8GB
 const runtimeOpts = {
   timeoutSeconds: 540,
-  memory: "256MB",
+  memory: "1GB",
 };
 
 // Enable graceful stop

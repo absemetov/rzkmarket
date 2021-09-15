@@ -4,7 +4,7 @@ const fs = require("fs");
 const bucket = firebase.storage().bucket();
 // make bucket is public
 // await bucket.makePublic();
-const {Markup, Scenes: {BaseScene}} = require("telegraf");
+const {Scenes: {BaseScene}} = require("telegraf");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 const catalogScene = new BaseScene("catalog");
 catalogScene.use(async (ctx, next) => {
@@ -44,22 +44,7 @@ catalogScene.hears("back", (ctx) => {
 
 // test actions array
 const catalogsActions = [];
-// Parse callback data
-catalogsActions.push((ctx, next) => {
-  ctx.state.routeName = ctx.match[1];
-  ctx.state.param = ctx.match[2];
-  const args = ctx.match[3];
-  // parse url params
-  const params = new Map();
-  if (args) {
-    for (const paramsData of args.split("&")) {
-      params.set(paramsData.split("=")[0], paramsData.split("=")[1]);
-    }
-  }
-  ctx.state.params = params;
-  // ctx.answerCbQuery();
-  return next();
-});
+
 // Show Catalogs and goods
 catalogsActions.push(async (ctx, next) => {
   if (ctx.state.routeName === "c") {
@@ -101,7 +86,7 @@ catalogsActions.push(async (ctx, next) => {
           callback_data: `t/${currentCatalog.id}?tagSelected=${ctx.state.params.get("tag")}`});
         // Delete or close selected tag
         if (selectedTag) {
-          tagsArray.push({text: `❎ Tag ${selectedTag}`, callback_data: `c/${currentCatalog.id}`});
+          tagsArray.push({text: `❎ Del ${selectedTag}`, callback_data: `c/${currentCatalog.id}`});
         }
         inlineKeyboardArray.push(tagsArray);
       }
@@ -191,49 +176,47 @@ catalogsActions.push(async (ctx, next) => {
     return next();
   }
 });
-
 // show product
 // eslint-disable-next-line no-useless-escape
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "p") {
     // parse url params
     const path = ctx.state.params.get("path");
+    // decode url
+    const catalogUrl = path.replace(":", "?").replace(/~/g, "=").replace(/\+/g, "&");
     // generate array
     const inlineKeyboardArray = [];
     const productSnapshot = await firebase.firestore().collection("products").doc(ctx.state.param).get();
     const product = {id: productSnapshot.id, ...productSnapshot.data()};
     // inlineKeyboardArray.push(Markup.button.callback("📸 Upload photo", `uploadPhotos/${product.id}`));
-    inlineKeyboardArray.push([{text: "📸 Upload photo", callback_data: `uploadPhotos/${product.id}`}]);
+    inlineKeyboardArray.push([{text: "📸 Upload photo",
+      callback_data: `uploadPhoto/${product.id}?path=${path}`}]);
     // chck photos
+    let reservImg = null;
     if (product.photos && product.photos.length) {
       // inlineKeyboardArray.push(Markup.button.callback("🖼 Show photos", `showPhotos/${product.id}`));
-      inlineKeyboardArray.push([{text: "🖼 Show photos", callback_data: `showPhotos/${product.id}`}]);
+      inlineKeyboardArray.push([{text: `🖼 Show photos (${product.photos.length})`,
+        callback_data: `showPhotos/${product.id}`}]);
+      reservImg = product.photos[0];
     }
-    // inlineKeyboardArray.push(Markup.button.callback("⤴️ Goto catalog", path));
-    // encode path c/c/karre-white?startAfter=32&tag=ramka
-    inlineKeyboardArray.push([{text: "⤴️ Goto catalog",
-      callback_data: path.replace(":", "?").replace(/~/g, "=").replace(/\+/g, "&")}]);
-    // const extraObject = {
-    //   parse_mode: "Markdown",
-    //   ...Markup.inlineKeyboard(inlineKeyboardArray,
-    //       {wrap: (btn, index, currentRow) => {
-    //         return index <= 20;
-    //       }}),
-    // };
-    // await ctx.editMessageText(`${product.name} ${product.price}`, extraObject);
-    // Get main photo url
-    let publicUrl = "";
+    inlineKeyboardArray.push([{text: "⤴️ Goto catalog", callback_data: catalogUrl}]);
+    // Get main photo url.
+    let publicImgUrl = "";
     if (product.mainPhoto) {
       const photoExists = await bucket.file(`photos/products/${product.id}/2/${product.mainPhoto}.jpg`).exists();
       if (photoExists[0]) {
-        publicUrl = bucket.file(`photos/products/${product.id}/2/${product.mainPhoto}.jpg`).publicUrl();
+        publicImgUrl = bucket.file(`photos/products/${product.id}/2/${product.mainPhoto}.jpg`).publicUrl();
       }
     } else {
-      publicUrl = "https://s3.eu-central-1.amazonaws.com/rzk.com.ua/250.56ad1e10bf4a01b1ff3af88752fd3412.jpg";
+      if (reservImg) {
+        publicImgUrl = bucket.file(`photos/products/${product.id}/2/${reservImg}.jpg`).publicUrl();
+      } else {
+        publicImgUrl = "https://s3.eu-central-1.amazonaws.com/rzk.com.ua/250.56ad1e10bf4a01b1ff3af88752fd3412.jpg";
+      }
     }
     await ctx.editMessageMedia({
       type: "photo",
-      media: publicUrl,
+      media: publicImgUrl,
       caption: `${product.name} (${product.id})`,
       parse_mode: "Markdown",
     }, {reply_markup: {
@@ -317,6 +300,33 @@ catalogsActions.push( async (ctx, next) => {
   }
 });
 
+// Set Main photo product
+catalogsActions.push( async (ctx, next) => {
+  if (ctx.state.routeName === "setMainPhoto") {
+    const productId = ctx.state.param;
+    const photoId = ctx.state.params.get("photoId");
+    const productRef = firebase.firestore().collection("products").doc(productId);
+    const productSnapshot = await productRef.get();
+    await productRef.update({
+      mainPhoto: photoId,
+    });
+    // ctx.reply(`Main photo updated, productId ${productId} ${fileId}`);
+    await ctx.editMessageCaption(`Main photo updated, ${productSnapshot.data().name} ${productId}`,
+        {
+          reply_markup: {
+            inline_keyboard: [
+              [{text: "🏷 Set main", callback_data: `setMainPhoto/${productId}/${photoId}`}],
+              [{text: "❎ Close", callback_data: "closePhoto"}],
+              [{text: "🗑 Delete", callback_data: `deletePhoto/${productId}/${photoId}`}],
+            ],
+          },
+        });
+    await ctx.answerCbQuery();
+  } else {
+    return next();
+  }
+});
+
 // close Photo
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "closePhoto") {
@@ -362,32 +372,20 @@ catalogsActions.push( async (ctx, next) => {
 });
 
 // upload photos limit 5
-catalogScene.action(/^uploadPhotos\/([a-zA-Z0-9-_]+)/, async (ctx) => {
-  ctx.session.productId = ctx.match[1];
-  const productRef = firebase.firestore().collection("products").doc(ctx.session.productId);
-  const productSnapshot = await productRef.get();
-  const product = {id: productSnapshot.id, ...productSnapshot.data()};
-  ctx.reply(`Please add photo to ${product.name} (${product.id})`);
-  await ctx.answerCbQuery();
-});
-
-// Set Main photo product
-catalogScene.action(/^setMainPhoto\/([a-zA-Z0-9-_]+)\/([a-zA-Z0-9-_]+)/, async (ctx) => {
-  const productId = ctx.match[1];
-  const photoId = ctx.match[2];
-  const productRef = firebase.firestore().collection("products").doc(productId);
-  const productSnapshot = await productRef.get();
-  await productRef.update({
-    mainPhoto: photoId,
-  });
-  // ctx.reply(`Main photo updated, productId ${productId} ${fileId}`);
-  await ctx.editMessageCaption(`Main photo updated, ${productSnapshot.data().name} ${productId}`,
-      {...Markup.inlineKeyboard([
-        Markup.button.callback("🏷 Set main", `setMainPhoto/${productId}/${photoId}`),
-        Markup.button.callback("❎ Close", "closePhoto"),
-        Markup.button.callback("🗑 Delete", `deletePhoto/${productId}/${photoId}`),
-      ])});
-  await ctx.answerCbQuery();
+catalogsActions.push( async (ctx, next) => {
+  if (ctx.state.routeName === "uploadPhoto") {
+    ctx.session.productId = ctx.state.param;
+    const path = ctx.state.params.get("path");
+    const catalogUrl = path.replace(":", "?").replace(/~/g, "=").replace(/\+/g, "&");
+    ctx.session.catalogUrl = catalogUrl;
+    const productRef = firebase.firestore().collection("products").doc(ctx.session.productId);
+    const productSnapshot = await productRef.get();
+    const product = {id: productSnapshot.id, ...productSnapshot.data()};
+    ctx.reply(`Please add photo to ${product.name} (${product.id})`);
+    await ctx.answerCbQuery();
+  } else {
+    return next();
+  }
 });
 
 // Upload product photos
@@ -460,12 +458,22 @@ catalogScene.on("photo", async (ctx, next) => {
           photos: firebase.firestore.FieldValue.arrayUnion(origin.file_unique_id),
         });
       }
-      await ctx.replyWithMarkdown(`${product.name} (${product.id}) photo uploaded`,
-          Markup.inlineKeyboard([Markup.button.callback("📸 Upload more", `uploadPhotos/${product.id}`)]));
+      const publicUrl = bucket.file(`photos/products/${product.id}/2/${origin.file_unique_id}.jpg`).publicUrl();
+      await ctx.replyWithPhoto({url: publicUrl},
+          {
+            caption: `${product.name} (${product.id}) photo uploaded`,
+            reply_markup: {
+              inline_keyboard: [
+                [{text: "📸 Upload photo", callback_data: `uploadPhoto/${product.id}`}],
+                [{text: "⤴️ Goto catalog",
+                  callback_data: ctx.session.catalogUrl}],
+              ],
+            },
+          });
     }
     ctx.session.productId = null;
   } else {
-    ctx.reply("Please select a product to upload Photos go to Main page /start");
+    ctx.reply("Please select a product to upload Photo");
   }
 });
 
