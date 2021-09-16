@@ -42,11 +42,11 @@ const parseUrl = async (ctx, next) => {
   ctx.state.params = params;
   return next();
 };
+// scenes
+bot.use(stage.middleware());
 // eslint-disable-next-line no-useless-escape
 bot.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/,
     parseUrl, ...catalogsActions, ...monoActions);
-// scenes
-bot.use(stage.middleware());
 
 bot.start((ctx) => ctx.scene.enter("start"));
 // bot.hears("mono", (ctx) => ctx.scene.enter("mono"));
@@ -73,7 +73,8 @@ bot.catch((error) => {
     // ignore
     return false;
   }
-  throw error;
+  // throw error;
+  console.log("Telegraf error", error);
 });
 
 if (process.env.FUNCTIONS_EMULATOR) {

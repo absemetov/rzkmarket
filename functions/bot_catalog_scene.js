@@ -279,7 +279,7 @@ catalogsActions.push( async (ctx, next) => {
       inlineKeyboardArray.push([{text: "❎ Close", callback_data: "closePhoto"}]);
       inlineKeyboardArray.push([{text: "🗑 Delete", callback_data: `deletePhoto/${product.id}?photoId=${photoId}`}]);
       await ctx.replyWithPhoto({url: publicUrl}, {
-        caption: product.mainPhoto === photoId ? `Photo #${index + 1} (Main Photo) ${product.name} (${product.id})` :
+        caption: product.mainPhoto === photoId ? `✅ Photo #${index + 1} (Main Photo) ${product.name} (${product.id})` :
           `Photo #${index + 1} ${product.name} (${product.id})`,
         parse_mode: "Markdown",
         reply_markup: {
@@ -378,10 +378,16 @@ catalogsActions.push( async (ctx, next) => {
 // upload photos limit 5
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "uploadPhoto") {
+    // save session data
     ctx.session.productId = ctx.state.param;
-    const path = ctx.state.params.get("path");
-    const catalogUrl = path.replace(":", "?").replace(/~/g, "=").replace(/\+/g, "&");
-    ctx.session.catalogUrl = catalogUrl;
+    ctx.session.path = ctx.state.params.get("path");
+    if (ctx.scene.current) {
+      if (ctx.scene.current.id !== "catalog") {
+        ctx.scene.enter("catalog");
+      }
+    } else {
+      ctx.scene.enter("catalog");
+    }
     const productRef = firebase.firestore().collection("products").doc(ctx.session.productId);
     const productSnapshot = await productRef.get();
     const product = {id: productSnapshot.id, ...productSnapshot.data()};
@@ -463,16 +469,18 @@ catalogScene.on("photo", async (ctx, next) => {
         });
       }
       const publicUrl = bucket.file(`photos/products/${product.id}/2/${origin.file_unique_id}.jpg`).publicUrl();
+      // get catalog url (path)
+      const catalogUrl = ctx.session.path.replace(":", "?").replace(/~/g, "=").replace(/\+/g, "&");
       await ctx.replyWithPhoto({url: publicUrl},
           {
             caption: `${product.name} (${product.id}) photo uploaded`,
             reply_markup: {
               inline_keyboard: [
-                [{text: "📸 Upload photo", callback_data: `uploadPhoto/${product.id}`}],
+                [{text: "📸 Upload photo", callback_data: `uploadPhoto/${product.id}?path=${ctx.session.path}`}],
                 [{text: `🖼 Show photos (${product.photos.length + 1})`,
                   callback_data: `showPhotos/${product.id}`}],
                 [{text: "⤴️ Goto catalog",
-                  callback_data: ctx.session.catalogUrl}],
+                  callback_data: catalogUrl}],
               ],
             },
           });
