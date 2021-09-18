@@ -108,13 +108,14 @@ catalogsActions.push(async (ctx, next) => {
       }
       // get Products
       const productsSnapshot = await query.get();
-      // generate products array, add callback path
+      // generate products array
+      // save path to session
+      ctx.session.path = ctx.callbackQuery.data;
       for (const product of productsSnapshot.docs) {
         // inlineKeyboardArray.push(Markup.button.callback(`📦 ${product.data().name} (${product.id})`,
         //    `p/${product.id}/${ctx.callbackQuery.data}`));
         inlineKeyboardArray.push([{text: `📦 ${product.data().name} (${product.id})`,
-          callback_data: `p/${product.id}?path=${ctx.callbackQuery.data.replace("?", ":")
-              .replace(/=/g, "~").replace(/&/g, "+")}`}]);
+          callback_data: `p/${product.id}`}]);
       }
       // Set load more button
       // ====
@@ -179,23 +180,17 @@ catalogsActions.push(async (ctx, next) => {
 // show product
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "p") {
-    // parse url params
-    const path = ctx.state.params.get("path");
-    // decode url
-    const catalogUrl = path.replace(":", "?").replace(/~/g, "=").replace(/\+/g, "&");
+    const catalogUrl = ctx.session.path;
     // generate array
     const inlineKeyboardArray = [];
     const productSnapshot = await firebase.firestore().collection("products").doc(ctx.state.param).get();
     const product = {id: productSnapshot.id, ...productSnapshot.data()};
     // inlineKeyboardArray.push(Markup.button.callback("📸 Upload photo", `uploadPhotos/${product.id}`));
     inlineKeyboardArray.push([
-      {text: "🛒 -1", callback_data: `addToCart/${product.id}?qty=-1&path=${path}`},
-      {text: "🛒 +1", callback_data: `addToCart/${product.id}?qty=+1`},
-      {text: "🛒 -10", callback_data: `addToCart/${product.id}?qty=-10`},
-      {text: "🛒 +10", callback_data: `addToCart/${product.id}?qty=+10`},
+      {text: "🛒 Add to cart", callback_data: `addToCart/${product.id}`},
     ]);
     inlineKeyboardArray.push([{text: "📸 Upload photo",
-      callback_data: `uploadPhoto/${product.id}?path=${path}`}]);
+      callback_data: `uploadPhoto/${product.id}`}]);
     // chck photos
     if (product.photos && product.photos.length) {
       // inlineKeyboardArray.push(Markup.button.callback("🖼 Show photos", `showPhotos/${product.id}`));
@@ -230,12 +225,32 @@ catalogsActions.push( async (ctx, next) => {
 // Add product to Cart
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "addToCart") {
-    // parse url params
-    const path = ctx.state.params.get("path");
-    // decode url
-    const catalogUrl = path.replace(":", "?").replace(/~/g, "=").replace(/\+/g, "&");
+    let qty = ctx.state.params.get("qty");
+    const number = ctx.state.params.get("number");
+    const back = ctx.state.params.get("back");
+    const clear = ctx.state.params.get("clear");
     const productId = ctx.state.param;
-    const qty = ctx.state.params.get("qty");
+    let qtyUrl = "";
+    if (qty) {
+      if (number) {
+        qty += number;
+      }
+      if (back) {
+        qty = qty.slice(0, -1);
+      }
+      if (clear) {
+        qty = 0;
+      }
+    } else {
+      if (number) {
+        qty = number;
+      }
+    }
+    if (qty) {
+      qtyUrl = `&qty=${qty}`;
+    } else {
+      qty = 0;
+    }
     const productRef = firebase.firestore().collection("products").doc(productId);
     const productSnapshot = await productRef.get();
     const product = {id: productSnapshot.id, ...productSnapshot.data()};
@@ -245,14 +260,28 @@ catalogsActions.push( async (ctx, next) => {
           reply_markup: {
             inline_keyboard: [
               [
-                {text: "🛒 -1", callback_data: `addToCart/${product.id}?qty=-1&path=${path}`},
-                {text: "🛒 +1", callback_data: `addToCart/${product.id}?qty=+1`},
-                {text: "🛒 -10", callback_data: `addToCart/${product.id}?qty=-10`},
-                {text: "🛒 +10", callback_data: `addToCart/${product.id}?qty=+10`},
+                {text: "Back", callback_data: `addToCart/${product.id}?back=true${qtyUrl}`},
+                {text: "Clear", callback_data: `addToCart/${product.id}?clear=true${qtyUrl}`},
               ],
-              [{text: `🖼 Show photos (${product.photos.length})`,
-                callback_data: `showPhotos/${product.id}`}],
-              [{text: "⤴️ Goto catalog", callback_data: catalogUrl}],
+              [
+                {text: "1", callback_data: `addToCart/${product.id}?number=1${qtyUrl}`},
+                {text: "2", callback_data: `addToCart/${product.id}?number=2${qtyUrl}`},
+                {text: "3", callback_data: `addToCart/${product.id}?number=3${qtyUrl}`},
+              ],
+              [
+                {text: "4", callback_data: `addToCart/${product.id}?number=4${qtyUrl}`},
+                {text: "5", callback_data: `addToCart/${product.id}?number=5${qtyUrl}`},
+                {text: "6", callback_data: `addToCart/${product.id}?number=6${qtyUrl}`},
+              ],
+              [
+                {text: "7", callback_data: `addToCart/${product.id}?number=7${qtyUrl}`},
+                {text: "8", callback_data: `addToCart/${product.id}?number=8${qtyUrl}`},
+                {text: "9", callback_data: `addToCart/${product.id}?number=9${qtyUrl}`},
+              ],
+              [
+                {text: "0", callback_data: `addToCart/${product.id}?number=0${qtyUrl}`},
+                {text: "Add to cart", callback_data: `addToCart/${product.id}?${qtyUrl}`},
+              ],
             ],
           },
         });
@@ -285,6 +314,8 @@ catalogsActions.push( async (ctx, next) => {
         inlineKeyboardArray.push([{text: `📌 ${tag.name}`, callback_data: `c/${catalog.id}?tag=${tag.id}`}]);
       }
     }
+    // close tags
+    inlineKeyboardArray.push([{text: "⤴️ Goto catalog", callback_data: ctx.session.path}]);
     await ctx.editMessageMedia({
       type: "photo",
       media: "https://picsum.photos/450/150/?random",
@@ -421,7 +452,6 @@ catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "uploadPhoto") {
     // save session data
     ctx.session.productId = ctx.state.param;
-    ctx.session.path = ctx.state.params.get("path");
     if (ctx.scene.current) {
       if (ctx.scene.current.id !== "catalog") {
         ctx.scene.enter("catalog");
@@ -511,13 +541,13 @@ catalogScene.on("photo", async (ctx, next) => {
       }
       const publicUrl = bucket.file(`photos/products/${product.id}/2/${origin.file_unique_id}.jpg`).publicUrl();
       // get catalog url (path)
-      const catalogUrl = ctx.session.path.replace(":", "?").replace(/~/g, "=").replace(/\+/g, "&");
+      const catalogUrl = ctx.session.path;
       await ctx.replyWithPhoto({url: publicUrl},
           {
             caption: `${product.name} (${product.id}) photo uploaded`,
             reply_markup: {
               inline_keyboard: [
-                [{text: "📸 Upload photo", callback_data: `uploadPhoto/${product.id}?path=${ctx.session.path}`}],
+                [{text: "📸 Upload photo", callback_data: `uploadPhoto/${product.id}`}],
                 [{text: `🖼 Show photos (${product.photos ? product.photos.length + 1 : 1})`,
                   callback_data: `showPhotos/${product.id}`}],
                 [{text: "⤴️ Goto catalog",

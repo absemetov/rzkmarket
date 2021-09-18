@@ -50,7 +50,7 @@ upload.hears("shop", async (ctx) => {
 });
 // upload from googleSheet
 // eslint-disable-next-line no-useless-escape
-upload.hears(/^[^\/]/, async (ctx) => {
+upload.on("text", async (ctx) => {
   const start = new Date();
   // Max upload goods
   const maxUploadGoods = 100;
@@ -116,13 +116,12 @@ Count rows: *${sheet.rowCount - 1}*`);
         const batchCatalogsTags = firebase.firestore().batch();
         // loop rows from SHEET
         for (let j = 0; j < rows.length; j++) {
-          // validate data if ID and NAME set org Name and PRICE
-          // validate group
-          // stop scaning if catalog empty
-          if (!rows[j].group) {
+          // Stop scan if ID = "stop"
+          if (rows[j].id === "stop") {
             rowCount = 0;
             break;
           }
+          // validate group
           // generate catalogs array
           let groupArray = [];
           if (rows[j].group) {
@@ -172,21 +171,26 @@ Count rows: *${sheet.rowCount - 1}*`);
             group: groupArray,
             tags: tags,
           };
+          // required for arrays dont work
           const rulesProductRow = {
             "id": "required|alpha_dash",
             "name": "required|string",
             "price": "required|numeric",
-            "group.*.id": "required|alpha_dash",
-            "tags.*": "required|alpha_dash",
+            "group.*.id": "alpha_dash",
+            "tags.*": "alpha_dash",
           };
           const validateProductRow = new Validator(product, rulesProductRow);
-          // check fails
+          // validate data if ID and NAME set org Name and PRICE
+          // check fails If similar product have ID Name or Price
           if (validateProductRow.fails() && ((rows[j].id && rows[j].name) || (rows[j].name && rows[j].price))) {
             let errorRow = `In row *${rows[j].rowIndex}* \n`;
             for (const [key, error] of Object.entries(validateProductRow.errors.all())) {
               errorRow += `Column *${key}* => *${error}* \n`;
             }
             throw new Error(errorRow);
+          }
+          if (((rows[j].id && rows[j].name) || (rows[j].name && rows[j].price)) && product.group.length === 0) {
+            throw new Error(`Group required in row ${rows[j].rowIndex}`);
           }
           // save data to firestore
           if (validateProductRow.passes()) {
@@ -245,7 +249,7 @@ Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id).parentId}
                     //     name: tagsRow.name,
                     //   }),
                     // });
-                    console.log(tagsRow.name);
+                    // console.log(tagsRow.name);
                     batchCatalogsTags.set(catalogRef, {
                       "tags": firebase.firestore.FieldValue.arrayUnion({
                         id: tagsRow.id,
