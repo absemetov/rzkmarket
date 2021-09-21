@@ -117,8 +117,16 @@ catalogsActions.push(async (ctx, next) => {
       for (const product of productsSnapshot.docs) {
         // inlineKeyboardArray.push(Markup.button.callback(`📦 ${product.data().name} (${product.id})`,
         //    `p/${product.id}/${ctx.callbackQuery.data}`));
-        inlineKeyboardArray.push([{text: `📦 ${product.data().name} (${product.id})`,
-          callback_data: `p/${product.id}`}]);
+        // Get cart
+        const addButton = {text: `📦 ${product.data().name} (${product.id})`, callback_data: `p/${product.id}`};
+        const sessionUser = await firebase.firestore().collection("sessions").doc(`${ctx.from.id}`).get();
+        if (sessionUser.exists) {
+          const cartProduct = sessionUser.data().cart[product.id];
+          if (cartProduct) {
+            addButton.text = `📦 ${product.data().name} (${product.id}) added ${cartProduct.qty}`;
+          }
+        }
+        inlineKeyboardArray.push([addButton]);
       }
       // Set load more button
       // ====
@@ -220,9 +228,17 @@ catalogsActions.push( async (ctx, next) => {
     inlineKeyboardArray.push([{text: "🏠 Go to Main menu",
       callback_data: "start"}]);
     // inlineKeyboardArray.push(Markup.button.callback("📸 Upload photo", `uploadPhotos/${product.id}`));
-    inlineKeyboardArray.push([
-      {text: "🛒 Add to cart", callback_data: `addToCart/${product.id}`},
-    ]);
+    // Get cart
+    const addButton = {text: "🛒 Add to cart", callback_data: `addToCart/${product.id}`};
+    const sessionUser = await firebase.firestore().collection("sessions").doc(`${ctx.from.id}`).get();
+    if (sessionUser.exists) {
+      const cartProduct = sessionUser.data().cart[product.id];
+      if (cartProduct) {
+        addButton.text = `Product added ${cartProduct.qty}`;
+        addButton.callback_data = `addToCart/${product.id}?qty=${cartProduct.qty}`;
+      }
+    }
+    inlineKeyboardArray.push([addButton]);
     inlineKeyboardArray.push([{text: "📸 Upload photo",
       callback_data: `uploadPhoto/${product.id}`}]);
     // chck photos
