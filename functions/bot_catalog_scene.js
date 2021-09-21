@@ -52,6 +52,9 @@ catalogsActions.push(async (ctx, next) => {
     const inlineKeyboardArray =[];
     let currentCatalog = {};
     let textMessage = "RZK Market Catalog 🇺🇦";
+    // Get Main menu
+    inlineKeyboardArray.push([{text: "🏠 Go to Main menu",
+      callback_data: "start"}]);
     // set currentCatalog data
     if (catalogId) {
       const currentCatalogSnapshot = await firebase.firestore().collection("catalogs").doc(catalogId).get();
@@ -180,11 +183,42 @@ catalogsActions.push(async (ctx, next) => {
 // show product
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "p") {
-    const catalogUrl = ctx.session.path;
-    // generate array
-    const inlineKeyboardArray = [];
-    const productSnapshot = await firebase.firestore().collection("products").doc(ctx.state.param).get();
+    // get product data
+    const productId = ctx.state.param;
+    const productSnapshot = await firebase.firestore().collection("products").doc(productId).get();
     const product = {id: productSnapshot.id, ...productSnapshot.data()};
+    // Add product to cart
+    let qty = ctx.state.params.get("qty");
+    if (qty) {
+      qty = Number(qty);
+      const user = firebase.firestore().collection("sessions").doc(`${ctx.from.id}`);
+      if (qty) {
+        // add product to cart
+        await user.set({
+          cart: {
+            [product.id]: {
+              name: product.name,
+              price: product.price,
+              qty: qty,
+            },
+          },
+        }, {merge: true});
+      } else {
+        // delete product from cart
+        await user.set({
+          cart: {
+            [product.id]: firebase.firestore.FieldValue.delete(),
+          },
+        }, {merge: true});
+      }
+      await ctx.answerCbQuery(qty);
+    }
+    // generate array
+    const catalogUrl = ctx.session.path;
+    const inlineKeyboardArray = [];
+    // Get Main menu
+    inlineKeyboardArray.push([{text: "🏠 Go to Main menu",
+      callback_data: "start"}]);
     // inlineKeyboardArray.push(Markup.button.callback("📸 Upload photo", `uploadPhotos/${product.id}`));
     inlineKeyboardArray.push([
       {text: "🛒 Add to cart", callback_data: `addToCart/${product.id}`},
@@ -222,7 +256,7 @@ catalogsActions.push( async (ctx, next) => {
   }
 });
 
-// Add product to Cart
+// Add product to Cart by keyboard
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "addToCart") {
     let qty = ctx.state.params.get("qty");
@@ -242,7 +276,8 @@ catalogsActions.push( async (ctx, next) => {
         qty = 0;
       }
     } else {
-      if (number) {
+      // add first
+      if (Number(number)) {
         qty = number;
       }
     }
@@ -253,38 +288,81 @@ catalogsActions.push( async (ctx, next) => {
     }
     const productRef = firebase.firestore().collection("products").doc(productId);
     const productSnapshot = await productRef.get();
-    const product = {id: productSnapshot.id, ...productSnapshot.data()};
-    // ctx.reply(`Main photo updated, productId ${productId} ${fileId}`);
-    await ctx.editMessageCaption(`${productSnapshot.data().name} added to cart qty: ${qty}`,
-        {
-          reply_markup: {
-            inline_keyboard: [
-              [
-                {text: "Back", callback_data: `addToCart/${product.id}?back=true${qtyUrl}`},
-                {text: "Clear", callback_data: `addToCart/${product.id}?clear=true${qtyUrl}`},
+    if (productSnapshot.exists) {
+      const product = {id: productSnapshot.id, ...productSnapshot.data()};
+      // ctx.reply(`Main photo updated, productId ${productId} ${fileId}`);
+      await ctx.editMessageCaption(`${product.name} added to cart qty: ${qty}`,
+          {
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {text: "7", callback_data: `addToCart/${product.id}?number=7${qtyUrl}`},
+                  {text: "8", callback_data: `addToCart/${product.id}?number=8${qtyUrl}`},
+                  {text: "9", callback_data: `addToCart/${product.id}?number=9${qtyUrl}`},
+                ],
+                [
+                  {text: "4", callback_data: `addToCart/${product.id}?number=4${qtyUrl}`},
+                  {text: "5", callback_data: `addToCart/${product.id}?number=5${qtyUrl}`},
+                  {text: "6", callback_data: `addToCart/${product.id}?number=6${qtyUrl}`},
+                ],
+                [
+                  {text: "1", callback_data: `addToCart/${product.id}?number=1${qtyUrl}`},
+                  {text: "2", callback_data: `addToCart/${product.id}?number=2${qtyUrl}`},
+                  {text: "3", callback_data: `addToCart/${product.id}?number=3${qtyUrl}`},
+                ],
+                [
+                  {text: "0", callback_data: `addToCart/${product.id}?number=0${qtyUrl}`},
+                  {text: "Back", callback_data: `addToCart/${product.id}?back=true${qtyUrl}`},
+                  {text: "Clear", callback_data: `addToCart/${product.id}?clear=true${qtyUrl}`},
+                ],
+                [
+                  {text: `🛒 Add to cart ${qty ? qty : ""}`, callback_data: `p/${product.id}?qty=${qty}`},
+                ],
+                [
+                  {text: "⤴️ Goto product", callback_data: `p/${product.id}`},
+                ],
               ],
-              [
-                {text: "1", callback_data: `addToCart/${product.id}?number=1${qtyUrl}`},
-                {text: "2", callback_data: `addToCart/${product.id}?number=2${qtyUrl}`},
-                {text: "3", callback_data: `addToCart/${product.id}?number=3${qtyUrl}`},
-              ],
-              [
-                {text: "4", callback_data: `addToCart/${product.id}?number=4${qtyUrl}`},
-                {text: "5", callback_data: `addToCart/${product.id}?number=5${qtyUrl}`},
-                {text: "6", callback_data: `addToCart/${product.id}?number=6${qtyUrl}`},
-              ],
-              [
-                {text: "7", callback_data: `addToCart/${product.id}?number=7${qtyUrl}`},
-                {text: "8", callback_data: `addToCart/${product.id}?number=8${qtyUrl}`},
-                {text: "9", callback_data: `addToCart/${product.id}?number=9${qtyUrl}`},
-              ],
-              [
-                {text: "0", callback_data: `addToCart/${product.id}?number=0${qtyUrl}`},
-                {text: "Add to cart", callback_data: `addToCart/${product.id}?${qtyUrl}`},
-              ],
-            ],
-          },
-        });
+            },
+          });
+    }
+    await ctx.answerCbQuery();
+  } else {
+    return next();
+  }
+});
+
+// Show Cart
+catalogsActions.push( async (ctx, next) => {
+  if (ctx.state.routeName === "cart") {
+    const inlineKeyboardArray = [];
+    let msgTxt = "Cart\n";
+    // Get Main menu
+    inlineKeyboardArray.push([{text: "🏠 Go to Main menu",
+      callback_data: "start"}]);
+    const sessionUser = await firebase.firestore().collection("sessions").doc(`${ctx.from.id}`).get();
+    if (sessionUser.exists) {
+      const cart = sessionUser.data().cart;
+      for (const [id, product] of Object.entries(cart)) {
+        msgTxt += `ID: ${id} Name: ${product.name} Price: ${product.price} грн. Qty: ${product.qty}шт.\n`;
+        inlineKeyboardArray.push([
+          {text: `🛒 Edit ${product.name}`, callback_data: `addToCart/${id}`},
+        ]);
+      }
+    }
+    if (inlineKeyboardArray.length < 2) {
+      inlineKeyboardArray.push([
+        {text: "📁 Catalog", callback_data: "c"},
+      ]);
+      msgTxt += "Is empty";
+    }
+    await ctx.editMessageMedia({
+      type: "photo",
+      media: "https://picsum.photos/450/150/?random",
+      caption: msgTxt,
+      parse_mode: "Markdown",
+    }, {reply_markup: {
+      inline_keyboard: [...inlineKeyboardArray],
+    }});
     await ctx.answerCbQuery();
   } else {
     return next();

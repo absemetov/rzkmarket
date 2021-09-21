@@ -9,14 +9,21 @@ const CyrillicToTranslit = require("cyrillic-to-translit-js");
 const cyrillicToTranslit = new CyrillicToTranslit();
 const upload = new BaseScene("upload");
 // enter scene
-upload.enter((ctx) => ctx.reply("Вставьте ссылку Google Sheet"));
-// upload.leave((ctx) => {
-//   ctx.reply("Menu", getMainKeyboard);
-// });
+upload.enter((ctx) => ctx.reply("Вставьте ссылку Google Sheet", {
+  reply_markup: {
+    keyboard: [["back"]],
+    one_time_keyboard: true,
+    resize_keyboard: true,
+  }}));
+upload.leave((ctx) => {
+  ctx.reply("Successful sales!", {
+    reply_markup: {
+      remove_keyboard: true,
+    }});
+  ctx.scene.enter("start");
+});
 upload.hears("where", (ctx) => ctx.reply("You are in upload scene"));
-// upload.hears("back", (ctx) => {
-//   ctx.scene.leave();
-// });
+upload.hears("back", (ctx) => ctx.scene.leave());
 upload.hears("shop", async (ctx) => {
   const content = google.content("v2.1");
   // add scope content in admin.google!!!
@@ -181,15 +188,16 @@ Count rows: *${sheet.rowCount - 1}*`);
           };
           const validateProductRow = new Validator(product, rulesProductRow);
           // validate data if ID and NAME set org Name and PRICE
-          // check fails If similar product have ID Name or Price
-          if (validateProductRow.fails() && ((rows[j].id && rows[j].name) || (rows[j].name && rows[j].price))) {
+          // check fails If product have ID Name Price else this commet etc...
+          if (validateProductRow.fails() && (rows[j].id && rows[j].name && rows[j].price)) {
             let errorRow = `In row *${rows[j].rowIndex}* \n`;
             for (const [key, error] of Object.entries(validateProductRow.errors.all())) {
               errorRow += `Column *${key}* => *${error}* \n`;
             }
             throw new Error(errorRow);
           }
-          if (((rows[j].id && rows[j].name) || (rows[j].name && rows[j].price)) && product.group.length === 0) {
+          // group is required!!!
+          if (product.group.length === 0 && (rows[j].id && rows[j].name && rows[j].price)) {
             throw new Error(`Group required in row ${rows[j].rowIndex}`);
           }
           // save data to firestore

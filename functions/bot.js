@@ -3,7 +3,7 @@ const firebase = require("firebase-admin");
 firebase.initializeApp();
 const {Telegraf, Scenes: {Stage}} = require("telegraf");
 const firestoreSession = require("telegraf-session-firestore");
-const {start} = require("./bot_start_scene");
+const {start, startActions} = require("./bot_start_scene");
 const {monoScene, monoActions} = require("./bot_mono_scene");
 const {upload} = require("./bot_upload_scene");
 const {catalogScene, catalogsActions} = require("./bot_catalog_scene");
@@ -46,7 +46,7 @@ const parseUrl = async (ctx, next) => {
 bot.use(stage.middleware());
 // eslint-disable-next-line no-useless-escape
 bot.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/,
-    parseUrl, ...catalogsActions, ...monoActions);
+    parseUrl, ...startActions, ...catalogsActions, ...monoActions);
 
 bot.start((ctx) => ctx.scene.enter("start"));
 // bot.hears("mono", (ctx) => ctx.scene.enter("mono"));
