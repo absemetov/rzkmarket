@@ -49,6 +49,9 @@ const catalogsActions = [];
 catalogsActions.push(async (ctx, next) => {
   if (ctx.state.routeName === "c") {
     const catalogId = ctx.state.param;
+    const tag = ctx.state.params.get("t");
+    const startAfter = ctx.state.params.get("s");
+    const endBefore = ctx.state.params.get("e");
     const inlineKeyboardArray =[];
     let currentCatalog = {};
     let textMessage = "RZK Market Catalog 🇺🇦";
@@ -72,10 +75,10 @@ catalogsActions.push(async (ctx, next) => {
           .orderBy("orderNumber");
       let query = "";
       // Filter by tag
-      let selectedTag = "";
-      if (ctx.state.params.get("tag")) {
-        selectedTag = `(${ctx.state.params.get("tag")})`;
-        mainQuery = mainQuery.where("tags", "array-contains", ctx.state.params.get("tag"));
+      let tagUrl = "";
+      if (tag) {
+        mainQuery = mainQuery.where("tags", "array-contains", tag);
+        tagUrl = `&t=${tag}`;
       }
       // Add tags button
       if (currentCatalog.tags) {
@@ -83,25 +86,25 @@ catalogsActions.push(async (ctx, next) => {
         // inlineKeyboardArray.push(Markup.button.callback(`📌 Tags ${selectedTag}`,
         //    `t/${currentCatalog.id}?tagSelected=${params.get("tag")}`));
         tagsArray.push({text: "📌 Tags",
-          callback_data: `t/${currentCatalog.id}?tagSelected=${ctx.state.params.get("tag")}`});
+          callback_data: `t/${currentCatalog.id}?tagSelected=${tag}`});
         // Delete or close selected tag
-        if (selectedTag) {
-          tagsArray.push({text: `❎ Del ${selectedTag}`, callback_data: `c/${currentCatalog.id}`});
+        if (tag) {
+          tagsArray.push({text: `❎ Del ${tag}`, callback_data: `c/${currentCatalog.id}`});
         }
         inlineKeyboardArray.push(tagsArray);
       }
       // Paginate goods
       // copy main query
       query = mainQuery;
-      if (ctx.state.params.get("startAfter")) {
+      if (startAfter) {
         const startAfterProduct = await firebase.firestore().collection("products")
-            .doc(ctx.state.params.get("startAfter")).get();
+            .doc(startAfter).get();
         query = query.startAfter(startAfterProduct);
       }
       // prev button
-      if (ctx.state.params.get("endBefore")) {
+      if (endBefore) {
         const endBeforeProduct = await firebase.firestore().collection("products")
-            .doc(ctx.state.params.get("endBefore")).get();
+            .doc(endBefore).get();
         query = query.endBefore(endBeforeProduct).limitToLast(10);
       } else {
         query = query.limit(10);
@@ -128,32 +131,26 @@ catalogsActions.push(async (ctx, next) => {
       // Set load more button
       // ====
       if (!productsSnapshot.empty) {
-        const prevNextArray = [];
-        // endBefore prev button
-        const endBefore = productsSnapshot.docs[0];
-        const ifBeforeProducts = await mainQuery.endBefore(endBefore).limitToLast(1).get();
+        const prevNext = [];
+        // endBefore prev button e paaram
+        const endBeforeSnap = productsSnapshot.docs[0];
+        const ifBeforeProducts = await mainQuery.endBefore(endBeforeSnap).limitToLast(1).get();
         if (!ifBeforeProducts.empty) {
           // inlineKeyboardArray.push(Markup.button.callback("⬅️ Back",
           //    `c/${currentCatalog.id}?endBefore=${endBefore.id}&tag=${params.get("tag")}`));
-          prevNextArray.push({
-            text: "⬅️ Back",
-            callback_data: `c/${currentCatalog.id}?endBefore=${endBefore.id}` +
-              `${ctx.state.params.get("tag") ? "&tag=" + ctx.state.params.get("tag") : ""}`,
-          });
+          prevNext.push({text: "⬅️ Back", callback_data: `c/${currentCatalog.id}?e=${endBeforeSnap.id}${tagUrl}`});
         }
         // startAfter
-        const startAfter = productsSnapshot.docs[productsSnapshot.docs.length - 1];
-        const ifAfterProducts = await mainQuery.startAfter(startAfter).limit(1).get();
+        const startAfterSnap = productsSnapshot.docs[productsSnapshot.docs.length - 1];
+        const ifAfterProducts = await mainQuery.startAfter(startAfterSnap).limit(1).get();
         if (!ifAfterProducts.empty) {
+          // startAfter iqual s
           // inlineKeyboardArray.push(Markup.button.callback("➡️ Load more",
           //    `c/${currentCatalog.id}?startAfter=${startAfter.id}&tag=${params.get("tag")}`));
-          prevNextArray.push({
-            text: "➡️ Load more",
-            callback_data: `c/${currentCatalog.id}?startAfter=${startAfter.id}` +
-              `${ctx.state.params.get("tag") ? "&tag=" + ctx.state.params.get("tag") : ""}`,
-          });
+          prevNext.push({text: "➡️ Load more",
+            callback_data: `c/${currentCatalog.id}?s=${startAfterSnap.id}${tagUrl}`});
         }
-        inlineKeyboardArray.push(prevNextArray);
+        inlineKeyboardArray.push(prevNext);
       }
       // =====
       // add back button
@@ -435,10 +432,10 @@ catalogsActions.push( async (ctx, next) => {
     for (const tag of catalog.tags) {
       if (tag.id === ctx.state.params.get("tagSelected")) {
         // inlineKeyboardArray.push(Markup.button.callback(`✅ ${tag.name}`, `c/c/${catalog.id}?tag=${tag.id}`));
-        inlineKeyboardArray.push([{text: `✅ ${tag.name}`, callback_data: `c/${catalog.id}?tag=${tag.id}`}]);
+        inlineKeyboardArray.push([{text: `✅ ${tag.name}`, callback_data: `c/${catalog.id}?t=${tag.id}`}]);
       } else {
         // inlineKeyboardArray.push(Markup.button.callback(`📌 ${tag.name}`, `c/c/${catalog.id}?tag=${tag.id}`));
-        inlineKeyboardArray.push([{text: `📌 ${tag.name}`, callback_data: `c/${catalog.id}?tag=${tag.id}`}]);
+        inlineKeyboardArray.push([{text: `📌 ${tag.name}`, callback_data: `c/${catalog.id}?t=${tag.id}`}]);
       }
     }
     // close tags

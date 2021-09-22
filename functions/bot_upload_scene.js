@@ -177,6 +177,7 @@ Count rows: *${sheet.rowCount - 1}*`);
             price: rows[j].price ? Number(rows[j].price.replace(",", ".")) : "",
             group: groupArray,
             tags: tags,
+            unitCode: rows[j].unit_code,
           };
           // required for arrays dont work
           const rulesProductRow = {
@@ -185,6 +186,7 @@ Count rows: *${sheet.rowCount - 1}*`);
             "price": "required|numeric",
             "group.*.id": "alpha_dash",
             "tags.*": "alpha_dash",
+            "unitCode": "required|integer",
           };
           const validateProductRow = new Validator(product, rulesProductRow);
           // validate data if ID and NAME set org Name and PRICE
@@ -211,6 +213,7 @@ Count rows: *${sheet.rowCount - 1}*`);
             batchGoods.set(productRef, {
               "name": product.name,
               "price": product.price,
+              "unitCode": product.unitCode,
               "orderNumber": countUploadGoods,
               "catalog": groupArray[groupArray.length - 1],
               "tags": tags,
