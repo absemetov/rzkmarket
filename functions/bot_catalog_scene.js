@@ -52,9 +52,6 @@ catalogsActions.push(async (ctx, next) => {
     const inlineKeyboardArray =[];
     let currentCatalog = {};
     let textMessage = "RZK Market Catalog 🇺🇦";
-    // Get Main menu
-    inlineKeyboardArray.push([{text: "🏠 Go to Main menu",
-      callback_data: "start"}]);
     // set currentCatalog data
     if (catalogId) {
       const currentCatalogSnapshot = await firebase.firestore().collection("catalogs").doc(catalogId).get();
@@ -165,6 +162,9 @@ catalogsActions.push(async (ctx, next) => {
       inlineKeyboardArray.push([{text: "⤴️ Parent catalog",
         callback_data: currentCatalog.parentId ? `c/${currentCatalog.parentId}` : "c"}]);
     }
+    // Set Main menu button
+    inlineKeyboardArray.push([{text: "🏠 Go to Main menu",
+      callback_data: "start"}]);
     // const extraObject = {
     //   parse_mode: "Markdown",
     //   ...Markup.inlineKeyboard(inlineKeyboardArray,
@@ -219,14 +219,10 @@ catalogsActions.push( async (ctx, next) => {
           },
         }, {merge: true});
       }
-      await ctx.answerCbQuery(qty);
     }
     // generate array
     const catalogUrl = ctx.session.path;
     const inlineKeyboardArray = [];
-    // Get Main menu
-    inlineKeyboardArray.push([{text: "🏠 Go to Main menu",
-      callback_data: "start"}]);
     // inlineKeyboardArray.push(Markup.button.callback("📸 Upload photo", `uploadPhotos/${product.id}`));
     // Get cart
     const addButton = {text: "🛒 Add to cart", callback_data: `addToCart/${product.id}`};
@@ -247,7 +243,7 @@ catalogsActions.push( async (ctx, next) => {
       inlineKeyboardArray.push([{text: `🖼 Show photos (${product.photos.length})`,
         callback_data: `showPhotos/${product.id}`}]);
     }
-    inlineKeyboardArray.push([{text: "⤴️ Goto catalog", callback_data: catalogUrl}]);
+    inlineKeyboardArray.push([{text: `⤴️ Goto ${product.catalog.name}`, callback_data: catalogUrl}]);
     // Get main photo url.
     let publicImgUrl = "";
     if (product.mainPhoto) {
@@ -258,6 +254,9 @@ catalogsActions.push( async (ctx, next) => {
     } else {
       publicImgUrl = "https://s3.eu-central-1.amazonaws.com/rzk.com.ua/250.56ad1e10bf4a01b1ff3af88752fd3412.jpg";
     }
+    // Set Main menu
+    inlineKeyboardArray.push([{text: "🏠 Go to Main menu",
+      callback_data: "start"}]);
     await ctx.editMessageMedia({
       type: "photo",
       media: publicImgUrl,
@@ -278,6 +277,7 @@ catalogsActions.push( async (ctx, next) => {
     let qty = ctx.state.params.get("qty");
     const number = ctx.state.params.get("number");
     const back = ctx.state.params.get("back");
+    const redirect = ctx.state.params.get("r");
     const clear = ctx.state.params.get("clear");
     const productId = ctx.state.param;
     let qtyUrl = "";
@@ -302,11 +302,19 @@ catalogsActions.push( async (ctx, next) => {
     } else {
       qty = 0;
     }
+    // add redirect param
+    if (redirect) {
+      qtyUrl += "&r=1";
+    }
     const productRef = firebase.firestore().collection("products").doc(productId);
     const productSnapshot = await productRef.get();
     if (productSnapshot.exists) {
       const product = {id: productSnapshot.id, ...productSnapshot.data()};
       // ctx.reply(`Main photo updated, productId ${productId} ${fileId}`);
+      const addButton = {text: `🛒 Add to cart ${qty ? qty : ""}`, callback_data: `p/${product.id}?qty=${qty}`};
+      if (redirect) {
+        addButton.callback_data = `cart/${product.id}?qty=${qty}`;
+      }
       await ctx.editMessageCaption(`${product.name} added to cart qty: ${qty}`,
           {
             reply_markup: {
@@ -332,7 +340,7 @@ catalogsActions.push( async (ctx, next) => {
                   {text: "Clear", callback_data: `addToCart/${product.id}?clear=true${qtyUrl}`},
                 ],
                 [
-                  {text: `🛒 Add to cart ${qty ? qty : ""}`, callback_data: `p/${product.id}?qty=${qty}`},
+                  addButton,
                 ],
                 [
                   {text: "⤴️ Goto product", callback_data: `p/${product.id}`},
@@ -350,27 +358,52 @@ catalogsActions.push( async (ctx, next) => {
 // Show Cart
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "cart") {
+    // change qty product
+    let qty = ctx.state.params.get("qty");
+    const productId = ctx.state.param;
+    if (qty) {
+      qty = Number(qty);
+      const user = firebase.firestore().collection("sessions").doc(`${ctx.from.id}`);
+      if (qty) {
+        // add product to cart
+        await user.set({
+          cart: {
+            [productId]: {
+              qty: qty,
+            },
+          },
+        }, {merge: true});
+      } else {
+        // delete product from cart
+        await user.set({
+          cart: {
+            [productId]: firebase.firestore.FieldValue.delete(),
+          },
+        }, {merge: true});
+      }
+    }
     const inlineKeyboardArray = [];
     let msgTxt = "Cart\n";
-    // Get Main menu
-    inlineKeyboardArray.push([{text: "🏠 Go to Main menu",
-      callback_data: "start"}]);
     const sessionUser = await firebase.firestore().collection("sessions").doc(`${ctx.from.id}`).get();
     if (sessionUser.exists) {
       const cart = sessionUser.data().cart;
       for (const [id, product] of Object.entries(cart)) {
         msgTxt += `ID: ${id} Name: ${product.name} Price: ${product.price} грн. Qty: ${product.qty}шт.\n`;
         inlineKeyboardArray.push([
-          {text: `🛒 Edit ${product.name}`, callback_data: `addToCart/${id}`},
+          {text: `🛒 Edit ${product.name} added ${product.qty}`,
+            callback_data: `addToCart/${id}?qty=${product.qty}&r=1`},
         ]);
       }
     }
-    if (inlineKeyboardArray.length < 2) {
+    if (inlineKeyboardArray.length < 1) {
       inlineKeyboardArray.push([
         {text: "📁 Catalog", callback_data: "c"},
       ]);
       msgTxt += "Is empty";
     }
+    // Set Main menu
+    inlineKeyboardArray.push([{text: "🏠 Go to Main menu",
+      callback_data: "start"}]);
     await ctx.editMessageMedia({
       type: "photo",
       media: "https://picsum.photos/450/150/?random",
