@@ -173,16 +173,18 @@ Count rows: *${sheet.rowCount - 1}*`);
           }
           const product = {
             id: rows[j].id,
-            name: rows[j].name,
+            name: rows[j].name.trim(),
+            purchasePrice: rows[j].purchase_price ? Number(rows[j].purchase_price.replace(",", ".")) : "",
             price: rows[j].price ? Number(rows[j].price.replace(",", ".")) : "",
             group: groupArray,
             tags: tags,
-            unitCode: rows[j].unit_code,
+            unitCode: Number(rows[j].unit_code),
           };
           // required for arrays dont work
           const rulesProductRow = {
             "id": "required|alpha_dash",
             "name": "required|string",
+            "purchasePrice": "numeric",
             "price": "required|numeric",
             "group.*.id": "alpha_dash",
             "tags.*": "alpha_dash",
@@ -212,6 +214,7 @@ Count rows: *${sheet.rowCount - 1}*`);
             const productRef = firebase.firestore().collection("products").doc(product.id);
             batchGoods.set(productRef, {
               "name": product.name,
+              "purchasePrice": product.purchasePrice,
               "price": product.price,
               "unitCode": product.unitCode,
               "orderNumber": countUploadGoods,

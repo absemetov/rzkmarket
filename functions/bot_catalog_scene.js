@@ -121,7 +121,7 @@ catalogsActions.push(async (ctx, next) => {
         const addButton = {text: `📦 ${product.data().name} (${product.id})`, callback_data: `p/${product.id}`};
         const sessionUser = await firebase.firestore().collection("sessions").doc(`${ctx.from.id}`).get();
         if (sessionUser.exists) {
-          const cartProduct = sessionUser.data().cart[product.id];
+          const cartProduct = sessionUser.data().cart && sessionUser.data().cart[product.id];
           if (cartProduct) {
             addButton.text = `📦 ${product.data().name} (${product.id}) added ${cartProduct.qty}`;
           }
@@ -225,7 +225,7 @@ catalogsActions.push( async (ctx, next) => {
     const addButton = {text: "🛒 Add to cart", callback_data: `addToCart/${product.id}`};
     const sessionUser = await firebase.firestore().collection("sessions").doc(`${ctx.from.id}`).get();
     if (sessionUser.exists) {
-      const cartProduct = sessionUser.data().cart[product.id];
+      const cartProduct = sessionUser.data().cart && sessionUser.data().cart[product.id];
       if (cartProduct) {
         addButton.text = `Product added ${cartProduct.qty}`;
         addButton.callback_data = `addToCart/${product.id}?qty=${cartProduct.qty}`;
@@ -258,7 +258,7 @@ catalogsActions.push( async (ctx, next) => {
       type: "photo",
       media: publicImgUrl,
       caption: `${product.name} (${product.id})`,
-      parse_mode: "Markdown",
+      parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: [...inlineKeyboardArray],
     }});
@@ -384,12 +384,14 @@ catalogsActions.push( async (ctx, next) => {
     const sessionUser = await firebase.firestore().collection("sessions").doc(`${ctx.from.id}`).get();
     if (sessionUser.exists) {
       const cart = sessionUser.data().cart;
-      for (const [id, product] of Object.entries(cart)) {
-        msgTxt += `ID: ${id} Name: ${product.name} Price: ${product.price} грн. Qty: ${product.qty}шт.\n`;
-        inlineKeyboardArray.push([
-          {text: `🛒 Edit ${product.name} added ${product.qty}`,
-            callback_data: `addToCart/${id}?qty=${product.qty}&r=1`},
-        ]);
+      if (cart) {
+        for (const [id, product] of Object.entries(cart)) {
+          msgTxt += `ID: ${id} Name: ${product.name} Price: ${product.price} грн. Qty: ${product.qty}шт.\n`;
+          inlineKeyboardArray.push([
+            {text: `🛒 Edit ${product.name} added ${product.qty}`,
+              callback_data: `addToCart/${id}?qty=${product.qty}&r=1`},
+          ]);
+        }
       }
     }
     if (inlineKeyboardArray.length < 1) {
