@@ -69,7 +69,7 @@ catalogsActions.push(async (ctx, next) => {
     });
     // Show catalog siblings
     if (currentCatalog.id) {
-      textMessage += `\n*${currentCatalog.name}*`;
+      textMessage += `\nCatalog: <b>${currentCatalog.name}</b>`;
       // Products query
       let mainQuery = firebase.firestore().collection("products").where("catalog.id", "==", currentCatalog.id)
           .orderBy("orderNumber");
@@ -123,7 +123,7 @@ catalogsActions.push(async (ctx, next) => {
         if (sessionUser.exists) {
           const cartProduct = sessionUser.data().cart && sessionUser.data().cart[product.id];
           if (cartProduct) {
-            addButton.text = `📦 ${product.data().name} (${product.id}) added ${cartProduct.qty}`;
+            addButton.text = `📦 ${product.data().name} (${product.id}) added ${cartProduct.qty} ${cartProduct.unit}`;
           }
         }
         inlineKeyboardArray.push([addButton]);
@@ -160,8 +160,8 @@ catalogsActions.push(async (ctx, next) => {
         callback_data: currentCatalog.parentId ? `c/${currentCatalog.parentId}` : "c"}]);
     }
     // Set Main menu button
-    inlineKeyboardArray.push([{text: "🏠 Go to Main menu",
-      callback_data: "start"}]);
+    inlineKeyboardArray.push([{text: "🏠 Go to home",
+      callback_data: "start"}, {text: "🛒 Cart", callback_data: "cart"}]);
     // const extraObject = {
     //   parse_mode: "Markdown",
     //   ...Markup.inlineKeyboard(inlineKeyboardArray,
@@ -175,7 +175,7 @@ catalogsActions.push(async (ctx, next) => {
       type: "photo",
       media: "https://picsum.photos/450/150/?random",
       caption: textMessage,
-      parse_mode: "Markdown",
+      parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: [...inlineKeyboardArray],
       // resize_keyboard: true,
@@ -204,6 +204,7 @@ catalogsActions.push( async (ctx, next) => {
             [product.id]: {
               name: product.name,
               price: product.price,
+              unit: product.unit,
               qty: qty,
             },
           },
@@ -227,7 +228,7 @@ catalogsActions.push( async (ctx, next) => {
     if (sessionUser.exists) {
       const cartProduct = sessionUser.data().cart && sessionUser.data().cart[product.id];
       if (cartProduct) {
-        addButton.text = `Product added ${cartProduct.qty}`;
+        addButton.text = `Product added ${cartProduct.qty} ${cartProduct.unit}`;
         addButton.callback_data = `addToCart/${product.id}?qty=${cartProduct.qty}`;
       }
     }
@@ -252,12 +253,12 @@ catalogsActions.push( async (ctx, next) => {
       publicImgUrl = "https://s3.eu-central-1.amazonaws.com/rzk.com.ua/250.56ad1e10bf4a01b1ff3af88752fd3412.jpg";
     }
     // Set Main menu
-    inlineKeyboardArray.push([{text: "🏠 Go to Main menu",
-      callback_data: "start"}]);
+    inlineKeyboardArray.push([{text: "🏠 Go to home",
+      callback_data: "start"}, {text: "🛒 Cart", callback_data: "cart"}]);
     await ctx.editMessageMedia({
       type: "photo",
       media: publicImgUrl,
-      caption: `${product.name} (${product.id})`,
+      caption: `<b>${product.name}</b> (${product.id})`,
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: [...inlineKeyboardArray],
@@ -312,8 +313,9 @@ catalogsActions.push( async (ctx, next) => {
       if (redirect) {
         addButton.callback_data = `cart/${product.id}?qty=${qty}`;
       }
-      await ctx.editMessageCaption(`${product.name} added to cart qty: ${qty}`,
+      await ctx.editMessageCaption(`<b>${product.name}</b> \nQty: <b>${qty} ${product.unit}</b>`,
           {
+            parse_mode: "html",
             reply_markup: {
               inline_keyboard: [
                 [
@@ -332,9 +334,9 @@ catalogsActions.push( async (ctx, next) => {
                   {text: "3", callback_data: `addToCart/${product.id}?number=3${qtyUrl}`},
                 ],
                 [
-                  {text: "0", callback_data: `addToCart/${product.id}?number=0${qtyUrl}`},
-                  {text: "Back", callback_data: `addToCart/${product.id}?back=true${qtyUrl}`},
-                  {text: "Clear", callback_data: `addToCart/${product.id}?clear=true${qtyUrl}`},
+                  {text: "0️", callback_data: `addToCart/${product.id}?number=0${qtyUrl}`},
+                  {text: "DEL", callback_data: `addToCart/${product.id}?back=true${qtyUrl}`},
+                  {text: "AC", callback_data: `addToCart/${product.id}?clear=true${qtyUrl}`},
                 ],
                 [
                   addButton,
@@ -386,9 +388,9 @@ catalogsActions.push( async (ctx, next) => {
       const cart = sessionUser.data().cart;
       if (cart) {
         for (const [id, product] of Object.entries(cart)) {
-          msgTxt += `ID: ${id} Name: ${product.name} Price: ${product.price} грн. Qty: ${product.qty}шт.\n`;
+          msgTxt += `ID: ${id} Name: ${product.name} Price: ${product.price} Qty: ${product.qty} ${product.unit}\n`;
           inlineKeyboardArray.push([
-            {text: `🛒 Edit ${product.name} added ${product.qty}`,
+            {text: `🛒 Edit ${product.name} added ${product.qty} ${product.unit}`,
               callback_data: `addToCart/${id}?qty=${product.qty}&r=1`},
           ]);
         }
@@ -401,13 +403,13 @@ catalogsActions.push( async (ctx, next) => {
       msgTxt += "Is empty";
     }
     // Set Main menu
-    inlineKeyboardArray.push([{text: "🏠 Go to Main menu",
+    inlineKeyboardArray.push([{text: "🏠 Go to home",
       callback_data: "start"}]);
     await ctx.editMessageMedia({
       type: "photo",
       media: "https://picsum.photos/450/150/?random",
       caption: msgTxt,
-      parse_mode: "Markdown",
+      parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: [...inlineKeyboardArray],
     }});
@@ -445,8 +447,8 @@ catalogsActions.push( async (ctx, next) => {
     await ctx.editMessageMedia({
       type: "photo",
       media: "https://picsum.photos/450/150/?random",
-      caption: `RZK Market Catalog 🇺🇦\n*${catalog.name}* Tags`,
-      parse_mode: "Markdown",
+      caption: `RZK Market Catalog 🇺🇦\n<b>${catalog.name}</b>, Tags`,
+      parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: [...inlineKeyboardArray],
     }});
@@ -477,9 +479,10 @@ catalogsActions.push( async (ctx, next) => {
       inlineKeyboardArray.push([{text: "❎ Close", callback_data: "closePhoto"}]);
       inlineKeyboardArray.push([{text: "🗑 Delete", callback_data: `deletePhoto/${product.id}?photoId=${photoId}`}]);
       await ctx.replyWithPhoto({url: publicUrl}, {
-        caption: product.mainPhoto === photoId ? `✅ Photo #${index + 1} (Main Photo) ${product.name} (${product.id})` :
+        caption: product.mainPhoto === photoId ?
+          `✅ Photo <b>#${index + 1}</b> (Main Photo) ${product.name} (${product.id})` :
           `Photo #${index + 1} ${product.name} (${product.id})`,
-        parse_mode: "Markdown",
+        parse_mode: "html",
         reply_markup: {
           inline_keyboard: [...inlineKeyboardArray],
         },
@@ -588,7 +591,7 @@ catalogsActions.push( async (ctx, next) => {
     const productRef = firebase.firestore().collection("products").doc(ctx.session.productId);
     const productSnapshot = await productRef.get();
     const product = {id: productSnapshot.id, ...productSnapshot.data()};
-    ctx.reply(`Please add photo to ${product.name} (${product.id})`);
+    ctx.replyWithHTML(`Please add photo to <b>${product.name} (${product.id})</b>`);
     await ctx.answerCbQuery();
   } else {
     return next();
