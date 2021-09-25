@@ -124,16 +124,16 @@ Count rows: *${sheet.rowCount - 1}*`);
         // loop rows from SHEET
         for (let j = 0; j < rows.length; j++) {
           // Stop scan if ID = "stop"
-          if (rows[j].id === "stop") {
+          if (rows[j].ID === "stop") {
             rowCount = 0;
             break;
           }
           // validate group
           // generate catalogs array
           let groupArray = [];
-          if (rows[j].group) {
+          if (rows[j].GROUP) {
             // generate Ids
-            groupArray = rows[j].group.split("#");
+            groupArray = rows[j].GROUP.split("#");
             groupArray = groupArray.map((catalogName, index) => {
               let parentId = null;
               if (index !== 0) {
@@ -151,9 +151,9 @@ Count rows: *${sheet.rowCount - 1}*`);
           let tagsArray = [];
           const tags = [];
           const tagsNames = [];
-          if (rows[j].tags) {
+          if (rows[j].TAGS) {
             // generate Ids
-            tagsArray = rows[j].tags.split(",");
+            tagsArray = rows[j].TAGS.split(",");
             tagsArray.forEach((tagName) => {
               tagName = tagName.trim();
               let tagId = cyrillicToTranslit.transform(tagName, "-").toLowerCase();
@@ -172,13 +172,13 @@ Count rows: *${sheet.rowCount - 1}*`);
             });
           }
           const product = {
-            id: rows[j].id,
-            name: rows[j].name.trim(),
-            purchasePrice: rows[j].purchase_price ? Number(rows[j].purchase_price.replace(",", ".")) : "",
-            price: rows[j].price ? Number(rows[j].price.replace(",", ".")) : "",
+            id: rows[j].ID,
+            name: rows[j].NAME.trim(),
+            purchasePrice: rows[j].PURCHASE_PRICE ? Number(rows[j].PURCHASE_PRICE.replace(",", ".")) : "",
+            price: rows[j].PRICE ? Number(rows[j].PRICE.replace(",", ".")) : "",
             group: groupArray,
             tags: tags,
-            unit: rows[j].unit,
+            unit: rows[j].UNIT,
           };
           // required for arrays dont work
           const rulesProductRow = {
@@ -193,7 +193,7 @@ Count rows: *${sheet.rowCount - 1}*`);
           const validateProductRow = new Validator(product, rulesProductRow);
           // validate data if ID and NAME set org Name and PRICE
           // check fails If product have ID Name Price else this commet etc...
-          if (validateProductRow.fails() && (rows[j].id && rows[j].name && rows[j].price)) {
+          if (validateProductRow.fails() && (product.id && product.name && product.price)) {
             let errorRow = `In row *${rows[j].rowIndex}* \n`;
             for (const [key, error] of Object.entries(validateProductRow.errors.all())) {
               errorRow += `Column *${key}* => *${error}* \n`;
@@ -201,7 +201,7 @@ Count rows: *${sheet.rowCount - 1}*`);
             throw new Error(errorRow);
           }
           // group is required!!!
-          if (product.group.length === 0 && (rows[j].id && rows[j].name && rows[j].price)) {
+          if (product.group.length === 0 && (product.id && product.name && product.price)) {
             throw new Error(`Group required in row ${rows[j].rowIndex}`);
           }
           // save data to firestore

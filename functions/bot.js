@@ -27,7 +27,7 @@ bot.use(async (ctx, next) => {
 
 // Actions catalog, mono
 // (routeName)/(param)?(args)
-// Parse callback data
+// Parse callback data, add Cart instance
 const parseUrl = async (ctx, next) => {
   ctx.state.routeName = ctx.match[1];
   ctx.state.param = ctx.match[2];
@@ -40,6 +40,49 @@ const parseUrl = async (ctx, next) => {
     }
   }
   ctx.state.params = params;
+  // cart instance
+  const cart = {
+    sessionQuery: firebase.firestore().collection("sessions").doc(`${ctx.from.id}`),
+    async clear() {
+      await this.sessionQuery.set({
+        cart: firebase.firestore.FieldValue.delete(),
+      }, {merge: true});
+    },
+    async edit(productId, qty) {
+      qty = Number(qty);
+      if (qty) {
+        // edit product qty
+        await this.sessionQuery.set({
+          cart: {
+            [productId]: {
+              qty: qty,
+            },
+          },
+        }, {merge: true});
+      } else {
+        // delete product from cart
+        await this.sessionQuery.set({
+          cart: {
+            [productId]: firebase.firestore.FieldValue.delete(),
+          },
+        }, {merge: true});
+      }
+    },
+    async products() {
+      const products = [];
+      const sessionRef = await this.sessionQuery.get();
+      if (sessionRef.exists) {
+        const cart = sessionRef.data().cart;
+        if (cart) {
+          for (const [id, product] of Object.entries(cart)) {
+            products.push({id, ...product});
+          }
+        }
+      }
+      return products;
+    },
+  };
+  ctx.state.cart = cart;
   return next();
 };
 // scenes

@@ -357,50 +357,35 @@ catalogsActions.push( async (ctx, next) => {
 // Show Cart
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "cart") {
+    // clear cart
+    const clear = ctx.state.params.get("clear");
+    if (clear) {
+      ctx.state.cart.clear();
+    }
     // change qty product
-    let qty = ctx.state.params.get("qty");
     const productId = ctx.state.param;
-    if (qty) {
-      qty = Number(qty);
-      const user = firebase.firestore().collection("sessions").doc(`${ctx.from.id}`);
-      if (qty) {
-        // add product to cart
-        await user.set({
-          cart: {
-            [productId]: {
-              qty: qty,
-            },
-          },
-        }, {merge: true});
-      } else {
-        // delete product from cart
-        await user.set({
-          cart: {
-            [productId]: firebase.firestore.FieldValue.delete(),
-          },
-        }, {merge: true});
-      }
+    const qty = ctx.state.params.get("qty");
+    if (productId && qty) {
+      ctx.state.cart.edit(productId, qty);
     }
     const inlineKeyboardArray = [];
     let msgTxt = "Cart\n";
-    const sessionUser = await firebase.firestore().collection("sessions").doc(`${ctx.from.id}`).get();
-    if (sessionUser.exists) {
-      const cart = sessionUser.data().cart;
-      if (cart) {
-        for (const [id, product] of Object.entries(cart)) {
-          msgTxt += `ID: ${id} Name: ${product.name} Price: ${product.price} Qty: ${product.qty} ${product.unit}\n`;
-          inlineKeyboardArray.push([
-            {text: `🛒 Edit ${product.name} added ${product.qty} ${product.unit}`,
-              callback_data: `addToCart/${id}?qty=${product.qty}&r=1`},
-          ]);
-        }
-      }
+    for (const product of await ctx.state.cart.products()) {
+      msgTxt += `ID: ${product.id} Name: ${product.name} Price: ${product.price} Qty: ${product.qty} ${product.unit} ` +
+        `Sum ${product.price * product.qty}\n`;
+      inlineKeyboardArray.push([
+        {text: `🛒 Edit ${product.name} added ${product.qty} ${product.unit}`,
+          callback_data: `addToCart/${product.id}?qty=${product.qty}&r=1`},
+      ]);
     }
     if (inlineKeyboardArray.length < 1) {
       inlineKeyboardArray.push([
         {text: "📁 Catalog", callback_data: "c"},
       ]);
       msgTxt += "Is empty";
+    } else {
+      inlineKeyboardArray.push([{text: "🗑 Clear cart",
+        callback_data: "cart?clear=1"}]);
     }
     // Set Main menu
     inlineKeyboardArray.push([{text: "🏠 Go to home",
