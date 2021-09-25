@@ -193,30 +193,9 @@ catalogsActions.push( async (ctx, next) => {
     const productSnapshot = await firebase.firestore().collection("products").doc(productId).get();
     const product = {id: productSnapshot.id, ...productSnapshot.data()};
     // Add product to cart
-    let qty = ctx.state.params.get("qty");
+    const qty = ctx.state.params.get("qty");
     if (qty) {
-      qty = Number(qty);
-      const user = firebase.firestore().collection("sessions").doc(`${ctx.from.id}`);
-      if (qty) {
-        // add product to cart
-        await user.set({
-          cart: {
-            [product.id]: {
-              name: product.name,
-              price: product.price,
-              unit: product.unit,
-              qty: qty,
-            },
-          },
-        }, {merge: true});
-      } else {
-        // delete product from cart
-        await user.set({
-          cart: {
-            [product.id]: firebase.firestore.FieldValue.delete(),
-          },
-        }, {merge: true});
-      }
+      await ctx.state.cart.add(product, qty);
     }
     // generate array
     const catalogUrl = ctx.session.path;
@@ -360,7 +339,7 @@ catalogsActions.push( async (ctx, next) => {
     // clear cart
     const clear = ctx.state.params.get("clear");
     if (clear) {
-      ctx.state.cart.clear();
+      await ctx.state.cart.clear();
     }
     // change qty product
     const productId = ctx.state.param;

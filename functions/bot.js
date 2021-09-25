@@ -61,12 +61,35 @@ const parseUrl = async (ctx, next) => {
         }, {merge: true});
       } else {
         // delete product from cart
+        await this.deleteProduct(productId);
+      }
+    },
+    async add(product, qty) {
+      qty = Number(qty);
+      if (qty) {
+        // add product to cart
         await this.sessionQuery.set({
           cart: {
-            [productId]: firebase.firestore.FieldValue.delete(),
+            [product.id]: {
+              name: product.name,
+              price: product.price,
+              unit: product.unit,
+              qty: qty,
+            },
           },
         }, {merge: true});
+      } else {
+        // delete product from cart
+        await this.deleteProduct(product.id);
       }
+    },
+    async deleteProduct(productId) {
+      // delete product from cart
+      await this.sessionQuery.set({
+        cart: {
+          [productId]: firebase.firestore.FieldValue.delete(),
+        },
+      }, {merge: true});
     },
     async products() {
       const products = [];
