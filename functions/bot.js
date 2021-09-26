@@ -43,53 +43,38 @@ const parseUrl = async (ctx, next) => {
   // cart instance
   const cart = {
     sessionQuery: firebase.firestore().collection("sessions").doc(`${ctx.from.id}`),
-    async clear() {
-      await this.sessionQuery.set({
-        cart: firebase.firestore.FieldValue.delete(),
-      }, {merge: true});
-    },
-    async edit(productId, qty) {
-      qty = Number(qty);
-      if (qty) {
-        // edit product qty
-        await this.sessionQuery.set({
-          cart: {
-            [productId]: {
-              qty: qty,
-            },
-          },
-        }, {merge: true});
-      } else {
-        // delete product from cart
-        await this.deleteProduct(productId);
-      }
-    },
     async add(product, qty) {
       qty = Number(qty);
+      let cartData = {};
       if (qty) {
-        // add product to cart
-        await this.sessionQuery.set({
-          cart: {
+        // add product to cart or edit
+        if (typeof product == "object") {
+          cartData = {
             [product.id]: {
               name: product.name,
               price: product.price,
               unit: product.unit,
               qty: qty,
             },
-          },
+          };
+        } else {
+          cartData = {
+            [product]: {
+              qty: qty,
+            },
+          };
+        }
+        await this.sessionQuery.set({
+          cart: cartData,
         }, {merge: true});
       } else {
         // delete product from cart
-        await this.deleteProduct(product.id);
+        await this.sessionQuery.set({
+          cart: {
+            [typeof product == "object" ? product.id : product]: firebase.firestore.FieldValue.delete(),
+          },
+        }, {merge: true});
       }
-    },
-    async deleteProduct(productId) {
-      // delete product from cart
-      await this.sessionQuery.set({
-        cart: {
-          [productId]: firebase.firestore.FieldValue.delete(),
-        },
-      }, {merge: true});
     },
     async products() {
       const products = [];
@@ -103,6 +88,11 @@ const parseUrl = async (ctx, next) => {
         }
       }
       return products;
+    },
+    async clear() {
+      await this.sessionQuery.set({
+        cart: firebase.firestore.FieldValue.delete(),
+      }, {merge: true});
     },
   };
   ctx.state.cart = cart;

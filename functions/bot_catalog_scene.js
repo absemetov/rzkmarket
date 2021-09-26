@@ -45,6 +45,11 @@ catalogScene.hears("back", (ctx) => {
 // test actions array
 const catalogsActions = [];
 
+// round to 2 decimals
+function roundNumber(num) {
+  return Math.round((num + Number.EPSILON) * 100) / 100;
+}
+
 // Show Catalogs and goods
 catalogsActions.push(async (ctx, next) => {
   if (ctx.state.routeName === "c") {
@@ -123,7 +128,8 @@ catalogsActions.push(async (ctx, next) => {
         if (sessionUser.exists) {
           const cartProduct = sessionUser.data().cart && sessionUser.data().cart[product.id];
           if (cartProduct) {
-            addButton.text = `📦 ${product.data().name} (${product.id}) added ${cartProduct.qty} ${cartProduct.unit}`;
+            addButton.text = `🛒 ${product.data().name} (${product.id}) ${cartProduct.qty} ${cartProduct.unit}` +
+            ` ${roundNumber(cartProduct.qty * cartProduct.price)} грн.`;
           }
         }
         inlineKeyboardArray.push([addButton]);
@@ -207,7 +213,8 @@ catalogsActions.push( async (ctx, next) => {
     if (sessionUser.exists) {
       const cartProduct = sessionUser.data().cart && sessionUser.data().cart[product.id];
       if (cartProduct) {
-        addButton.text = `Product added ${cartProduct.qty} ${cartProduct.unit}`;
+        addButton.text = `🛒 ${cartProduct.qty} ${cartProduct.unit} ` +
+        ` ${roundNumber(cartProduct.qty * cartProduct.price)} грн.`;
         addButton.callback_data = `addToCart/${product.id}?qty=${cartProduct.qty}`;
       }
     }
@@ -288,44 +295,48 @@ catalogsActions.push( async (ctx, next) => {
     if (productSnapshot.exists) {
       const product = {id: productSnapshot.id, ...productSnapshot.data()};
       // ctx.reply(`Main photo updated, productId ${productId} ${fileId}`);
-      const addButton = {text: `🛒 Add to cart ${qty ? qty : ""}`, callback_data: `p/${product.id}?qty=${qty}`};
+      const addButton = {text: `🛒 Add to cart ${qty ? qty + " " + product.unit: ""}`,
+        callback_data: `p/${product.id}?qty=${qty}`};
       if (redirect) {
         addButton.callback_data = `cart/${product.id}?qty=${qty}`;
       }
-      await ctx.editMessageCaption(`<b>${product.name}</b> \nQty: <b>${qty} ${product.unit}</b>`,
-          {
-            parse_mode: "html",
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  {text: "7", callback_data: `addToCart/${product.id}?number=7${qtyUrl}`},
-                  {text: "8", callback_data: `addToCart/${product.id}?number=8${qtyUrl}`},
-                  {text: "9", callback_data: `addToCart/${product.id}?number=9${qtyUrl}`},
-                ],
-                [
-                  {text: "4", callback_data: `addToCart/${product.id}?number=4${qtyUrl}`},
-                  {text: "5", callback_data: `addToCart/${product.id}?number=5${qtyUrl}`},
-                  {text: "6", callback_data: `addToCart/${product.id}?number=6${qtyUrl}`},
-                ],
-                [
-                  {text: "1", callback_data: `addToCart/${product.id}?number=1${qtyUrl}`},
-                  {text: "2", callback_data: `addToCart/${product.id}?number=2${qtyUrl}`},
-                  {text: "3", callback_data: `addToCart/${product.id}?number=3${qtyUrl}`},
-                ],
-                [
-                  {text: "0️", callback_data: `addToCart/${product.id}?number=0${qtyUrl}`},
-                  {text: "DEL", callback_data: `addToCart/${product.id}?back=true${qtyUrl}`},
-                  {text: "AC", callback_data: `addToCart/${product.id}?clear=true${qtyUrl}`},
-                ],
-                [
-                  addButton,
-                ],
-                [
-                  {text: "⤴️ Goto product", callback_data: `p/${product.id}`},
-                ],
-              ],
-            },
-          });
+      await ctx.editMessageCaption(`<b>${product.name}</b> ` +
+      `\nPrice: <b>${product.price} грн.</b>` +
+      `\nQty: <b>${qty} ${product.unit}</b>` +
+      `\nSum: <b>${roundNumber(qty * product.price)} грн.</b>`,
+      {
+        parse_mode: "html",
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {text: "7", callback_data: `addToCart/${product.id}?number=7${qtyUrl}`},
+              {text: "8", callback_data: `addToCart/${product.id}?number=8${qtyUrl}`},
+              {text: "9", callback_data: `addToCart/${product.id}?number=9${qtyUrl}`},
+            ],
+            [
+              {text: "4", callback_data: `addToCart/${product.id}?number=4${qtyUrl}`},
+              {text: "5", callback_data: `addToCart/${product.id}?number=5${qtyUrl}`},
+              {text: "6", callback_data: `addToCart/${product.id}?number=6${qtyUrl}`},
+            ],
+            [
+              {text: "1", callback_data: `addToCart/${product.id}?number=1${qtyUrl}`},
+              {text: "2", callback_data: `addToCart/${product.id}?number=2${qtyUrl}`},
+              {text: "3", callback_data: `addToCart/${product.id}?number=3${qtyUrl}`},
+            ],
+            [
+              {text: "0️", callback_data: `addToCart/${product.id}?number=0${qtyUrl}`},
+              {text: "DEL", callback_data: `addToCart/${product.id}?back=true${qtyUrl}`},
+              {text: "AC", callback_data: `addToCart/${product.id}?clear=true${qtyUrl}`},
+            ],
+            [
+              addButton,
+            ],
+            [
+              {text: "⤴️ Goto product", callback_data: `p/${product.id}`},
+            ],
+          ],
+        },
+      });
     }
     await ctx.answerCbQuery();
   } else {
@@ -333,7 +344,7 @@ catalogsActions.push( async (ctx, next) => {
   }
 });
 
-// Show Cart
+// show cart
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "cart") {
     // clear cart
@@ -345,18 +356,30 @@ catalogsActions.push( async (ctx, next) => {
     const productId = ctx.state.param;
     const qty = ctx.state.params.get("qty");
     if (productId && qty) {
-      ctx.state.cart.edit(productId, qty);
+      await ctx.state.cart.add(productId, qty);
     }
     const inlineKeyboardArray = [];
-    let msgTxt = "Cart\n";
-    for (const product of await ctx.state.cart.products()) {
-      msgTxt += `ID: ${product.id} Name: ${product.name} Price: ${product.price} Qty: ${product.qty} ${product.unit} ` +
-        `Sum ${product.price * product.qty}\n`;
+    let msgTxt = "<b>Cart</b>\n";
+    // loop products
+    let totalQty = 0;
+    let totalSum = 0;
+    const products = await ctx.state.cart.products();
+    for (const [index, product] of products.entries()) {
+      msgTxt += `${index + 1}) ${product.name} (${product.id}) ${product.price} грн * ${product.qty} ${product.unit} ` +
+        ` = ${roundNumber(product.price * product.qty)} грн.\n`;
       inlineKeyboardArray.push([
-        {text: `🛒 Edit ${product.name} added ${product.qty} ${product.unit}`,
-          callback_data: `addToCart/${product.id}?qty=${product.qty}&r=1`},
+        {text: `🛒 ${product.name} (${product.id}) ${product.qty} ${product.unit}` +
+          ` ${roundNumber(product.qty * product.price)} грн.`,
+        callback_data: `addToCart/${product.id}?qty=${product.qty}&r=1`},
       ]);
+      totalQty += product.qty;
+      totalSum += product.qty * product.price;
     }
+    if (totalQty) {
+      msgTxt += `<b>Total qty: ${totalQty}` +
+      ` Total sum: ${roundNumber(totalSum)} грн.</b>`;
+    }
+
     if (inlineKeyboardArray.length < 1) {
       inlineKeyboardArray.push([
         {text: "📁 Catalog", callback_data: "c"},
