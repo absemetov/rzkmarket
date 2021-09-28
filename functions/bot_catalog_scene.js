@@ -211,11 +211,11 @@ catalogsActions.push( async (ctx, next) => {
     const addButton = {text: "🛒 Add to cart", callback_data: `addToCart/${product.id}`};
     const sessionUser = await firebase.firestore().collection("sessions").doc(`${ctx.from.id}`).get();
     if (sessionUser.exists) {
-      const cartProduct = sessionUser.data().cart && sessionUser.data().cart[product.id];
-      if (cartProduct) {
-        addButton.text = `🛒 ${cartProduct.qty} ${cartProduct.unit} ` +
-        ` ${roundNumber(cartProduct.qty * cartProduct.price)} грн.`;
-        addButton.callback_data = `addToCart/${product.id}?qty=${cartProduct.qty}`;
+      const isCartProduct = sessionUser.data().cart && sessionUser.data().cart[product.id];
+      if (isCartProduct) {
+        addButton.text = `🛒 ${isCartProduct.qty} ${isCartProduct.unit} ` +
+        ` ${roundNumber(isCartProduct.qty * isCartProduct.price)} грн.`;
+        addButton.callback_data = `addToCart/${product.id}?qty=${isCartProduct.qty}&a=1`;
       }
     }
     inlineKeyboardArray.push([addButton]);
@@ -262,6 +262,7 @@ catalogsActions.push( async (ctx, next) => {
     const number = ctx.state.params.get("number");
     const back = ctx.state.params.get("back");
     const redirect = ctx.state.params.get("r");
+    const added = ctx.state.params.get("a");
     const clear = ctx.state.params.get("clear");
     const productId = ctx.state.param;
     let qtyUrl = "";
@@ -290,20 +291,31 @@ catalogsActions.push( async (ctx, next) => {
     if (redirect) {
       qtyUrl += "&r=1";
     }
+    if (added) {
+      qtyUrl += "&a=1";
+    }
     const productRef = firebase.firestore().collection("products").doc(productId);
     const productSnapshot = await productRef.get();
     if (productSnapshot.exists) {
       const product = {id: productSnapshot.id, ...productSnapshot.data()};
       // ctx.reply(`Main photo updated, productId ${productId} ${fileId}`);
-      const addButton = {text: `🛒 Add to cart ${qty ? qty + " " + product.unit: ""}`,
+      const addButtonArray = [];
+      const addButton = {text: "🛒 Add to cart",
         callback_data: `p/${product.id}?qty=${qty}`};
+      const delButton = {text: "❎ Delete",
+        callback_data: `p/${product.id}?qty=0`};
+      if (added) {
+        addButtonArray.push(delButton);
+      }
       if (redirect) {
         addButton.callback_data = `cart/${product.id}?qty=${qty}`;
+        delButton.callback_data = `cart/${product.id}?qty=0`;
       }
+      addButtonArray.push(addButton);
       await ctx.editMessageCaption(`<b>${product.name}</b> ` +
-      `\nPrice: <b>${product.price} грн.</b>` +
-      `\nQty: <b>${qty} ${product.unit}</b>` +
-      `\nSum: <b>${roundNumber(qty * product.price)} грн.</b>`,
+      `\nPrice: ${product.price} грн.` +
+      `\nSum: ${roundNumber(qty * product.price)} грн.` +
+      `\n<b>Qty: ${qty} ${product.unit}</b>`,
       {
         parse_mode: "html",
         reply_markup: {
@@ -325,12 +337,10 @@ catalogsActions.push( async (ctx, next) => {
             ],
             [
               {text: "0️", callback_data: `addToCart/${product.id}?number=0${qtyUrl}`},
-              {text: "DEL", callback_data: `addToCart/${product.id}?back=true${qtyUrl}`},
+              {text: "🔙", callback_data: `addToCart/${product.id}?back=true${qtyUrl}`},
               {text: "AC", callback_data: `addToCart/${product.id}?clear=true${qtyUrl}`},
             ],
-            [
-              addButton,
-            ],
+            addButtonArray,
             [
               {text: "⤴️ Goto product", callback_data: `p/${product.id}`},
             ],
@@ -347,6 +357,8 @@ catalogsActions.push( async (ctx, next) => {
 // show cart
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "cart") {
+    const checkout = ctx.state.params.get("checkout");
+    console.log(checkout);
     // clear cart
     const clear = ctx.state.params.get("clear");
     if (clear) {
@@ -370,14 +382,14 @@ catalogsActions.push( async (ctx, next) => {
       inlineKeyboardArray.push([
         {text: `🛒 ${product.name} (${product.id}) ${product.qty} ${product.unit}` +
           ` ${roundNumber(product.qty * product.price)} грн.`,
-        callback_data: `addToCart/${product.id}?qty=${product.qty}&r=1`},
+        callback_data: `addToCart/${product.id}?qty=${product.qty}&r=1&a=1`},
       ]);
       totalQty += product.qty;
       totalSum += product.qty * product.price;
     }
     if (totalQty) {
-      msgTxt += `<b>Total qty: ${totalQty}` +
-      ` Total sum: ${roundNumber(totalSum)} грн.</b>`;
+      msgTxt += `<b>Total qty: ${totalQty}\n` +
+      `Total sum: ${roundNumber(totalSum)} грн.</b>`;
     }
 
     if (inlineKeyboardArray.length < 1) {
@@ -388,10 +400,23 @@ catalogsActions.push( async (ctx, next) => {
     } else {
       inlineKeyboardArray.push([{text: "🗑 Clear cart",
         callback_data: "cart?clear=1"}]);
+      inlineKeyboardArray.push([{text: "✅ Checkout",
+        callback_data: "cart?checkout=1"}]);
+    }
+    // check out
+    if (checkout) {
+      // clear buttons
+      inlineKeyboardArray.length = 0;
+      msgTxt = "Checkout";
+      inlineKeyboardArray.push([{text: "✅ Nova Poshta",
+        callback_data: "cart?checkout=1&np=1"}]);
+      inlineKeyboardArray.push([{text: "✅ Samovivoz",
+        callback_data: "cart?checkout=1&sv=1"}]);
     }
     // Set Main menu
     inlineKeyboardArray.push([{text: "🏠 Go to home",
       callback_data: "start"}]);
+    // render data
     await ctx.editMessageMedia({
       type: "photo",
       media: "https://picsum.photos/450/150/?random",
