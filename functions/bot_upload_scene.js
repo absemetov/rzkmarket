@@ -9,19 +9,20 @@ const CyrillicToTranslit = require("cyrillic-to-translit-js");
 const cyrillicToTranslit = new CyrillicToTranslit();
 const upload = new BaseScene("upload");
 // enter scene
-upload.enter((ctx) => ctx.reply("Вставьте ссылку Google Sheet", {
-  reply_markup: {
-    keyboard: [["back"]],
-    one_time_keyboard: true,
-    resize_keyboard: true,
-  }}));
-upload.leave((ctx) => {
-  ctx.reply("Successful sales!", {
-    reply_markup: {
-      remove_keyboard: true,
-    }});
-  ctx.scene.enter("start");
-});
+upload.enter((ctx) => ctx.reply("Вставьте ссылку Google Sheet"));
+// , {
+//   reply_markup: {
+//     keyboard: [["back"]],
+//     one_time_keyboard: true,
+//     resize_keyboard: true,
+//   }}
+// upload.leave((ctx) => {
+//   ctx.reply("Successful sales!", {
+//     reply_markup: {
+//       remove_keyboard: true,
+//     }});
+//   ctx.scene.enter("start");
+// });
 upload.hears("where", (ctx) => ctx.reply("You are in upload scene"));
 upload.hears("back", (ctx) => ctx.scene.leave());
 upload.hears("shop", async (ctx) => {
@@ -57,7 +58,7 @@ upload.hears("shop", async (ctx) => {
 });
 // upload from googleSheet
 // eslint-disable-next-line no-useless-escape
-upload.on("text", async (ctx) => {
+upload.hears(/^([a-zA-Z0-9-_]+)/, async (ctx) => {
   const start = new Date();
   // Max upload goods
   const maxUploadGoods = 100;

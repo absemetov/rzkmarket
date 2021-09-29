@@ -3,14 +3,14 @@ const firebase = require("firebase-admin");
 firebase.initializeApp();
 const {Telegraf, Scenes: {Stage}} = require("telegraf");
 const firestoreSession = require("telegraf-session-firestore");
-const {start, startActions} = require("./bot_start_scene");
-const {monoScene, monoActions} = require("./bot_mono_scene");
+const {start, startActions, parseUrl} = require("./bot_start_scene");
+const {monoActions} = require("./bot_mono_scene");
 const {upload} = require("./bot_upload_scene");
-const {catalogScene, catalogsActions} = require("./bot_catalog_scene");
+const {catalogScene, orderScene, catalogsActions} = require("./bot_catalog_scene");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 // const {MenuMiddleware} = require("telegraf-inline-menu");
 // Stage scenes
-const stage = new Stage([start, monoScene, upload, catalogScene]);
+const stage = new Stage([start, upload, catalogScene, orderScene]);
 const token = functions.config().bot.token;
 const bot = new Telegraf(token, {
   handlerTimeout: 540000,
@@ -27,84 +27,33 @@ bot.use(async (ctx, next) => {
 
 // Actions catalog, mono
 // (routeName)/(param)?(args)
-// Parse callback data, add Cart instance
-const parseUrl = async (ctx, next) => {
-  ctx.state.routeName = ctx.match[1];
-  ctx.state.param = ctx.match[2];
-  const args = ctx.match[3];
-  // parse url params
-  const params = new Map();
-  if (args) {
-    for (const paramsData of args.split("&")) {
-      params.set(paramsData.split("=")[0], paramsData.split("=")[1]);
-    }
-  }
-  ctx.state.params = params;
-  // cart instance
-  const cart = {
-    sessionQuery: firebase.firestore().collection("sessions").doc(`${ctx.from.id}`),
-    async add(product, qty) {
-      qty = Number(qty);
-      let cartData = {};
-      if (qty) {
-        // add product to cart or edit
-        if (typeof product == "object") {
-          cartData = {
-            [product.id]: {
-              name: product.name,
-              price: product.price,
-              unit: product.unit,
-              qty: qty,
-            },
-          };
-        } else {
-          cartData = {
-            [product]: {
-              qty: qty,
-            },
-          };
-        }
-        await this.sessionQuery.set({
-          cart: cartData,
-        }, {merge: true});
-      } else {
-        // delete product from cart
-        await this.sessionQuery.set({
-          cart: {
-            [typeof product == "object" ? product.id : product]: firebase.firestore.FieldValue.delete(),
-          },
-        }, {merge: true});
-      }
-    },
-    async products() {
-      const products = [];
-      const sessionRef = await this.sessionQuery.get();
-      if (sessionRef.exists) {
-        const cart = sessionRef.data().cart;
-        if (cart) {
-          for (const [id, product] of Object.entries(cart)) {
-            products.push({id, ...product});
-          }
-        }
-      }
-      return products;
-    },
-    async clear() {
-      await this.sessionQuery.set({
-        cart: firebase.firestore.FieldValue.delete(),
-      }, {merge: true});
-    },
-  };
-  ctx.state.cart = cart;
-  return next();
-};
 // scenes
 bot.use(stage.middleware());
 // eslint-disable-next-line no-useless-escape
 bot.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/,
     parseUrl, ...startActions, ...catalogsActions, ...monoActions);
-
-bot.start((ctx) => ctx.scene.enter("start"));
+bot.action("order", (ctx) => ctx.scene.enter("order"));
+bot.start(async (ctx) => {
+  // ctx.scene.enter("start")
+  await ctx.replyWithPhoto("https://picsum.photos/450/150/?random",
+      {
+        caption: "Welcome to Rzk Market Ukraine 🇺🇦",
+        parse_mode: "Markdown",
+        reply_markup: {
+          remove_keyboard: true,
+          inline_keyboard: [[
+            {text: "📁 Catalog", callback_data: "c"},
+            {text: "🛒 Cart", callback_data: "cart"},
+          ]],
+        },
+      });
+  // set commands
+  await ctx.telegram.setMyCommands([
+    {"command": "start", "description": "RZK Market Shop"},
+    {"command": "upload", "description": "Upload goods"},
+    {"command": "mono", "description": "Monobank exchange rates "},
+  ]);
+});
 // bot.hears("mono", (ctx) => ctx.scene.enter("mono"));
 bot.hears("where", (ctx) => ctx.reply("You are in outside"));
 // mono menu
@@ -113,7 +62,23 @@ bot.hears("where", (ctx) => ctx.reply("You are in outside"));
 // bot.command("mono", async (ctx) => monoMiddleware.replyToContext(ctx));
 // bot.use(monoMiddleware.middleware());
 // mono scene
-bot.command("mono", async (ctx) => ctx.scene.enter("monoScene"));
+bot.command("mono", async (ctx) => {
+  // ctx.scene.enter("monoScene");
+  ctx.reply("Выберите валюту", {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {text: "🇱🇷 USD", callback_data: "mono/USD"},
+          {text: "🇪🇺 EUR", callback_data: "mono/EUR"},
+          {text: "🇷🇺 RUB", callback_data: "mono/RUB"},
+        ],
+        [
+          {text: "Monobank.com.ua", url: "https://monobank.com.ua"},
+        ],
+      ],
+      // resize_keyboard: true,
+    }});
+});
 // Upload scene
 bot.command("upload", async (ctx) => ctx.scene.enter("upload"));
 // Catalog scene

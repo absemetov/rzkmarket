@@ -4,7 +4,7 @@ const fs = require("fs");
 const bucket = firebase.storage().bucket();
 // make bucket is public
 // await bucket.makePublic();
-const {Scenes: {BaseScene}} = require("telegraf");
+const {Scenes: {BaseScene, WizardScene}} = require("telegraf");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 const catalogScene = new BaseScene("catalog");
 catalogScene.use(async (ctx, next) => {
@@ -13,6 +13,31 @@ catalogScene.use(async (ctx, next) => {
   }
   return next();
 });
+
+// order scene
+const orderScene = new WizardScene(
+    "order", // Имя сцены
+    (ctx) => {
+      ctx.reply("Этап 1: выбор типа матча.");
+      return ctx.wizard.next(); // Переходим к следующему обработчику.
+    },
+    (ctx) => {
+      ctx.reply("Этап 2: выбор времени проведения матча.");
+      return ctx.wizard.next(); // Переходим к следующему обработчику.
+    },
+    (ctx) => {
+      if (ctx.message.text === "Назад") {
+        ctx.wizard.back(); // Вернуться к предыдущиму обработчику
+      }
+      ctx.reply("Этап 3: выбор места проведения матча.");
+      return ctx.wizard.next(); // Переходим к следующему обработчику.
+    },
+    // ...
+    (ctx) => {
+      ctx.reply("Финальный этап: создание матча.");
+      return ctx.scene.leave();
+    },
+);
 // enter to scene
 // catalog.enter(async (ctx) => {
 //   const catalogsSnapshot = await firebase.firestore().collection("catalogs")
@@ -401,7 +426,7 @@ catalogsActions.push( async (ctx, next) => {
       inlineKeyboardArray.push([{text: "🗑 Clear cart",
         callback_data: "cart?clear=1"}]);
       inlineKeyboardArray.push([{text: "✅ Checkout",
-        callback_data: "cart?checkout=1"}]);
+        callback_data: "order"}]);
     }
     // check out
     if (checkout) {
@@ -593,6 +618,7 @@ catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "uploadPhoto") {
     // save session data
     ctx.session.productId = ctx.state.param;
+    // enter catalog scene
     if (ctx.scene.current) {
       if (ctx.scene.current.id !== "catalog") {
         ctx.scene.enter("catalog");
@@ -704,4 +730,5 @@ catalogScene.on("photo", async (ctx, next) => {
 });
 
 exports.catalogScene = catalogScene;
+exports.orderScene = orderScene;
 exports.catalogsActions = catalogsActions;
