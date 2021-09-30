@@ -15,9 +15,21 @@ catalogScene.use(async (ctx, next) => {
 });
 
 // order scene
-const firstnameHandler = Telegraf.on("text", async (ctx) => {
-  ctx.scene.state.name = ctx.message.text;
-  return ctx.wizard.next();
+const deliveryHandler = Telegraf.on("text", async (ctx) => {
+  // ctx.scene.state.name = ctx.message.text;
+  const inlineKeyboardArray = [];
+  inlineKeyboardArray.push([{text: "Нова Пошта", callback_data: "order/nova"}]);
+  await ctx.editMessageMedia({
+    type: "photo",
+    media: "https://picsum.photos/450/150/?random",
+    caption: "Delivery",
+    parse_mode: "html",
+  }, {reply_markup: {
+    inline_keyboard: [...inlineKeyboardArray],
+    // resize_keyboard: true,
+  }});
+  await ctx.answerCbQuery();
+  // return ctx.wizard.next();
 });
 const lastnameHandler = Telegraf.hears(/^[0-9]+$/, async (ctx) => {
   ctx.session.name = ctx.scene.state.name;
@@ -25,7 +37,7 @@ const lastnameHandler = Telegraf.hears(/^[0-9]+$/, async (ctx) => {
   await ctx.reply("New info has been set");
   return ctx.scene.leave();
 });
-const orderScene = new WizardScene("order", firstnameHandler, lastnameHandler);
+const orderScene = new WizardScene("order", deliveryHandler, lastnameHandler);
 // enter to scene
 // catalog.enter(async (ctx) => {
 //   const catalogsSnapshot = await firebase.firestore().collection("catalogs")

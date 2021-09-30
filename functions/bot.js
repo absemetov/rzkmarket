@@ -9,7 +9,10 @@ const {upload} = require("./bot_upload_scene");
 const {catalogScene, orderScene, catalogsActions} = require("./bot_catalog_scene");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 // const {MenuMiddleware} = require("telegraf-inline-menu");
-const token = functions.config().bot.token;
+// bot.rzkcrimeabot.token
+// bot.rzkmarketbot.token
+const token = functions.config().bot.rzkdevbot.token;
+// config bot
 const bot = new Telegraf(token, {
   handlerTimeout: 540000,
 });
