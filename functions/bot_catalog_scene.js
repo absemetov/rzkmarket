@@ -4,7 +4,7 @@ const fs = require("fs");
 const bucket = firebase.storage().bucket();
 // make bucket is public
 // await bucket.makePublic();
-const {Scenes: {BaseScene, WizardScene}} = require("telegraf");
+const {Telegraf, Scenes: {BaseScene, WizardScene}} = require("telegraf");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 const catalogScene = new BaseScene("catalog");
 catalogScene.use(async (ctx, next) => {
@@ -15,29 +15,17 @@ catalogScene.use(async (ctx, next) => {
 });
 
 // order scene
-const orderScene = new WizardScene(
-    "order", // Имя сцены
-    (ctx) => {
-      ctx.reply("Этап 1: выбор типа матча.");
-      return ctx.wizard.next(); // Переходим к следующему обработчику.
-    },
-    (ctx) => {
-      ctx.reply("Этап 2: выбор времени проведения матча.");
-      return ctx.wizard.next(); // Переходим к следующему обработчику.
-    },
-    (ctx) => {
-      if (ctx.message.text === "Назад") {
-        ctx.wizard.back(); // Вернуться к предыдущиму обработчику
-      }
-      ctx.reply("Этап 3: выбор места проведения матча.");
-      return ctx.wizard.next(); // Переходим к следующему обработчику.
-    },
-    // ...
-    (ctx) => {
-      ctx.reply("Финальный этап: создание матча.");
-      return ctx.scene.leave();
-    },
-);
+const firstnameHandler = Telegraf.on("text", async (ctx) => {
+  ctx.scene.state.name = ctx.message.text;
+  return ctx.wizard.next();
+});
+const lastnameHandler = Telegraf.hears(/^[0-9]+$/, async (ctx) => {
+  ctx.session.name = ctx.scene.state.name;
+  ctx.session.age = ctx.message.text;
+  await ctx.reply("New info has been set");
+  return ctx.scene.leave();
+});
+const orderScene = new WizardScene("order", firstnameHandler, lastnameHandler);
 // enter to scene
 // catalog.enter(async (ctx) => {
 //   const catalogsSnapshot = await firebase.firestore().collection("catalogs")

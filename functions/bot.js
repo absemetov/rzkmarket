@@ -9,14 +9,14 @@ const {upload} = require("./bot_upload_scene");
 const {catalogScene, orderScene, catalogsActions} = require("./bot_catalog_scene");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 // const {MenuMiddleware} = require("telegraf-inline-menu");
-// Stage scenes
-const stage = new Stage([start, upload, catalogScene, orderScene]);
 const token = functions.config().bot.token;
 const bot = new Telegraf(token, {
   handlerTimeout: 540000,
 });
 // Firestore session
-bot.use(firestoreSession(firebase.firestore().collection("sessions")));
+// Stage scenes
+const stage = new Stage([start, upload, catalogScene, orderScene]);
+bot.use(firestoreSession(firebase.firestore().collection("sessions")), stage.middleware());
 
 bot.use(async (ctx, next) => {
   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
@@ -28,7 +28,7 @@ bot.use(async (ctx, next) => {
 // Actions catalog, mono
 // (routeName)/(param)?(args)
 // scenes
-bot.use(stage.middleware());
+// bot.use();
 // eslint-disable-next-line no-useless-escape
 bot.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/,
     parseUrl, ...startActions, ...catalogsActions, ...monoActions);
@@ -55,7 +55,7 @@ bot.start(async (ctx) => {
   ]);
 });
 // bot.hears("mono", (ctx) => ctx.scene.enter("mono"));
-bot.hears("where", (ctx) => ctx.reply("You are in outside"));
+bot.hears("where", (ctx) => ctx.reply("You are in main menu"));
 // mono menu
 // const monoMiddleware = new MenuMiddleware("mono/", menuMono);
 // console.log(menuMiddleware.tree());
