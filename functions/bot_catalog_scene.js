@@ -15,10 +15,12 @@ catalogScene.use(async (ctx, next) => {
 });
 
 // order scene
-const deliveryHandler = Telegraf.on("text", async (ctx) => {
+const deliveryHandler = async (ctx) => {
   // ctx.scene.state.name = ctx.message.text;
   const inlineKeyboardArray = [];
-  inlineKeyboardArray.push([{text: "Нова Пошта", callback_data: "order/nova"}]);
+  inlineKeyboardArray.push([{text: "Нова Пошта", callback_data: "order/numer"}]);
+  inlineKeyboardArray.push([{text: "Самовывоз", callback_data: "order/samov"}]);
+  inlineKeyboardArray.push([{text: "Exit wizard", callback_data: "cart"}]);
   await ctx.editMessageMedia({
     type: "photo",
     media: "https://picsum.photos/450/150/?random",
@@ -29,15 +31,95 @@ const deliveryHandler = Telegraf.on("text", async (ctx) => {
     // resize_keyboard: true,
   }});
   await ctx.answerCbQuery();
-  // return ctx.wizard.next();
+  return ctx.wizard.next();
+};
+// number warehouse
+const deliveryNumberHandler = Telegraf.action("order/numer", async (ctx) => {
+  const inlineKeyboardArray = [];
+  let qty = ctx.state.params.get("qty");
+  const number = ctx.state.params.get("number");
+  const back = ctx.state.params.get("back");
+  const clear = ctx.state.params.get("clear");
+  let qtyUrl = "";
+  if (qty) {
+    if (number) {
+      qty += number;
+    }
+    if (back) {
+      qty = qty.slice(0, -1);
+    }
+    if (clear) {
+      qty = 0;
+    }
+  } else {
+    // add first
+    if (Number(number)) {
+      qty = number;
+    }
+  }
+  if (qty) {
+    qtyUrl = `&qty=${qty}`;
+  } else {
+    qty = 0;
+  }
+  inlineKeyboardArray.push([{text: "Privat", callback_data: "pay/pb"}]);
+  inlineKeyboardArray.push([
+    {text: "7", callback_data: `order/numer?number=7${qtyUrl}`},
+    {text: "8", callback_data: `order/numer?number=8${qtyUrl}`},
+    {text: "9", callback_data: `order/numer?number=9${qtyUrl}`},
+  ]);
+  inlineKeyboardArray.push([
+    {text: "4", callback_data: `order/numer?number=4${qtyUrl}`},
+    {text: "5", callback_data: `order/numer?number=5${qtyUrl}`},
+    {text: "6", callback_data: `order/numer?number=6${qtyUrl}`},
+  ]);
+  inlineKeyboardArray.push([
+    {text: "1", callback_data: `order/numer?number=1${qtyUrl}`},
+    {text: "2", callback_data: `order/numer?number=2${qtyUrl}`},
+    {text: "3", callback_data: `order/numer?number=3${qtyUrl}`},
+  ]);
+  inlineKeyboardArray.push([
+    {text: "0️", callback_data: `order/numer?number=0${qtyUrl}`},
+    {text: "🔙", callback_data: `order/numer?back=true${qtyUrl}`},
+    {text: "AC", callback_data: `order/numer?clear=true${qtyUrl}`},
+  ]);
+  inlineKeyboardArray.push([{text: "Exit wizard", callback_data: "cart"}]);
+  await ctx.editMessageMedia({
+    type: "photo",
+    media: "https://picsum.photos/450/150/?random",
+    caption: "Payment",
+    parse_mode: "html",
+  }, {reply_markup: {
+    inline_keyboard: [...inlineKeyboardArray],
+    // resize_keyboard: true,
+  }});
+  await ctx.answerCbQuery();
+  return ctx.wizard.next();
 });
-const lastnameHandler = Telegraf.hears(/^[0-9]+$/, async (ctx) => {
-  ctx.session.name = ctx.scene.state.name;
-  ctx.session.age = ctx.message.text;
-  await ctx.reply("New info has been set");
+// payment
+const paymentHandler = Telegraf.action("order/nova", async (ctx) => {
+  const inlineKeyboardArray = [];
+  inlineKeyboardArray.push([{text: "Privat", callback_data: "pay/pb"}]);
+  inlineKeyboardArray.push([{text: "Mono", callback_data: "pay/mono"}]);
+  inlineKeyboardArray.push([{text: "Exit wizard", callback_data: "cart"}]);
+  await ctx.editMessageMedia({
+    type: "photo",
+    media: "https://picsum.photos/450/150/?random",
+    caption: "Payment",
+    parse_mode: "html",
+  }, {reply_markup: {
+    inline_keyboard: [...inlineKeyboardArray],
+    // resize_keyboard: true,
+  }});
+  await ctx.answerCbQuery();
+  return ctx.wizard.next();
+});
+const lastHandler = Telegraf.action("pay/mono", async (ctx) => {
+  await ctx.reply("Order save");
+  await ctx.answerCbQuery();
   return ctx.scene.leave();
 });
-const orderScene = new WizardScene("order", deliveryHandler, lastnameHandler);
+const orderScene = new WizardScene("order", deliveryHandler, deliveryNumberHandler, paymentHandler, lastHandler);
 // enter to scene
 // catalog.enter(async (ctx) => {
 //   const catalogsSnapshot = await firebase.firestore().collection("catalogs")
@@ -382,8 +464,6 @@ catalogsActions.push( async (ctx, next) => {
 // show cart
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "cart") {
-    const checkout = ctx.state.params.get("checkout");
-    console.log(checkout);
     // clear cart
     const clear = ctx.state.params.get("clear");
     if (clear) {
@@ -427,16 +507,6 @@ catalogsActions.push( async (ctx, next) => {
         callback_data: "cart?clear=1"}]);
       inlineKeyboardArray.push([{text: "✅ Checkout",
         callback_data: "order"}]);
-    }
-    // check out
-    if (checkout) {
-      // clear buttons
-      inlineKeyboardArray.length = 0;
-      msgTxt = "Checkout";
-      inlineKeyboardArray.push([{text: "✅ Nova Poshta",
-        callback_data: "cart?checkout=1&np=1"}]);
-      inlineKeyboardArray.push([{text: "✅ Samovivoz",
-        callback_data: "cart?checkout=1&sv=1"}]);
     }
     // Set Main menu
     inlineKeyboardArray.push([{text: "🏠 Go to home",
