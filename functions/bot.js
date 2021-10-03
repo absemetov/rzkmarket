@@ -6,7 +6,7 @@ const firestoreSession = require("telegraf-session-firestore");
 const {start, startActions, parseUrl} = require("./bot_start_scene");
 const {monoActions} = require("./bot_mono_scene");
 const {upload} = require("./bot_upload_scene");
-const {catalogScene, orderScene, catalogsActions} = require("./bot_catalog_scene");
+const {catalogScene, orderWizard, catalogsActions} = require("./bot_catalog_scene");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 // const {MenuMiddleware} = require("telegraf-inline-menu");
 // bot.rzkcrimeabot.token
@@ -18,7 +18,7 @@ const bot = new Telegraf(token, {
 });
 // Firestore session
 // Stage scenes
-const stage = new Stage([start, upload, catalogScene, orderScene]);
+const stage = new Stage([start, upload, catalogScene, orderWizard]);
 bot.use(firestoreSession(firebase.firestore().collection("sessions")), stage.middleware());
 
 bot.use(async (ctx, next) => {

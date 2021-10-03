@@ -1,5 +1,6 @@
 const firebase = require("firebase-admin");
 const download = require("./download.js");
+const {parseUrl} = require("./bot_start_scene");
 const fs = require("fs");
 const bucket = firebase.storage().bucket();
 // make bucket is public
@@ -15,16 +16,16 @@ catalogScene.use(async (ctx, next) => {
 });
 
 // order scene
-const deliveryHandler = async (ctx) => {
+const startHandler = async (ctx) => {
   // ctx.scene.state.name = ctx.message.text;
   const inlineKeyboardArray = [];
-  inlineKeyboardArray.push([{text: "Нова Пошта", callback_data: "order/numer"}]);
+  inlineKeyboardArray.push([{text: "Нова Пошта", callback_data: "order/warenumer"}]);
   inlineKeyboardArray.push([{text: "Самовывоз", callback_data: "order/samov"}]);
   inlineKeyboardArray.push([{text: "Exit wizard", callback_data: "cart"}]);
   await ctx.editMessageMedia({
     type: "photo",
     media: "https://picsum.photos/450/150/?random",
-    caption: "Delivery",
+    caption: "Способ доставки",
     parse_mode: "html",
   }, {reply_markup: {
     inline_keyboard: [...inlineKeyboardArray],
@@ -34,68 +35,70 @@ const deliveryHandler = async (ctx) => {
   return ctx.wizard.next();
 };
 // number warehouse
-const deliveryNumberHandler = Telegraf.action("order/numer", async (ctx) => {
-  const inlineKeyboardArray = [];
-  let qty = ctx.state.params.get("qty");
-  const number = ctx.state.params.get("number");
-  const back = ctx.state.params.get("back");
-  const clear = ctx.state.params.get("clear");
-  let qtyUrl = "";
-  if (qty) {
-    if (number) {
-      qty += number;
-    }
-    if (back) {
-      qty = qty.slice(0, -1);
-    }
-    if (clear) {
-      qty = 0;
-    }
-  } else {
-    // add first
-    if (Number(number)) {
-      qty = number;
-    }
-  }
-  if (qty) {
-    qtyUrl = `&qty=${qty}`;
-  } else {
-    qty = 0;
-  }
-  inlineKeyboardArray.push([{text: "Privat", callback_data: "pay/pb"}]);
-  inlineKeyboardArray.push([
-    {text: "7", callback_data: `order/numer?number=7${qtyUrl}`},
-    {text: "8", callback_data: `order/numer?number=8${qtyUrl}`},
-    {text: "9", callback_data: `order/numer?number=9${qtyUrl}`},
-  ]);
-  inlineKeyboardArray.push([
-    {text: "4", callback_data: `order/numer?number=4${qtyUrl}`},
-    {text: "5", callback_data: `order/numer?number=5${qtyUrl}`},
-    {text: "6", callback_data: `order/numer?number=6${qtyUrl}`},
-  ]);
-  inlineKeyboardArray.push([
-    {text: "1", callback_data: `order/numer?number=1${qtyUrl}`},
-    {text: "2", callback_data: `order/numer?number=2${qtyUrl}`},
-    {text: "3", callback_data: `order/numer?number=3${qtyUrl}`},
-  ]);
-  inlineKeyboardArray.push([
-    {text: "0️", callback_data: `order/numer?number=0${qtyUrl}`},
-    {text: "🔙", callback_data: `order/numer?back=true${qtyUrl}`},
-    {text: "AC", callback_data: `order/numer?clear=true${qtyUrl}`},
-  ]);
-  inlineKeyboardArray.push([{text: "Exit wizard", callback_data: "cart"}]);
-  await ctx.editMessageMedia({
-    type: "photo",
-    media: "https://picsum.photos/450/150/?random",
-    caption: "Payment",
-    parse_mode: "html",
-  }, {reply_markup: {
-    inline_keyboard: [...inlineKeyboardArray],
-    // resize_keyboard: true,
-  }});
-  await ctx.answerCbQuery();
-  return ctx.wizard.next();
-});
+// eslint-disable-next-line no-useless-escape
+const warehouseNumberHandler = Telegraf.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/,
+    parseUrl, async (ctx) => {
+      const inlineKeyboardArray = [];
+      console.log("testttt");
+      let qty = ctx.state.params.get("qty");
+      const number = ctx.state.params.get("number");
+      const back = ctx.state.params.get("back");
+      const clear = ctx.state.params.get("clear");
+      let qtyUrl = "";
+      if (qty) {
+        if (number) {
+          qty += number;
+        }
+        if (back) {
+          qty = qty.slice(0, -1);
+        }
+        if (clear) {
+          qty = 0;
+        }
+      } else {
+        // add first
+        if (Number(number)) {
+          qty = number;
+        }
+      }
+      if (qty) {
+        qtyUrl = `&qty=${qty}`;
+      } else {
+        qty = 0;
+      }
+      inlineKeyboardArray.push([
+        {text: "7", callback_data: `order/warenumer?number=7${qtyUrl}`},
+        {text: "8", callback_data: `order/warenumer?number=8${qtyUrl}`},
+        {text: "9", callback_data: `order/warenumer?number=9${qtyUrl}`},
+      ]);
+      inlineKeyboardArray.push([
+        {text: "4", callback_data: `order/warenumer?number=4${qtyUrl}`},
+        {text: "5", callback_data: `order/warenumer?number=5${qtyUrl}`},
+        {text: "6", callback_data: `order/warenumer?number=6${qtyUrl}`},
+      ]);
+      inlineKeyboardArray.push([
+        {text: "1", callback_data: `order/warenumer?number=1${qtyUrl}`},
+        {text: "2", callback_data: `order/warenumer?number=2${qtyUrl}`},
+        {text: "3", callback_data: `order/warenumer?number=3${qtyUrl}`},
+      ]);
+      inlineKeyboardArray.push([
+        {text: "0️", callback_data: `order/warenumer?number=0${qtyUrl}`},
+        {text: "🔙", callback_data: `order/warenumer?back=true${qtyUrl}`},
+        {text: "AC", callback_data: `order/warenumer?clear=true${qtyUrl}`},
+      ]);
+      inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `order/warenumer?qty=${qty}`}]);
+      inlineKeyboardArray.push([{text: "Next", callback_data: "order/nova"}]);
+      await ctx.editMessageMedia({
+        type: "photo",
+        media: "https://picsum.photos/450/150/?random",
+        caption: `Введите номер отделения ${qty}`,
+        parse_mode: "html",
+      }, {reply_markup: {
+        inline_keyboard: [...inlineKeyboardArray],
+      }});
+      await ctx.answerCbQuery();
+      // return ctx.wizard.next();
+    });
 // payment
 const paymentHandler = Telegraf.action("order/nova", async (ctx) => {
   const inlineKeyboardArray = [];
@@ -119,7 +122,8 @@ const lastHandler = Telegraf.action("pay/mono", async (ctx) => {
   await ctx.answerCbQuery();
   return ctx.scene.leave();
 });
-const orderScene = new WizardScene("order", deliveryHandler, deliveryNumberHandler, paymentHandler, lastHandler);
+const orderWizard = new WizardScene("order", startHandler, warehouseNumberHandler, paymentHandler, lastHandler);
+
 // enter to scene
 // catalog.enter(async (ctx) => {
 //   const catalogsSnapshot = await firebase.firestore().collection("catalogs")
@@ -800,5 +804,5 @@ catalogScene.on("photo", async (ctx, next) => {
 });
 
 exports.catalogScene = catalogScene;
-exports.orderScene = orderScene;
+exports.orderWizard = orderWizard;
 exports.catalogsActions = catalogsActions;
