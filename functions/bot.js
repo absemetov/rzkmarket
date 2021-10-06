@@ -6,7 +6,7 @@ const firestoreSession = require("telegraf-session-firestore");
 const {start, startActions, parseUrl} = require("./bot_start_scene");
 const {monoActions} = require("./bot_mono_scene");
 const {upload} = require("./bot_upload_scene");
-const {catalogScene, orderWizard, catalogsActions} = require("./bot_catalog_scene");
+const {catalogScene, catalogsActions} = require("./bot_catalog_scene");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 // const {MenuMiddleware} = require("telegraf-inline-menu");
 // bot.rzkcrimeabot.token
@@ -18,7 +18,7 @@ const bot = new Telegraf(token, {
 });
 // Firestore session
 // Stage scenes
-const stage = new Stage([start, upload, catalogScene, orderWizard]);
+const stage = new Stage([start, upload, catalogScene]);
 bot.use(firestoreSession(firebase.firestore().collection("sessions")), stage.middleware());
 
 bot.use(async (ctx, next) => {
@@ -35,7 +35,6 @@ bot.use(async (ctx, next) => {
 // eslint-disable-next-line no-useless-escape
 bot.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/,
     parseUrl, ...startActions, ...catalogsActions, ...monoActions);
-bot.action("order", (ctx) => ctx.scene.enter("order"));
 bot.start(async (ctx) => {
   // ctx.scene.enter("start")
   await ctx.replyWithPhoto("https://picsum.photos/450/150/?random",

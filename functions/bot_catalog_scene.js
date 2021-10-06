@@ -1,6 +1,5 @@
 const firebase = require("firebase-admin");
 const download = require("./download.js");
-const {parseUrl} = require("./bot_start_scene");
 const fs = require("fs");
 const bucket = firebase.storage().bucket();
 // make bucket is public
@@ -14,120 +13,6 @@ catalogScene.use(async (ctx, next) => {
   }
   return next();
 });
-
-// order scene
-// eslint-disable-next-line no-useless-escape
-const deliveryHandler = Telegraf.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/,
-    parseUrl, async (ctx, next) => {
-      // ctx.scene.state.name = ctx.message.text;
-      console.log(ctx.state.routeName);
-      if (ctx.state.routeName === "order") {
-        const inlineKeyboardArray = [];
-        inlineKeyboardArray.push([{text: "Нова Пошта", callback_data: "warenumer"}]);
-        inlineKeyboardArray.push([{text: "Самовывоз", callback_data: "order/samov"}]);
-        inlineKeyboardArray.push([{text: "Exit wizard", callback_data: "cart"}]);
-        await ctx.editMessageMedia({
-          type: "photo",
-          media: "https://picsum.photos/450/150/?random",
-          caption: "Способ доставки",
-          parse_mode: "html",
-        }, {reply_markup: {
-          inline_keyboard: [...inlineKeyboardArray],
-          // resize_keyboard: true,
-        }});
-        await ctx.answerCbQuery();
-      } else if (ctx.state.routeName === "warenumer") {
-        const setNumber = ctx.state.param;
-        const inlineKeyboardArray = [];
-        let qty = ctx.state.params.get("qty");
-        const number = ctx.state.params.get("number");
-        const back = ctx.state.params.get("back");
-        let qtyUrl = "";
-        if (setNumber) {
-          ctx.callbackQuery.data = "order/nova";
-          return ctx.wizard.steps[1](ctx);
-        }
-        if (qty) {
-          if (number) {
-            qty += number;
-          }
-          if (back) {
-            qty = qty.slice(0, -1);
-          }
-          // if (clear) {
-          //   qty = 0;
-          // }
-        } else {
-          // add first
-          if (Number(number)) {
-            qty = number;
-          }
-        }
-        if (qty) {
-          qtyUrl = `&qty=${qty}`;
-        } else {
-          qty = 0;
-        }
-        inlineKeyboardArray.push([
-          {text: "7", callback_data: `warenumer?number=7${qtyUrl}`},
-          {text: "8", callback_data: `warenumer?number=8${qtyUrl}`},
-          {text: "9", callback_data: `warenumer?number=9${qtyUrl}`},
-        ]);
-        inlineKeyboardArray.push([
-          {text: "4", callback_data: `warenumer?number=4${qtyUrl}`},
-          {text: "5", callback_data: `warenumer?number=5${qtyUrl}`},
-          {text: "6", callback_data: `warenumer?number=6${qtyUrl}`},
-        ]);
-        inlineKeyboardArray.push([
-          {text: "1", callback_data: `warenumer?number=1${qtyUrl}`},
-          {text: "2", callback_data: `warenumer?number=2${qtyUrl}`},
-          {text: "3", callback_data: `warenumer?number=3${qtyUrl}`},
-        ]);
-        inlineKeyboardArray.push([
-          {text: "0️", callback_data: `warenumer?number=0${qtyUrl}`},
-          {text: "🔙", callback_data: `warenumer?back=true${qtyUrl}`},
-          {text: "AC", callback_data: "warenumer"},
-        ]);
-        inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `warenumer/${qty}`}]);
-        inlineKeyboardArray.push([{text: "Next", callback_data: "order/nova"}]);
-        await ctx.editMessageMedia({
-          type: "photo",
-          media: "https://picsum.photos/450/150/?random",
-          caption: `Введите номер отделения: <b>${qty}</b>`,
-          parse_mode: "html",
-        }, {reply_markup: {
-          inline_keyboard: [...inlineKeyboardArray],
-        }});
-        await ctx.answerCbQuery();
-      } else {
-        return next();
-      }
-    });
-// payment
-const paymentHandler = Telegraf.action("order/nova", async (ctx) => {
-  const inlineKeyboardArray = [];
-  inlineKeyboardArray.push([{text: "Privat", callback_data: "pay/pb"}]);
-  inlineKeyboardArray.push([{text: "Mono", callback_data: "pay/mono"}]);
-  inlineKeyboardArray.push([{text: "Exit wizard", callback_data: "cart"}]);
-  await ctx.editMessageMedia({
-    type: "photo",
-    media: "https://picsum.photos/450/150/?random",
-    caption: "Payment",
-    parse_mode: "html",
-  }, {reply_markup: {
-    inline_keyboard: [...inlineKeyboardArray],
-    // resize_keyboard: true,
-  }});
-  await ctx.answerCbQuery();
-  // return ctx.wizard.next();
-});
-
-const lastHandler = Telegraf.action("pay/mono", async (ctx) => {
-  await ctx.reply("Order save");
-  await ctx.answerCbQuery();
-  return ctx.scene.leave();
-});
-const orderWizard = new WizardScene("order", deliveryHandler, paymentHandler, lastHandler);
 
 // enter to scene
 // catalog.enter(async (ctx) => {
@@ -511,8 +396,8 @@ catalogsActions.push( async (ctx, next) => {
     } else {
       inlineKeyboardArray.push([{text: "🗑 Clear cart",
         callback_data: "cart?clear=1"}]);
-      inlineKeyboardArray.push([{text: "✅ Checkout",
-        callback_data: "order"}]);
+      inlineKeyboardArray.push([{text: "✅ Оформить заказ",
+        callback_data: "order/create"}]);
     }
     // Set Main menu
     inlineKeyboardArray.push([{text: "🏠 Go to home",
@@ -526,6 +411,113 @@ catalogsActions.push( async (ctx, next) => {
     }, {reply_markup: {
       inline_keyboard: [...inlineKeyboardArray],
     }});
+    await ctx.answerCbQuery();
+  } else {
+    return next();
+  }
+});
+
+// save order final
+catalogsActions.push( async (ctx, next) => {
+  // ctx.scene.state.name = ctx.message.text;
+  const todo = ctx.state.param;
+  if (ctx.state.routeName === "order") {
+    // first step delyvery
+    if (todo === "create") {
+      const inlineKeyboardArray = [];
+      inlineKeyboardArray.push([{text: "Нова Пошта", callback_data: "order/setwarenumer?delyvery=nova"}]);
+      inlineKeyboardArray.push([{text: "Самовывоз", callback_data: "order/payment?delyvery=sam"}]);
+      inlineKeyboardArray.push([{text: "Exit wizard", callback_data: "cart"}]);
+      await ctx.editMessageMedia({
+        type: "photo",
+        media: "https://picsum.photos/450/150/?random",
+        caption: "Способ доставки",
+        parse_mode: "html",
+      }, {reply_markup: {
+        inline_keyboard: [...inlineKeyboardArray],
+        // resize_keyboard: true,
+      }});
+    }
+    // chuse warehouse number
+    if (todo === "setwarenumer") {
+      const inlineKeyboardArray = [];
+      let qty = ctx.state.params.get("qty");
+      const number = ctx.state.params.get("number");
+      const back = ctx.state.params.get("back");
+      let qtyUrl = "";
+      if (qty) {
+        if (number) {
+          qty += number;
+        }
+        if (back) {
+          qty = qty.slice(0, -1);
+        }
+        // if (clear) {
+        //   qty = 0;
+        // }
+      } else {
+        // add first
+        if (Number(number)) {
+          qty = number;
+        }
+      }
+      if (qty) {
+        qtyUrl = `&qty=${qty}`;
+      } else {
+        qty = 0;
+      }
+      inlineKeyboardArray.push([
+        {text: "7", callback_data: `order/setwarenumer?number=7${qtyUrl}`},
+        {text: "8", callback_data: `order/setwarenumer?number=8${qtyUrl}`},
+        {text: "9", callback_data: `order/setwarenumer?number=9${qtyUrl}`},
+      ]);
+      inlineKeyboardArray.push([
+        {text: "4", callback_data: `order/setwarenumer?number=4${qtyUrl}`},
+        {text: "5", callback_data: `order/setwarenumer?number=5${qtyUrl}`},
+        {text: "6", callback_data: `order/setwarenumer?number=6${qtyUrl}`},
+      ]);
+      inlineKeyboardArray.push([
+        {text: "1", callback_data: `order/setwarenumer?number=1${qtyUrl}`},
+        {text: "2", callback_data: `order/setwarenumer?number=2${qtyUrl}`},
+        {text: "3", callback_data: `order/setwarenumer?number=3${qtyUrl}`},
+      ]);
+      inlineKeyboardArray.push([
+        {text: "0️", callback_data: `order/setwarenumer?number=0${qtyUrl}`},
+        {text: "🔙", callback_data: `order/setwarenumer?back=true${qtyUrl}`},
+        {text: "AC", callback_data: "order/setwarenumer"},
+      ]);
+      inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `order/payment?numberWare=${qty}`}]);
+      inlineKeyboardArray.push([{text: "Next", callback_data: "order/nova"}]);
+      await ctx.editMessageMedia({
+        type: "photo",
+        media: "https://picsum.photos/450/150/?random",
+        caption: `Введите номер отделения: <b>${qty}</b>`,
+        parse_mode: "html",
+      }, {reply_markup: {
+        inline_keyboard: [...inlineKeyboardArray],
+      }});
+    }
+    // order payment method
+    if (todo === "payment") {
+      const inlineKeyboardArray = [];
+      let numberWare = ctx.state.params.get("numberWare");
+      if (numberWare) {
+        numberWare = Number(numberWare);
+      }
+      console.log(numberWare);
+      inlineKeyboardArray.push([{text: "Privat", callback_data: "pay/pb"}]);
+      inlineKeyboardArray.push([{text: "Mono", callback_data: "pay/mono"}]);
+      inlineKeyboardArray.push([{text: "Exit wizard", callback_data: "cart"}]);
+      await ctx.editMessageMedia({
+        type: "photo",
+        media: "https://picsum.photos/450/150/?random",
+        caption: "Payment",
+        parse_mode: "html",
+      }, {reply_markup: {
+        inline_keyboard: [...inlineKeyboardArray],
+        // resize_keyboard: true,
+      }});
+    }
     await ctx.answerCbQuery();
   } else {
     return next();
@@ -806,5 +798,4 @@ catalogScene.on("photo", async (ctx, next) => {
 });
 
 exports.catalogScene = catalogScene;
-exports.orderWizard = orderWizard;
 exports.catalogsActions = catalogsActions;
