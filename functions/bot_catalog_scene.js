@@ -397,7 +397,7 @@ catalogsActions.push( async (ctx, next) => {
       inlineKeyboardArray.push([{text: "🗑 Clear cart",
         callback_data: "cart?clear=1"}]);
       inlineKeyboardArray.push([{text: "✅ Оформить заказ",
-        callback_data: "order/create"}]);
+        callback_data: "order/carrier"}]);
     }
     // Set Main menu
     inlineKeyboardArray.push([{text: "🏠 Go to home",
@@ -422,12 +422,12 @@ catalogsActions.push( async (ctx, next) => {
   // ctx.scene.state.name = ctx.message.text;
   const todo = ctx.state.param;
   if (ctx.state.routeName === "order") {
-    // first step delyvery
-    if (todo === "create") {
+    // first step carrier
+    if (todo === "carrier") {
       const inlineKeyboardArray = [];
-      inlineKeyboardArray.push([{text: "Нова Пошта", callback_data: "order/setwarenumer?delyvery=nova"}]);
-      inlineKeyboardArray.push([{text: "Самовывоз", callback_data: "order/payment?delyvery=sam"}]);
-      inlineKeyboardArray.push([{text: "Exit wizard", callback_data: "cart"}]);
+      inlineKeyboardArray.push([{text: "Нова Пошта", callback_data: "order/carrier_number?carrier_id=1"}]);
+      inlineKeyboardArray.push([{text: "Самовывоз", callback_data: "order/payment?carrier_id=2"}]);
+      inlineKeyboardArray.push([{text: "Корзина", callback_data: "cart"}]);
       await ctx.editMessageMedia({
         type: "photo",
         media: "https://picsum.photos/450/150/?random",
@@ -438,12 +438,14 @@ catalogsActions.push( async (ctx, next) => {
         // resize_keyboard: true,
       }});
     }
-    // chuse warehouse number
-    if (todo === "setwarenumer") {
+    // set carrier number
+    if (todo === "carrier_number") {
       const inlineKeyboardArray = [];
       let qty = ctx.state.params.get("qty");
       const number = ctx.state.params.get("number");
       const back = ctx.state.params.get("back");
+      const carrierId = ctx.state.params.get("carrier_id");
+      console.log("carrierId", carrierId);
       let qtyUrl = "";
       if (qty) {
         if (number) {
@@ -467,27 +469,27 @@ catalogsActions.push( async (ctx, next) => {
         qty = 0;
       }
       inlineKeyboardArray.push([
-        {text: "7", callback_data: `order/setwarenumer?number=7${qtyUrl}`},
-        {text: "8", callback_data: `order/setwarenumer?number=8${qtyUrl}`},
-        {text: "9", callback_data: `order/setwarenumer?number=9${qtyUrl}`},
+        {text: "7", callback_data: `order/carrier_number?number=7${qtyUrl}`},
+        {text: "8", callback_data: `order/carrier_number?number=8${qtyUrl}`},
+        {text: "9", callback_data: `order/carrier_number?number=9${qtyUrl}`},
       ]);
       inlineKeyboardArray.push([
-        {text: "4", callback_data: `order/setwarenumer?number=4${qtyUrl}`},
-        {text: "5", callback_data: `order/setwarenumer?number=5${qtyUrl}`},
-        {text: "6", callback_data: `order/setwarenumer?number=6${qtyUrl}`},
+        {text: "4", callback_data: `order/carrier_number?number=4${qtyUrl}`},
+        {text: "5", callback_data: `order/carrier_number?number=5${qtyUrl}`},
+        {text: "6", callback_data: `order/carrier_number?number=6${qtyUrl}`},
       ]);
       inlineKeyboardArray.push([
-        {text: "1", callback_data: `order/setwarenumer?number=1${qtyUrl}`},
-        {text: "2", callback_data: `order/setwarenumer?number=2${qtyUrl}`},
-        {text: "3", callback_data: `order/setwarenumer?number=3${qtyUrl}`},
+        {text: "1", callback_data: `order/carrier_number?number=1${qtyUrl}`},
+        {text: "2", callback_data: `order/carrier_number?number=2${qtyUrl}`},
+        {text: "3", callback_data: `order/carrier_number?number=3${qtyUrl}`},
       ]);
       inlineKeyboardArray.push([
-        {text: "0️", callback_data: `order/setwarenumer?number=0${qtyUrl}`},
-        {text: "🔙", callback_data: `order/setwarenumer?back=true${qtyUrl}`},
-        {text: "AC", callback_data: "order/setwarenumer"},
+        {text: "0️", callback_data: `order/carrier_number?number=0${qtyUrl}`},
+        {text: "🔙", callback_data: `order/carrier_number?back=true${qtyUrl}`},
+        {text: "AC", callback_data: "order/carrier_number"},
       ]);
-      inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `order/payment?numberWare=${qty}`}]);
-      inlineKeyboardArray.push([{text: "Next", callback_data: "order/nova"}]);
+      inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `order/payment?carrier_number=${qty}`}]);
+      inlineKeyboardArray.push([{text: "Корзина", callback_data: "cart"}]);
       await ctx.editMessageMedia({
         type: "photo",
         media: "https://picsum.photos/450/150/?random",
@@ -500,14 +502,14 @@ catalogsActions.push( async (ctx, next) => {
     // order payment method
     if (todo === "payment") {
       const inlineKeyboardArray = [];
-      let numberWare = ctx.state.params.get("numberWare");
-      if (numberWare) {
-        numberWare = Number(numberWare);
+      let carrierNumber = ctx.state.params.get("carrier_number");
+      if (carrierNumber) {
+        carrierNumber = Number(carrierNumber);
       }
-      console.log(numberWare);
-      inlineKeyboardArray.push([{text: "Privat", callback_data: "pay/pb"}]);
-      inlineKeyboardArray.push([{text: "Mono", callback_data: "pay/mono"}]);
-      inlineKeyboardArray.push([{text: "Exit wizard", callback_data: "cart"}]);
+      console.log("carrierNumber", carrierNumber);
+      inlineKeyboardArray.push([{text: "Privat", callback_data: "order/wizard?payment_id=1"}]);
+      inlineKeyboardArray.push([{text: "Mono", callback_data: "order/wizard?payment_id=2"}]);
+      inlineKeyboardArray.push([{text: "Корзина", callback_data: "cart"}]);
       await ctx.editMessageMedia({
         type: "photo",
         media: "https://picsum.photos/450/150/?random",
@@ -517,6 +519,11 @@ catalogsActions.push( async (ctx, next) => {
         inline_keyboard: [...inlineKeyboardArray],
         // resize_keyboard: true,
       }});
+    }
+    // save payment and goto wizard
+    if (todo === "wizard") {
+      const paymentId = ctx.state.params.get("payment_id");
+      console.log(paymentId);
     }
     await ctx.answerCbQuery();
   } else {
