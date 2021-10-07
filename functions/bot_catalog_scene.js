@@ -125,13 +125,12 @@ catalogsActions.push(async (ctx, next) => {
         //    `p/${product.id}/${ctx.callbackQuery.data}`));
         // Get cart
         const addButton = {text: `📦 ${product.data().name} (${product.id})`, callback_data: `p/${product.id}`};
-        const sessionUser = await firebase.firestore().collection("sessions").doc(`${ctx.from.id}`).get();
-        if (sessionUser.exists) {
-          const cartProduct = sessionUser.data().cart && sessionUser.data().cart[product.id];
-          if (cartProduct) {
-            addButton.text = `🛒 ${product.data().name} (${product.id}) ${cartProduct.qty} ${cartProduct.unit}` +
-            ` ${roundNumber(cartProduct.qty * cartProduct.price)} грн.`;
-          }
+        // get cart products
+        const cartProductsArray = await ctx.state.cart.products();
+        const cartProduct = cartProductsArray.find((x) => x.id === product.id);
+        if (cartProduct) {
+          addButton.text = `🛒 ${product.data().name} (${product.id}) ${cartProduct.qty} ${cartProduct.unit}` +
+          ` ${roundNumber(cartProduct.qty * cartProduct.price)} грн.`;
         }
         inlineKeyboardArray.push([addButton]);
       }
@@ -207,16 +206,15 @@ catalogsActions.push( async (ctx, next) => {
     const catalogUrl = ctx.session.path;
     const inlineKeyboardArray = [];
     // inlineKeyboardArray.push(Markup.button.callback("📸 Upload photo", `uploadPhotos/${product.id}`));
-    // Get cart
+    // default add button
     const addButton = {text: "🛒 Add to cart", callback_data: `addToCart/${product.id}`};
-    const sessionUser = await firebase.firestore().collection("sessions").doc(`${ctx.from.id}`).get();
-    if (sessionUser.exists) {
-      const isCartProduct = sessionUser.data().cart && sessionUser.data().cart[product.id];
-      if (isCartProduct) {
-        addButton.text = `🛒 ${isCartProduct.qty} ${isCartProduct.unit} ` +
-        ` ${roundNumber(isCartProduct.qty * isCartProduct.price)} грн.`;
-        addButton.callback_data = `addToCart/${product.id}?qty=${isCartProduct.qty}&a=1`;
-      }
+    // get cart products
+    const cartProductsArray = await ctx.state.cart.products();
+    const cartProduct = cartProductsArray.find((x) => x.id === product.id);
+    if (cartProduct) {
+      addButton.text = `🛒 ${cartProduct.qty} ${cartProduct.unit} ` +
+      ` ${roundNumber(cartProduct.qty * cartProduct.price)} грн.`;
+      addButton.callback_data = `addToCart/${product.id}?qty=${cartProduct.qty}&a=1`;
     }
     inlineKeyboardArray.push([addButton]);
     inlineKeyboardArray.push([{text: "📸 Upload photo",
@@ -442,8 +440,12 @@ catalogsActions.push( async (ctx, next) => {
       let qty = ctx.state.params.get("qty");
       const number = ctx.state.params.get("number");
       const back = ctx.state.params.get("back");
-      const carrierId = ctx.state.params.get("carrier_id");
-      console.log("carrierId", carrierId);
+      let carrierId = ctx.state.params.get("carrier_id");
+      // save data to cart
+      if (carrierId) {
+        carrierId = Number(carrierId);
+        await ctx.state.cart.setOrderData("carrierId", carrierId);
+      }
       let qtyUrl = "";
       if (qty) {
         if (number) {
@@ -491,7 +493,7 @@ catalogsActions.push( async (ctx, next) => {
       await ctx.editMessageMedia({
         type: "photo",
         media: "https://picsum.photos/450/150/?random",
-        caption: `Введите номер отделения: <b>${qty}</b>`,
+        caption: `Введите номер отделения:\n<b>${qty}</b>`,
         parse_mode: "html",
       }, {reply_markup: {
         inline_keyboard: [...inlineKeyboardArray],
@@ -500,11 +502,17 @@ catalogsActions.push( async (ctx, next) => {
     // order payment method
     if (todo === "payment") {
       const inlineKeyboardArray = [];
+      // save data to cart
+      let carrierId = ctx.state.params.get("carrier_id");
+      if (carrierId) {
+        carrierId = Number(carrierId);
+        await ctx.state.cart.setOrderData("carrierId", carrierId);
+      }
       let carrierNumber = ctx.state.params.get("carrier_number");
       if (carrierNumber) {
         carrierNumber = Number(carrierNumber);
+        await ctx.state.cart.setOrderData("carrierNumber", carrierNumber);
       }
-      console.log("carrierNumber", carrierNumber);
       inlineKeyboardArray.push([{text: "Privat", callback_data: "order/wizard?payment_id=1"}]);
       inlineKeyboardArray.push([{text: "Mono", callback_data: "order/wizard?payment_id=2"}]);
       inlineKeyboardArray.push([{text: "Корзина", callback_data: "cart"}]);
@@ -519,19 +527,15 @@ catalogsActions.push( async (ctx, next) => {
     }
     // save payment and goto wizard
     if (todo === "wizard") {
-      const paymentId = ctx.state.params.get("payment_id");
+      let paymentId = ctx.state.params.get("payment_id");
+      if (paymentId) {
+        paymentId = Number(paymentId);
+      }
+      // save data to cart
+      if (paymentId) {
+        await ctx.state.cart.setOrderData("paymentId", paymentId);
+      }
       console.log(paymentId);
-      const inlineKeyboardArray = [];
-      inlineKeyboardArray.push([{text: "Оформить заказ", callback_data: "order/save"}]);
-      inlineKeyboardArray.push([{text: "Корзина", callback_data: "cart"}]);
-      await ctx.editMessageMedia({
-        type: "photo",
-        media: "https://picsum.photos/450/150/?random",
-        caption: "Payment",
-        parse_mode: "html",
-      }, {reply_markup: {
-        inline_keyboard: [...inlineKeyboardArray],
-      }});
       await ctx.deleteMessage();
       await ctx.scene.enter("order");
     }
@@ -543,14 +547,21 @@ catalogsActions.push( async (ctx, next) => {
 // wizard scene
 const orderWizard = new WizardScene("order",
     async (ctx) => {
-      ctx.reply("Введите фамилию и имя получателя", {
+      let userName = "";
+      if (ctx.from.last_name) {
+        userName += ctx.from.last_name;
+      }
+      if (ctx.from.first_name) {
+        userName += " " + ctx.from.first_name;
+      }
+      ctx.reply("Введите фамилию и имя получателя, или выберите себя", {
         reply_markup: {
-          keyboard: [["Отмена"]],
+          keyboard: [[userName], ["Отмена"]],
           resize_keyboard: true,
         }});
       return ctx.wizard.next();
     },
-    (ctx) => {
+    async (ctx) => {
       // exit wizard
       if (ctx.message.text === "Отмена") {
         ctx.reply("Для продолжения нажмите /start", {
@@ -564,11 +575,34 @@ const orderWizard = new WizardScene("order",
         ctx.reply("Имя слишком короткое");
         return;
       }
-      ctx.reply("Введите номер телефона");
+      // save data to cart
+      await ctx.state.cart.setOrderData("userName", ctx.message.text);
+      ctx.reply("Введите номер телефона", {
+        reply_markup: {
+          keyboard: [
+            [{
+              text: "Share Phone Number",
+              request_contact: true,
+            }],
+            ["Отмена"],
+          ],
+          resize_keyboard: true,
+        },
+      });
       return ctx.wizard.next();
     },
-    (ctx) => {
-      ctx.reply("Спасибо за заказ!", {
+    async (ctx) => {
+      if (ctx.message.text === "Отмена") {
+        ctx.reply("Для продолжения нажмите /start", {
+          reply_markup: {
+            remove_keyboard: true,
+          }});
+        return ctx.scene.leave();
+      }
+      const phoneNumber = ctx.message.contact.phone_number;
+      // save data to cart
+      await ctx.state.cart.setOrderData("phoneNumber", phoneNumber);
+      ctx.reply("Спасибо за заказ! /start", {
         reply_markup: {
           remove_keyboard: true,
         }});
@@ -580,13 +614,6 @@ catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "t") {
     const inlineKeyboardArray = [];
     const catalogId = ctx.state.param;
-    // parse url params
-    const params = new Map();
-    if (ctx.match[2]) {
-      for (const paramsData of ctx.match[2].split("&")) {
-        params.set(paramsData.split("=")[0], paramsData.split("=")[1]);
-      }
-    }
     const currentCatalogSnapshot = await firebase.firestore().collection("catalogs").doc(catalogId).get();
     const catalog = {id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data()};
     for (const tag of catalog.tags) {

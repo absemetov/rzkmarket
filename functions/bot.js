@@ -3,7 +3,7 @@ const firebase = require("firebase-admin");
 firebase.initializeApp();
 const {Telegraf, Scenes: {Stage}} = require("telegraf");
 const firestoreSession = require("telegraf-session-firestore");
-const {startActions, parseUrl} = require("./bot_start_scene");
+const {startActions, parseUrl, cart} = require("./bot_start_scene");
 const {monoActions} = require("./bot_mono_scene");
 const {upload} = require("./bot_upload_scene");
 const {catalogScene, catalogsActions, orderWizard} = require("./bot_catalog_scene");
@@ -19,6 +19,7 @@ const bot = new Telegraf(token, {
 // Firestore session
 // Stage scenes
 const stage = new Stage([upload, catalogScene, orderWizard]);
+bot.use(cart);
 bot.use(firestoreSession(firebase.firestore().collection("sessions")), stage.middleware());
 // Actions catalog, mono
 // (routeName)/(param)?(args)
