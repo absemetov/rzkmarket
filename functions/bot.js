@@ -3,10 +3,10 @@ const firebase = require("firebase-admin");
 firebase.initializeApp();
 const {Telegraf, Scenes: {Stage}} = require("telegraf");
 const firestoreSession = require("telegraf-session-firestore");
-const {start, startActions, parseUrl} = require("./bot_start_scene");
+const {startActions, parseUrl} = require("./bot_start_scene");
 const {monoActions} = require("./bot_mono_scene");
 const {upload} = require("./bot_upload_scene");
-const {catalogScene, catalogsActions} = require("./bot_catalog_scene");
+const {catalogScene, catalogsActions, orderWizard} = require("./bot_catalog_scene");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 // const {MenuMiddleware} = require("telegraf-inline-menu");
 // bot.rzkcrimeabot.token
@@ -18,16 +18,8 @@ const bot = new Telegraf(token, {
 });
 // Firestore session
 // Stage scenes
-const stage = new Stage([start, upload, catalogScene]);
+const stage = new Stage([upload, catalogScene, orderWizard]);
 bot.use(firestoreSession(firebase.firestore().collection("sessions")), stage.middleware());
-
-bot.use(async (ctx, next) => {
-  if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
-    console.log(" Bot scene another callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
-  }
-  return next();
-});
-
 // Actions catalog, mono
 // (routeName)/(param)?(args)
 // scenes
@@ -36,13 +28,11 @@ bot.use(async (ctx, next) => {
 bot.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/,
     parseUrl, ...startActions, ...catalogsActions, ...monoActions);
 bot.start(async (ctx) => {
-  // ctx.scene.enter("start")
   await ctx.replyWithPhoto("https://picsum.photos/450/150/?random",
       {
         caption: "Welcome to Rzk Market Ukraine 🇺🇦",
         parse_mode: "Markdown",
         reply_markup: {
-          remove_keyboard: true,
           inline_keyboard: [[
             {text: "📁 Catalog", callback_data: "c"},
             {text: "🛒 Cart", callback_data: "cart"},
@@ -78,7 +68,6 @@ bot.command("mono", async (ctx) => {
           {text: "Monobank.com.ua", url: "https://monobank.com.ua"},
         ],
       ],
-      // resize_keyboard: true,
     }});
 });
 // Upload scene

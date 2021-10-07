@@ -4,7 +4,7 @@ const fs = require("fs");
 const bucket = firebase.storage().bucket();
 // make bucket is public
 // await bucket.makePublic();
-const {Telegraf, Scenes: {BaseScene, WizardScene}} = require("telegraf");
+const {Scenes: {BaseScene, WizardScene}} = require("telegraf");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 const catalogScene = new BaseScene("catalog");
 catalogScene.use(async (ctx, next) => {
@@ -185,7 +185,6 @@ catalogsActions.push(async (ctx, next) => {
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: [...inlineKeyboardArray],
-      // resize_keyboard: true,
     }});
     await ctx.answerCbQuery();
   } else {
@@ -435,7 +434,6 @@ catalogsActions.push( async (ctx, next) => {
         parse_mode: "html",
       }, {reply_markup: {
         inline_keyboard: [...inlineKeyboardArray],
-        // resize_keyboard: true,
       }});
     }
     // set carrier number
@@ -517,20 +515,66 @@ catalogsActions.push( async (ctx, next) => {
         parse_mode: "html",
       }, {reply_markup: {
         inline_keyboard: [...inlineKeyboardArray],
-        // resize_keyboard: true,
       }});
     }
     // save payment and goto wizard
     if (todo === "wizard") {
       const paymentId = ctx.state.params.get("payment_id");
       console.log(paymentId);
+      const inlineKeyboardArray = [];
+      inlineKeyboardArray.push([{text: "Оформить заказ", callback_data: "order/save"}]);
+      inlineKeyboardArray.push([{text: "Корзина", callback_data: "cart"}]);
+      await ctx.editMessageMedia({
+        type: "photo",
+        media: "https://picsum.photos/450/150/?random",
+        caption: "Payment",
+        parse_mode: "html",
+      }, {reply_markup: {
+        inline_keyboard: [...inlineKeyboardArray],
+      }});
+      await ctx.deleteMessage();
+      await ctx.scene.enter("order");
     }
     await ctx.answerCbQuery();
   } else {
     return next();
   }
 });
-
+// wizard scene
+const orderWizard = new WizardScene("order",
+    async (ctx) => {
+      ctx.reply("Введите фамилию и имя получателя", {
+        reply_markup: {
+          keyboard: [["Отмена"]],
+          resize_keyboard: true,
+        }});
+      return ctx.wizard.next();
+    },
+    (ctx) => {
+      // exit wizard
+      if (ctx.message.text === "Отмена") {
+        ctx.reply("Для продолжения нажмите /start", {
+          reply_markup: {
+            remove_keyboard: true,
+          }});
+        return ctx.scene.leave();
+      }
+      // validation example
+      if (ctx.message.text.length < 2) {
+        ctx.reply("Имя слишком короткое");
+        return;
+      }
+      ctx.reply("Введите номер телефона");
+      return ctx.wizard.next();
+    },
+    (ctx) => {
+      ctx.reply("Спасибо за заказ!", {
+        reply_markup: {
+          remove_keyboard: true,
+        }});
+      return ctx.scene.leave();
+    },
+);
 // Tags
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "t") {
@@ -806,3 +850,4 @@ catalogScene.on("photo", async (ctx, next) => {
 
 exports.catalogScene = catalogScene;
 exports.catalogsActions = catalogsActions;
+exports.orderWizard = orderWizard;

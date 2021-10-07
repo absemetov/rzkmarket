@@ -26,7 +26,6 @@ monoScene.enter((ctx) => {
           {text: "Monobank.com.ua", url: "https://monobank.com.ua"},
         ],
       ],
-      // resize_keyboard: true,
     }});
 });
 
