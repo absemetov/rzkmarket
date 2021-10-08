@@ -546,7 +546,25 @@ catalogsActions.push( async (ctx, next) => {
 });
 // wizard scene
 const orderWizard = new WizardScene("order",
+    (ctx) => {
+      ctx.reply("Укажите адрес доставки (город)", {
+        reply_markup: {
+          keyboard: [["Отмена"]],
+          resize_keyboard: true,
+        }});
+      return ctx.wizard.next();
+    },
     async (ctx) => {
+      // save data to cart
+      await ctx.state.cart.setOrderData("address", ctx.message.text);
+      // exit wizard
+      if (ctx.message.text === "Отмена") {
+        ctx.reply("Для продолжения нажмите /start", {
+          reply_markup: {
+            remove_keyboard: true,
+          }});
+        return ctx.scene.leave();
+      }
       let userName = "";
       if (ctx.from.last_name) {
         userName += ctx.from.last_name;
@@ -599,9 +617,14 @@ const orderWizard = new WizardScene("order",
           }});
         return ctx.scene.leave();
       }
-      const phoneNumber = ctx.message.contact.phone_number;
+      const phoneNumber = (ctx.message.contact && ctx.message.contact.phone_number) || ctx.message.text;
+      const checkPhone = phoneNumber.match(/^\+?3?8?(0\d{9})$/);
+      if (!checkPhone) {
+        ctx.reply("Введите номер телефона в формате +380YYXXXXXXX");
+        return;
+      }
       // save data to cart
-      await ctx.state.cart.setOrderData("phoneNumber", phoneNumber);
+      await ctx.state.cart.setOrderData("phoneNumber", "+38" + checkPhone[1]);
       ctx.reply("Спасибо за заказ! /start", {
         reply_markup: {
           remove_keyboard: true,

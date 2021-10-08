@@ -11,7 +11,11 @@ const {catalogScene, catalogsActions, orderWizard} = require("./bot_catalog_scen
 // const {MenuMiddleware} = require("telegraf-inline-menu");
 // bot.rzkcrimeabot.token
 // bot.rzkmarketbot.token
-const token = functions.config().bot.rzkdevbot.token;
+let token = functions.config().bot.rzkmarketbot.token;
+// dev bot
+if (process.env.FUNCTIONS_EMULATOR) {
+  token = functions.config().bot.rzkdevbot.token;
+}
 // config bot
 const bot = new Telegraf(token, {
   handlerTimeout: 540000,
