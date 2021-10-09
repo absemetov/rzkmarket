@@ -81,22 +81,23 @@ upload.hears(/^([a-zA-Z0-9-_]+)/, async (ctx) => {
     return false;
   }
   // get data for check upload process
-  const sessionUser = firebase.firestore().collection("sessions").doc(`${ctx.from.id}`);
-  const docRef = await sessionUser.get();
-  let uploadPass = false;
-  if (docRef.exists) {
-    uploadPass = docRef.data().uploadPass;
-    const timeDiff = serverTimestamp - docRef.data().uploadTimestamp;
-    // if happend error, after 570s clear rewrite uploadPass
-    if (uploadPass && timeDiff > 570) {
-      uploadPass = false;
-    }
+  const user = await ctx.state.cart.userData();
+  // const sessionUser = firebase.firestore().collection("sessions").doc(`${ctx.from.id}-${ctx.chat.id}`);
+  // const docRef = await sessionUser.get();
+  let uploading = user.uploading;
+  // if (docRef.exists) {
+  //   uploadPass = docRef.data().uploadPass;
+  const uplodingTime = user.uploadStartAt && serverTimestamp - user.uploadStartAt;
+  // kill process
+  if (user.uploading && uplodingTime > 570) {
+    uploading = false;
   }
-  if (!uploadPass) {
+  // }
+  if (!uploading) {
     // set data for check upload process
-    await sessionUser.set({
-      uploadPass: true,
-      uploadTimestamp: serverTimestamp,
+    await ctx.state.cart.setUploadData({
+      uploading: true,
+      uploadStartAt: serverTimestamp,
     });
     // load goods
     const doc = new GoogleSpreadsheet(sheetId);
@@ -323,11 +324,11 @@ Catalogs: *${catalogsIsSet.size}*`);
       await ctx.replyWithMarkdown(`Sheet ${error}`);
     }
     // set data for check upload process done!
-    await sessionUser.set({
-      uploadPass: false,
-    }, {merge: true});
+    await ctx.state.cart.setUploadData({
+      uploading: false,
+    });
   } else {
-    await ctx.replyWithMarkdown("Processing, please wait");
+    await ctx.replyWithMarkdown("Uploading..., please wait");
   }
 });
 

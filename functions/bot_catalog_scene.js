@@ -242,7 +242,7 @@ catalogsActions.push( async (ctx, next) => {
     await ctx.editMessageMedia({
       type: "photo",
       media: publicImgUrl,
-      caption: `<b>${product.name}</b> (${product.id})`,
+      caption: `<b>${product.name} (${product.id})\nЦена: ${product.price} грн.</b>`,
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: [...inlineKeyboardArray],
@@ -364,13 +364,14 @@ catalogsActions.push( async (ctx, next) => {
       await ctx.state.cart.add(productId, qty);
     }
     const inlineKeyboardArray = [];
-    let msgTxt = "<b>Cart</b>\n";
+    let msgTxt = "<b>Корзина</b>\n";
     // loop products
     let totalQty = 0;
     let totalSum = 0;
     const products = await ctx.state.cart.products();
     for (const [index, product] of products.entries()) {
-      msgTxt += `${index + 1}) ${product.name} (${product.id}) ${product.price} грн * ${product.qty} ${product.unit} ` +
+      msgTxt += `<b>${index + 1})</b> ${product.name} (${product.id}) ` +
+        `${product.price} грн * ${product.qty} ${product.unit} ` +
         ` = ${roundNumber(product.price * product.qty)} грн.\n`;
       inlineKeyboardArray.push([
         {text: `🛒 ${product.name} (${product.id}) ${product.qty} ${product.unit}` +
@@ -381,23 +382,23 @@ catalogsActions.push( async (ctx, next) => {
       totalSum += product.qty * product.price;
     }
     if (totalQty) {
-      msgTxt += `<b>Total qty: ${totalQty}\n` +
-      `Total sum: ${roundNumber(totalSum)} грн.</b>`;
+      msgTxt += `<b>Количество товара: ${totalQty}\n` +
+      `Сумма: ${roundNumber(totalSum)} грн.</b>`;
     }
 
     if (inlineKeyboardArray.length < 1) {
       inlineKeyboardArray.push([
-        {text: "📁 Catalog", callback_data: "c"},
+        {text: "📁 Каталог", callback_data: "c"},
       ]);
-      msgTxt += "Is empty";
+      msgTxt += "Корзина пуста";
     } else {
-      inlineKeyboardArray.push([{text: "🗑 Clear cart",
-        callback_data: "cart?clear=1"}]);
       inlineKeyboardArray.push([{text: "✅ Оформить заказ",
         callback_data: "order/carrier"}]);
+      inlineKeyboardArray.push([{text: "🗑 Очистить корзину",
+        callback_data: "cart?clear=1"}]);
     }
     // Set Main menu
-    inlineKeyboardArray.push([{text: "🏠 Go to home",
+    inlineKeyboardArray.push([{text: "🏠 Главная",
       callback_data: "start"}]);
     // render data
     await ctx.editMessageMedia({
@@ -444,7 +445,7 @@ catalogsActions.push( async (ctx, next) => {
       // save data to cart
       if (carrierId) {
         carrierId = Number(carrierId);
-        await ctx.state.cart.setOrderData("carrierId", carrierId);
+        await ctx.state.cart.setOrderData({carrierId});
       }
       let qtyUrl = "";
       if (qty) {
@@ -506,12 +507,12 @@ catalogsActions.push( async (ctx, next) => {
       let carrierId = ctx.state.params.get("carrier_id");
       if (carrierId) {
         carrierId = Number(carrierId);
-        await ctx.state.cart.setOrderData("carrierId", carrierId);
+        await ctx.state.cart.setOrderData({carrierId});
       }
       let carrierNumber = ctx.state.params.get("carrier_number");
       if (carrierNumber) {
         carrierNumber = Number(carrierNumber);
-        await ctx.state.cart.setOrderData("carrierNumber", carrierNumber);
+        await ctx.state.cart.setOrderData({carrierNumber});
       }
       inlineKeyboardArray.push([{text: "Privat", callback_data: "order/wizard?payment_id=1"}]);
       inlineKeyboardArray.push([{text: "Mono", callback_data: "order/wizard?payment_id=2"}]);
@@ -533,7 +534,7 @@ catalogsActions.push( async (ctx, next) => {
       }
       // save data to cart
       if (paymentId) {
-        await ctx.state.cart.setOrderData("paymentId", paymentId);
+        await ctx.state.cart.setOrderData({paymentId});
       }
       console.log(paymentId);
       await ctx.deleteMessage();
@@ -556,7 +557,7 @@ const orderWizard = new WizardScene("order",
     },
     async (ctx) => {
       // save data to cart
-      await ctx.state.cart.setOrderData("address", ctx.message.text);
+      await ctx.state.cart.setOrderData({address: ctx.message.text});
       // exit wizard
       if (ctx.message.text === "Отмена") {
         ctx.reply("Для продолжения нажмите /start", {
@@ -594,7 +595,7 @@ const orderWizard = new WizardScene("order",
         return;
       }
       // save data to cart
-      await ctx.state.cart.setOrderData("userName", ctx.message.text);
+      await ctx.state.cart.setOrderData({userName: ctx.message.text});
       ctx.reply("Введите номер телефона", {
         reply_markup: {
           keyboard: [
@@ -625,7 +626,7 @@ const orderWizard = new WizardScene("order",
         return;
       }
       // save data to cart
-      await ctx.state.cart.setOrderData("phoneNumber", "+7" + checkPhone[2]);
+      await ctx.state.cart.setOrderData({phoneNumber: "+7" + checkPhone[2]});
       // save order
       await ctx.state.cart.saveOrder();
       ctx.reply("Спасибо за заказ! /start", {
