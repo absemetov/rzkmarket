@@ -25,6 +25,7 @@ const parseUrl = async (ctx, next) => {
 const cart = async (ctx, next) => {
   const cart = {
     sessionQuery: firebase.firestore().collection("sessions").doc(`${ctx.from.id}`),
+    orderQuery: firebase.firestore().collection("telegramUsers").doc(`${ctx.from.id}`).collection("orders"),
     async add(product, qty) {
       qty = Number(qty);
       let productData = {};
@@ -90,6 +91,13 @@ const cart = async (ctx, next) => {
           },
         },
       }, {merge: true});
+    },
+    async saveOrder() {
+      const cartData = await this.sessionQuery.get();
+      await this.orderQuery.add({
+        products: cartData.data().cart.products,
+        orderData: cartData.data().cart.orderData,
+      });
     },
   };
   ctx.state.cart = cart;

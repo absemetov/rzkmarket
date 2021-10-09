@@ -599,7 +599,7 @@ const orderWizard = new WizardScene("order",
         reply_markup: {
           keyboard: [
             [{
-              text: "Share Phone Number",
+              text: "Отправить свой номер",
               request_contact: true,
             }],
             ["Отмена"],
@@ -618,13 +618,16 @@ const orderWizard = new WizardScene("order",
         return ctx.scene.leave();
       }
       const phoneNumber = (ctx.message.contact && ctx.message.contact.phone_number) || ctx.message.text;
-      const checkPhone = phoneNumber.match(/^\+?3?8?(0\d{9})$/);
+      // const checkPhoneUa = phoneNumber.match(/^(\+380|0)?([1-9]{1}\d{8})$/);
+      const checkPhone = phoneNumber.match(/^(\+7|7|8)?([489][0-9]{2}[0-9]{7})$/);
       if (!checkPhone) {
-        ctx.reply("Введите номер телефона в формате +380YYXXXXXXX");
+        ctx.reply("Введите номер телефона в формате +7YYYXXXXXXX");
         return;
       }
       // save data to cart
-      await ctx.state.cart.setOrderData("phoneNumber", "+38" + checkPhone[1]);
+      await ctx.state.cart.setOrderData("phoneNumber", "+7" + checkPhone[2]);
+      // save order
+      await ctx.state.cart.saveOrder();
       ctx.reply("Спасибо за заказ! /start", {
         reply_markup: {
           remove_keyboard: true,
