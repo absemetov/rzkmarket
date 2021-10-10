@@ -119,7 +119,8 @@ catalogsActions.push(async (ctx, next) => {
       const productsSnapshot = await query.get();
       // generate products array
       // save path to session
-      ctx.session.path = ctx.callbackQuery.data;
+      const session = await ctx.session;
+      session.path = ctx.callbackQuery.data;
       for (const product of productsSnapshot.docs) {
         // inlineKeyboardArray.push(Markup.button.callback(`📦 ${product.data().name} (${product.id})`,
         //    `p/${product.id}/${ctx.callbackQuery.data}`));
@@ -203,7 +204,8 @@ catalogsActions.push( async (ctx, next) => {
       await ctx.state.cart.add(product, qty);
     }
     // generate array
-    const catalogUrl = ctx.session.path;
+    const session = await ctx.session;
+    const catalogUrl = session.path;
     const inlineKeyboardArray = [];
     // inlineKeyboardArray.push(Markup.button.callback("📸 Upload photo", `uploadPhotos/${product.id}`));
     // default add button
@@ -538,7 +540,12 @@ catalogsActions.push( async (ctx, next) => {
       }
       console.log(paymentId);
       await ctx.deleteMessage();
-      await ctx.scene.enter("order");
+      // await ctx.scene.enter("order");
+      // set session
+      const session = await ctx.session;
+      session.scene = "order";
+      session.cursor = 0;
+      await orderWizard[0](ctx);
     }
     await ctx.answerCbQuery();
   } else {
@@ -546,101 +553,118 @@ catalogsActions.push( async (ctx, next) => {
   }
 });
 // wizard scene
-const orderWizard = new WizardScene("order",
-    (ctx) => {
-      ctx.reply("Укажите адрес доставки (город)", {
-        reply_markup: {
-          keyboard: [["Отмена"]],
-          resize_keyboard: true,
-        }});
-      return ctx.wizard.next();
-    },
-    async (ctx) => {
-      // save data to cart
-      await ctx.state.cart.setOrderData({address: ctx.message.text});
-      // exit wizard
-      if (ctx.message.text === "Отмена") {
-        ctx.reply("Для продолжения нажмите /start", {
-          reply_markup: {
-            remove_keyboard: true,
-          }});
-        return ctx.scene.leave();
-      }
-      let userName = "";
-      if (ctx.from.last_name) {
-        userName += ctx.from.last_name;
-      }
-      if (ctx.from.first_name) {
-        userName += " " + ctx.from.first_name;
-      }
-      ctx.reply("Введите фамилию и имя получателя, или выберите себя", {
-        reply_markup: {
-          keyboard: [[userName], ["Отмена"]],
-          resize_keyboard: true,
-        }});
-      return ctx.wizard.next();
-    },
-    async (ctx) => {
-      // exit wizard
-      if (ctx.message.text === "Отмена") {
-        ctx.reply("Для продолжения нажмите /start", {
-          reply_markup: {
-            remove_keyboard: true,
-          }});
-        return ctx.scene.leave();
-      }
-      // validation example
-      if (ctx.message.text.length < 2) {
-        ctx.reply("Имя слишком короткое");
-        return;
-      }
-      // save data to cart
-      await ctx.state.cart.setOrderData({userName: ctx.message.text});
-      ctx.reply("Введите номер телефона", {
-        reply_markup: {
-          keyboard: [
-            [{
-              text: "Отправить свой номер",
-              request_contact: true,
-            }],
-            ["Отмена"],
-          ],
-          resize_keyboard: true,
-        },
-      });
-      return ctx.wizard.next();
-    },
-    async (ctx) => {
-      if (ctx.message.text === "Отмена") {
-        ctx.reply("Для продолжения нажмите /start", {
-          reply_markup: {
-            remove_keyboard: true,
-          }});
-        return ctx.scene.leave();
-      }
-      const phoneNumber = (ctx.message.contact && ctx.message.contact.phone_number) || ctx.message.text;
-      // const checkPhoneUa = phoneNumber.match(/^(\+380|0)?([1-9]{1}\d{8})$/);
-      const checkPhone = phoneNumber.match(/^(\+7|7|8)?([489][0-9]{2}[0-9]{7})$/);
-      if (!checkPhone) {
-        ctx.reply("Введите номер телефона в формате +7YYYXXXXXXX");
-        return;
-      }
-      // save data to cart
-      await ctx.state.cart.setOrderData({phoneNumber: "+7" + checkPhone[2]});
-      // save order
-      await ctx.state.cart.saveOrder();
-      ctx.reply("Спасибо за заказ! /start", {
+const orderWizard = [
+  async (ctx) => {
+    ctx.reply("Укажите адрес доставки (город)", {
+      reply_markup: {
+        keyboard: [["Отмена"]],
+        resize_keyboard: true,
+      }});
+    const session = await ctx.session;
+    session.cursor = 1;
+  },
+  async (ctx) => {
+    // save data to cart
+    await ctx.state.cart.setOrderData({address: ctx.message.text});
+    // exit wizard
+    if (ctx.message.text === "Отмена") {
+      ctx.reply("Для продолжения нажмите /start", {
         reply_markup: {
           remove_keyboard: true,
         }});
-      return ctx.scene.leave();
-    },
-);
+      // return ctx.scene.leave();
+      // leave wizard
+      const session = await ctx.session;
+      session.session = null;
+      session.cursor = null;
+    }
+    let userName = "";
+    if (ctx.from.last_name) {
+      userName += ctx.from.last_name;
+    }
+    if (ctx.from.first_name) {
+      userName += " " + ctx.from.first_name;
+    }
+    ctx.reply("Введите фамилию и имя получателя, или выберите себя", {
+      reply_markup: {
+        keyboard: [[userName], ["Отмена"]],
+        resize_keyboard: true,
+      }});
+    const session = await ctx.session;
+    session.cursor = 2;
+  },
+  async (ctx) => {
+    // exit wizard
+    if (ctx.message.text === "Отмена") {
+      ctx.reply("Для продолжения нажмите /start", {
+        reply_markup: {
+          remove_keyboard: true,
+        }});
+      // leave wizard
+      const session = await ctx.session;
+      session.session = null;
+      session.cursor = null;
+    }
+    // validation example
+    if (ctx.message.text.length < 2) {
+      ctx.reply("Имя слишком короткое");
+      return;
+    }
+    // save data to cart
+    await ctx.state.cart.setOrderData({userName: ctx.message.text});
+    ctx.reply("Введите номер телефона", {
+      reply_markup: {
+        keyboard: [
+          [{
+            text: "Отправить свой номер",
+            request_contact: true,
+          }],
+          ["Отмена"],
+        ],
+        resize_keyboard: true,
+      },
+    });
+    const session = await ctx.session;
+    session.cursor = 3;
+  },
+  async (ctx) => {
+    if (ctx.message.text === "Отмена") {
+      ctx.reply("Для продолжения нажмите /start", {
+        reply_markup: {
+          remove_keyboard: true,
+        }});
+      // leave wizard
+      const session = await ctx.session;
+      session.session = null;
+      session.cursor = null;
+    }
+    const phoneNumber = (ctx.message.contact && ctx.message.contact.phone_number) || ctx.message.text;
+    // const checkPhoneUa = phoneNumber.match(/^(\+380|0)?([1-9]{1}\d{8})$/);
+    const checkPhone = phoneNumber.match(/^(\+7|7|8)?([489][0-9]{2}[0-9]{7})$/);
+    if (!checkPhone) {
+      ctx.reply("Введите номер телефона в формате +7YYYXXXXXXX");
+      return;
+    }
+    // save data to cart
+    await ctx.state.cart.setOrderData({phoneNumber: "+7" + checkPhone[2]});
+    // save order
+    await ctx.state.cart.saveOrder();
+    ctx.reply("Спасибо за заказ! /start", {
+      reply_markup: {
+        remove_keyboard: true,
+      }});
+    // leave wizard
+    const session = await ctx.session;
+    session.session = null;
+    session.cursor = null;
+  },
+];
 // Tags
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "t") {
     const inlineKeyboardArray = [];
     const catalogId = ctx.state.param;
+    const session = await ctx.session;
     const currentCatalogSnapshot = await firebase.firestore().collection("catalogs").doc(catalogId).get();
     const catalog = {id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data()};
     for (const tag of catalog.tags) {
@@ -653,7 +677,7 @@ catalogsActions.push( async (ctx, next) => {
       }
     }
     // close tags
-    inlineKeyboardArray.push([{text: "⤴️ Goto catalog", callback_data: ctx.session.path}]);
+    inlineKeyboardArray.push([{text: "⤴️ Goto catalog", callback_data: session.path}]);
     await ctx.editMessageMedia({
       type: "photo",
       media: "https://picsum.photos/450/150/?random",
@@ -790,7 +814,8 @@ catalogsActions.push( async (ctx, next) => {
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "uploadPhoto") {
     // save session data
-    ctx.session.productId = ctx.state.param;
+    const session = await ctx.session;
+    session.productId = ctx.state.param;
     // enter catalog scene
     if (ctx.scene.current) {
       if (ctx.scene.current.id !== "catalog") {

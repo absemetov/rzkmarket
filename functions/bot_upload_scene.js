@@ -58,7 +58,8 @@ upload.hears("shop", async (ctx) => {
 });
 // upload from googleSheet
 // eslint-disable-next-line no-useless-escape
-upload.hears(/^([a-zA-Z0-9-_]+)/, async (ctx) => {
+// upload.hears(/^([a-zA-Z0-9-_]+)/, async (ctx) => {
+const uploadHandler = async (ctx) => {
   const start = new Date();
   // Max upload goods
   const maxUploadGoods = 100;
@@ -330,6 +331,6 @@ Catalogs: *${catalogsIsSet.size}*`);
   } else {
     await ctx.replyWithMarkdown("Uploading..., please wait");
   }
-});
+};
 
-exports.upload = upload;
+exports.uploadHandler = uploadHandler;

@@ -5,7 +5,7 @@ const {Telegraf, Scenes: {Stage}} = require("telegraf");
 const firestoreSession = require("telegraf-session-firestore");
 const {startActions, parseUrl, cart} = require("./bot_start_scene");
 const {monoActions} = require("./bot_mono_scene");
-const {upload} = require("./bot_upload_scene");
+const {uploadHandler} = require("./bot_upload_scene");
 const {catalogScene, catalogsActions, orderWizard} = require("./bot_catalog_scene");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 // const {MenuMiddleware} = require("telegraf-inline-menu");
@@ -22,9 +22,10 @@ const bot = new Telegraf(token, {
 });
 // Firestore session
 // Stage scenes
-const stage = new Stage([upload, catalogScene, orderWizard]);
+// const stage = new Stage([upload, catalogScene, orderWizard]);
 bot.use(cart);
-bot.use(firestoreSession(firebase.firestore().collection("sessions")), stage.middleware());
+// use session lazy
+bot.use(firestoreSession(firebase.firestore().collection("sessions"), {lazy: true}));
 // Actions catalog, mono
 // (routeName)/(param)?(args)
 // scenes
@@ -52,7 +53,10 @@ bot.start(async (ctx) => {
   ]);
 });
 // bot.hears("mono", (ctx) => ctx.scene.enter("mono"));
-bot.hears("where", (ctx) => ctx.reply("You are in main menu"));
+bot.hears("where", async (ctx) => {
+  const session = await ctx.session;
+  ctx.reply("You are in" + session.scene);
+});
 // mono menu
 // const monoMiddleware = new MenuMiddleware("mono/", menuMono);
 // console.log(menuMiddleware.tree());
@@ -76,12 +80,33 @@ bot.command("mono", async (ctx) => {
     }});
 });
 // Upload scene
-bot.command("upload", async (ctx) => ctx.scene.enter("upload"));
+bot.command("upload", async (ctx) => {
+  const session = await ctx.session;
+  session.scene = "upload";
+  // ctx.scene.enter("upload");
+});
 // Catalog scene
 bot.command("catalog", async (ctx) => ctx.scene.enter("catalog"));
 
 // if session destroyed show main keyboard
-// bot.on("text", async (ctx) => ctx.reply("Menu test", getMainKeyboard));
+bot.on(["text", "contact"], async (ctx) => {
+  const session = await ctx.session;
+  if (ctx.message.text === "Отмена") {
+    ctx.reply("Для продолжения нажмите /start", {
+      reply_markup: {
+        remove_keyboard: true,
+      }});
+    session.scene = null;
+    return;
+  }
+  if (session.scene === "upload") {
+    await uploadHandler(ctx);
+  }
+  if (session.scene === "order") {
+    await orderWizard[session.cursor](ctx);
+    console.log("order session");
+  }
+});
 
 // bot.telegram.sendMessage(94899148, "Bot Rzk.com.ua ready!" );
 
