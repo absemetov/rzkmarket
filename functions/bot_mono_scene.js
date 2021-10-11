@@ -13,7 +13,7 @@ monoScene.use(async (ctx, next) => {
   return next();
 });
 
-monoScene.enter((ctx) => {
+const monoHandler = (ctx) => {
   ctx.reply("Выберите валюту", {
     reply_markup: {
       inline_keyboard: [
@@ -27,7 +27,7 @@ monoScene.enter((ctx) => {
         ],
       ],
     }});
-});
+};
 
 // Currency controller
 monoActions.push(async (ctx, next) => {
@@ -144,5 +144,5 @@ async function getCurrency(currencyName) {
   return currencyResult;
 }
 
-exports.monoScene = monoScene;
+exports.monoHandler = monoHandler;
 exports.monoActions = monoActions;

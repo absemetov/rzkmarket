@@ -1,12 +1,12 @@
 const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
 firebase.initializeApp();
-const {Telegraf, Scenes: {Stage}} = require("telegraf");
-const firestoreSession = require("telegraf-session-firestore");
+const {Telegraf} = require("telegraf");
+// const firestoreSession = require("telegraf-session-firestore");
 const {startActions, parseUrl, cart} = require("./bot_start_scene");
-const {monoActions} = require("./bot_mono_scene");
+const {monoHandler, monoActions} = require("./bot_mono_scene");
 const {uploadHandler} = require("./bot_upload_scene");
-const {catalogScene, catalogsActions, orderWizard} = require("./bot_catalog_scene");
+const {uploadPhotoProduct, catalogsActions, orderWizard} = require("./bot_catalog_scene");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 // const {MenuMiddleware} = require("telegraf-inline-menu");
 // bot.rzkcrimeabot.token
@@ -23,9 +23,10 @@ const bot = new Telegraf(token, {
 // Firestore session
 // Stage scenes
 // const stage = new Stage([upload, catalogScene, orderWizard]);
+// cart session instance
 bot.use(cart);
 // use session lazy
-bot.use(firestoreSession(firebase.firestore().collection("sessions"), {lazy: true}));
+// bot.use(firestoreSession(firebase.firestore().collection("sessions"), {lazy: true}));
 // Actions catalog, mono
 // (routeName)/(param)?(args)
 // scenes
@@ -53,10 +54,10 @@ bot.start(async (ctx) => {
   ]);
 });
 // bot.hears("mono", (ctx) => ctx.scene.enter("mono"));
-bot.hears("where", async (ctx) => {
-  const session = await ctx.session;
-  ctx.reply("You are in" + session.scene);
-});
+// bot.hears("where", async (ctx) => {
+//   const session = await ctx.session;
+//   ctx.reply("You are in" + session.scene);
+// });
 // mono menu
 // const monoMiddleware = new MenuMiddleware("mono/", menuMono);
 // console.log(menuMiddleware.tree());
@@ -65,38 +66,31 @@ bot.hears("where", async (ctx) => {
 // mono scene
 bot.command("mono", async (ctx) => {
   // ctx.scene.enter("monoScene");
-  ctx.reply("Выберите валюту", {
-    reply_markup: {
-      inline_keyboard: [
-        [
-          {text: "🇱🇷 USD", callback_data: "mono/USD"},
-          {text: "🇪🇺 EUR", callback_data: "mono/EUR"},
-          {text: "🇷🇺 RUB", callback_data: "mono/RUB"},
-        ],
-        [
-          {text: "Monobank.com.ua", url: "https://monobank.com.ua"},
-        ],
-      ],
-    }});
+  monoHandler(ctx);
 });
 // Upload scene
 bot.command("upload", async (ctx) => {
-  const session = await ctx.session;
-  session.scene = "upload";
+  await ctx.state.cart.setSessionData({scene: "upload"});
+  ctx.reply("Вставьте ссылку Google Sheet", {
+    reply_markup: {
+      keyboard: [["Отмена"]],
+      resize_keyboard: true,
+    }});
+  // session.scene = "upload";
   // ctx.scene.enter("upload");
 });
 // Catalog scene
-bot.command("catalog", async (ctx) => ctx.scene.enter("catalog"));
+// bot.command("catalog", async (ctx) => ctx.scene.enter("catalog"));
 
 // if session destroyed show main keyboard
 bot.on(["text", "contact"], async (ctx) => {
-  const session = await ctx.session;
+  const session = await ctx.state.cart.getSessionData();
   if (ctx.message.text === "Отмена") {
     ctx.reply("Для продолжения нажмите /start", {
       reply_markup: {
         remove_keyboard: true,
       }});
-    session.scene = null;
+    await ctx.state.cart.setSessionData({scene: null});
     return;
   }
   if (session.scene === "upload") {
@@ -108,6 +102,7 @@ bot.on(["text", "contact"], async (ctx) => {
   }
 });
 
+bot.on("photo", (ctx) => uploadPhotoProduct(ctx));
 // bot.telegram.sendMessage(94899148, "Bot Rzk.com.ua ready!" );
 
 bot.catch((error) => {

@@ -26,7 +26,7 @@ const cart = async (ctx, next) => {
   const cart = {
     userQuery: firebase.firestore().collection("users").doc(`${ctx.from.id}`),
     orderQuery: firebase.firestore().collection("orders"),
-    async userData() {
+    async getUserData() {
       const userRef = await this.userQuery.get();
       if (userRef.exists) {
         return {id: userRef.id, ...userRef.data()};
@@ -72,7 +72,7 @@ const cart = async (ctx, next) => {
     },
     async products() {
       const products = [];
-      const user = await this.userData();
+      const user = await this.getUserData();
       if (user) {
         if (user.cart && user.cart.products) {
           const cartProducts = user.cart.products;
@@ -97,9 +97,18 @@ const cart = async (ctx, next) => {
         },
       }, {merge: true});
     },
-    async setUploadData(value) {
+    async getSessionData(value) {
+      const user = await this.getUserData();
+      if (user && user.session) {
+        return user.session;
+      }
+      return {};
+    },
+    async setSessionData(value) {
       await this.userQuery.set({
-        ...value,
+        session: {
+          ...value,
+        },
       }, {merge: true});
     },
     async saveOrder() {
@@ -107,13 +116,13 @@ const cart = async (ctx, next) => {
       await this.userQuery.set({
         orderCount: firebase.firestore.FieldValue.increment(1),
       }, {merge: true});
-      const user = await this.userData();
+      const user = await this.getUserData();
       await this.orderQuery.add({
         userId: user.id,
         orderId: user.orderCount,
         fromBot: true,
         products: user.cart.products,
-        orderData: user.cart.orderData,
+        ...user.cart.orderData,
       });
     },
   };

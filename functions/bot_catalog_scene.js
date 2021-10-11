@@ -4,15 +4,15 @@ const fs = require("fs");
 const bucket = firebase.storage().bucket();
 // make bucket is public
 // await bucket.makePublic();
-const {Scenes: {BaseScene, WizardScene}} = require("telegraf");
+// const {Scenes: {BaseScene, WizardScene}} = require("telegraf");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
-const catalogScene = new BaseScene("catalog");
-catalogScene.use(async (ctx, next) => {
-  if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
-    console.log("Catalog scene another callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
-  }
-  return next();
-});
+// const catalogScene = new BaseScene("catalog");
+// catalogScene.use(async (ctx, next) => {
+//   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
+// console.log("Catalog scene another callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
+//   }
+//   return next();
+// });
 
 // enter to scene
 // catalog.enter(async (ctx) => {
@@ -37,11 +37,11 @@ catalogScene.use(async (ctx, next) => {
 //   ctx.reply("Menu", getMainKeyboard);
 // });
 
-catalogScene.hears("where", (ctx) => ctx.reply("You are in catalog scene"));
+// catalogScene.hears("where", (ctx) => ctx.reply("You are in catalog scene"));
 
-catalogScene.hears("back", (ctx) => {
-  ctx.scene.leave();
-});
+// catalogScene.hears("back", (ctx) => {
+//   ctx.scene.leave();
+// });
 
 // test actions array
 const catalogsActions = [];
@@ -61,6 +61,8 @@ catalogsActions.push(async (ctx, next) => {
     const inlineKeyboardArray =[];
     let currentCatalog = {};
     let textMessage = "RZK Market Catalog 🇺🇦";
+    // save path to session if have params
+    await ctx.state.cart.setSessionData({path: ctx.callbackQuery.data});
     // set currentCatalog data
     if (catalogId) {
       const currentCatalogSnapshot = await firebase.firestore().collection("catalogs").doc(catalogId).get();
@@ -118,9 +120,6 @@ catalogsActions.push(async (ctx, next) => {
       // get Products
       const productsSnapshot = await query.get();
       // generate products array
-      // save path to session
-      const session = await ctx.session;
-      session.path = ctx.callbackQuery.data;
       for (const product of productsSnapshot.docs) {
         // inlineKeyboardArray.push(Markup.button.callback(`📦 ${product.data().name} (${product.id})`,
         //    `p/${product.id}/${ctx.callbackQuery.data}`));
@@ -204,8 +203,11 @@ catalogsActions.push( async (ctx, next) => {
       await ctx.state.cart.add(product, qty);
     }
     // generate array
-    const session = await ctx.session;
-    const catalogUrl = session.path;
+    const session = await ctx.state.cart.getSessionData();
+    let catalogUrl = `c/${product.catalog.id}`;
+    if (session.path) {
+      catalogUrl = session.path;
+    }
     const inlineKeyboardArray = [];
     // inlineKeyboardArray.push(Markup.button.callback("📸 Upload photo", `uploadPhotos/${product.id}`));
     // default add button
@@ -354,6 +356,8 @@ catalogsActions.push( async (ctx, next) => {
 // show cart
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "cart") {
+    // clear path
+    await ctx.state.cart.setSessionData({path: null});
     // clear cart
     const clear = ctx.state.params.get("clear");
     if (clear) {
@@ -542,10 +546,8 @@ catalogsActions.push( async (ctx, next) => {
       await ctx.deleteMessage();
       // await ctx.scene.enter("order");
       // set session
-      const session = await ctx.session;
-      session.scene = "order";
-      session.cursor = 0;
-      await orderWizard[0](ctx);
+      await ctx.state.cart.setSessionData({scene: "upload", cursor: 0});
+      orderWizard[0](ctx);
     }
     await ctx.answerCbQuery();
   } else {
@@ -560,8 +562,7 @@ const orderWizard = [
         keyboard: [["Отмена"]],
         resize_keyboard: true,
       }});
-    const session = await ctx.session;
-    session.cursor = 1;
+    await ctx.state.cart.setSessionData({cursor: 1});
   },
   async (ctx) => {
     // save data to cart
@@ -574,9 +575,7 @@ const orderWizard = [
         }});
       // return ctx.scene.leave();
       // leave wizard
-      const session = await ctx.session;
-      session.session = null;
-      session.cursor = null;
+      await ctx.state.cart.setSessionData({scene: null, cursor: null});
     }
     let userName = "";
     if (ctx.from.last_name) {
@@ -590,8 +589,7 @@ const orderWizard = [
         keyboard: [[userName], ["Отмена"]],
         resize_keyboard: true,
       }});
-    const session = await ctx.session;
-    session.cursor = 2;
+    await ctx.state.cart.setSessionData({cursor: 2});
   },
   async (ctx) => {
     // exit wizard
@@ -601,9 +599,7 @@ const orderWizard = [
           remove_keyboard: true,
         }});
       // leave wizard
-      const session = await ctx.session;
-      session.session = null;
-      session.cursor = null;
+      await ctx.state.cart.setSessionData({scene: null, cursor: null});
     }
     // validation example
     if (ctx.message.text.length < 2) {
@@ -624,8 +620,7 @@ const orderWizard = [
         resize_keyboard: true,
       },
     });
-    const session = await ctx.session;
-    session.cursor = 3;
+    await ctx.state.cart.setSessionData({cursor: 3});
   },
   async (ctx) => {
     if (ctx.message.text === "Отмена") {
@@ -634,9 +629,7 @@ const orderWizard = [
           remove_keyboard: true,
         }});
       // leave wizard
-      const session = await ctx.session;
-      session.session = null;
-      session.cursor = null;
+      await ctx.state.cart.setSessionData({scene: null, cursor: null});
     }
     const phoneNumber = (ctx.message.contact && ctx.message.contact.phone_number) || ctx.message.text;
     // const checkPhoneUa = phoneNumber.match(/^(\+380|0)?([1-9]{1}\d{8})$/);
@@ -654,9 +647,7 @@ const orderWizard = [
         remove_keyboard: true,
       }});
     // leave wizard
-    const session = await ctx.session;
-    session.session = null;
-    session.cursor = null;
+    await ctx.state.cart.setSessionData({scene: null, cursor: null});
   },
 ];
 // Tags
@@ -664,7 +655,7 @@ catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "t") {
     const inlineKeyboardArray = [];
     const catalogId = ctx.state.param;
-    const session = await ctx.session;
+    const session = await ctx.state.cart.getSessionData();
     const currentCatalogSnapshot = await firebase.firestore().collection("catalogs").doc(catalogId).get();
     const catalog = {id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data()};
     for (const tag of catalog.tags) {
@@ -813,18 +804,17 @@ catalogsActions.push( async (ctx, next) => {
 // upload photos limit 5
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "uploadPhoto") {
-    // save session data
-    const session = await ctx.session;
-    session.productId = ctx.state.param;
+    // save productId to session data
+    await ctx.state.cart.setSessionData({productId: ctx.state.param});
     // enter catalog scene
-    if (ctx.scene.current) {
-      if (ctx.scene.current.id !== "catalog") {
-        ctx.scene.enter("catalog");
-      }
-    } else {
-      ctx.scene.enter("catalog");
-    }
-    const productRef = firebase.firestore().collection("products").doc(ctx.session.productId);
+    // if (ctx.scene.current) {
+    //   if (ctx.scene.current.id !== "catalog") {
+    //     ctx.scene.enter("catalog");
+    //   }
+    // } else {
+    //   ctx.scene.enter("catalog");
+    // }
+    const productRef = firebase.firestore().collection("products").doc(ctx.state.param);
     const productSnapshot = await productRef.get();
     const product = {id: productSnapshot.id, ...productSnapshot.data()};
     ctx.replyWithHTML(`Please add photo to <b>${product.name} (${product.id})</b>`);
@@ -835,15 +825,16 @@ catalogsActions.push( async (ctx, next) => {
 });
 
 // Upload product photos
-catalogScene.on("photo", async (ctx, next) => {
-  if (ctx.session.productId) {
+const uploadPhotoProduct = async (ctx, next) => {
+  const session = await ctx.state.cart.getSessionData();
+  if (session.productId) {
     // file_id: 'AgACAgIAAxkBAAJKe2Eeb3sz3VbX5NP2xB0MphISptBEAAIjtTEbNKZhSJTK4DMrPuXqAQADAgADcwADIAQ',
     // file_unique_id: 'AQADI7UxGzSmYUh4',
     // file_size: 912,
     // width: 90,
     // height: 51
     // get Product data
-    const productRef = firebase.firestore().collection("products").doc(ctx.session.productId);
+    const productRef = firebase.firestore().collection("products").doc(session.productId);
     const productSnapshot = await productRef.get();
     const product = {id: productSnapshot.id, ...productSnapshot.data()};
     // get count photos to check limits 5 photos
@@ -906,7 +897,10 @@ catalogScene.on("photo", async (ctx, next) => {
       }
       const publicUrl = bucket.file(`photos/products/${product.id}/2/${origin.file_unique_id}.jpg`).publicUrl();
       // get catalog url (path)
-      const catalogUrl = ctx.session.path;
+      let catalogUrl = `c/${product.catalog.id}`;
+      if (session.path) {
+        catalogUrl = session.path;
+      }
       await ctx.replyWithPhoto({url: publicUrl},
           {
             caption: `${product.name} (${product.id}) photo uploaded`,
@@ -921,12 +915,13 @@ catalogScene.on("photo", async (ctx, next) => {
             },
           });
     }
-    ctx.session.productId = null;
+    // ctx.session.productId = null;
+    await ctx.state.cart.setSessionData({productId: null});
   } else {
     ctx.reply("Please select a product to upload Photo");
   }
-});
+};
 
-exports.catalogScene = catalogScene;
+exports.uploadPhotoProduct = uploadPhotoProduct;
 exports.catalogsActions = catalogsActions;
 exports.orderWizard = orderWizard;

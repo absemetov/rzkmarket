@@ -82,21 +82,21 @@ const uploadHandler = async (ctx) => {
     return false;
   }
   // get data for check upload process
-  const user = await ctx.state.cart.userData();
+  const session = await ctx.state.cart.getSessionData();
   // const sessionUser = firebase.firestore().collection("sessions").doc(`${ctx.from.id}-${ctx.chat.id}`);
   // const docRef = await sessionUser.get();
-  let uploading = user.uploading;
+  let uploading = session.uploading;
   // if (docRef.exists) {
   //   uploadPass = docRef.data().uploadPass;
-  const uplodingTime = user.uploadStartAt && serverTimestamp - user.uploadStartAt;
+  const uplodingTime = session.uploadStartAt && serverTimestamp - session.uploadStartAt;
   // kill process
-  if (user.uploading && uplodingTime > 570) {
+  if (session.uploading && uplodingTime > 570) {
     uploading = false;
   }
   // }
   if (!uploading) {
     // set data for check upload process
-    await ctx.state.cart.setUploadData({
+    await ctx.state.cart.setSessionData({
       uploading: true,
       uploadStartAt: serverTimestamp,
     });
@@ -325,7 +325,7 @@ Catalogs: *${catalogsIsSet.size}*`);
       await ctx.replyWithMarkdown(`Sheet ${error}`);
     }
     // set data for check upload process done!
-    await ctx.state.cart.setUploadData({
+    await ctx.state.cart.setSessionData({
       uploading: false,
     });
   } else {
