@@ -129,31 +129,34 @@ const cart = async (ctx, next) => {
   ctx.state.cart = cart;
   return next();
 };
-
-// start.enter(async (ctx) => {
-//   // ctx.reply("Выберите меню", getMainKeyboard);
-//   // ctx.reply("Welcome to Rzk.com.ru! Monobank rates /mono Rzk Catalog /catalog");
-//   // reply with photo necessary to show ptoduct
-//   await ctx.replyWithPhoto("https://picsum.photos/450/150/?random",
-//       {
-//         caption: "Welcome to Rzk Market Ukraine 🇺🇦",
-//         parse_mode: "Markdown",
-//         reply_markup: {
-//           remove_keyboard: true,
-//           inline_keyboard: [[
-//             {text: "📁 Catalog", callback_data: "c"},
-//             {text: "🛒 Cart", callback_data: "cart"},
-//           ]],
-//         },
-//       });
-//   // set commands
-//   await ctx.telegram.setMyCommands([
-//     {"command": "start", "description": "RZK Market Shop"},
-//     {"command": "upload", "description": "Upload goods"},
-//     {"command": "mono", "description": "Monobank exchange rates "},
-//   ]);
-//   ctx.scene.enter("catalog");
-// });
+// inline keyboard
+const startKeyboard = [[
+  {text: "📁 Товары", callback_data: "c"},
+  {text: "🛒 Корзина", callback_data: "cart"},
+]];
+const startTxt = "RZK Market Крым";
+// start handler
+const startHandler = async (ctx) => {
+  // ctx.reply("Выберите меню", getMainKeyboard);
+  // ctx.reply("Welcome to Rzk.com.ru! Monobank rates /mono Rzk Catalog /catalog");
+  // reply with photo necessary to show ptoduct
+  await ctx.replyWithPhoto("https://picsum.photos/450/150/?random",
+      {
+        caption: startTxt,
+        parse_mode: "Markdown",
+        reply_markup: {
+          remove_keyboard: true,
+          inline_keyboard: startKeyboard,
+        },
+      });
+  // set commands
+  await ctx.telegram.setMyCommands([
+    {"command": "start", "description": "RZK Market Крым"},
+    {"command": "upload", "description": "Upload goods"},
+    {"command": "mono", "description": "Monobank exchange rates "},
+  ]);
+  ctx.scene.enter("catalog");
+};
 
 // start.hears("where", (ctx) => ctx.reply("You are in start scene"));
 
@@ -162,14 +165,11 @@ startActions.push(async (ctx, next) => {
     await ctx.editMessageMedia({
       type: "photo",
       media: "https://picsum.photos/450/150/?random",
-      caption: "Welcome to Rzk Market Ukraine 🇺🇦",
+      caption: startTxt,
       parse_mode: "Markdown",
     }, {
       reply_markup: {
-        inline_keyboard: [[
-          {text: "📁 Catalog", callback_data: "c"},
-          {text: "🛒 Cart", callback_data: "cart"},
-        ]],
+        inline_keyboard: startKeyboard,
       },
     });
     await ctx.answerCbQuery();
@@ -180,5 +180,6 @@ startActions.push(async (ctx, next) => {
 
 // exports.start = start;
 exports.startActions = startActions;
+exports.startHandler = startHandler;
 exports.parseUrl = parseUrl;
 exports.cart = cart;

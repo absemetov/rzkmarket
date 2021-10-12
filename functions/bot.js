@@ -3,7 +3,7 @@ const firebase = require("firebase-admin");
 firebase.initializeApp();
 const {Telegraf} = require("telegraf");
 // const firestoreSession = require("telegraf-session-firestore");
-const {startActions, parseUrl, cart} = require("./bot_start_scene");
+const {startActions, startHandler, parseUrl, cart} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
 const {uploadHandler} = require("./bot_upload_scene");
 const {uploadPhotoProduct, catalogsActions, orderWizard} = require("./bot_catalog_scene");
@@ -35,23 +35,7 @@ bot.use(cart);
 bot.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/,
     parseUrl, ...startActions, ...catalogsActions, ...monoActions);
 bot.start(async (ctx) => {
-  await ctx.replyWithPhoto("https://picsum.photos/450/150/?random",
-      {
-        caption: "Welcome to Rzk Market Ukraine 🇺🇦",
-        parse_mode: "Markdown",
-        reply_markup: {
-          inline_keyboard: [[
-            {text: "📁 Catalog", callback_data: "c"},
-            {text: "🛒 Cart", callback_data: "cart"},
-          ]],
-        },
-      });
-  // set commands
-  await ctx.telegram.setMyCommands([
-    {"command": "start", "description": "RZK Market Shop"},
-    {"command": "upload", "description": "Upload goods"},
-    {"command": "mono", "description": "Monobank exchange rates "},
-  ]);
+  startHandler(ctx);
 });
 // bot.hears("mono", (ctx) => ctx.scene.enter("mono"));
 // bot.hears("where", async (ctx) => {
