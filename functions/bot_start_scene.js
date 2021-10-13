@@ -1,9 +1,12 @@
 // const {Scenes: {BaseScene}} = require("telegraf");
+const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 // const start = new BaseScene("start");
+// set default project
+const defaultBot = functions.config().bot.default;
+const botConfig = functions.config().bot[defaultBot];
 const startActions = [];
-
 // Parse callback data, add Cart instance
 const parseUrl = async (ctx, next) => {
   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
@@ -134,7 +137,6 @@ const startKeyboard = [[
   {text: "📁 Товары", callback_data: "c"},
   {text: "🛒 Корзина", callback_data: "cart"},
 ]];
-const startTxt = "RZK Market Крым";
 // start handler
 const startHandler = async (ctx) => {
   // ctx.reply("Выберите меню", getMainKeyboard);
@@ -142,7 +144,7 @@ const startHandler = async (ctx) => {
   // reply with photo necessary to show ptoduct
   await ctx.replyWithPhoto("https://picsum.photos/450/150/?random",
       {
-        caption: startTxt,
+        caption: botConfig.name,
         parse_mode: "Markdown",
         reply_markup: {
           remove_keyboard: true,
@@ -165,7 +167,7 @@ startActions.push(async (ctx, next) => {
     await ctx.editMessageMedia({
       type: "photo",
       media: "https://picsum.photos/450/150/?random",
-      caption: startTxt,
+      caption: botConfig.name,
       parse_mode: "Markdown",
     }, {
       reply_markup: {
@@ -182,4 +184,6 @@ startActions.push(async (ctx, next) => {
 exports.startActions = startActions;
 exports.startHandler = startHandler;
 exports.parseUrl = parseUrl;
+exports.botConfig = botConfig;
+exports.defaultBot = defaultBot;
 exports.cart = cart;

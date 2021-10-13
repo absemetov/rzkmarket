@@ -1,27 +1,17 @@
 const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
-firebase.initializeApp();
 const {Telegraf} = require("telegraf");
 // const firestoreSession = require("telegraf-session-firestore");
-const {startActions, startHandler, parseUrl, cart} = require("./bot_start_scene");
+firebase.initializeApp();
+const {startActions, startHandler, parseUrl, cart, botConfig, defaultBot} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
 const {uploadHandler} = require("./bot_upload_scene");
 const {uploadPhotoProduct, catalogsActions, orderWizard} = require("./bot_catalog_scene");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 // const {MenuMiddleware} = require("telegraf-inline-menu");
-// bot.rzkcrimeabot.token
-// bot.rzkmarketbot.token
-let token = functions.config().bot.rzkmarketbot.token;
-// dev bot
-if (process.env.FUNCTIONS_EMULATOR) {
-  token = functions.config().bot.rzkdevbot.token;
-}
-// config bot
-const bot = new Telegraf(token, {
+const bot = new Telegraf(botConfig.token, {
   handlerTimeout: 540000,
 });
-// Firestore session
-// Stage scenes
 // const stage = new Stage([upload, catalogScene, orderWizard]);
 // cart session instance
 bot.use(cart);
@@ -98,7 +88,7 @@ bot.catch((error) => {
   console.log("Telegraf error", error);
 });
 
-if (process.env.FUNCTIONS_EMULATOR) {
+if (defaultBot === "rzkdevbot") {
   bot.launch();
 }
 

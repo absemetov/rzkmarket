@@ -1,6 +1,7 @@
 const firebase = require("firebase-admin");
 const download = require("./download.js");
 const fs = require("fs");
+const {botConfig} = require("./bot_start_scene");
 const bucket = firebase.storage().bucket();
 // make bucket is public
 // await bucket.makePublic();
@@ -130,7 +131,7 @@ catalogsActions.push(async (ctx, next) => {
         const cartProduct = cartProductsArray.find((x) => x.id === product.id);
         if (cartProduct) {
           addButton.text = `🛒 ${product.data().name} (${product.id}) ${cartProduct.qty} ${cartProduct.unit}` +
-          ` ${roundNumber(cartProduct.qty * cartProduct.price)} грн.`;
+          ` ${roundNumber(cartProduct.qty * cartProduct.price)} ${botConfig.currency}`;
         }
         inlineKeyboardArray.push([addButton]);
       }
@@ -217,7 +218,7 @@ catalogsActions.push( async (ctx, next) => {
     const cartProduct = cartProductsArray.find((x) => x.id === product.id);
     if (cartProduct) {
       addButton.text = `🛒 ${cartProduct.qty} ${cartProduct.unit} ` +
-      ` ${roundNumber(cartProduct.qty * cartProduct.price)} грн.`;
+      ` ${roundNumber(cartProduct.qty * cartProduct.price)} ${botConfig.currency}`;
       addButton.callback_data = `addToCart/${product.id}?qty=${cartProduct.qty}&a=1`;
     }
     inlineKeyboardArray.push([addButton]);
@@ -246,7 +247,7 @@ catalogsActions.push( async (ctx, next) => {
     await ctx.editMessageMedia({
       type: "photo",
       media: publicImgUrl,
-      caption: `<b>${product.name} (${product.id})\nЦена: ${product.price} грн.</b>`,
+      caption: `<b>${product.name} (${product.id})\nЦена: ${product.price} ${botConfig.currency}</b>`,
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: [...inlineKeyboardArray],
@@ -312,8 +313,8 @@ catalogsActions.push( async (ctx, next) => {
       }
       addButtonArray.push(addButton);
       await ctx.editMessageCaption(`<b>${product.name}</b> ` +
-      `\nPrice: ${product.price} грн.` +
-      `\nSum: ${roundNumber(qty * product.price)} грн.` +
+      `\nPrice: ${product.price} ${botConfig.currency}` +
+      `\nSum: ${roundNumber(qty * product.price)} ${botConfig.currency}` +
       `\n<b>Qty: ${qty} ${product.unit}</b>`,
       {
         parse_mode: "html",
@@ -377,11 +378,11 @@ catalogsActions.push( async (ctx, next) => {
     const products = await ctx.state.cart.products();
     for (const [index, product] of products.entries()) {
       msgTxt += `<b>${index + 1})</b> ${product.name} (${product.id}) ` +
-        `${product.price} грн * ${product.qty} ${product.unit} ` +
-        ` = ${roundNumber(product.price * product.qty)} грн.\n`;
+        `${product.price} ${botConfig.currency} * ${product.qty} ${product.unit} ` +
+        ` = ${roundNumber(product.price * product.qty)} ${botConfig.currency}\n`;
       inlineKeyboardArray.push([
         {text: `🛒 ${product.name} (${product.id}) ${product.qty} ${product.unit}` +
-          ` ${roundNumber(product.qty * product.price)} грн.`,
+          ` ${roundNumber(product.qty * product.price)} ${botConfig.currency}`,
         callback_data: `addToCart/${product.id}?qty=${product.qty}&r=1&a=1`},
       ]);
       totalQty += product.qty;
@@ -389,7 +390,7 @@ catalogsActions.push( async (ctx, next) => {
     }
     if (totalQty) {
       msgTxt += `<b>Количество товара: ${totalQty}\n` +
-      `Сумма: ${roundNumber(totalSum)} грн.</b>`;
+      `Сумма: ${roundNumber(totalSum)} ${botConfig.currency}</b>`;
     }
 
     if (inlineKeyboardArray.length < 1) {
