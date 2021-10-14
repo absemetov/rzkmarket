@@ -3,7 +3,7 @@ const firebase = require("firebase-admin");
 const {Telegraf} = require("telegraf");
 // const firestoreSession = require("telegraf-session-firestore");
 firebase.initializeApp();
-const {startActions, startHandler, parseUrl, cart, botConfig, defaultBot} = require("./bot_start_scene");
+const {startActions, startHandler, parseUrl, cart, botConfig} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
 const {uploadHandler} = require("./bot_upload_scene");
 const {uploadPhotoProduct, catalogsActions, orderWizard} = require("./bot_catalog_scene");
@@ -88,7 +88,7 @@ bot.catch((error) => {
   console.log("Telegraf error", error);
 });
 
-if (defaultBot === "rzkdevbot") {
+if (process.env.FUNCTIONS_EMULATOR) {
   bot.launch();
 }
 

@@ -4,8 +4,7 @@ const firebase = require("firebase-admin");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 // const start = new BaseScene("start");
 // set default project
-const defaultBot = functions.config().bot.default;
-const botConfig = functions.config().bot[defaultBot];
+const botConfig = functions.config().env.bot;
 const startActions = [];
 // Parse callback data, add Cart instance
 const parseUrl = async (ctx, next) => {
@@ -157,7 +156,7 @@ const startHandler = async (ctx) => {
     {"command": "upload", "description": "Upload goods"},
     {"command": "mono", "description": "Monobank exchange rates "},
   ]);
-  ctx.scene.enter("catalog");
+  // ctx.scene.enter("catalog");
 };
 
 // start.hears("where", (ctx) => ctx.reply("You are in start scene"));
@@ -185,5 +184,4 @@ exports.startActions = startActions;
 exports.startHandler = startHandler;
 exports.parseUrl = parseUrl;
 exports.botConfig = botConfig;
-exports.defaultBot = defaultBot;
 exports.cart = cart;
