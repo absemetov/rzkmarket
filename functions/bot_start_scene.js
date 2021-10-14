@@ -36,6 +36,13 @@ const cart = async (ctx, next) => {
       return null;
     },
     async add(product, qty) {
+      const user = await this.getUserData();
+      let orderNumber = 0;
+      if (user) {
+        if (user.cart && user.cart.products) {
+          orderNumber = user.cart.products.length + 1;
+        }
+      }
       qty = Number(qty);
       let productData = {};
       if (qty) {
@@ -47,6 +54,7 @@ const cart = async (ctx, next) => {
               price: product.price,
               unit: product.unit,
               qty: qty,
+              orderNumber,
             },
           };
         } else {
@@ -83,6 +91,10 @@ const cart = async (ctx, next) => {
           }
         }
       }
+      products.sort(function(a, b) {
+        return a.orderNumber - b.orderNumber;
+      });
+      console.log(products);
       return products;
     },
     async clear() {

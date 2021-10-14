@@ -3,8 +3,6 @@ const download = require("./download.js");
 const fs = require("fs");
 const {botConfig} = require("./bot_start_scene");
 const bucket = firebase.storage().bucket();
-// make bucket is public
-// await bucket.makePublic();
 // const {Scenes: {BaseScene, WizardScene}} = require("telegraf");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 // const catalogScene = new BaseScene("catalog");
@@ -543,11 +541,10 @@ catalogsActions.push( async (ctx, next) => {
       if (paymentId) {
         await ctx.state.cart.setOrderData({paymentId});
       }
-      console.log(paymentId);
       await ctx.deleteMessage();
       // await ctx.scene.enter("order");
       // set session
-      await ctx.state.cart.setSessionData({scene: "upload", cursor: 0});
+      await ctx.state.cart.setSessionData({scene: "order", cursor: 0});
       orderWizard[0](ctx);
     }
     await ctx.answerCbQuery();
@@ -568,16 +565,6 @@ const orderWizard = [
   async (ctx) => {
     // save data to cart
     await ctx.state.cart.setOrderData({address: ctx.message.text});
-    // exit wizard
-    if (ctx.message.text === "Отмена") {
-      ctx.reply("Для продолжения нажмите /start", {
-        reply_markup: {
-          remove_keyboard: true,
-        }});
-      // return ctx.scene.leave();
-      // leave wizard
-      await ctx.state.cart.setSessionData({scene: null, cursor: null});
-    }
     let userName = "";
     if (ctx.from.last_name) {
       userName += ctx.from.last_name;
@@ -593,15 +580,6 @@ const orderWizard = [
     await ctx.state.cart.setSessionData({cursor: 2});
   },
   async (ctx) => {
-    // exit wizard
-    if (ctx.message.text === "Отмена") {
-      ctx.reply("Для продолжения нажмите /start", {
-        reply_markup: {
-          remove_keyboard: true,
-        }});
-      // leave wizard
-      await ctx.state.cart.setSessionData({scene: null, cursor: null});
-    }
     // validation example
     if (ctx.message.text.length < 2) {
       ctx.reply("Имя слишком короткое");
@@ -624,14 +602,6 @@ const orderWizard = [
     await ctx.state.cart.setSessionData({cursor: 3});
   },
   async (ctx) => {
-    if (ctx.message.text === "Отмена") {
-      ctx.reply("Для продолжения нажмите /start", {
-        reply_markup: {
-          remove_keyboard: true,
-        }});
-      // leave wizard
-      await ctx.state.cart.setSessionData({scene: null, cursor: null});
-    }
     const phoneNumber = (ctx.message.contact && ctx.message.contact.phone_number) || ctx.message.text;
     // const checkPhoneUa = phoneNumber.match(/^(\+380|0)?([1-9]{1}\d{8})$/);
     const checkPhone = phoneNumber.match(/^(\+7|7|8)?([489][0-9]{2}[0-9]{7})$/);
@@ -648,7 +618,7 @@ const orderWizard = [
         remove_keyboard: true,
       }});
     // leave wizard
-    await ctx.state.cart.setSessionData({scene: null, cursor: null});
+    await ctx.state.cart.setSessionData({scene: null});
   },
 ];
 // Tags
@@ -829,6 +799,8 @@ catalogsActions.push( async (ctx, next) => {
 const uploadPhotoProduct = async (ctx, next) => {
   const session = await ctx.state.cart.getSessionData();
   if (session.productId) {
+    // make bucket is public
+    await bucket.makePublic();
     // file_id: 'AgACAgIAAxkBAAJKe2Eeb3sz3VbX5NP2xB0MphISptBEAAIjtTEbNKZhSJTK4DMrPuXqAQADAgADcwADIAQ',
     // file_unique_id: 'AQADI7UxGzSmYUh4',
     // file_size: 912,

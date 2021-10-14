@@ -72,7 +72,6 @@ bot.on(["text", "contact"], async (ctx) => {
   }
   if (session.scene === "order") {
     await orderWizard[session.cursor](ctx);
-    console.log("order session");
   }
 });
 
