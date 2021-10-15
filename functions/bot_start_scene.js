@@ -28,6 +28,7 @@ const cart = async (ctx, next) => {
   const cart = {
     userQuery: firebase.firestore().collection("users").doc(`${ctx.from.id}`),
     orderQuery: firebase.firestore().collection("orders"),
+    serverTimestamp: Math.floor(Date.now() / 1000),
     async getUserData() {
       const userRef = await this.userQuery.get();
       if (userRef.exists) {
@@ -36,7 +37,6 @@ const cart = async (ctx, next) => {
       return null;
     },
     async add(product, qty) {
-      const serverTimestamp = Math.floor(Date.now() / 1000);
       qty = Number(qty);
       let productData = {};
       if (qty) {
@@ -48,7 +48,7 @@ const cart = async (ctx, next) => {
               price: product.price,
               unit: product.unit,
               qty: qty,
-              createdAt: serverTimestamp,
+              createdAt: this.serverTimestamp,
             },
           };
         } else {
@@ -130,6 +130,7 @@ const cart = async (ctx, next) => {
         orderId: user.orderCount,
         fromBot: true,
         products: user.cart.products,
+        createdAt: this.serverTimestamp,
         ...user.cart.orderData,
       });
     },
@@ -138,22 +139,27 @@ const cart = async (ctx, next) => {
   return next();
 };
 // inline keyboard
-const startKeyboard = [[
+const startKeyboard = [
   {text: "📁 Каталог", callback_data: "c"},
   {text: "🛒 Корзина", callback_data: "cart"},
-]];
+];
 // start handler
 const startHandler = async (ctx) => {
+  const cartProductsArray = await ctx.state.cart.products();
+  startKeyboard[1].text = "🛒 Корзина";
+  if (cartProductsArray.length) {
+    startKeyboard[1].text += ` (${cartProductsArray.length})`;
+  }
   // ctx.reply("Выберите меню", getMainKeyboard);
   // ctx.reply("Welcome to Rzk.com.ru! Monobank rates /mono Rzk Catalog /catalog");
   // reply with photo necessary to show ptoduct
   await ctx.replyWithPhoto("https://picsum.photos/450/150/?random",
       {
-        caption: botConfig.name,
-        parse_mode: "Markdown",
+        caption: `<b>${botConfig.name}</b>`,
+        parse_mode: "html",
         reply_markup: {
           remove_keyboard: true,
-          inline_keyboard: startKeyboard,
+          inline_keyboard: [startKeyboard],
         },
       });
   // set commands
@@ -169,14 +175,19 @@ const startHandler = async (ctx) => {
 
 startActions.push(async (ctx, next) => {
   if (ctx.state.routeName === "start") {
+    const cartProductsArray = await ctx.state.cart.products();
+    startKeyboard[1].text = "🛒 Корзина";
+    if (cartProductsArray.length) {
+      startKeyboard[1].text += ` (${cartProductsArray.length})`;
+    }
     await ctx.editMessageMedia({
       type: "photo",
       media: "https://picsum.photos/450/150/?random",
-      caption: botConfig.name,
-      parse_mode: "Markdown",
+      caption: `<b>${botConfig.name}</b>`,
+      parse_mode: "html",
     }, {
       reply_markup: {
-        inline_keyboard: startKeyboard,
+        inline_keyboard: [startKeyboard],
       },
     });
     await ctx.answerCbQuery();

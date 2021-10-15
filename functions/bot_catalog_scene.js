@@ -3,6 +3,7 @@ const download = require("./download.js");
 const fs = require("fs");
 const {botConfig} = require("./bot_start_scene");
 const bucket = firebase.storage().bucket();
+
 const footerButtons = [{text: "🏠 Главная", callback_data: "start"}, {text: "🛒 Корзина", callback_data: "cart"}];
 // const {Scenes: {BaseScene, WizardScene}} = require("telegraf");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
@@ -54,6 +55,11 @@ function roundNumber(num) {
 // Show Catalogs and goods
 catalogsActions.push(async (ctx, next) => {
   if (ctx.state.routeName === "c") {
+    const cartProductsArray = await ctx.state.cart.products();
+    footerButtons[1].text = "🛒 Корзина";
+    if (cartProductsArray.length) {
+      footerButtons[1].text += ` (${cartProductsArray.length})`;
+    }
     const catalogId = ctx.state.param;
     const tag = ctx.state.params.get("t");
     const startAfter = ctx.state.params.get("s");
@@ -89,11 +95,11 @@ catalogsActions.push(async (ctx, next) => {
         const tagsArray = [];
         // inlineKeyboardArray.push(Markup.button.callback(`📌 Tags ${selectedTag}`,
         //    `t/${currentCatalog.id}?tagSelected=${params.get("tag")}`));
-        tagsArray.push({text: "📌 Tags",
+        tagsArray.push({text: "📌 Фильтр",
           callback_data: `t/${currentCatalog.id}?tagSelected=${tag}`});
         // Delete or close selected tag
         if (tag) {
-          tagsArray.push({text: `❎ Del ${tag}`, callback_data: `c/${currentCatalog.id}`});
+          tagsArray.push({text: `❎ ${tag}`, callback_data: `c/${currentCatalog.id}`});
         }
         inlineKeyboardArray.push(tagsArray);
       }
@@ -120,13 +126,14 @@ catalogsActions.push(async (ctx, next) => {
         // inlineKeyboardArray.push(Markup.button.callback(`📦 ${product.data().name} (${product.id})`,
         //    `p/${product.id}/${ctx.callbackQuery.data}`));
         // Get cart
-        const addButton = {text: `📦 ${product.data().name} (${product.id})`, callback_data: `p/${product.id}`};
+        const addButton = {text: `📦 ${product.data().name} (${product.id}) = ${product.data().price}`+
+          ` ${botConfig.currency}`, callback_data: `p/${product.id}`};
         // get cart products
-        const cartProductsArray = await ctx.state.cart.products();
         const cartProduct = cartProductsArray.find((x) => x.id === product.id);
         if (cartProduct) {
-          addButton.text = `🛒 ${product.data().name} (${product.id}) ${cartProduct.qty} ${cartProduct.unit}` +
-          ` ${roundNumber(cartProduct.qty * cartProduct.price)} ${botConfig.currency}`;
+          addButton.text = `🛒 ${product.data().name} (${product.id}) ${cartProduct.price} ${botConfig.currency} * ` +
+          `${cartProduct.qty} ${cartProduct.unit}` +
+          ` = ${roundNumber(cartProduct.qty * cartProduct.price)} ${botConfig.currency}`;
         }
         inlineKeyboardArray.push([addButton]);
       }
@@ -140,7 +147,7 @@ catalogsActions.push(async (ctx, next) => {
         if (!ifBeforeProducts.empty) {
           // inlineKeyboardArray.push(Markup.button.callback("⬅️ Back",
           //    `c/${currentCatalog.id}?endBefore=${endBefore.id}&tag=${params.get("tag")}`));
-          prevNext.push({text: "⬅️ Back", callback_data: `c/${currentCatalog.id}?e=${endBeforeSnap.id}${tagUrl}`});
+          prevNext.push({text: "⬅️ Назад", callback_data: `c/${currentCatalog.id}?e=${endBeforeSnap.id}${tagUrl}`});
         }
         // startAfter
         const startAfterSnap = productsSnapshot.docs[productsSnapshot.docs.length - 1];
@@ -149,7 +156,7 @@ catalogsActions.push(async (ctx, next) => {
           // startAfter iqual s
           // inlineKeyboardArray.push(Markup.button.callback("➡️ Load more",
           //    `c/${currentCatalog.id}?startAfter=${startAfter.id}&tag=${params.get("tag")}`));
-          prevNext.push({text: "➡️ Load more",
+          prevNext.push({text: "➡️ Загрузить товары",
             callback_data: `c/${currentCatalog.id}?s=${startAfterSnap.id}${tagUrl}`});
         }
         inlineKeyboardArray.push(prevNext);
@@ -178,7 +185,7 @@ catalogsActions.push(async (ctx, next) => {
     await ctx.editMessageMedia({
       type: "photo",
       media: "https://picsum.photos/450/150/?random",
-      caption: `${botConfig.name} > Каталог`,
+      caption: `<b>${botConfig.name} > Каталог</b>`,
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: [...inlineKeyboardArray],
@@ -200,6 +207,12 @@ catalogsActions.push( async (ctx, next) => {
     if (qty) {
       await ctx.state.cart.add(product, qty);
     }
+    // cart button
+    const cartProductsArray = await ctx.state.cart.products();
+    footerButtons[1].text = "🛒 Корзина";
+    if (cartProductsArray.length) {
+      footerButtons[1].text += ` (${cartProductsArray.length})`;
+    }
     // generate array
     const session = await ctx.state.cart.getSessionData();
     let catalogUrl = `c/${product.catalog.id}`;
@@ -208,10 +221,10 @@ catalogsActions.push( async (ctx, next) => {
     }
     const inlineKeyboardArray = [];
     // inlineKeyboardArray.push(Markup.button.callback("📸 Upload photo", `uploadPhotos/${product.id}`));
+    inlineKeyboardArray.push([{text: `⤴️ ../${product.catalog.name}`, callback_data: catalogUrl}]);
     // default add button
-    const addButton = {text: "🛒 Add to cart", callback_data: `addToCart/${product.id}`};
+    const addButton = {text: "🛒 Добавить в корзину", callback_data: `addToCart/${product.id}`};
     // get cart products
-    const cartProductsArray = await ctx.state.cart.products();
     const cartProduct = cartProductsArray.find((x) => x.id === product.id);
     if (cartProduct) {
       addButton.text = `🛒 ${cartProduct.qty} ${cartProduct.unit} ` +
@@ -227,7 +240,6 @@ catalogsActions.push( async (ctx, next) => {
       inlineKeyboardArray.push([{text: `🖼 Show photos (${product.photos.length})`,
         callback_data: `showPhotos/${product.id}`}]);
     }
-    inlineKeyboardArray.push([{text: `⤴️ Goto ${product.catalog.name}`, callback_data: catalogUrl}]);
     // Get main photo url.
     let publicImgUrl = "";
     if (product.mainPhoto) {
@@ -243,7 +255,7 @@ catalogsActions.push( async (ctx, next) => {
     await ctx.editMessageMedia({
       type: "photo",
       media: publicImgUrl,
-      caption: `<b>${product.name} (${product.id})\nЦена: ${product.price} ${botConfig.currency}</b>`,
+      caption: `<b>${product.name} (${product.id})\nЦена ${product.price} ${botConfig.currency}</b>`,
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: [...inlineKeyboardArray],
@@ -296,9 +308,9 @@ catalogsActions.push( async (ctx, next) => {
       const product = {id: productSnapshot.id, ...productSnapshot.data()};
       // ctx.reply(`Main photo updated, productId ${productId} ${fileId}`);
       const addButtonArray = [];
-      const addButton = {text: "🛒 Add to cart",
+      const addButton = {text: "🛒 Добавить",
         callback_data: `p/${product.id}?qty=${qty}`};
-      const delButton = {text: "❎ Delete",
+      const delButton = {text: "❎ Удалить",
         callback_data: `p/${product.id}?qty=0`};
       if (added) {
         addButtonArray.push(delButton);
@@ -308,10 +320,10 @@ catalogsActions.push( async (ctx, next) => {
         delButton.callback_data = `cart/${product.id}?qty=0`;
       }
       addButtonArray.push(addButton);
-      await ctx.editMessageCaption(`<b>${product.name}</b> ` +
-      `\nPrice: ${product.price} ${botConfig.currency}` +
-      `\nSum: ${roundNumber(qty * product.price)} ${botConfig.currency}` +
-      `\n<b>Qty: ${qty} ${product.unit}</b>`,
+      await ctx.editMessageCaption(`${product.name} (${product.id})` +
+      `\nЦена ${product.price} ${botConfig.currency}` +
+      `\nСумма ${roundNumber(qty * product.price)} ${botConfig.currency}` +
+      `\n<b>Количетво: ${qty} ${product.unit}</b>`,
       {
         parse_mode: "html",
         reply_markup: {
@@ -338,7 +350,7 @@ catalogsActions.push( async (ctx, next) => {
             ],
             addButtonArray,
             [
-              {text: "⤴️ Goto product", callback_data: `p/${product.id}`},
+              {text: `⤴️ ${product.name} (${product.id})`, callback_data: `p/${product.id}`},
             ],
           ],
         },
@@ -367,19 +379,19 @@ catalogsActions.push( async (ctx, next) => {
       await ctx.state.cart.add(productId, qty);
     }
     const inlineKeyboardArray = [];
-    let msgTxt = "<b>Корзина</b>\n";
+    let msgTxt = `<b> ${botConfig.name} > Корзина</b>\n`;
     // loop products
     let totalQty = 0;
     let totalSum = 0;
     const products = await ctx.state.cart.products();
     for (const [index, product] of products.entries()) {
-      msgTxt += `<b>${index + 1})</b> ${product.name} (${product.id}) ` +
-        `${product.price} ${botConfig.currency} * ${product.qty} ${product.unit} ` +
-        ` = ${roundNumber(product.price * product.qty)} ${botConfig.currency}\n`;
+      const productTxt = `${index + 1}) ${product.name} (${product.id}) ` +
+      `${product.price} ${botConfig.currency} * ${product.qty} ${product.unit} ` +
+      ` = ${roundNumber(product.price * product.qty)} ${botConfig.currency}`;
+      msgTxt += `${productTxt}\n`;
+      msgTxt += "--------------------------------------------\n";
       inlineKeyboardArray.push([
-        {text: `🛒 ${product.name} (${product.id}) ${product.qty} ${product.unit}` +
-          ` ${roundNumber(product.qty * product.price)} ${botConfig.currency}`,
-        callback_data: `addToCart/${product.id}?qty=${product.qty}&r=1&a=1`},
+        {text: `${productTxt}`, callback_data: `addToCart/${product.id}?qty=${product.qty}&r=1&a=1`},
       ]);
       totalQty += product.qty;
       totalSum += product.qty * product.price;
@@ -627,6 +639,8 @@ catalogsActions.push( async (ctx, next) => {
     const session = await ctx.state.cart.getSessionData();
     const currentCatalogSnapshot = await firebase.firestore().collection("catalogs").doc(catalogId).get();
     const catalog = {id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data()};
+    inlineKeyboardArray.push([{text: `⤴️ ../${catalog.name}`,
+      callback_data: session.path}]);
     for (const tag of catalog.tags) {
       if (tag.id === ctx.state.params.get("tagSelected")) {
         // inlineKeyboardArray.push(Markup.button.callback(`✅ ${tag.name}`, `c/c/${catalog.id}?tag=${tag.id}`));
@@ -637,11 +651,11 @@ catalogsActions.push( async (ctx, next) => {
       }
     }
     // close tags
-    inlineKeyboardArray.push([{text: "⤴️ Goto catalog", callback_data: session.path}]);
+    // inlineKeyboardArray.push([{text: "⤴️ Перейти в каталог", callback_data: session.path}]);
     await ctx.editMessageMedia({
       type: "photo",
       media: "https://picsum.photos/450/150/?random",
-      caption: `RZK Market Catalog 🇺🇦\n<b>${catalog.name}</b>, Tags`,
+      caption: `<b>${botConfig.name} > Фильтр</b>`,
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: [...inlineKeyboardArray],
