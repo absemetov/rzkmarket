@@ -36,13 +36,7 @@ const cart = async (ctx, next) => {
       return null;
     },
     async add(product, qty) {
-      const user = await this.getUserData();
-      let orderNumber = 0;
-      if (user) {
-        if (user.cart && user.cart.products) {
-          orderNumber = user.cart.products.length + 1;
-        }
-      }
+      const serverTimestamp = Math.floor(Date.now() / 1000);
       qty = Number(qty);
       let productData = {};
       if (qty) {
@@ -54,7 +48,7 @@ const cart = async (ctx, next) => {
               price: product.price,
               unit: product.unit,
               qty: qty,
-              orderNumber,
+              createdAt: serverTimestamp,
             },
           };
         } else {
@@ -91,10 +85,10 @@ const cart = async (ctx, next) => {
           }
         }
       }
+      // sort products by orderNumber
       products.sort(function(a, b) {
-        return a.orderNumber - b.orderNumber;
+        return a.createdAt - b.createdAt;
       });
-      console.log(products);
       return products;
     },
     async clear() {
@@ -145,7 +139,7 @@ const cart = async (ctx, next) => {
 };
 // inline keyboard
 const startKeyboard = [[
-  {text: "📁 Товары", callback_data: "c"},
+  {text: "📁 Каталог", callback_data: "c"},
   {text: "🛒 Корзина", callback_data: "cart"},
 ]];
 // start handler

@@ -3,6 +3,7 @@ const download = require("./download.js");
 const fs = require("fs");
 const {botConfig} = require("./bot_start_scene");
 const bucket = firebase.storage().bucket();
+const footerButtons = [{text: "🏠 Главная", callback_data: "start"}, {text: "🛒 Корзина", callback_data: "cart"}];
 // const {Scenes: {BaseScene, WizardScene}} = require("telegraf");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 // const catalogScene = new BaseScene("catalog");
@@ -59,24 +60,20 @@ catalogsActions.push(async (ctx, next) => {
     const endBefore = ctx.state.params.get("e");
     const inlineKeyboardArray =[];
     let currentCatalog = {};
-    let textMessage = "RZK Market Catalog 🇺🇦";
     // save path to session if have params
     await ctx.state.cart.setSessionData({path: ctx.callbackQuery.data});
-    // set currentCatalog data
+    // Get catalogs snap index or siblings
+    const catalogsSnapshot = await firebase.firestore().collection("catalogs")
+        .where("parentId", "==", catalogId ? catalogId : null).orderBy("orderNumber").get();
+    // get current catalog
     if (catalogId) {
       const currentCatalogSnapshot = await firebase.firestore().collection("catalogs").doc(catalogId).get();
       currentCatalog = {id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data()};
-    }
-    // Get catalogs
-    const catalogsSnapshot = await firebase.firestore().collection("catalogs")
-        .where("parentId", "==", currentCatalog.id ? currentCatalog.id : null).orderBy("orderNumber").get();
-    catalogsSnapshot.docs.forEach((doc) => {
-      // inlineKeyboardArray.push(Markup.button.callback(`🗂 ${doc.data().name}`, `c/${doc.id}`));
-      inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}`}]);
-    });
-    // Show catalog siblings
-    if (currentCatalog.id) {
-      textMessage += `\nCatalog: <b>${currentCatalog.name}</b>`;
+      // back button
+      inlineKeyboardArray.push([{text: `⤴️ ../${currentCatalog.name}`,
+        callback_data: currentCatalog.parentId ? `c/${currentCatalog.parentId}` : "c"}]);
+      // get products
+      // textMessage += `\n> <b>${currentCatalog.name}</b>`;
       // Products query
       let mainQuery = firebase.firestore().collection("products").where("catalog.id", "==", currentCatalog.id)
           .orderBy("orderNumber");
@@ -161,12 +158,14 @@ catalogsActions.push(async (ctx, next) => {
       // add back button
       // inlineKeyboardArray.push(Markup.button.callback("⤴️ Parent catalog",
       //  currentCatalog.parentId ? `c/${currentCatalog.parentId}` : "c/"));
-      inlineKeyboardArray.push([{text: "⤴️ Parent catalog",
-        callback_data: currentCatalog.parentId ? `c/${currentCatalog.parentId}` : "c"}]);
     }
-    // Set Main menu button
-    inlineKeyboardArray.push([{text: "🏠 Go to home",
-      callback_data: "start"}, {text: "🛒 Cart", callback_data: "cart"}]);
+    // Show catalog siblings
+    catalogsSnapshot.docs.forEach((doc) => {
+      // inlineKeyboardArray.push(Markup.button.callback(`🗂 ${doc.data().name}`, `c/${doc.id}`));
+      inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}`}]);
+    });
+    // footer buttons
+    inlineKeyboardArray.push(footerButtons);
     // const extraObject = {
     //   parse_mode: "Markdown",
     //   ...Markup.inlineKeyboard(inlineKeyboardArray,
@@ -179,7 +178,7 @@ catalogsActions.push(async (ctx, next) => {
     await ctx.editMessageMedia({
       type: "photo",
       media: "https://picsum.photos/450/150/?random",
-      caption: textMessage,
+      caption: `${botConfig.name} > Каталог`,
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: [...inlineKeyboardArray],
@@ -240,8 +239,7 @@ catalogsActions.push( async (ctx, next) => {
       publicImgUrl = "https://s3.eu-central-1.amazonaws.com/rzk.com.ua/250.56ad1e10bf4a01b1ff3af88752fd3412.jpg";
     }
     // Set Main menu
-    inlineKeyboardArray.push([{text: "🏠 Go to home",
-      callback_data: "start"}, {text: "🛒 Cart", callback_data: "cart"}]);
+    inlineKeyboardArray.push(footerButtons);
     await ctx.editMessageMedia({
       type: "photo",
       media: publicImgUrl,
