@@ -6,12 +6,6 @@ const {Scenes: {BaseScene}} = require("telegraf");
 // const {MenuTemplate, createBackMainMenuButtons} = require("telegraf-inline-menu");
 const monoScene = new BaseScene("monoScene");
 const monoActions = [];
-monoScene.use(async (ctx, next) => {
-  if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
-    console.log("mono scene another callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
-  }
-  return next();
-});
 
 const monoHandler = (ctx) => {
   ctx.reply("Выберите валюту", {

@@ -131,7 +131,7 @@ catalogsActions.push(async (ctx, next) => {
         // get cart products
         const cartProduct = cartProductsArray.find((x) => x.id === product.id);
         if (cartProduct) {
-          addButton.text = `🛒 ${product.data().name} (${product.id}) ${cartProduct.price} ${botConfig.currency} * ` +
+          addButton.text = `🛒 ${product.data().name} (${product.id}) = ${cartProduct.price} ${botConfig.currency} * ` +
           `${cartProduct.qty} ${cartProduct.unit}` +
           ` = ${roundNumber(cartProduct.qty * cartProduct.price)} ${botConfig.currency}`;
         }
@@ -385,17 +385,18 @@ catalogsActions.push( async (ctx, next) => {
     let totalSum = 0;
     const products = await ctx.state.cart.products();
     for (const [index, product] of products.entries()) {
-      const productTxt = `${index + 1}) ${product.name} (${product.id}) ` +
-      `${product.price} ${botConfig.currency} * ${product.qty} ${product.unit} ` +
+      const productTxt = `${index + 1}) ${product.name} (${product.id})` +
+      ` = ${product.price} ${botConfig.currency} * ${product.qty} ${product.unit}` +
       ` = ${roundNumber(product.price * product.qty)} ${botConfig.currency}`;
+      msgTxt += "------------------------------------------------------\n";
       msgTxt += `${productTxt}\n`;
-      msgTxt += "--------------------------------------------\n";
       inlineKeyboardArray.push([
         {text: `${productTxt}`, callback_data: `addToCart/${product.id}?qty=${product.qty}&r=1&a=1`},
       ]);
       totalQty += product.qty;
       totalSum += product.qty * product.price;
     }
+    msgTxt += "------------------------------------------------------\n";
     if (totalQty) {
       msgTxt += `<b>Количество товара: ${totalQty}\n` +
       `Сумма: ${roundNumber(totalSum)} ${botConfig.currency}</b>`;
@@ -408,7 +409,7 @@ catalogsActions.push( async (ctx, next) => {
       msgTxt += "Корзина пуста";
     } else {
       inlineKeyboardArray.push([{text: "✅ Оформить заказ",
-        callback_data: "order/carrier"}]);
+        callback_data: "createOrder/carrier"}]);
       inlineKeyboardArray.push([{text: "🗑 Очистить корзину",
         callback_data: "cart?clear=1"}]);
     }
@@ -430,147 +431,97 @@ catalogsActions.push( async (ctx, next) => {
   }
 });
 
-// save order final
-catalogsActions.push( async (ctx, next) => {
-  // ctx.scene.state.name = ctx.message.text;
-  const todo = ctx.state.param;
-  if (ctx.state.routeName === "order") {
-    // first step carrier
-    if (todo === "carrier") {
-      const inlineKeyboardArray = [];
-      inlineKeyboardArray.push([{text: "Нова Пошта", callback_data: "order/carrier_number?carrier_id=1"}]);
-      inlineKeyboardArray.push([{text: "Самовывоз", callback_data: "order/payment?carrier_id=2"}]);
-      inlineKeyboardArray.push([{text: "Корзина", callback_data: "cart"}]);
-      await ctx.editMessageMedia({
-        type: "photo",
-        media: "https://picsum.photos/450/150/?random",
-        caption: "Способ доставки",
-        parse_mode: "html",
-      }, {reply_markup: {
-        inline_keyboard: [...inlineKeyboardArray],
-      }});
-    }
-    // set carrier number
-    if (todo === "carrier_number") {
-      const inlineKeyboardArray = [];
-      let qty = ctx.state.params.get("qty");
-      const number = ctx.state.params.get("number");
-      const back = ctx.state.params.get("back");
-      let carrierId = ctx.state.params.get("carrier_id");
-      // save data to cart
-      if (carrierId) {
-        carrierId = Number(carrierId);
-        await ctx.state.cart.setOrderData({carrierId});
-      }
-      let qtyUrl = "";
-      if (qty) {
-        if (number) {
-          qty += number;
-        }
-        if (back) {
-          qty = qty.slice(0, -1);
-        }
-        // if (clear) {
-        //   qty = 0;
-        // }
-      } else {
-        // add first
-        if (Number(number)) {
-          qty = number;
-        }
-      }
-      if (qty) {
-        qtyUrl = `&qty=${qty}`;
-      } else {
-        qty = 0;
-      }
-      inlineKeyboardArray.push([
-        {text: "7", callback_data: `order/carrier_number?number=7${qtyUrl}`},
-        {text: "8", callback_data: `order/carrier_number?number=8${qtyUrl}`},
-        {text: "9", callback_data: `order/carrier_number?number=9${qtyUrl}`},
-      ]);
-      inlineKeyboardArray.push([
-        {text: "4", callback_data: `order/carrier_number?number=4${qtyUrl}`},
-        {text: "5", callback_data: `order/carrier_number?number=5${qtyUrl}`},
-        {text: "6", callback_data: `order/carrier_number?number=6${qtyUrl}`},
-      ]);
-      inlineKeyboardArray.push([
-        {text: "1", callback_data: `order/carrier_number?number=1${qtyUrl}`},
-        {text: "2", callback_data: `order/carrier_number?number=2${qtyUrl}`},
-        {text: "3", callback_data: `order/carrier_number?number=3${qtyUrl}`},
-      ]);
-      inlineKeyboardArray.push([
-        {text: "0️", callback_data: `order/carrier_number?number=0${qtyUrl}`},
-        {text: "🔙", callback_data: `order/carrier_number?back=true${qtyUrl}`},
-        {text: "AC", callback_data: "order/carrier_number"},
-      ]);
-      inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `order/payment?carrier_number=${qty}`}]);
-      inlineKeyboardArray.push([{text: "Корзина", callback_data: "cart"}]);
-      await ctx.editMessageMedia({
-        type: "photo",
-        media: "https://picsum.photos/450/150/?random",
-        caption: `Введите номер отделения:\n<b>${qty}</b>`,
-        parse_mode: "html",
-      }, {reply_markup: {
-        inline_keyboard: [...inlineKeyboardArray],
-      }});
-    }
-    // order payment method
-    if (todo === "payment") {
-      const inlineKeyboardArray = [];
-      // save data to cart
-      let carrierId = ctx.state.params.get("carrier_id");
-      if (carrierId) {
-        carrierId = Number(carrierId);
-        await ctx.state.cart.setOrderData({carrierId});
-      }
-      let carrierNumber = ctx.state.params.get("carrier_number");
-      if (carrierNumber) {
-        carrierNumber = Number(carrierNumber);
-        await ctx.state.cart.setOrderData({carrierNumber});
-      }
-      inlineKeyboardArray.push([{text: "Privat", callback_data: "order/wizard?payment_id=1"}]);
-      inlineKeyboardArray.push([{text: "Mono", callback_data: "order/wizard?payment_id=2"}]);
-      inlineKeyboardArray.push([{text: "Корзина", callback_data: "cart"}]);
-      await ctx.editMessageMedia({
-        type: "photo",
-        media: "https://picsum.photos/450/150/?random",
-        caption: "Payment",
-        parse_mode: "html",
-      }, {reply_markup: {
-        inline_keyboard: [...inlineKeyboardArray],
-      }});
-    }
-    // save payment and goto wizard
-    if (todo === "wizard") {
-      let paymentId = ctx.state.params.get("payment_id");
-      if (paymentId) {
-        paymentId = Number(paymentId);
-      }
-      // save data to cart
-      if (paymentId) {
-        await ctx.state.cart.setOrderData({paymentId});
-      }
-      await ctx.deleteMessage();
-      // await ctx.scene.enter("order");
-      // set session
-      await ctx.state.cart.setSessionData({scene: "order", cursor: 0});
-      orderWizard[0](ctx);
-    }
-    await ctx.answerCbQuery();
-  } else {
-    return next();
-  }
-});
 // wizard scene
 const orderWizard = [
+  async (ctx) => {
+    const inlineKeyboardArray = [];
+    inlineKeyboardArray.push([{text: "Нова Пошта", callback_data: "createOrder/carrier_number?carrier_id=1"}]);
+    inlineKeyboardArray.push([{text: "Самовывоз", callback_data: "createOrder/payment?carrier_id=2"}]);
+    inlineKeyboardArray.push([{text: "Корзина", callback_data: "cart"}]);
+    await ctx.editMessageCaption("<b>Способ доставки</b>",
+        {
+          parse_mode: "html",
+          reply_markup: {
+            inline_keyboard: [...inlineKeyboardArray],
+          },
+        });
+  },
+  async (ctx, error) => {
+    const inlineKeyboardArray = [];
+    let qty = ctx.state.params.get("qty");
+    const number = ctx.state.params.get("number");
+    const back = ctx.state.params.get("back");
+    const carrierId = ctx.state.params.get("carrier_id");
+    // save data to cart
+    // if (carrierId) {
+    //   carrierId = Number(carrierId);
+    //   // await ctx.state.cart.setOrderData({carrierId});
+    // }
+    let qtyUrl = "";
+    if (qty) {
+      if (number) {
+        qty += number;
+      }
+      if (back) {
+        qty = qty.slice(0, -1);
+      }
+      // if (clear) {
+      //   qty = 0;
+      // }
+    } else {
+      // add first
+      if (Number(number)) {
+        qty = number;
+      }
+    }
+    if (qty) {
+      qtyUrl = `&qty=${qty}`;
+    } else {
+      qty = 0;
+    }
+    // add carrier ID
+    if (carrierId) {
+      qtyUrl += `&carrier_id=${carrierId}`;
+    }
+    inlineKeyboardArray.push([
+      {text: "7", callback_data: `createOrder/carrier_number?number=7${qtyUrl}`},
+      {text: "8", callback_data: `createOrder/carrier_number?number=8${qtyUrl}`},
+      {text: "9", callback_data: `createOrder/carrier_number?number=9${qtyUrl}`},
+    ]);
+    inlineKeyboardArray.push([
+      {text: "4", callback_data: `createOrder/carrier_number?number=4${qtyUrl}`},
+      {text: "5", callback_data: `createOrder/carrier_number?number=5${qtyUrl}`},
+      {text: "6", callback_data: `createOrder/carrier_number?number=6${qtyUrl}`},
+    ]);
+    inlineKeyboardArray.push([
+      {text: "1", callback_data: `createOrder/carrier_number?number=1${qtyUrl}`},
+      {text: "2", callback_data: `createOrder/carrier_number?number=2${qtyUrl}`},
+      {text: "3", callback_data: `createOrder/carrier_number?number=3${qtyUrl}`},
+    ]);
+    inlineKeyboardArray.push([
+      {text: "0️", callback_data: `createOrder/carrier_number?number=0${qtyUrl}`},
+      {text: "🔙", callback_data: `createOrder/carrier_number?back=true${qtyUrl}`},
+      {text: "AC", callback_data: `createOrder/carrier_number?carrier_id=${carrierId}`},
+    ]);
+    inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `createOrder/payment?carrier_number=${qty}` +
+      `&carrier_id=${carrierId}`}]);
+    inlineKeyboardArray.push([{text: "Корзина", callback_data: "cart"}]);
+    await ctx.editMessageCaption(`Введите номер отделения:\n<b>${qty}</b>` +
+      `\n${error ? "Ошибка: введите номер отделения" : ""}`,
+    {
+      parse_mode: "html",
+      reply_markup: {
+        inline_keyboard: [...inlineKeyboardArray],
+      },
+    });
+  },
   async (ctx) => {
     ctx.reply("Укажите адрес доставки (город)", {
       reply_markup: {
         keyboard: [["Отмена"]],
         resize_keyboard: true,
       }});
-    await ctx.state.cart.setSessionData({cursor: 1});
+    await ctx.state.cart.setSessionData({cursor: 3});
   },
   async (ctx) => {
     // save data to cart
@@ -587,7 +538,7 @@ const orderWizard = [
         keyboard: [[userName], ["Отмена"]],
         resize_keyboard: true,
       }});
-    await ctx.state.cart.setSessionData({cursor: 2});
+    await ctx.state.cart.setSessionData({cursor: 4});
   },
   async (ctx) => {
     // validation example
@@ -609,7 +560,7 @@ const orderWizard = [
         resize_keyboard: true,
       },
     });
-    await ctx.state.cart.setSessionData({cursor: 3});
+    await ctx.state.cart.setSessionData({cursor: 5});
   },
   async (ctx) => {
     const phoneNumber = (ctx.message.contact && ctx.message.contact.phone_number) || ctx.message.text;
@@ -631,6 +582,75 @@ const orderWizard = [
     await ctx.state.cart.setSessionData({scene: null});
   },
 ];
+
+// save order final
+catalogsActions.push( async (ctx, next) => {
+  // ctx.scene.state.name = ctx.message.text;
+  const todo = ctx.state.param;
+  if (ctx.state.routeName === "createOrder") {
+    // first step carrier
+    if (todo === "carrier") {
+      await orderWizard[0](ctx);
+    }
+    // set carrier number
+    if (todo === "carrier_number") {
+      await orderWizard[1](ctx);
+    }
+    // order payment method
+    if (todo === "payment") {
+      const inlineKeyboardArray = [];
+      // save data to cart
+      let carrierId = ctx.state.params.get("carrier_id");
+      if (carrierId) {
+        carrierId = Number(carrierId);
+        await ctx.state.cart.setOrderData({carrierId});
+      }
+      let carrierNumber = ctx.state.params.get("carrier_number");
+      carrierNumber = Number(carrierNumber);
+      if (carrierId === 1 && !carrierNumber) {
+        // return first step
+        await orderWizard[1](ctx, "setCurrierNumber");
+        return;
+      }
+      // save carrierNumber
+      if (carrierNumber) {
+        await ctx.state.cart.setOrderData({carrierNumber});
+      }
+      inlineKeyboardArray.push([{text: "Privat", callback_data: "createOrder/wizard?payment_id=1"}]);
+      inlineKeyboardArray.push([{text: "Mono", callback_data: "createOrder/wizard?payment_id=2"}]);
+      inlineKeyboardArray.push([{text: "Корзина", callback_data: "cart"}]);
+      await ctx.editMessageMedia({
+        type: "photo",
+        media: "https://picsum.photos/450/150/?random",
+        caption: "Способ оплаты",
+        parse_mode: "html",
+      }, {reply_markup: {
+        inline_keyboard: [...inlineKeyboardArray],
+      }});
+    }
+    // save payment and goto wizard
+    if (todo === "wizard") {
+      let paymentId = ctx.state.params.get("payment_id");
+      if (paymentId) {
+        paymentId = Number(paymentId);
+      }
+      // save data to cart
+      if (paymentId) {
+        await ctx.state.cart.setOrderData({paymentId});
+      }
+      await ctx.deleteMessage();
+      // await ctx.scene.enter("order");
+      // set session
+      await ctx.state.cart.setSessionData({scene: "createOrder", cursor: 0});
+      // start wizard
+      orderWizard[2](ctx);
+    }
+    await ctx.answerCbQuery();
+  } else {
+    return next();
+  }
+});
+
 // Tags
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "t") {

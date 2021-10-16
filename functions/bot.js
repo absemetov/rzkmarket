@@ -3,7 +3,7 @@ const firebase = require("firebase-admin");
 const {Telegraf} = require("telegraf");
 // const firestoreSession = require("telegraf-session-firestore");
 firebase.initializeApp();
-const {startActions, startHandler, parseUrl, cart, botConfig} = require("./bot_start_scene");
+const {startActions, startHandler, ordersHandler, parseUrl, cart, botConfig} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
 const {uploadHandler} = require("./bot_upload_scene");
 const {uploadPhotoProduct, catalogsActions, orderWizard} = require("./bot_catalog_scene");
@@ -15,6 +15,12 @@ const bot = new Telegraf(botConfig.token, {
 // const stage = new Stage([upload, catalogScene, orderWizard]);
 // cart session instance
 bot.use(cart);
+bot.use(async (ctx, next) => {
+  if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
+    console.log("callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
+  }
+  return next();
+});
 // use session lazy
 // bot.use(firestoreSession(firebase.firestore().collection("sessions"), {lazy: true}));
 // Actions catalog, mono
@@ -37,6 +43,10 @@ bot.start(async (ctx) => {
 // console.log(menuMiddleware.tree());
 // bot.command("mono", async (ctx) => monoMiddleware.replyToContext(ctx));
 // bot.use(monoMiddleware.middleware());
+bot.command("orders", async (ctx) => {
+  // ctx.scene.enter("monoScene");
+  ordersHandler(ctx);
+});
 // mono scene
 bot.command("mono", async (ctx) => {
   // ctx.scene.enter("monoScene");
@@ -70,7 +80,7 @@ bot.on(["text", "contact"], async (ctx) => {
   if (session.scene === "upload") {
     await uploadHandler(ctx);
   }
-  if (session.scene === "order") {
+  if (session.scene === "createOrder") {
     await orderWizard[session.cursor](ctx);
   }
 });

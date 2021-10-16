@@ -133,6 +133,8 @@ const cart = async (ctx, next) => {
         createdAt: this.serverTimestamp,
         ...user.cart.orderData,
       });
+      // clear cart
+      await this.clear();
     },
   };
   ctx.state.cart = cart;
@@ -142,6 +144,7 @@ const cart = async (ctx, next) => {
 const startKeyboard = [
   {text: "📁 Каталог", callback_data: "c"},
   {text: "🛒 Корзина", callback_data: "cart"},
+  {text: "🛒 Заказы", callback_data: "orders"},
 ];
 // start handler
 const startHandler = async (ctx) => {
@@ -164,13 +167,40 @@ const startHandler = async (ctx) => {
       });
   // set commands
   await ctx.telegram.setMyCommands([
-    {"command": "start", "description": "RZK Market Крым"},
+    {"command": "start", "description": `${botConfig.name}`},
+    {"command": "orders", "description": `${botConfig.name} > Заказы`},
     {"command": "upload", "description": "Upload goods"},
     {"command": "mono", "description": "Monobank exchange rates "},
   ]);
   // ctx.scene.enter("catalog");
 };
 
+// orders Handler
+startActions.push(async (ctx, next) => {
+  if (ctx.state.routeName === "orders") {
+    // inline keyboard
+    const inlineKeyboardArray = [];
+    // orders snap
+    const ordersSnapshot = await firebase.firestore().collection("orders").orderBy("createdAt").get();
+    ordersSnapshot.docs.forEach((doc) => {
+      const order = {id: doc.id, ...doc.data()};
+      inlineKeyboardArray.push([{text: `🗂 ${order.createdAt}`, callback_data: `orders/${order.id}`}]);
+    });
+    inlineKeyboardArray.push(startKeyboard);
+    await ctx.editMessageMedia({
+      type: "photo",
+      media: "https://picsum.photos/450/150/?random",
+      caption: `<b>${botConfig.name} > Orders</b>`,
+      parse_mode: "html",
+    }, {
+      reply_markup: {
+        inline_keyboard: inlineKeyboardArray,
+      },
+    });
+  } else {
+    return next();
+  }
+});
 // start.hears("where", (ctx) => ctx.reply("You are in start scene"));
 
 startActions.push(async (ctx, next) => {
