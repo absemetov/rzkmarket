@@ -1,10 +1,11 @@
 const firebase = require("firebase-admin");
 const axios = require("axios");
 const cc = require("currency-codes");
-const {Scenes: {BaseScene}} = require("telegraf");
+// const {Scenes: {BaseScene}} = require("telegraf");
+const moment = require("moment");
 // const {getMainKeyboard, getMonoKeyboard} = require("./bot_keyboards.js");
 // const {MenuTemplate, createBackMainMenuButtons} = require("telegraf-inline-menu");
-const monoScene = new BaseScene("monoScene");
+// const monoScene = new BaseScene("monoScene");
 const monoActions = [];
 
 const monoHandler = (ctx) => {
@@ -52,7 +53,7 @@ monoActions.push(async (ctx, next) => {
 //   ctx.reply("Menu", getMainKeyboard);
 // });
 
-monoScene.hears("where", (ctx) => ctx.reply("You are in mono scene"));
+// monoScene.hears("where", (ctx) => ctx.reply("You are in mono scene"));
 
 // monoScene.hears("back", (ctx) => ctx.scene.leave());
 
@@ -69,13 +70,11 @@ monoScene.hears("where", (ctx) => ctx.reply("You are in mono scene"));
 
 function monoMarkdown(currency) {
   const currencyCode = cc.number(currency.currencyCodeA).code;
-  const date = new Date(currency.date*1000);
-  const dateFormat = `${date.getDate()}/${(date.getMonth()+1)}/${date.getFullYear()}, `+
-  `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
+  const date = moment.unix(currency.date);
   return `CURRENCY: *${currencyCode}*
 RATE BUY: *${currency.rateBuy}*
 RATE SELL: *${currency.rateSell}*
-DATE:${dateFormat}`;
+UPDATED: ${date.fromNow()}`;
 }
 
 async function updateData(currenciesFirestore) {

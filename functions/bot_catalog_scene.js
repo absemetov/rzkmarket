@@ -83,7 +83,6 @@ catalogsActions.push(async (ctx, next) => {
       // Products query
       let mainQuery = firebase.firestore().collection("products").where("catalog.id", "==", currentCatalog.id)
           .orderBy("orderNumber");
-      let query = "";
       // Filter by tag
       let tagUrl = "";
       if (tag) {
@@ -105,7 +104,7 @@ catalogsActions.push(async (ctx, next) => {
       }
       // Paginate goods
       // copy main query
-      query = mainQuery;
+      let query = mainQuery;
       if (startAfter) {
         const startAfterProduct = await firebase.firestore().collection("products")
             .doc(startAfter).get();
@@ -138,7 +137,6 @@ catalogsActions.push(async (ctx, next) => {
         inlineKeyboardArray.push([addButton]);
       }
       // Set load more button
-      // ====
       if (!productsSnapshot.empty) {
         const prevNext = [];
         // endBefore prev button e paaram
@@ -156,7 +154,7 @@ catalogsActions.push(async (ctx, next) => {
           // startAfter iqual s
           // inlineKeyboardArray.push(Markup.button.callback("➡️ Load more",
           //    `c/${currentCatalog.id}?startAfter=${startAfter.id}&tag=${params.get("tag")}`));
-          prevNext.push({text: "➡️ Загрузить товары",
+          prevNext.push({text: "➡️ Вперед",
             callback_data: `c/${currentCatalog.id}?s=${startAfterSnap.id}${tagUrl}`});
         }
         inlineKeyboardArray.push(prevNext);
