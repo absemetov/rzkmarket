@@ -1,7 +1,7 @@
 const firebase = require("firebase-admin");
 const download = require("./download.js");
 const fs = require("fs");
-const {botConfig} = require("./bot_start_scene");
+const {botConfig, roundNumber} = require("./bot_start_scene");
 const bucket = firebase.storage().bucket();
 
 const footerButtons = [{text: "🏠 Главная", callback_data: "start"}, {text: "🛒 Корзина", callback_data: "cart"}];
@@ -46,11 +46,6 @@ const footerButtons = [{text: "🏠 Главная", callback_data: "start"}, {t
 
 // test actions array
 const catalogsActions = [];
-
-// round to 2 decimals
-function roundNumber(num) {
-  return Math.round((num + Number.EPSILON) * 100) / 100;
-}
 
 // Show Catalogs and goods
 catalogsActions.push(async (ctx, next) => {

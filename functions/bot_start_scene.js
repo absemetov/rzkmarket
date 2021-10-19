@@ -9,6 +9,15 @@ moment.locale("ru");
 // set default project
 const botConfig = functions.config().env.bot;
 const startActions = [];
+// round to 2 decimals
+const roundNumber = (num) => {
+  return Math.round((num + Number.EPSILON) * 100) / 100;
+};
+// admin midleware
+const isAdmin = (ctx, next) => {
+  ctx.state.isAdmin = ctx.from.id === 94899148;
+  return next();
+};
 // Parse callback data, add Cart instance
 const parseUrl = async (ctx, next) => {
   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
@@ -211,9 +220,40 @@ startActions.push(async (ctx, next) => {
     // inline keyboard
     const inlineKeyboardArray = [];
     const orderId = ctx.state.param;
-    let caption = `<b>${botConfig.name} > Заказ</b>`;
+    let caption = `<b>${botConfig.name} > Заказы</b>`;
     if (orderId) {
-      caption = `<b>${botConfig.name} > Заказы</b>`;
+      const orderSnap = await firebase.firestore().collection("orders").doc(orderId).get();
+      if (orderSnap.exists) {
+        const order = {"id": orderSnap.id, ...orderSnap.data()};
+        console.log(orderSnap.data().products);
+        caption = `<b>${botConfig.name} > Заказ ${order.orderId}\n` +
+          `${order.userName}\n` +
+          `${order.address}</b>`;
+        // order.products.forEach((product) => {
+        //   inlineKeyboardArray.push([{text: `${product.name}, ${product.id}`,
+        //     callback_data: `p/${product.id}`}]);
+        // });
+        let totalQty = 0;
+        let totalSum = 0;
+        for (const [index, product] of Object.entries(order.products)) {
+          const productTxt = `${index + 1}) ${product.name} (${product.id})` +
+          ` = ${product.price} ${botConfig.currency} * ${product.qty} ${product.unit}` +
+          ` = ${roundNumber(product.price * product.qty)} ${botConfig.currency}`;
+          caption += "------------------------------------------------------\n";
+          caption += `${productTxt}\n`;
+          inlineKeyboardArray.push([
+            {text: `${productTxt}`, callback_data: `addToCart/${product.id}?qty=${product.qty}&r=1&a=1`},
+          ]);
+          totalQty += product.qty;
+          totalSum += product.qty * product.price;
+        }
+        caption += "------------------------------------------------------\n";
+        if (totalQty) {
+          caption += `<b>Количество товара: ${totalQty}\n` +
+          `Сумма: ${roundNumber(totalSum)} ${botConfig.currency}</b>`;
+        }
+      }
+      inlineKeyboardArray.push([{text: "🧾 Заказы", callback_data: "orders"}]);
     } else {
       // show orders
       const limit = 1;
@@ -267,8 +307,8 @@ startActions.push(async (ctx, next) => {
         }
         inlineKeyboardArray.push(prevNext);
       }
+      inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: "start"}]);
     }
-    inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: "start"}]);
     await ctx.editMessageMedia({
       type: "photo",
       media: "https://picsum.photos/450/150/?random",
@@ -279,6 +319,7 @@ startActions.push(async (ctx, next) => {
         inline_keyboard: inlineKeyboardArray,
       },
     });
+    await ctx.answerCbQuery();
   } else {
     return next();
   }
@@ -289,6 +330,8 @@ startActions.push(async (ctx, next) => {
 // exports.start = start;
 exports.startActions = startActions;
 exports.startHandler = startHandler;
+exports.isAdmin = isAdmin;
 exports.parseUrl = parseUrl;
 exports.botConfig = botConfig;
 exports.cart = cart;
+exports.roundNumber = roundNumber;

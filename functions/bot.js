@@ -3,7 +3,7 @@ const firebase = require("firebase-admin");
 const {Telegraf} = require("telegraf");
 // const firestoreSession = require("telegraf-session-firestore");
 firebase.initializeApp();
-const {startActions, startHandler, ordersHandler, parseUrl, cart, botConfig} = require("./bot_start_scene");
+const {startActions, startHandler, ordersHandler, parseUrl, cart, botConfig, isAdmin} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
 const {uploadHandler} = require("./bot_upload_scene");
 const {uploadPhotoProduct, catalogsActions, orderWizard} = require("./bot_catalog_scene");
@@ -14,11 +14,12 @@ const bot = new Telegraf(botConfig.token, {
 });
 // const stage = new Stage([upload, catalogScene, orderWizard]);
 // cart session instance
-bot.use(cart);
+bot.use(cart, isAdmin);
 bot.use(async (ctx, next) => {
   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
     console.log("callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
   }
+  console.log(ctx.state.isAdmin);
   return next();
 });
 // use session lazy
