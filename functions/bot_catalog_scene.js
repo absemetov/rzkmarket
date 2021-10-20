@@ -189,17 +189,12 @@ catalogsActions.push(async (ctx, next) => {
   }
 });
 // show product
-catalogsActions.push( async (ctx, next) => {
+const showProduct = async (ctx, next) => {
   if (ctx.state.routeName === "p") {
     // get product data
     const productId = ctx.state.param;
     const productSnapshot = await firebase.firestore().collection("products").doc(productId).get();
     const product = {id: productSnapshot.id, ...productSnapshot.data()};
-    // Add product to cart
-    const qty = ctx.state.params.get("qty");
-    if (qty) {
-      await ctx.state.cart.add(product, qty);
-    }
     // cart button
     const cartProductsArray = await ctx.state.cart.products();
     footerButtons[1].text = "🛒 Корзина";
@@ -257,7 +252,8 @@ catalogsActions.push( async (ctx, next) => {
   } else {
     return next();
   }
-});
+};
+catalogsActions.push(showProduct);
 
 // Add product to Cart by keyboard
 catalogsActions.push( async (ctx, next) => {
@@ -268,6 +264,7 @@ catalogsActions.push( async (ctx, next) => {
     const redirect = ctx.state.params.get("r");
     const added = ctx.state.params.get("a");
     const productId = ctx.state.param;
+    const addValue = ctx.state.params.get("add_value");
     let qtyUrl = "";
     let paramsUrl = "";
     if (qty) {
@@ -299,7 +296,18 @@ catalogsActions.push( async (ctx, next) => {
     const productSnapshot = await productRef.get();
     if (productSnapshot.exists) {
       const product = {id: productSnapshot.id, ...productSnapshot.data()};
-      // ctx.reply(`Main photo updated, productId ${productId} ${fileId}`);
+      // Add product to cart
+      if (addValue) {
+        await ctx.state.cart.add(added ? product.id : product, addValue);
+        if (redirect) {
+          ctx.state.routeName = "cart";
+          await showCart(ctx, next);
+        } else {
+          ctx.state.routeName = "p";
+          await showProduct(ctx, next);
+        }
+        return;
+      }
       const addButtonArray = [];
       const addButton = {text: "🛒 Добавить",
         callback_data: `p/${product.id}?qty=${qty}`};
@@ -312,7 +320,8 @@ catalogsActions.push( async (ctx, next) => {
         addButton.callback_data = `cart/${product.id}?qty=${qty}`;
         delButton.callback_data = `cart/${product.id}?qty=0`;
       }
-      addButtonArray.push(addButton);
+      // addButtonArray.push(addButton);
+      addButtonArray.push( {text: "🛒 Добавить", callback_data: `addToCart/${product.id}?add_value=${qty}${paramsUrl}`});
       await ctx.editMessageCaption(`${product.name} (${product.id})` +
       `\nЦена ${product.price} ${botConfig.currency}` +
       `\nСумма ${roundNumber(qty * product.price)} ${botConfig.currency}` +
@@ -356,7 +365,7 @@ catalogsActions.push( async (ctx, next) => {
 });
 
 // show cart
-catalogsActions.push( async (ctx, next) => {
+const showCart = async (ctx, next) => {
   if (ctx.state.routeName === "cart") {
     // clear path
     await ctx.state.cart.setSessionData({path: null});
@@ -364,12 +373,6 @@ catalogsActions.push( async (ctx, next) => {
     const clear = ctx.state.params.get("clear");
     if (clear) {
       await ctx.state.cart.clear();
-    }
-    // change qty product
-    const productId = ctx.state.param;
-    const qty = ctx.state.params.get("qty");
-    if (productId && qty) {
-      await ctx.state.cart.add(productId, qty);
     }
     const inlineKeyboardArray = [];
     let msgTxt = `<b> ${botConfig.name} > Корзина</b>\n`;
@@ -422,7 +425,8 @@ catalogsActions.push( async (ctx, next) => {
   } else {
     return next();
   }
-});
+};
+catalogsActions.push(showCart);
 
 // wizard scene
 const orderWizard = [

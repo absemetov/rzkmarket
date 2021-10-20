@@ -97,7 +97,7 @@ const cart = async (ctx, next) => {
           }
         }
       }
-      // sort products by orderNumber
+      // sort products by createdAt
       products.sort(function(a, b) {
         return a.createdAt - b.createdAt;
       });
@@ -225,25 +225,29 @@ startActions.push(async (ctx, next) => {
       const orderSnap = await firebase.firestore().collection("orders").doc(orderId).get();
       if (orderSnap.exists) {
         const order = {"id": orderSnap.id, ...orderSnap.data()};
-        console.log(orderSnap.data().products);
         caption = `<b>${botConfig.name} > Заказ ${order.orderId}\n` +
           `${order.userName}\n` +
-          `${order.address}</b>`;
+          `${order.address}</b>\n`;
         // order.products.forEach((product) => {
         //   inlineKeyboardArray.push([{text: `${product.name}, ${product.id}`,
         //     callback_data: `p/${product.id}`}]);
         // });
         let totalQty = 0;
         let totalSum = 0;
-        for (const [index, product] of Object.entries(order.products)) {
+        const products = [];
+        for (const [id, product] of Object.entries(order.products)) {
+          products.push({id, ...product});
+        }
+        // sort products by createdAt
+        products.sort(function(a, b) {
+          return a.createdAt - b.createdAt;
+        });
+        for (const [index, product] of products.entries()) {
           const productTxt = `${index + 1}) ${product.name} (${product.id})` +
           ` = ${product.price} ${botConfig.currency} * ${product.qty} ${product.unit}` +
           ` = ${roundNumber(product.price * product.qty)} ${botConfig.currency}`;
           caption += "------------------------------------------------------\n";
           caption += `${productTxt}\n`;
-          inlineKeyboardArray.push([
-            {text: `${productTxt}`, callback_data: `addToCart/${product.id}?qty=${product.qty}&r=1&a=1`},
-          ]);
           totalQty += product.qty;
           totalSum += product.qty * product.price;
         }
