@@ -29,12 +29,13 @@ monoActions.push(async (ctx, next) => {
   if (ctx.state.routeName === "mono") {
     const currencyName = ctx.state.param;
     const currencyObj = await getCurrency();
+    const dateTimestamp = Math.floor(Date.now() / 1000);
     await ctx.editMessageText(monoMarkdown(currencyObj[currencyName]), {
       parse_mode: "Markdown",
       reply_markup: {
         inline_keyboard: [
           [
-            {text: "🇱🇷 USD", callback_data: "mono/USD"},
+            {text: "🇱🇷 USD", callback_data: `mono/USD?${dateTimestamp}`},
             {text: "🇪🇺 EUR", callback_data: "mono/EUR"},
             {text: "🇷🇺 RUB", callback_data: "mono/RUB"},
           ],

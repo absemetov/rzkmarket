@@ -250,6 +250,9 @@ startActions.push(async (ctx, next) => {
           caption += `${productTxt}\n`;
           totalQty += product.qty;
           totalSum += product.qty * product.price;
+          inlineKeyboardArray.push([
+            {text: `${productTxt}`, callback_data: `p/${product.id}?r=o`},
+          ]);
         }
         caption += "------------------------------------------------------\n";
         if (totalQty) {
