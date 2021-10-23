@@ -19,7 +19,7 @@ const isAdmin = (ctx, next) => {
   return next();
 };
 // Parse callback data, add Cart instance
-const parseUrl = async (ctx, next) => {
+const parseUrl = (ctx, next) => {
   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
     ctx.state.routeName = ctx.match[1];
     ctx.state.param = ctx.match[2];

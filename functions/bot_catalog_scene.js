@@ -48,7 +48,8 @@ const footerButtons = [{text: "🏠 Главная", callback_data: "start"}, {t
 const catalogsActions = [];
 
 // Show Catalogs and goods
-catalogsActions.push(async (ctx, next) => {
+
+const showCatalog = async (ctx, next) => {
   if (ctx.state.routeName === "c") {
     const cartProductsArray = await ctx.state.cart.products();
     footerButtons[1].text = "🛒 Корзина";
@@ -59,10 +60,13 @@ catalogsActions.push(async (ctx, next) => {
     const tag = ctx.state.params.get("t");
     const startAfter = ctx.state.params.get("s");
     const endBefore = ctx.state.params.get("e");
+    const cb = ctx.state.params.get("cb");
     const inlineKeyboardArray =[];
     let currentCatalog = {};
-    // save path to session if have params
-    await ctx.state.cart.setSessionData({path: ctx.callbackQuery.data});
+    // save path to session
+    if (!cb) {
+      await ctx.state.cart.setSessionData({path: ctx.callbackQuery.data});
+    }
     // Get catalogs snap index or siblings
     const catalogsSnapshot = await firebase.firestore().collection("catalogs")
         .where("parentId", "==", catalogId ? catalogId : null).orderBy("orderNumber").get();
@@ -121,13 +125,14 @@ catalogsActions.push(async (ctx, next) => {
         //    `p/${product.id}/${ctx.callbackQuery.data}`));
         // Get cart
         const addButton = {text: `📦 ${product.data().name} (${product.id}) = ${product.data().price}`+
-          ` ${botConfig.currency}`, callback_data: `p/${product.id}`};
+          ` ${botConfig.currency}`, callback_data: `addToCart/${product.id}`};
         // get cart products
         const cartProduct = cartProductsArray.find((x) => x.id === product.id);
         if (cartProduct) {
           addButton.text = `🛒 ${product.data().name} (${product.id}) = ${cartProduct.price} ${botConfig.currency} * ` +
           `${cartProduct.qty} ${cartProduct.unit}` +
           ` = ${roundNumber(cartProduct.qty * cartProduct.price)} ${botConfig.currency}`;
+          addButton.callback_data = `addToCart/${product.id}?qty=${cartProduct.qty}&a=1`;
         }
         inlineKeyboardArray.push([addButton]);
       }
@@ -187,7 +192,8 @@ catalogsActions.push(async (ctx, next) => {
   } else {
     return next();
   }
-});
+};
+catalogsActions.push(showCatalog);
 // show product
 const showProduct = async (ctx, next) => {
   if (ctx.state.routeName === "p") {
@@ -255,9 +261,10 @@ const showProduct = async (ctx, next) => {
 };
 catalogsActions.push(showProduct);
 
-// Add product to Cart by keyboard
+// add product to cart by keyboard
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "addToCart") {
+    const session = await ctx.state.cart.getSessionData();
     let qty = ctx.state.params.get("qty");
     const number = ctx.state.params.get("number");
     const back = ctx.state.params.get("back");
@@ -296,67 +303,98 @@ catalogsActions.push( async (ctx, next) => {
     const productSnapshot = await productRef.get();
     if (productSnapshot.exists) {
       const product = {id: productSnapshot.id, ...productSnapshot.data()};
+      let catalogUrl = `c/${product.catalog.id}`;
+      if (session.path) {
+        catalogUrl = session.path;
+      }
       // Add product to cart
       if (addValue) {
         await ctx.state.cart.add(added ? product.id : product, addValue);
-        if (redirect) {
+        if (session.path) {
+          // eslint-disable-next-line no-useless-escape
+          const regPath = session.path.match(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/);
+          ctx.state.routeName = regPath[1];
+          ctx.state.param = regPath[2];
+          const args = regPath[3];
+          // parse url params
+          const params = new Map();
+          if (args) {
+            for (const paramsData of args.split("&")) {
+              params.set(paramsData.split("=")[0], paramsData.split("=")[1]);
+            }
+          }
+          // add redirect flag
+          params.set("cb", 1);
+          ctx.state.params = params;
+          await showCatalog(ctx, next);
+        } else {
+          // ctx.state.routeName = "p";
+          // await showProduct(ctx, next);
           ctx.state.routeName = "cart";
           await showCart(ctx, next);
-        } else {
-          ctx.state.routeName = "p";
-          await showProduct(ctx, next);
         }
         return;
       }
       const addButtonArray = [];
       const addButton = {text: "🛒 Добавить",
-        callback_data: `p/${product.id}?qty=${qty}`};
+        callback_data: `addToCart/${product.id}?add_value=${qty}${paramsUrl}`};
       const delButton = {text: "❎ Удалить",
-        callback_data: `p/${product.id}?qty=0`};
+        callback_data: `addToCart/${product.id}?add_value=0${paramsUrl}`};
       if (added) {
         addButtonArray.push(delButton);
       }
-      if (redirect) {
-        addButton.callback_data = `cart/${product.id}?qty=${qty}`;
-        delButton.callback_data = `cart/${product.id}?qty=0`;
+      // if (redirect) {
+      //   addButton.callback_data = `cart/${product.id}?qty=${qty}`;
+      //   delButton.callback_data = `cart/${product.id}?qty=0`;
+      // }
+      addButtonArray.push(addButton);
+      // Get main photo url.
+      let publicImgUrl = "";
+      if (product.mainPhoto) {
+        const photoExists = await bucket.file(`photos/products/${product.id}/2/${product.mainPhoto}.jpg`).exists();
+        if (photoExists[0]) {
+          publicImgUrl = bucket.file(`photos/products/${product.id}/2/${product.mainPhoto}.jpg`).publicUrl();
+        }
+      } else {
+        publicImgUrl = "https://s3.eu-central-1.amazonaws.com/rzk.com.ua/250.56ad1e10bf4a01b1ff3af88752fd3412.jpg";
       }
-      // addButtonArray.push(addButton);
-      addButtonArray.push( {text: "🛒 Добавить", callback_data: `addToCart/${product.id}?add_value=${qty}${paramsUrl}`});
-      await ctx.editMessageCaption(`${product.name} (${product.id})` +
-      `\nЦена ${product.price} ${botConfig.currency}` +
-      `\nСумма ${roundNumber(qty * product.price)} ${botConfig.currency}` +
-      `\n<b>Количетво: ${qty} ${product.unit}</b>`,
-      {
+      await ctx.editMessageMedia({
+        type: "photo",
+        media: publicImgUrl,
+        caption: `${product.name} (${product.id})` +
+        `\nЦена ${product.price} ${botConfig.currency}` +
+        `\nСумма ${roundNumber(qty * product.price)} ${botConfig.currency}` +
+        `\n<b>Количетво: ${qty} ${product.unit}</b>`,
         parse_mode: "html",
-        reply_markup: {
-          inline_keyboard: [
-            [
-              {text: "7", callback_data: `addToCart/${product.id}?number=7${qtyUrl}${paramsUrl}`},
-              {text: "8", callback_data: `addToCart/${product.id}?number=8${qtyUrl}${paramsUrl}`},
-              {text: "9", callback_data: `addToCart/${product.id}?number=9${qtyUrl}${paramsUrl}`},
-            ],
-            [
-              {text: "4", callback_data: `addToCart/${product.id}?number=4${qtyUrl}${paramsUrl}`},
-              {text: "5", callback_data: `addToCart/${product.id}?number=5${qtyUrl}${paramsUrl}`},
-              {text: "6", callback_data: `addToCart/${product.id}?number=6${qtyUrl}${paramsUrl}`},
-            ],
-            [
-              {text: "1", callback_data: `addToCart/${product.id}?number=1${qtyUrl}${paramsUrl}`},
-              {text: "2", callback_data: `addToCart/${product.id}?number=2${qtyUrl}${paramsUrl}`},
-              {text: "3", callback_data: `addToCart/${product.id}?number=3${qtyUrl}${paramsUrl}`},
-            ],
-            [
-              {text: "0️", callback_data: `addToCart/${product.id}?number=0${qtyUrl}${paramsUrl}`},
-              {text: "🔙", callback_data: `addToCart/${product.id}?back=true${qtyUrl}${paramsUrl}`},
-              {text: "AC", callback_data: `addToCart/${product.id}?clear=1${paramsUrl}`},
-            ],
-            addButtonArray,
-            [
-              {text: `⤴️ ${product.name} (${product.id})`, callback_data: `p/${product.id}`},
-            ],
+      }, {reply_markup: {
+        inline_keyboard: [
+          [{text: `⤴️ ../${product.catalog.name}`, callback_data: catalogUrl}],
+          [
+            {text: "7", callback_data: `addToCart/${product.id}?number=7${qtyUrl}${paramsUrl}`},
+            {text: "8", callback_data: `addToCart/${product.id}?number=8${qtyUrl}${paramsUrl}`},
+            {text: "9", callback_data: `addToCart/${product.id}?number=9${qtyUrl}${paramsUrl}`},
           ],
-        },
-      });
+          [
+            {text: "4", callback_data: `addToCart/${product.id}?number=4${qtyUrl}${paramsUrl}`},
+            {text: "5", callback_data: `addToCart/${product.id}?number=5${qtyUrl}${paramsUrl}`},
+            {text: "6", callback_data: `addToCart/${product.id}?number=6${qtyUrl}${paramsUrl}`},
+          ],
+          [
+            {text: "1", callback_data: `addToCart/${product.id}?number=1${qtyUrl}${paramsUrl}`},
+            {text: "2", callback_data: `addToCart/${product.id}?number=2${qtyUrl}${paramsUrl}`},
+            {text: "3", callback_data: `addToCart/${product.id}?number=3${qtyUrl}${paramsUrl}`},
+          ],
+          [
+            {text: "0️", callback_data: `addToCart/${product.id}?number=0${qtyUrl}${paramsUrl}`},
+            {text: "🔙", callback_data: `addToCart/${product.id}?back=true${qtyUrl}${paramsUrl}`},
+            {text: "AC", callback_data: `addToCart/${product.id}?clear=1${paramsUrl}`},
+          ],
+          addButtonArray,
+          [
+            {text: `⤴️ ${product.name} (${product.id})`, callback_data: `p/${product.id}`},
+          ],
+        ],
+      }});
     }
     await ctx.answerCbQuery();
   } else {
@@ -382,9 +420,7 @@ const showCart = async (ctx, next) => {
     const products = await ctx.state.cart.products();
     for (const [index, product] of products.entries()) {
       const productTxt = `${index + 1}) ${product.name} (${product.id})` +
-      ` = ${product.price} ${botConfig.currency} * ${product.qty} ${product.unit}` +
-      ` = ${roundNumber(product.price * product.qty)} ${botConfig.currency}`;
-      msgTxt += "------------------------------------------------------\n";
+      ` = ${product.qty} ${product.unit}\n`;
       msgTxt += `${productTxt}\n`;
       inlineKeyboardArray.push([
         {text: `${productTxt}`, callback_data: `addToCart/${product.id}?qty=${product.qty}&r=1&a=1`},
@@ -392,7 +428,6 @@ const showCart = async (ctx, next) => {
       totalQty += product.qty;
       totalSum += product.qty * product.price;
     }
-    msgTxt += "------------------------------------------------------\n";
     if (totalQty) {
       msgTxt += `<b>Количество товара: ${totalQty}\n` +
       `Сумма: ${roundNumber(totalSum)} ${botConfig.currency}</b>`;
