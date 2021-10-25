@@ -243,18 +243,13 @@ startActions.push(async (ctx, next) => {
           return a.createdAt - b.createdAt;
         });
         for (const [index, product] of products.entries()) {
-          const productTxt = `${index + 1}) ${product.name} (${product.id})` +
-          ` = ${product.price} ${botConfig.currency} * ${product.qty} ${product.unit}` +
-          ` = ${roundNumber(product.price * product.qty)} ${botConfig.currency}`;
-          caption += "------------------------------------------------------\n";
+          const productTxt = `${index + 1})${product.name} (${product.id})` +
+          `=${product.price} ${botConfig.currency}*${product.qty}${product.unit}` +
+          `=${roundNumber(product.price * product.qty)}${botConfig.currency}`;
           caption += `${productTxt}\n`;
           totalQty += product.qty;
           totalSum += product.qty * product.price;
-          inlineKeyboardArray.push([
-            {text: `${productTxt}`, callback_data: `p/${product.id}?r=o`},
-          ]);
         }
-        caption += "------------------------------------------------------\n";
         if (totalQty) {
           caption += `<b>Количество товара: ${totalQty}\n` +
           `Сумма: ${roundNumber(totalSum)} ${botConfig.currency}</b>`;
@@ -315,6 +310,10 @@ startActions.push(async (ctx, next) => {
         inlineKeyboardArray.push(prevNext);
       }
       inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: "start"}]);
+    }
+    // truncate long string
+    if (caption.length > 1024) {
+      caption = caption.substring(0, 1024);
     }
     await ctx.editMessageMedia({
       type: "photo",

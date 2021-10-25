@@ -285,6 +285,10 @@ catalogsActions.push( async (ctx, next) => {
       // add first
       if (Number(number)) {
         qty = number;
+      } else {
+        // generate response
+        const dateTimestamp = Math.floor(Date.now() / 1000);
+        paramsUrl += `&t=${dateTimestamp}`;
       }
     }
     if (qty) {
@@ -420,8 +424,10 @@ const showCart = async (ctx, next) => {
     const products = await ctx.state.cart.products();
     for (const [index, product] of products.entries()) {
       const productTxt = `${index + 1}) ${product.name} (${product.id})` +
-      ` = ${product.qty} ${product.unit}\n`;
-      msgTxt += `${productTxt}\n`;
+      ` = ${product.qty} ${product.unit}`;
+      msgTxt += `${productTxt}__________________________________________________\n`;
+      msgTxt += `${productTxt}__________________________________________________\n`;
+      msgTxt += `${productTxt}__________________________________________________\n`;
       inlineKeyboardArray.push([
         {text: `${productTxt}`, callback_data: `addToCart/${product.id}?qty=${product.qty}&r=1&a=1`},
       ]);
@@ -448,6 +454,10 @@ const showCart = async (ctx, next) => {
     inlineKeyboardArray.push([{text: "🏠 Главная",
       callback_data: "start"}]);
     // render data
+    // truncate long string
+    if (msgTxt.length > 1024) {
+      msgTxt = msgTxt.substring(0, 1024);
+    }
     await ctx.editMessageMedia({
       type: "photo",
       media: "https://picsum.photos/450/150/?random",
