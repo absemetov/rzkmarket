@@ -177,7 +177,6 @@ const startHandler = async (ctx) => {
         caption: `<b>${botConfig.name}</b>`,
         parse_mode: "html",
         reply_markup: {
-          remove_keyboard: true,
           inline_keyboard: [startKeyboard, ordersKeyboard],
         },
       });

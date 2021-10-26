@@ -129,9 +129,9 @@ const showCatalog = async (ctx, next) => {
         // get cart products
         const cartProduct = cartProductsArray.find((x) => x.id === product.id);
         if (cartProduct) {
-          addButton.text = `🛒 ${product.data().name} (${product.id}) = ${cartProduct.price} ${botConfig.currency} * ` +
-          `${cartProduct.qty} ${cartProduct.unit}` +
-          ` = ${roundNumber(cartProduct.qty * cartProduct.price)} ${botConfig.currency}`;
+          addButton.text = `🛒 ${product.data().name} (${product.id})` +
+          `=${cartProduct.price} ${botConfig.currency}*${cartProduct.qty}${cartProduct.unit}` +
+          `=${roundNumber(cartProduct.qty * cartProduct.price)}${botConfig.currency}`;
           addButton.callback_data = `addToCart/${product.id}?qty=${cartProduct.qty}&a=1`;
         }
         inlineKeyboardArray.push([addButton]);
@@ -413,6 +413,8 @@ const showCart = async (ctx, next) => {
     await ctx.state.cart.setSessionData({path: null});
     // clear cart
     const clear = ctx.state.params.get("clear");
+    // show message not edit
+    const reply = ctx.state.params.get("reply");
     if (clear) {
       await ctx.state.cart.clear();
     }
@@ -424,10 +426,9 @@ const showCart = async (ctx, next) => {
     const products = await ctx.state.cart.products();
     for (const [index, product] of products.entries()) {
       const productTxt = `${index + 1}) ${product.name} (${product.id})` +
-      ` = ${product.qty} ${product.unit}`;
-      msgTxt += `${productTxt}__________________________________________________\n`;
-      msgTxt += `${productTxt}__________________________________________________\n`;
-      msgTxt += `${productTxt}__________________________________________________\n`;
+      `=${product.price} ${botConfig.currency}*${product.qty}${product.unit}` +
+      `=${roundNumber(product.price * product.qty)}${botConfig.currency}`;
+      msgTxt += `${productTxt}\n`;
       inlineKeyboardArray.push([
         {text: `${productTxt}`, callback_data: `addToCart/${product.id}?qty=${product.qty}&r=1&a=1`},
       ]);
@@ -458,15 +459,26 @@ const showCart = async (ctx, next) => {
     if (msgTxt.length > 1024) {
       msgTxt = msgTxt.substring(0, 1024);
     }
-    await ctx.editMessageMedia({
-      type: "photo",
-      media: "https://picsum.photos/450/150/?random",
-      caption: msgTxt,
-      parse_mode: "html",
-    }, {reply_markup: {
-      inline_keyboard: [...inlineKeyboardArray],
-    }});
-    await ctx.answerCbQuery();
+    if (reply) {
+      await ctx.replyWithPhoto("https://picsum.photos/450/150/?random",
+          {
+            caption: msgTxt,
+            parse_mode: "html",
+            reply_markup: {
+              inline_keyboard: [...inlineKeyboardArray],
+            },
+          });
+    } else {
+      await ctx.editMessageMedia({
+        type: "photo",
+        media: "https://picsum.photos/450/150/?random",
+        caption: msgTxt,
+        parse_mode: "html",
+      }, {reply_markup: {
+        inline_keyboard: [...inlineKeyboardArray],
+      }});
+      await ctx.answerCbQuery();
+    }
   } else {
     return next();
   }
@@ -479,7 +491,7 @@ const orderWizard = [
     const inlineKeyboardArray = [];
     inlineKeyboardArray.push([{text: "Нова Пошта", callback_data: "createOrder/carrier_number?carrier_id=1"}]);
     inlineKeyboardArray.push([{text: "Самовывоз", callback_data: "createOrder/payment?carrier_id=2"}]);
-    inlineKeyboardArray.push([{text: "Корзина", callback_data: "cart"}]);
+    inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: "cart"}]);
     await ctx.editMessageCaption("<b>Способ доставки</b>",
         {
           parse_mode: "html",
@@ -547,7 +559,7 @@ const orderWizard = [
     ]);
     inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `createOrder/payment?carrier_number=${qty}` +
       `&carrier_id=${carrierId}`}]);
-    inlineKeyboardArray.push([{text: "Корзина", callback_data: "cart"}]);
+    inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: "cart"}]);
     await ctx.editMessageCaption(`Введите номер отделения:\n<b>${qty}</b>` +
       `\n${error ? "Ошибка: введите номер отделения" : ""}`,
     {
@@ -614,12 +626,35 @@ const orderWizard = [
     }
     // save data to cart
     await ctx.state.cart.setOrderData({phoneNumber: "+7" + checkPhone[2]});
-    // save order
-    await ctx.state.cart.saveOrder();
-    ctx.reply("Спасибо за заказ! /start", {
+    ctx.reply("Проверьте даные", {
       reply_markup: {
-        remove_keyboard: true,
+        keyboard: [
+          ["Оформить заказ"],
+          ["Изменить данные"],
+          ["Отмена"],
+        ],
+        resize_keyboard: true,
       }});
+    // leave wizard
+    await ctx.state.cart.setSessionData({cursor: 6});
+  },
+  async (ctx, next) => {
+    if (ctx.message.text === "Оформить заказ") {
+      // save order
+      await ctx.state.cart.saveOrder();
+      ctx.reply("Спасибо за заказ! /start", {
+        reply_markup: {
+          remove_keyboard: true,
+        }});
+    }
+    if (ctx.message.text === "Изменить данные") {
+      ctx.state.routeName = "cart";
+      const params = new Map();
+      params.set("reply", 1);
+      ctx.state.params = params;
+      await showCart(ctx, next);
+    }
+
     // leave wizard
     await ctx.state.cart.setSessionData({scene: null});
   },
@@ -660,7 +695,7 @@ catalogsActions.push( async (ctx, next) => {
       }
       inlineKeyboardArray.push([{text: "Privat", callback_data: "createOrder/wizard?payment_id=1"}]);
       inlineKeyboardArray.push([{text: "Mono", callback_data: "createOrder/wizard?payment_id=2"}]);
-      inlineKeyboardArray.push([{text: "Корзина", callback_data: "cart"}]);
+      inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: "cart"}]);
       await ctx.editMessageMedia({
         type: "photo",
         media: "https://picsum.photos/450/150/?random",
