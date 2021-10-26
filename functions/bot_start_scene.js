@@ -217,7 +217,15 @@ startActions.push(async (ctx, next) => {
 startActions.push(async (ctx, next) => {
   // show order
   if (ctx.state.routeName === "orders") {
-    // inline keyboard
+    const startAfter = ctx.state.params.get("s");
+    const endBefore = ctx.state.params.get("e");
+    let path = "";
+    if (startAfter) {
+      path = `s=${startAfter}`;
+    }
+    if (endBefore) {
+      path = `e=${endBefore}`;
+    }
     const inlineKeyboardArray = [];
     const orderId = ctx.state.param;
     let caption = `<b>${botConfig.name} > Заказы</b>`;
@@ -225,9 +233,12 @@ startActions.push(async (ctx, next) => {
       const orderSnap = await firebase.firestore().collection("orders").doc(orderId).get();
       if (orderSnap.exists) {
         const order = {"id": orderSnap.id, ...orderSnap.data()};
-        caption = `<b>${botConfig.name} > Заказ ${order.orderId}\n` +
-          `${order.userName}\n` +
-          `${order.address}</b>\n`;
+        const date = moment.unix(order.createdAt);
+        caption = `<b>${botConfig.name} > Заказ #${order.orderId} (${date.fromNow()})\n` +
+          `${order.userName} ${order.phoneNumber}\n` +
+          `${order.address}\n` +
+          `${date.carrierId === 1 ? "Нова Пошта" : "Міст єкспрес"}\n` +
+          `${date.carrierNumber ? date.carrierNumber : ""}</b>`;
         // order.products.forEach((product) => {
         //   inlineKeyboardArray.push([{text: `${product.name}, ${product.id}`,
         //     callback_data: `p/${product.id}`}]);
@@ -255,12 +266,10 @@ startActions.push(async (ctx, next) => {
           `Сумма: ${roundNumber(totalSum)} ${botConfig.currency}</b>`;
         }
       }
-      inlineKeyboardArray.push([{text: "🧾 Заказы", callback_data: "orders"}]);
+      inlineKeyboardArray.push([{text: "🧾 Заказы", callback_data: `orders?${path}`}]);
     } else {
       // show orders
       const limit = 1;
-      const startAfter = ctx.state.params.get("s");
-      const endBefore = ctx.state.params.get("e");
       const mainQuery = firebase.firestore().collection("orders").orderBy("createdAt", "desc");
       let query = mainQuery;
       if (startAfter) {
@@ -284,7 +293,7 @@ startActions.push(async (ctx, next) => {
         const order = {id: doc.id, ...doc.data()};
         const date = moment.unix(order.createdAt);
         inlineKeyboardArray.push([{text: `🧾 Заказ #${order.orderId}, ${date.fromNow()}`,
-          callback_data: `orders/${order.id}`}]);
+          callback_data: `orders/${order.id}?${path}`}]);
       });
       // Set load more button
       if (!ordersSnapshot.empty) {
