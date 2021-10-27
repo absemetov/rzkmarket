@@ -117,7 +117,14 @@ const cart = async (ctx, next) => {
         },
       }, {merge: true});
     },
-    async getSessionData(value) {
+    async getOrderData() {
+      const user = await this.getUserData();
+      if (user && user.cart.orderData) {
+        return user.cart.orderData;
+      }
+      return {};
+    },
+    async getSessionData() {
       const user = await this.getUserData();
       if (user && user.session) {
         return user.session;
@@ -234,10 +241,10 @@ startActions.push(async (ctx, next) => {
         const order = {"id": orderSnap.id, ...orderSnap.data()};
         const date = moment.unix(order.createdAt);
         caption = `<b>${botConfig.name} > Заказ #${order.orderId} (${date.fromNow()})\n` +
-          `${order.userName} ${order.phoneNumber}\n` +
-          `${order.address}\n` +
-          `${date.carrierId === 1 ? "Нова Пошта" : "Міст єкспрес"}\n` +
-          `${date.carrierNumber ? date.carrierNumber : ""}</b>`;
+          `${order.recipientName} ${order.phoneNumber}\n` +
+          `${order.address}, ` +
+          `${order.carrierId === 1 ? "Нова Пошта" : "Міст єкспрес"} ` +
+          `${order.carrierNumber ? "#" + order.carrierNumber : ""}\n</b>`;
         // order.products.forEach((product) => {
         //   inlineKeyboardArray.push([{text: `${product.name}, ${product.id}`,
         //     callback_data: `p/${product.id}`}]);

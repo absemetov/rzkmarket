@@ -411,10 +411,9 @@ const showCart = async (ctx, next) => {
   if (ctx.state.routeName === "cart") {
     // clear path
     await ctx.state.cart.setSessionData({path: null});
+    await ctx.state.cart.setOrderData({carrierNumber: null});
     // clear cart
     const clear = ctx.state.params.get("clear");
-    // show message not edit
-    const reply = ctx.state.params.get("reply");
     if (clear) {
       await ctx.state.cart.clear();
     }
@@ -459,26 +458,16 @@ const showCart = async (ctx, next) => {
     if (msgTxt.length > 1024) {
       msgTxt = msgTxt.substring(0, 1024);
     }
-    if (reply) {
-      await ctx.replyWithPhoto("https://picsum.photos/450/150/?random",
-          {
-            caption: msgTxt,
-            parse_mode: "html",
-            reply_markup: {
-              inline_keyboard: [...inlineKeyboardArray],
-            },
-          });
-    } else {
-      await ctx.editMessageMedia({
-        type: "photo",
-        media: "https://picsum.photos/450/150/?random",
-        caption: msgTxt,
-        parse_mode: "html",
-      }, {reply_markup: {
-        inline_keyboard: [...inlineKeyboardArray],
-      }});
-      await ctx.answerCbQuery();
-    }
+    // edit message
+    await ctx.editMessageMedia({
+      type: "photo",
+      media: "https://picsum.photos/450/150/?random",
+      caption: msgTxt,
+      parse_mode: "html",
+    }, {reply_markup: {
+      inline_keyboard: [...inlineKeyboardArray],
+    }});
+    await ctx.answerCbQuery();
   } else {
     return next();
   }
@@ -601,7 +590,7 @@ const orderWizard = [
       return;
     }
     // save data to cart
-    await ctx.state.cart.setOrderData({userName: ctx.message.text});
+    await ctx.state.cart.setOrderData({recipientName: ctx.message.text});
     ctx.reply("Введите номер телефона", {
       reply_markup: {
         keyboard: [
@@ -624,13 +613,20 @@ const orderWizard = [
       ctx.reply("Введите номер телефона в формате +7YYYXXXXXXX");
       return;
     }
-    // save data to cart
+    // save phone to cart
     await ctx.state.cart.setOrderData({phoneNumber: "+7" + checkPhone[2]});
-    ctx.reply("Проверьте даные", {
+    // get preorder data
+    const preOrderData = await ctx.state.cart.getOrderData();
+    console.log(preOrderData);
+    ctx.replyWithHTML("<b>Проверьте даные:\n" +
+        `${preOrderData.recipientName} ${preOrderData.phoneNumber}\n` +
+        `${preOrderData.address}, ` +
+        `${preOrderData.carrierId === 1 ? "Нова Пошта" : "Міст єкспрес"} ` +
+        `${preOrderData.carrierNumber ? "#" + preOrderData.carrierNumber : ""}\n</b>`,
+    {
       reply_markup: {
         keyboard: [
           ["Оформить заказ"],
-          ["Изменить данные"],
           ["Отмена"],
         ],
         resize_keyboard: true,
@@ -647,14 +643,6 @@ const orderWizard = [
           remove_keyboard: true,
         }});
     }
-    if (ctx.message.text === "Изменить данные") {
-      ctx.state.routeName = "cart";
-      const params = new Map();
-      params.set("reply", 1);
-      ctx.state.params = params;
-      await showCart(ctx, next);
-    }
-
     // leave wizard
     await ctx.state.cart.setSessionData({scene: null});
   },
