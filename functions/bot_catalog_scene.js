@@ -3,7 +3,7 @@ const download = require("./download.js");
 const fs = require("fs");
 const {botConfig, roundNumber} = require("./bot_start_scene");
 const bucket = firebase.storage().bucket();
-
+console.log(botConfig);
 const footerButtons = [{text: "🏠 Главная", callback_data: "start"}, {text: "🛒 Корзина", callback_data: "cart"}];
 // const {Scenes: {BaseScene, WizardScene}} = require("telegraf");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
@@ -407,6 +407,7 @@ catalogsActions.push( async (ctx, next) => {
 });
 
 // show cart
+console.log("botConfig111", botConfig);
 const showCart = async (ctx, next) => {
   if (ctx.state.routeName === "cart") {
     // default values
@@ -1024,3 +1025,4 @@ const uploadPhotoProduct = async (ctx, next) => {
 exports.uploadPhotoProduct = uploadPhotoProduct;
 exports.catalogsActions = catalogsActions;
 exports.orderWizard = orderWizard;
+exports.showCart = showCart;

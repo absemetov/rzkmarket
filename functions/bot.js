@@ -3,9 +3,10 @@ const firebase = require("firebase-admin");
 const {Telegraf} = require("telegraf");
 // const firestoreSession = require("telegraf-session-firestore");
 firebase.initializeApp();
-const {startActions, startHandler, ordersHandler, parseUrl, cart, botConfig, isAdmin} = require("./bot_start_scene");
+const {startActions, startHandler, parseUrl, cart, botConfig, isAdmin} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
 const {uploadHandler} = require("./bot_upload_scene");
+const {ordersActions} = require("./bot_orders_scene");
 const {uploadPhotoProduct, catalogsActions, orderWizard} = require("./bot_catalog_scene");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 // const {MenuMiddleware} = require("telegraf-inline-menu");
@@ -30,7 +31,7 @@ bot.use(async (ctx, next) => {
 // bot.use();
 // eslint-disable-next-line no-useless-escape
 bot.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/,
-    parseUrl, ...startActions, ...catalogsActions, ...monoActions);
+    parseUrl, ...startActions, ...catalogsActions, ...ordersActions, ...monoActions);
 bot.start(async (ctx) => {
   startHandler(ctx);
 });
@@ -44,10 +45,6 @@ bot.start(async (ctx) => {
 // console.log(menuMiddleware.tree());
 // bot.command("mono", async (ctx) => monoMiddleware.replyToContext(ctx));
 // bot.use(monoMiddleware.middleware());
-bot.command("orders", async (ctx) => {
-  // ctx.scene.enter("monoScene");
-  ordersHandler(ctx);
-});
 // mono scene
 bot.command("mono", async (ctx) => {
   // ctx.scene.enter("monoScene");
