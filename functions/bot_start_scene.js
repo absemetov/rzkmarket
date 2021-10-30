@@ -131,6 +131,11 @@ const cart = async (ctx, next) => {
       }
       return {};
     },
+    async setData(value) {
+      await this.userQuery.set({
+        ...value,
+      }, {merge: true});
+    },
     async setSessionData(value) {
       await this.userQuery.set({
         session: {
@@ -244,7 +249,8 @@ startActions.push(async (ctx, next) => {
           `${order.recipientName} ${order.phoneNumber}\n` +
           `${order.address}, ` +
           `${order.carrierId === 1 ? "Нова Пошта" : "Міст єкспрес"} ` +
-          `${order.carrierNumber ? "#" + order.carrierNumber : ""}\n</b>`;
+          `${order.carrierNumber ? "#" + order.carrierNumber : ""}\n` +
+          `${order.comment ? order.comment + "\n" : ""}</b>`;
         // order.products.forEach((product) => {
         //   inlineKeyboardArray.push([{text: `${product.name}, ${product.id}`,
         //     callback_data: `p/${product.id}`}]);

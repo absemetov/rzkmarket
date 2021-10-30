@@ -409,9 +409,19 @@ catalogsActions.push( async (ctx, next) => {
 // show cart
 const showCart = async (ctx, next) => {
   if (ctx.state.routeName === "cart") {
-    // clear path
-    await ctx.state.cart.setSessionData({path: null});
-    await ctx.state.cart.setOrderData({carrierNumber: null});
+    // default values
+    // await ctx.state.cart.setSessionData({path: null});
+    await ctx.state.cart.setData({
+      cart: {
+        orderData: {
+          carrierNumber: firebase.firestore.FieldValue.delete(),
+          comment: firebase.firestore.FieldValue.delete(),
+        },
+      },
+      session: {
+        path: firebase.firestore.FieldValue.delete(),
+      },
+    });
     // clear cart
     const clear = ctx.state.params.get("clear");
     if (clear) {
@@ -615,14 +625,33 @@ const orderWizard = [
     }
     // save phone to cart
     await ctx.state.cart.setOrderData({phoneNumber: "+7" + checkPhone[2]});
+    // comment order
+    ctx.replyWithHTML("Комментарий к заказу:",
+        {
+          reply_markup: {
+            keyboard: [
+              ["Без комментариев"],
+              ["Отмена"],
+            ],
+            resize_keyboard: true,
+          }});
+    // leave wizard
+    await ctx.state.cart.setSessionData({cursor: 6});
+  },
+  async (ctx) => {
+    if (ctx.message.text && ctx.message.text !== "Без комментариев") {
+      // save phone to cart
+      await ctx.state.cart.setOrderData({comment: ctx.message.text});
+    }
     // get preorder data
     const preOrderData = await ctx.state.cart.getOrderData();
     console.log(preOrderData);
     ctx.replyWithHTML("<b>Проверьте даные:\n" +
         `${preOrderData.recipientName} ${preOrderData.phoneNumber}\n` +
         `${preOrderData.address}, ` +
-        `${preOrderData.carrierId === 1 ? "Нова Пошта" : "Міст єкспрес"} ` +
-        `${preOrderData.carrierNumber ? "#" + preOrderData.carrierNumber : ""}\n</b>`,
+        `${preOrderData.carrierId === 1 ? "Нова Пошта" : "Самовывоз"} ` +
+        `${preOrderData.carrierNumber ? "#" + preOrderData.carrierNumber : ""}\n` +
+        `${preOrderData.comment ? preOrderData.comment : ""}</b>`,
     {
       reply_markup: {
         keyboard: [
@@ -632,7 +661,7 @@ const orderWizard = [
         resize_keyboard: true,
       }});
     // leave wizard
-    await ctx.state.cart.setSessionData({cursor: 6});
+    await ctx.state.cart.setSessionData({cursor: 7});
   },
   async (ctx, next) => {
     if (ctx.message.text === "Оформить заказ") {
