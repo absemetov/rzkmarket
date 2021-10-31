@@ -28,21 +28,27 @@ ordersActions.push(async (ctx, next) => {
         const order = {"id": orderSnap.id, ...orderSnap.data()};
         // edit order
         if (editOrder) {
+          // clear cart then export!!!
+          await ctx.state.cart.clear();
           // export order to cart
           await ctx.state.cart.setData({
             cart: {
               orderData: {
+                id: order.id,
+                orderId: order.orderId,
                 recipientName: order.recipientName,
                 phoneNumber: order.phoneNumber,
                 paymentId: order.paymentId,
                 carrierId: order.carrierId,
-                carrierNumber: order.carrierNumber,
+                carrierNumber: order.carrierNumber ? order.carrierNumber : null,
                 address: order.address,
-                comment: order.comment,
+                comment: order.comment ? order.comment : null,
+                path,
               },
               products: order.products,
             },
           });
+          // set route name
           ctx.state.routeName = "cart";
           await showCart(ctx, next);
           return;
@@ -82,7 +88,7 @@ ordersActions.push(async (ctx, next) => {
           `Сумма: ${roundNumber(totalSum)} ${botConfig.currency}</b>`;
         }
       }
-      inlineKeyboardArray.push([{text: "📝 Редактировать", callback_data: `orders/${orderId}?edit=1`}]);
+      inlineKeyboardArray.push([{text: "📝 Редактировать", callback_data: `orders/${orderId}?edit=1&${path}`}]);
       inlineKeyboardArray.push([{text: "🧾 Заказы", callback_data: `orders?${path}`}]);
     } else {
       // show orders

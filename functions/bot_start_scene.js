@@ -107,10 +107,10 @@ const cart = async (ctx, next) => {
         },
       }, {merge: true});
     },
-    async setOrderData(value) {
+    async setWizardData(value) {
       await this.userQuery.set({
         cart: {
-          orderData: value,
+          wizardData: value,
         },
       }, {merge: true});
     },
@@ -118,6 +118,13 @@ const cart = async (ctx, next) => {
       const user = await this.getUserData();
       if (user && user.cart.orderData) {
         return user.cart.orderData;
+      }
+      return {};
+    },
+    async getWizardData() {
+      const user = await this.getUserData();
+      if (user && user.cart.wizardData) {
+        return user.cart.wizardData;
       }
       return {};
     },
@@ -152,7 +159,7 @@ const cart = async (ctx, next) => {
         fromBot: true,
         products: user.cart.products,
         createdAt: this.serverTimestamp,
-        ...user.cart.orderData,
+        ...user.cart.wizardData,
       });
       // clear cart
       await this.clear();
@@ -202,7 +209,7 @@ const startHandler = async (ctx) => {
       });
   // set commands
   await ctx.telegram.setMyCommands([
-    {"command": "start", "description": `${botConfig.name}`},
+    {"command": "shop", "description": `${botConfig.name}`},
     {"command": "upload", "description": "Upload goods"},
     {"command": "mono", "description": "Monobank exchange rates "},
   ]);

@@ -32,20 +32,15 @@ bot.use(async (ctx, next) => {
 // eslint-disable-next-line no-useless-escape
 bot.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/,
     parseUrl, ...startActions, ...catalogsActions, ...ordersActions, ...monoActions);
+// start bot
 bot.start(async (ctx) => {
   startHandler(ctx);
 });
-// bot.hears("mono", (ctx) => ctx.scene.enter("mono"));
-// bot.hears("where", async (ctx) => {
-//   const session = await ctx.session;
-//   ctx.reply("You are in" + session.scene);
-// });
-// mono menu
-// const monoMiddleware = new MenuMiddleware("mono/", menuMono);
-// console.log(menuMiddleware.tree());
-// bot.command("mono", async (ctx) => monoMiddleware.replyToContext(ctx));
-// bot.use(monoMiddleware.middleware());
-// mono scene
+// rzk shop
+bot.command("shop", async (ctx) => {
+  startHandler(ctx);
+});
+// monobank
 bot.command("mono", async (ctx) => {
   // ctx.scene.enter("monoScene");
   monoHandler(ctx);
@@ -68,7 +63,7 @@ bot.command("upload", async (ctx) => {
 bot.on(["text", "contact"], async (ctx) => {
   const session = await ctx.state.cart.getSessionData();
   if (ctx.message.text === "Отмена") {
-    ctx.reply("Для продолжения нажмите /start", {
+    ctx.reply("Для продолжения нажмите /shop", {
       reply_markup: {
         remove_keyboard: true,
       }});
