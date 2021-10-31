@@ -31,7 +31,16 @@ ordersActions.push(async (ctx, next) => {
           // export order to cart
           await ctx.state.cart.setData({
             cart: {
-              ...order,
+              orderData: {
+                recipientName: order.recipientName,
+                phoneNumber: order.phoneNumber,
+                paymentId: order.paymentId,
+                carrierId: order.carrierId,
+                carrierNumber: order.carrierNumber,
+                address: order.address,
+                comment: order.comment,
+              },
+              products: order.products,
             },
           });
           ctx.state.routeName = "cart";

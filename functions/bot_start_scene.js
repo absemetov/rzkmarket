@@ -173,6 +173,17 @@ const ordersKeyboard = [
 
 // start handler
 const startHandler = async (ctx) => {
+  // set user data
+  let userName = "";
+  if (ctx.from.last_name) {
+    userName += ctx.from.last_name;
+  }
+  if (ctx.from.first_name) {
+    userName += " " + ctx.from.first_name;
+  }
+  await ctx.state.cart.setData({
+    userName,
+  });
   const cartProductsArray = await ctx.state.cart.products();
   startKeyboard[1].text = "🛒 Корзина";
   if (cartProductsArray.length) {

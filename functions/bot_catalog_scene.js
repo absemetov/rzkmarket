@@ -407,7 +407,6 @@ catalogsActions.push( async (ctx, next) => {
 });
 
 // show cart
-console.log("botConfig111", botConfig);
 const showCart = async (ctx, next) => {
   if (ctx.state.routeName === "cart") {
     // default values
