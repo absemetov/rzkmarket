@@ -59,13 +59,14 @@ const showCatalog = async (ctx, next) => {
     const tag = ctx.state.params.get("t");
     const startAfter = ctx.state.params.get("s");
     const endBefore = ctx.state.params.get("e");
-    const noPath = ctx.state.params.get("np");
+    // const noPath = ctx.state.params.get("np");
     const inlineKeyboardArray =[];
     let currentCatalog = {};
     // save path to session
-    if (!noPath) {
-      await ctx.state.cart.setSessionData({path: ctx.callbackQuery.data});
-    }
+    // if (!noPath) {
+    // await ctx.state.cart.setSessionData({path: ctx.callbackQuery.data});
+    ctx.session.path = ctx.callbackQuery.data;
+    // }
     // Get catalogs snap index or siblings
     const catalogsSnapshot = await firebase.firestore().collection("catalogs")
         .where("parentId", "==", catalogId ? catalogId : null).orderBy("orderNumber").get();
@@ -207,10 +208,10 @@ const showProduct = async (ctx, next) => {
       footerButtons[1].text += ` (${cartProductsArray.length})`;
     }
     // generate array
-    const session = await ctx.state.cart.getSessionData();
+    // const session = await ctx.state.cart.getSessionData();
     let catalogUrl = `c/${product.catalog.id}`;
-    if (session.path) {
-      catalogUrl = session.path;
+    if (ctx.session && ctx.session.path) {
+      catalogUrl = ctx.session.path;
     }
     const inlineKeyboardArray = [];
     // inlineKeyboardArray.push(Markup.button.callback("📸 Upload photo", `uploadPhotos/${product.id}`));
@@ -263,7 +264,7 @@ catalogsActions.push(showProduct);
 // add product to cart by keyboard
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "addToCart") {
-    const session = await ctx.state.cart.getSessionData();
+    // const session = await ctx.state.cart.getSessionData();
     let qty = ctx.state.params.get("qty");
     const number = ctx.state.params.get("number");
     const back = ctx.state.params.get("back");
@@ -295,9 +296,10 @@ catalogsActions.push( async (ctx, next) => {
     } else {
       qty = 0;
     }
-    // add redirect param
+    // add redirect param and clear path
     if (redirectToCart) {
       paramsUrl += "&r=1";
+      ctx.session.path = null;
     }
     if (added) {
       paramsUrl += "&a=1";
@@ -307,8 +309,8 @@ catalogsActions.push( async (ctx, next) => {
     if (productSnapshot.exists) {
       const product = {id: productSnapshot.id, ...productSnapshot.data()};
       let catalogUrl = `c/${product.catalog.id}`;
-      if (session.path) {
-        catalogUrl = session.path;
+      if (ctx.session && ctx.session.path) {
+        catalogUrl = ctx.session.path;
       }
       // Add product to cart
       if (addValue) {
@@ -316,9 +318,10 @@ catalogsActions.push( async (ctx, next) => {
         // redirect to catalog or cart
         // if (session.path) {
         if (!redirectToCart) {
+          // generate params to show catalog
+          ctx.state.routeName = "c";
           // eslint-disable-next-line no-useless-escape
-          const regPath = session.path.match(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/);
-          ctx.state.routeName = regPath[1];
+          const regPath = catalogUrl.match(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/);
           ctx.state.param = regPath[2];
           const args = regPath[3];
           // parse url params
@@ -329,10 +332,11 @@ catalogsActions.push( async (ctx, next) => {
               ctx.state.params.set(paramsData.split("=")[0], paramsData.split("=")[1]);
             }
           }
-          // add flag for not save path
-          ctx.state.params.set("np", 1);
+          // add flag for not save
+          // ctx.state.params.set("np", 1);
           // params.set("cb", 1);
           // ctx.state.params = params;
+          ctx.callbackQuery.data = catalogUrl;
           await showCatalog(ctx, next);
         } else {
           // ctx.state.routeName = "p";
@@ -375,7 +379,7 @@ catalogsActions.push( async (ctx, next) => {
         parse_mode: "html",
       }, {reply_markup: {
         inline_keyboard: [
-          [{text: `⤴️ ../${product.catalog.name}`, callback_data: `c/${product.catalog.id}`}],
+          [{text: `⤴️ ../${product.catalog.name}`, callback_data: catalogUrl}],
           [
             {text: "7", callback_data: `addToCart/${product.id}?number=7${qtyUrl}${paramsUrl}`},
             {text: "8", callback_data: `addToCart/${product.id}?number=8${qtyUrl}${paramsUrl}`},
@@ -589,7 +593,9 @@ const orderWizard = [
         keyboard: [["Отмена"]],
         resize_keyboard: true,
       }});
-    await ctx.state.cart.setSessionData({cursor: 3});
+    // await ctx.state.cart.setSessionData({cursor: 3});
+    ctx.session.cursor = 3;
+    ctx.session.scene = "wizardOrder";
   },
   async (ctx) => {
     // save data to cart
@@ -597,7 +603,7 @@ const orderWizard = [
       ctx.reply("Адрес слишком короткий");
       return;
     }
-    await ctx.state.cart.setOrderData({address: ctx.message.text});
+    await ctx.state.cart.setWizardData({address: ctx.message.text});
     let userName = "";
     if (ctx.from.last_name) {
       userName += ctx.from.last_name;
@@ -610,7 +616,8 @@ const orderWizard = [
         keyboard: [[userName], ["Отмена"]],
         resize_keyboard: true,
       }});
-    await ctx.state.cart.setSessionData({cursor: 4});
+    // await ctx.state.cart.setSessionData({cursor: 4});
+    ctx.session.cursor = 4;
   },
   async (ctx) => {
     // validation example
@@ -619,7 +626,7 @@ const orderWizard = [
       return;
     }
     // save data to cart
-    await ctx.state.cart.setOrderData({recipientName: ctx.message.text});
+    await ctx.state.cart.setWizardData({recipientName: ctx.message.text});
     ctx.reply("Введите номер телефона", {
       reply_markup: {
         keyboard: [
@@ -632,7 +639,8 @@ const orderWizard = [
         resize_keyboard: true,
       },
     });
-    await ctx.state.cart.setSessionData({cursor: 5});
+    // await ctx.state.cart.setSessionData({cursor: 5});
+    ctx.session.cursor = 5;
   },
   async (ctx) => {
     const phoneNumber = (ctx.message.contact && ctx.message.contact.phone_number) || ctx.message.text;
@@ -643,7 +651,7 @@ const orderWizard = [
       return;
     }
     // save phone to cart
-    await ctx.state.cart.setOrderData({phoneNumber: "+7" + checkPhone[2]});
+    await ctx.state.cart.setWizardData({phoneNumber: "+7" + checkPhone[2]});
     // comment order
     ctx.replyWithHTML("Комментарий к заказу:",
         {
@@ -654,13 +662,13 @@ const orderWizard = [
             ],
             resize_keyboard: true,
           }});
-    // leave wizard
-    await ctx.state.cart.setSessionData({cursor: 6});
+    // await ctx.state.cart.setSessionData({cursor: 6});
+    ctx.session.cursor = 6;
   },
   async (ctx) => {
     if (ctx.message.text && ctx.message.text !== "Без комментариев") {
       // save phone to cart
-      await ctx.state.cart.setOrderData({comment: ctx.message.text});
+      await ctx.state.cart.setWizardData({comment: ctx.message.text});
     }
     // get preorder data
     const preOrderData = await ctx.state.cart.getOrderData();
@@ -680,7 +688,8 @@ const orderWizard = [
         resize_keyboard: true,
       }});
     // leave wizard
-    await ctx.state.cart.setSessionData({cursor: 7});
+    // await ctx.state.cart.setSessionData({cursor: 7});
+    ctx.session.cursor = 7;
   },
   async (ctx, next) => {
     if (ctx.message.text === "Оформить заказ") {
@@ -692,7 +701,8 @@ const orderWizard = [
         }});
     }
     // leave wizard
-    await ctx.state.cart.setSessionData({scene: null});
+    // await ctx.state.cart.setSessionData({scene: null});
+    ctx.session.scene = null;
   },
 ];
 
@@ -716,18 +726,18 @@ catalogsActions.push( async (ctx, next) => {
       let carrierId = ctx.state.params.get("carrier_id");
       if (carrierId) {
         carrierId = Number(carrierId);
-        await ctx.state.cart.setOrderData({carrierId});
+        await ctx.state.cart.setWizardData({carrierId});
       }
       let carrierNumber = ctx.state.params.get("carrier_number");
       carrierNumber = Number(carrierNumber);
       if (carrierId === 1 && !carrierNumber) {
-        // return first step
+        // return first step error
         await orderWizard[1](ctx, "setCurrierNumber");
         return;
       }
       // save carrierNumber
       if (carrierNumber) {
-        await ctx.state.cart.setOrderData({carrierNumber});
+        await ctx.state.cart.setWizardData({carrierNumber});
       }
       inlineKeyboardArray.push([{text: "Privat", callback_data: "createOrder/wizard?payment_id=1"}]);
       inlineKeyboardArray.push([{text: "Mono", callback_data: "createOrder/wizard?payment_id=2"}]);
@@ -749,12 +759,14 @@ catalogsActions.push( async (ctx, next) => {
       }
       // save data to cart
       if (paymentId) {
-        await ctx.state.cart.setOrderData({paymentId});
+        await ctx.state.cart.setWizardData({paymentId});
       }
       await ctx.deleteMessage();
       // await ctx.scene.enter("order");
       // set session
-      await ctx.state.cart.setSessionData({scene: "createOrder", cursor: 0});
+      // await ctx.state.cart.setSessionData({scene: "createOrder", cursor: 0});
+      // ctx.session = {scene: "createOrder"};
+      // ctx.session = {cursor: 0};
       // start wizard
       orderWizard[2](ctx);
     }
@@ -769,11 +781,11 @@ catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "t") {
     const inlineKeyboardArray = [];
     const catalogId = ctx.state.param;
-    const session = await ctx.state.cart.getSessionData();
+    // const session = await ctx.state.cart.getSessionData();
     const currentCatalogSnapshot = await firebase.firestore().collection("catalogs").doc(catalogId).get();
     const catalog = {id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data()};
     inlineKeyboardArray.push([{text: `⤴️ ../${catalog.name}`,
-      callback_data: session.path}]);
+      callback_data: ctx.session.path}]);
     for (const tag of catalog.tags) {
       if (tag.id === ctx.state.params.get("tagSelected")) {
         // inlineKeyboardArray.push(Markup.button.callback(`✅ ${tag.name}`, `c/c/${catalog.id}?tag=${tag.id}`));
@@ -921,7 +933,8 @@ catalogsActions.push( async (ctx, next) => {
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "uploadPhoto") {
     // save productId to session data
-    await ctx.state.cart.setSessionData({productId: ctx.state.param});
+    // await ctx.state.cart.setSessionData({productId: ctx.state.param});
+    ctx.session.productId = ctx.state.param;
     // enter catalog scene
     // if (ctx.scene.current) {
     //   if (ctx.scene.current.id !== "catalog") {
@@ -1016,8 +1029,8 @@ const uploadPhotoProduct = async (ctx, next) => {
       const publicUrl = bucket.file(`photos/products/${product.id}/2/${origin.file_unique_id}.jpg`).publicUrl();
       // get catalog url (path)
       let catalogUrl = `c/${product.catalog.id}`;
-      if (session.path) {
-        catalogUrl = session.path;
+      if (ctx.session && ctx.session.path) {
+        catalogUrl = ctx.session.path;
       }
       await ctx.replyWithPhoto({url: publicUrl},
           {
@@ -1034,7 +1047,8 @@ const uploadPhotoProduct = async (ctx, next) => {
           });
     }
     // ctx.session.productId = null;
-    await ctx.state.cart.setSessionData({productId: null});
+    // await ctx.state.cart.setSessionData({productId: null});
+    ctx.session.productId = null;
   } else {
     ctx.reply("Please select a product to upload Photo");
   }

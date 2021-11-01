@@ -1,6 +1,6 @@
 const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
-const {Telegraf} = require("telegraf");
+const {Telegraf, session} = require("telegraf");
 // const firestoreSession = require("telegraf-session-firestore");
 firebase.initializeApp();
 const {startActions, startHandler, parseUrl, cart, botConfig, isAdmin} = require("./bot_start_scene");
@@ -15,12 +15,13 @@ const bot = new Telegraf(botConfig.token, {
 });
 // const stage = new Stage([upload, catalogScene, orderWizard]);
 // cart session instance
+bot.use(session());
 bot.use(cart, isAdmin);
 bot.use(async (ctx, next) => {
   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
     console.log("callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
   }
-  console.log(ctx.state.isAdmin);
+  // console.log(ctx.state.isAdmin);
   return next();
 });
 // use session lazy
@@ -47,7 +48,8 @@ bot.command("mono", async (ctx) => {
 });
 // Upload scene
 bot.command("upload", async (ctx) => {
-  await ctx.state.cart.setSessionData({scene: "upload"});
+  // await ctx.state.cart.setSessionData({scene: "upload"});
+  ctx.session.scene = "upload";
   ctx.reply("Вставьте ссылку Google Sheet", {
     reply_markup: {
       keyboard: [["Отмена"]],
@@ -61,20 +63,22 @@ bot.command("upload", async (ctx) => {
 
 // if session destroyed show main keyboard
 bot.on(["text", "contact"], async (ctx) => {
-  const session = await ctx.state.cart.getSessionData();
+  // const session = await ctx.state.cart.getSessionData();
   if (ctx.message.text === "Отмена") {
     ctx.reply("Для продолжения нажмите /shop", {
       reply_markup: {
         remove_keyboard: true,
       }});
-    await ctx.state.cart.setSessionData({scene: null});
+    // await ctx.state.cart.setSessionData({scene: null});
+    ctx.session.scene = null;
     return;
   }
-  if (session.scene === "upload") {
+  if (ctx.session && ctx.session.scene === "upload") {
     await uploadHandler(ctx);
   }
-  if (session.scene === "createOrder") {
-    await orderWizard[session.cursor](ctx);
+  if (ctx.session && ctx.session.scene === "wizardOrder") {
+    console.log(ctx.session.scene, ctx.session.cursor);
+    await orderWizard[ctx.session.cursor](ctx);
   }
 });
 
