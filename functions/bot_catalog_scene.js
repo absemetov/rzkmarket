@@ -419,7 +419,7 @@ const showCart = async (ctx, next) => {
     // await ctx.state.cart.setSessionData({path: null});
     // get orderId for edit
     const orderData = await ctx.state.cart.getOrderData();
-    const orderId = orderData.id;
+    const orderId = orderData.orderId;
     const pathOrder = orderData.path;
     // if (!orderId) {
     //   // default values
@@ -470,8 +470,8 @@ const showCart = async (ctx, next) => {
     } else {
       // order button
       if (orderId) {
-        inlineKeyboardArray.push([{text: `🧾 Заказ #${orderId}`,
-          callback_data: `orders/${orderId}?${pathOrder}`}]);
+        inlineKeyboardArray.push([{text: `✅ Сохранить Заказ #${orderId} от ${orderData.recipientName}`,
+          callback_data: `orders/${orderData.id}?save=products&${pathOrder}`}]);
       } else {
         inlineKeyboardArray.push([{text: "✅ Оформить заказ",
           callback_data: "createOrder/carrier"}]);
@@ -671,14 +671,14 @@ const orderWizard = [
       await ctx.state.cart.setWizardData({comment: ctx.message.text});
     }
     // get preorder data
-    const preOrderData = await ctx.state.cart.getOrderData();
+    const preOrderData = await ctx.state.cart.getWizardData();
     ctx.replyWithHTML("<b>Проверьте даные получателя:\n" +
         `${preOrderData.recipientName} ${preOrderData.phoneNumber}\n` +
         `Адрес доставки: ${preOrderData.address}, ` +
         `${preOrderData.carrierId === 1 ? "Нова Пошта" : "Самовывоз"} ` +
         `${preOrderData.carrierNumber ? "#" + preOrderData.carrierNumber : ""}\n` +
         `Оплата: ${preOrderData.paymentId === 1 ? "ПриватБанк" : "monobank"}\n` +
-        `Комментарий: ${preOrderData.comment ? preOrderData.comment : ""}</b>`,
+        `${preOrderData.comment ? "Комментарий: " + preOrderData.comment : ""}</b>`,
     {
       reply_markup: {
         keyboard: [
@@ -955,8 +955,9 @@ catalogsActions.push( async (ctx, next) => {
 
 // Upload product photos
 const uploadPhotoProduct = async (ctx, next) => {
-  const session = await ctx.state.cart.getSessionData();
-  if (session.productId) {
+  // const session = await ctx.state.cart.getSessionData();
+  const productId = ctx.session.productId;
+  if (productId) {
     // make bucket is public
     await bucket.makePublic();
     // file_id: 'AgACAgIAAxkBAAJKe2Eeb3sz3VbX5NP2xB0MphISptBEAAIjtTEbNKZhSJTK4DMrPuXqAQADAgADcwADIAQ',
@@ -965,7 +966,7 @@ const uploadPhotoProduct = async (ctx, next) => {
     // width: 90,
     // height: 51
     // get Product data
-    const productRef = firebase.firestore().collection("products").doc(session.productId);
+    const productRef = firebase.firestore().collection("products").doc(productId);
     const productSnapshot = await productRef.get();
     const product = {id: productSnapshot.id, ...productSnapshot.data()};
     // get count photos to check limits 5 photos

@@ -23,6 +23,7 @@ ordersActions.push(async (ctx, next) => {
     let caption = `<b>${botConfig.name} > Заказы</b>`;
     if (orderId) {
       const editOrder = ctx.state.params.get("edit");
+      const saveOrder = ctx.state.params.get("save");
       const orderSnap = await firebase.firestore().collection("orders").doc(orderId).get();
       if (orderSnap.exists) {
         const order = {"id": orderSnap.id, ...orderSnap.data()};
@@ -37,12 +38,12 @@ ordersActions.push(async (ctx, next) => {
                 id: order.id,
                 orderId: order.orderId,
                 recipientName: order.recipientName,
-                phoneNumber: order.phoneNumber,
-                paymentId: order.paymentId,
-                carrierId: order.carrierId,
-                carrierNumber: order.carrierNumber ? order.carrierNumber : null,
-                address: order.address,
-                comment: order.comment ? order.comment : null,
+                // phoneNumber: order.phoneNumber,
+                // paymentId: order.paymentId,
+                // carrierId: order.carrierId,
+                // carrierNumber: order.carrierNumber ? order.carrierNumber : null,
+                // address: order.address,
+                // comment: order.comment ? order.comment : null,
                 path,
               },
               products: order.products,
@@ -53,14 +54,21 @@ ordersActions.push(async (ctx, next) => {
           await showCart(ctx, next);
           return;
         }
+        // save products from cart
+        console.log(saveOrder);
+        if (saveOrder === "products") {
+          // save order
+          await ctx.state.cart.saveOrder(orderId);
+        }
         // show order
         const date = moment.unix(order.createdAt);
         caption = `<b>${botConfig.name} > Заказ #${order.orderId} (${date.fromNow()})\n` +
         `${order.recipientName} ${order.phoneNumber}\n` +
-        `${order.address}, ` +
+        `Адрес доставки: ${order.address}, ` +
         `${order.carrierId === 1 ? "Нова Пошта" : "Міст єкспрес"} ` +
         `${order.carrierNumber ? "#" + order.carrierNumber : ""}\n` +
-        `${order.comment ? order.comment + "\n" : ""}</b>`;
+        `Оплата: ${order.paymentId === 1 ? "ПриватБанк" : "monobank"}\n` +
+        `${order.comment ? "Комментарий: " + order.comment + "\n" : ""}</b>`;
         // order.products.forEach((product) => {
         //   inlineKeyboardArray.push([{text: `${product.name}, ${product.id}`,
         //     callback_data: `p/${product.id}`}]);

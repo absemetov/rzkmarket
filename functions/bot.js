@@ -21,6 +21,10 @@ bot.use(async (ctx, next) => {
   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
     console.log("callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
   }
+  // set session
+  if (ctx.session === undefined) {
+    ctx.session = {};
+  }
   // console.log(ctx.state.isAdmin);
   return next();
 });
@@ -47,7 +51,7 @@ bot.command("mono", async (ctx) => {
   monoHandler(ctx);
 });
 // Upload scene
-bot.command("upload", async (ctx) => {
+bot.command("upload", (ctx) => {
   // await ctx.state.cart.setSessionData({scene: "upload"});
   ctx.session.scene = "upload";
   ctx.reply("Вставьте ссылку Google Sheet", {
@@ -75,11 +79,14 @@ bot.on(["text", "contact"], async (ctx) => {
   }
   if (ctx.session && ctx.session.scene === "upload") {
     await uploadHandler(ctx);
+    return;
   }
   if (ctx.session && ctx.session.scene === "wizardOrder") {
     console.log(ctx.session.scene, ctx.session.cursor);
     await orderWizard[ctx.session.cursor](ctx);
+    return;
   }
+  startHandler(ctx);
 });
 
 bot.on("photo", (ctx) => uploadPhotoProduct(ctx));

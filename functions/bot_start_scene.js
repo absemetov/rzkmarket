@@ -147,20 +147,29 @@ const cart = async (ctx, next) => {
         },
       }, {merge: true});
     },
-    async saveOrder() {
-      // set counter
-      await this.userQuery.set({
-        orderCount: firebase.firestore.FieldValue.increment(1),
-      }, {merge: true});
-      const user = await this.getUserData();
-      await this.orderQuery.add({
-        userId: user.id,
-        orderId: user.orderCount,
-        fromBot: true,
-        products: user.cart.products,
-        createdAt: this.serverTimestamp,
-        ...user.cart.wizardData,
-      });
+    async saveOrder(id) {
+      // edit order
+      if (id) {
+        const order = firebase.firestore().collection("orders").doc(id);
+        const user = await this.getUserData();
+        await order.set({
+          products: user.cart.products,
+        });
+      } else {
+        // set counter
+        await this.userQuery.set({
+          orderCount: firebase.firestore.FieldValue.increment(1),
+        }, {merge: true});
+        const user = await this.getUserData();
+        await this.orderQuery.add({
+          userId: user.id,
+          orderId: user.orderCount,
+          fromBot: true,
+          products: user.cart.products,
+          createdAt: this.serverTimestamp,
+          ...user.cart.wizardData,
+        });
+      }
       // clear cart
       await this.clear();
     },
@@ -182,11 +191,11 @@ const ordersKeyboard = [
 const startHandler = async (ctx) => {
   // set user data
   let userName = "";
-  if (ctx.from.last_name) {
-    userName += ctx.from.last_name;
-  }
   if (ctx.from.first_name) {
-    userName += " " + ctx.from.first_name;
+    userName += ctx.from.first_name;
+  }
+  if (ctx.from.last_name) {
+    userName += " " + ctx.from.last_name;
   }
   await ctx.state.cart.setData({
     userName,
