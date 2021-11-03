@@ -27,6 +27,14 @@ ordersActions.push(async (ctx, next) => {
       // save products from cart
       if (saveOrder === "products") {
         // save order
+        await order.set({
+          products: firebase.firestore.FieldValue.delete(),
+        }, {merge: true});
+        // add new products from cart recipient
+        await order.set({
+          updatedAt: this.serverTimestamp,
+          products: user.cart.products,
+        }, {merge: true});
         await ctx.state.cart.saveOrder(orderId);
       }
       const orderSnap = await firebase.firestore().collection("orders").doc(orderId).get();
@@ -97,7 +105,7 @@ ordersActions.push(async (ctx, next) => {
       }
       // edit recipient
       inlineKeyboardArray.push([{text: "📝 Редактировать получателя",
-        callback_data: `createOrder/carrier?carrierId=${order.carrierId}`}]);
+        callback_data: `editOrder/${order.id}?edit=recipientName`}]);
       // edit products
       inlineKeyboardArray.push([{text: "📝 Редактировать товары",
         callback_data: `orders/${orderId}?edit=products&${path}`}]);
@@ -175,4 +183,47 @@ ordersActions.push(async (ctx, next) => {
   }
 });
 
+// order wizard
+const orderWizard = [
+  async (ctx) => {
+    ctx.reply(`Текущее значение: ${ctx.session.orderId}`, {
+      reply_markup: {
+        keyboard: [["Отмена"]],
+        resize_keyboard: true,
+      }});
+    ctx.session.scene = "editOrder";
+    ctx.session.cursor = 1;
+  },
+  async (ctx) => {
+    // validation example
+    if (ctx.message.text.length < 2) {
+      ctx.reply("Имя слишком короткое");
+      return;
+    }
+    // save new data
+    await ctx.state.cart.saveOrder(ctx.session.orderId, {
+      recipientName: ctx.message.text,
+    });
+    // exit scene
+    ctx.session.scene = null;
+  },
+];
+
+ordersActions.push(async (ctx, next) => {
+  // show order
+  if (ctx.state.routeName === "editOrder") {
+    // test
+    const orderId = ctx.state.param;
+    const edit = ctx.state.params.get("edit");
+    if (edit === "recipientName") {
+      ctx.session.orderId = orderId;
+      orderWizard[0](ctx);
+    }
+    await ctx.answerCbQuery();
+  } else {
+    return next();
+  }
+});
+
 exports.ordersActions = ordersActions;
+exports.orderWizard = orderWizard;

@@ -514,17 +514,13 @@ const showCart = async (ctx, next) => {
 catalogsActions.push(showCart);
 
 // wizard scene
-const orderWizard = [
+const cartWizard = [
   async (ctx) => {
-    const carrierId = ctx.state.carrierId;
     const inlineKeyboardArray = [];
     inlineKeyboardArray.push([{text: "Нова Пошта", callback_data: "createOrder/carrier_number?carrier_id=1"}]);
     inlineKeyboardArray.push([{text: "Самовывоз", callback_data: "createOrder/payment?carrier_id=2"}]);
     inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: "cart"}]);
-    if (carrierId) {
-      inlineKeyboardArray.push([{text: "Заказы", callback_data: "orders"}]);
-    }
-    await ctx.editMessageCaption(`<b>Способ доставки</b>  ${carrierId === 1 ? "Нова Пошта" : "Міст"}`,
+    await ctx.editMessageCaption("<b>Способ доставки</b>",
         {
           parse_mode: "html",
           reply_markup: {
@@ -533,7 +529,6 @@ const orderWizard = [
         });
   },
   async (ctx, error) => {
-    console.log(ctx.state.orderId);
     const inlineKeyboardArray = [];
     let qty = ctx.state.params.get("qty");
     const number = ctx.state.params.get("number");
@@ -725,15 +720,14 @@ const orderWizard = [
 catalogsActions.push( async (ctx, next) => {
   // ctx.scene.state.name = ctx.message.text;
   if (ctx.state.routeName === "createOrder") {
-    ctx.state.orderId = ctx.state.params.get("orderId");
     const todo = ctx.state.param;
     // first step carrier
     if (todo === "carrier") {
-      await orderWizard[0](ctx);
+      await cartWizard[0](ctx);
     }
     // set carrier number
     if (todo === "carrier_number") {
-      await orderWizard[1](ctx);
+      await cartWizard[1](ctx);
     }
     // order payment method
     if (todo === "payment") {
@@ -748,7 +742,7 @@ catalogsActions.push( async (ctx, next) => {
       carrierNumber = Number(carrierNumber);
       if (carrierId === 1 && !carrierNumber) {
         // return first step error
-        await orderWizard[1](ctx, "setCurrierNumber");
+        await cartWizard[1](ctx, "setCurrierNumber");
         return;
       }
       // save carrierNumber
@@ -784,7 +778,7 @@ catalogsActions.push( async (ctx, next) => {
       // ctx.session = {scene: "createOrder"};
       // ctx.session = {cursor: 0};
       // start wizard
-      orderWizard[2](ctx);
+      cartWizard[2](ctx);
     }
     await ctx.answerCbQuery();
   } else {
@@ -1073,5 +1067,5 @@ const uploadPhotoProduct = async (ctx, next) => {
 
 exports.uploadPhotoProduct = uploadPhotoProduct;
 exports.catalogsActions = catalogsActions;
-exports.orderWizard = orderWizard;
+exports.cartWizard = cartWizard;
 exports.showCart = showCart;

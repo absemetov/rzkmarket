@@ -6,8 +6,8 @@ firebase.initializeApp();
 const {startActions, startHandler, parseUrl, cart, botConfig, isAdmin} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
 const {uploadHandler} = require("./bot_upload_scene");
-const {ordersActions} = require("./bot_orders_scene");
-const {uploadPhotoProduct, catalogsActions, orderWizard} = require("./bot_catalog_scene");
+const {ordersActions, orderWizard} = require("./bot_orders_scene");
+const {uploadPhotoProduct, catalogsActions, cartWizard} = require("./bot_catalog_scene");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 // const {MenuMiddleware} = require("telegraf-inline-menu");
 const bot = new Telegraf(botConfig.token, {
@@ -93,7 +93,10 @@ bot.on(["text", "contact"], async (ctx) => {
     return;
   }
   if (ctx.session && ctx.session.scene === "wizardOrder") {
-    console.log(ctx.session.scene, ctx.session.cursor);
+    await cartWizard[ctx.session.cursor](ctx);
+    return;
+  }
+  if (ctx.session && ctx.session.scene === "editOrder") {
     await orderWizard[ctx.session.cursor](ctx);
     return;
   }

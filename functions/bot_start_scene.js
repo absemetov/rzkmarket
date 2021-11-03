@@ -152,23 +152,15 @@ const cart = async (ctx, next) => {
       // edit order
       if (id) {
         const order = firebase.firestore().collection("orders").doc(id);
-        const user = await this.getUserData();
         // delete order products
         await order.set({
           products: firebase.firestore.FieldValue.delete(),
         }, {merge: true});
         // add new products from cart recipient
-        if (editRecipient) {
-          await order.set({
-            ...user.cart.wizardData,
-            updatedAt: this.serverTimestamp,
-            products: user.cart.products,
-          }, {merge: true});
-        } else {
-          await order.set({
-            products: user.cart.products,
-          }, {merge: true});
-        }
+        await order.set({
+          updatedAt: this.serverTimestamp,
+          products: user.cart.products,
+        }, {merge: true});
       } else {
         // create new order
         // set counter
