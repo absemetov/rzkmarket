@@ -24,41 +24,40 @@ ordersActions.push(async (ctx, next) => {
     if (orderId) {
       const editOrder = ctx.state.params.get("edit");
       const saveOrder = ctx.state.params.get("save");
+      // save products from cart
+      if (saveOrder === "products") {
+        // save order
+        await ctx.state.cart.saveOrder(orderId);
+      }
       const orderSnap = await firebase.firestore().collection("orders").doc(orderId).get();
+      const order = {"id": orderSnap.id, ...orderSnap.data()};
       if (orderSnap.exists) {
-        const order = {"id": orderSnap.id, ...orderSnap.data()};
         // edit order
-        if (editOrder) {
+        if (editOrder === "products") {
           // clear cart then export!!!
           await ctx.state.cart.clear();
           // export order to cart
-          await ctx.state.cart.setData({
-            cart: {
-              orderData: {
-                id: order.id,
-                orderId: order.orderId,
-                recipientName: order.recipientName,
-                // phoneNumber: order.phoneNumber,
-                // paymentId: order.paymentId,
-                // carrierId: order.carrierId,
-                // carrierNumber: order.carrierNumber ? order.carrierNumber : null,
-                // address: order.address,
-                // comment: order.comment ? order.comment : null,
-                path,
-              },
-              products: order.products,
+          await ctx.state.cart.setCartData({
+            orderData: {
+              id: order.id,
+              orderId: order.orderId,
+              recipientName: order.recipientName,
+              // phoneNumber: order.phoneNumber,
+              // paymentId: order.paymentId,
+              // carrierId: order.carrierId,
+              // carrierNumber: order.carrierNumber ? order.carrierNumber : null,
+              // address: order.address,
+              // comment: order.comment ? order.comment : null,
+              path,
             },
+            products: order.products,
           });
           // set route name
           ctx.state.routeName = "cart";
           await showCart(ctx, next);
           return;
-        }
-        // save products from cart
-        console.log(saveOrder);
-        if (saveOrder === "products") {
-          // save order
-          await ctx.state.cart.saveOrder(orderId);
+        } else {
+          // wizard order
         }
         // show order
         const date = moment.unix(order.createdAt);
@@ -96,7 +95,12 @@ ordersActions.push(async (ctx, next) => {
           `Сумма: ${roundNumber(totalSum)} ${botConfig.currency}</b>`;
         }
       }
-      inlineKeyboardArray.push([{text: "📝 Редактировать", callback_data: `orders/${orderId}?edit=1&${path}`}]);
+      // edit recipient
+      inlineKeyboardArray.push([{text: "📝 Редактировать получателя",
+        callback_data: `createOrder/carrier?carrierId=${order.carrierId}`}]);
+      // edit products
+      inlineKeyboardArray.push([{text: "📝 Редактировать товары",
+        callback_data: `orders/${orderId}?edit=products&${path}`}]);
       inlineKeyboardArray.push([{text: "🧾 Заказы", callback_data: `orders?${path}`}]);
     } else {
       // show orders

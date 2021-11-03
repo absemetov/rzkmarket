@@ -39,6 +39,17 @@ bot.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/,
     parseUrl, ...startActions, ...catalogsActions, ...ordersActions, ...monoActions);
 // start bot
 bot.start(async (ctx) => {
+  // set user data
+  let userName = "";
+  if (ctx.from.first_name) {
+    userName += ctx.from.first_name;
+  }
+  if (ctx.from.last_name) {
+    userName += " " + ctx.from.last_name;
+  }
+  await ctx.state.cart.setUserName({
+    userName,
+  });
   startHandler(ctx);
 });
 // rzk shop

@@ -36,7 +36,6 @@ const parseUrl = (ctx, next) => {
 const cart = async (ctx, next) => {
   const cart = {
     userQuery: firebase.firestore().collection("users").doc(`${ctx.from.id}`),
-    orderQuery: firebase.firestore().collection("orders"),
     serverTimestamp: Math.floor(Date.now() / 1000),
     async getUserData() {
       const userRef = await this.userQuery.get();
@@ -100,11 +99,20 @@ const cart = async (ctx, next) => {
       });
       return products;
     },
-    async clear() {
-      await this.userQuery.set({
-        cart: {
+    async clear(withOrderData) {
+      const clearData = {};
+      if (withOrderData) {
+        clearData.cart = {
+          orderData: firebase.firestore.FieldValue.delete(),
           products: firebase.firestore.FieldValue.delete(),
-        },
+        };
+      } else {
+        clearData.cart = {
+          products: firebase.firestore.FieldValue.delete(),
+        };
+      }
+      await this.userQuery.set({
+        ...clearData,
       }, {merge: true});
     },
     async setWizardData(value) {
@@ -128,40 +136,47 @@ const cart = async (ctx, next) => {
       }
       return {};
     },
-    async getSessionData() {
-      const user = await this.getUserData();
-      if (user && user.session) {
-        return user.session;
-      }
-      return {};
-    },
-    async setData(value) {
+    async setCartData(value) {
       await this.userQuery.set({
-        ...value,
-      }, {merge: true});
-    },
-    async setSessionData(value) {
-      await this.userQuery.set({
-        session: {
+        cart: {
           ...value,
         },
       }, {merge: true});
     },
-    async saveOrder(id) {
+    async setUserName(value) {
+      await this.userQuery.set({
+        ...value,
+      }, {merge: true});
+    },
+    async saveOrder(id, editRecipient) {
       // edit order
       if (id) {
         const order = firebase.firestore().collection("orders").doc(id);
         const user = await this.getUserData();
+        // delete order products
         await order.set({
-          products: user.cart.products,
-        });
+          products: firebase.firestore.FieldValue.delete(),
+        }, {merge: true});
+        // add new products from cart recipient
+        if (editRecipient) {
+          await order.set({
+            ...user.cart.wizardData,
+            updatedAt: this.serverTimestamp,
+            products: user.cart.products,
+          }, {merge: true});
+        } else {
+          await order.set({
+            products: user.cart.products,
+          }, {merge: true});
+        }
       } else {
+        // create new order
         // set counter
         await this.userQuery.set({
           orderCount: firebase.firestore.FieldValue.increment(1),
         }, {merge: true});
         const user = await this.getUserData();
-        await this.orderQuery.add({
+        await firebase.firestore().collection("orders").add({
           userId: user.id,
           orderId: user.orderCount,
           fromBot: true,
@@ -170,8 +185,8 @@ const cart = async (ctx, next) => {
           ...user.cart.wizardData,
         });
       }
-      // clear cart
-      await this.clear();
+      // clear cart delete orderId from cart
+      await this.clear(id);
     },
   };
   ctx.state.cart = cart;
@@ -189,17 +204,6 @@ const ordersKeyboard = [
 
 // start handler
 const startHandler = async (ctx) => {
-  // set user data
-  let userName = "";
-  if (ctx.from.first_name) {
-    userName += ctx.from.first_name;
-  }
-  if (ctx.from.last_name) {
-    userName += " " + ctx.from.last_name;
-  }
-  await ctx.state.cart.setData({
-    userName,
-  });
   const cartProductsArray = await ctx.state.cart.products();
   startKeyboard[1].text = "🛒 Корзина";
   if (cartProductsArray.length) {

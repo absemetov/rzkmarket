@@ -418,9 +418,6 @@ const showCart = async (ctx, next) => {
   if (ctx.state.routeName === "cart") {
     // await ctx.state.cart.setSessionData({path: null});
     // get orderId for edit
-    const orderData = await ctx.state.cart.getOrderData();
-    const orderId = orderData.orderId;
-    const pathOrder = orderData.path;
     // if (!orderId) {
     //   // default values
     //   await ctx.state.cart.setData({
@@ -437,6 +434,12 @@ const showCart = async (ctx, next) => {
     // }
     // clear cart
     const clear = ctx.state.params.get("clear");
+    const deleteOrderId = ctx.state.params.get("deleteOrderId");
+    if (deleteOrderId) {
+      await ctx.state.cart.setCartData({
+        orderData: firebase.firestore.FieldValue.delete(),
+      });
+    }
     if (clear) {
       await ctx.state.cart.clear();
     }
@@ -469,13 +472,20 @@ const showCart = async (ctx, next) => {
       msgTxt += "Корзина пуста";
     } else {
       // order button
+      const orderData = await ctx.state.cart.getOrderData();
+      const orderId = orderData.orderId;
+      const pathOrder = orderData.path;
       if (orderId) {
         inlineKeyboardArray.push([{text: `✅ Сохранить Заказ #${orderId} от ${orderData.recipientName}`,
           callback_data: `orders/${orderData.id}?save=products&${pathOrder}`}]);
-      } else {
-        inlineKeyboardArray.push([{text: "✅ Оформить заказ",
-          callback_data: "createOrder/carrier"}]);
+        // delete order from cart
+        inlineKeyboardArray.push([{text: `❎ Убрать Заказ #${orderId} от ${orderData.recipientName}`,
+          callback_data: `cart?deleteOrderId=${orderData.id}`}]);
       }
+      // create order
+      inlineKeyboardArray.push([{text: "✅ Оформить заказ",
+        callback_data: "createOrder/carrier"}]);
+      // clear cart
       inlineKeyboardArray.push([{text: "🗑 Очистить корзину",
         callback_data: "cart?clear=1"}]);
     }
@@ -506,11 +516,15 @@ catalogsActions.push(showCart);
 // wizard scene
 const orderWizard = [
   async (ctx) => {
+    const carrierId = ctx.state.carrierId;
     const inlineKeyboardArray = [];
     inlineKeyboardArray.push([{text: "Нова Пошта", callback_data: "createOrder/carrier_number?carrier_id=1"}]);
     inlineKeyboardArray.push([{text: "Самовывоз", callback_data: "createOrder/payment?carrier_id=2"}]);
     inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: "cart"}]);
-    await ctx.editMessageCaption("<b>Способ доставки</b>",
+    if (carrierId) {
+      inlineKeyboardArray.push([{text: "Заказы", callback_data: "orders"}]);
+    }
+    await ctx.editMessageCaption(`<b>Способ доставки</b>  ${carrierId === 1 ? "Нова Пошта" : "Міст"}`,
         {
           parse_mode: "html",
           reply_markup: {
@@ -519,6 +533,7 @@ const orderWizard = [
         });
   },
   async (ctx, error) => {
+    console.log(ctx.state.orderId);
     const inlineKeyboardArray = [];
     let qty = ctx.state.params.get("qty");
     const number = ctx.state.params.get("number");
@@ -709,8 +724,9 @@ const orderWizard = [
 // save order final
 catalogsActions.push( async (ctx, next) => {
   // ctx.scene.state.name = ctx.message.text;
-  const todo = ctx.state.param;
   if (ctx.state.routeName === "createOrder") {
+    ctx.state.orderId = ctx.state.params.get("orderId");
+    const todo = ctx.state.param;
     // first step carrier
     if (todo === "carrier") {
       await orderWizard[0](ctx);
