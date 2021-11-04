@@ -65,7 +65,7 @@ const showCatalog = async (ctx, next) => {
     // save path to session
     // if (!noPath) {
     // await ctx.state.cart.setSessionData({path: ctx.callbackQuery.data});
-    ctx.session.path = ctx.callbackQuery.data;
+    ctx.session.pathCatalog = ctx.callbackQuery.data;
     // }
     // Get catalogs snap index or siblings
     const catalogsSnapshot = await firebase.firestore().collection("catalogs")
@@ -210,8 +210,8 @@ const showProduct = async (ctx, next) => {
     // generate array
     // const session = await ctx.state.cart.getSessionData();
     let catalogUrl = `c/${product.catalog.id}`;
-    if (ctx.session && ctx.session.path) {
-      catalogUrl = ctx.session.path;
+    if (ctx.session.pathCatalog) {
+      catalogUrl = ctx.session.pathCatalog;
     }
     const inlineKeyboardArray = [];
     // inlineKeyboardArray.push(Markup.button.callback("📸 Upload photo", `uploadPhotos/${product.id}`));
@@ -299,7 +299,7 @@ catalogsActions.push( async (ctx, next) => {
     // add redirect param and clear path
     if (redirectToCart) {
       paramsUrl += "&r=1";
-      ctx.session.path = null;
+      ctx.session.pathCatalog = null;
     }
     if (added) {
       paramsUrl += "&a=1";
@@ -309,8 +309,8 @@ catalogsActions.push( async (ctx, next) => {
     if (productSnapshot.exists) {
       const product = {id: productSnapshot.id, ...productSnapshot.data()};
       let catalogUrl = `c/${product.catalog.id}`;
-      if (ctx.session && ctx.session.path) {
-        catalogUrl = ctx.session.path;
+      if (ctx.session.pathCatalog) {
+        catalogUrl = ctx.session.pathCatalog;
       }
       // Add product to cart
       if (addValue) {
@@ -474,10 +474,9 @@ const showCart = async (ctx, next) => {
       // order button
       const orderData = await ctx.state.cart.getOrderData();
       const orderId = orderData.orderId;
-      const pathOrder = orderData.path;
       if (orderId) {
         inlineKeyboardArray.push([{text: `✅ Сохранить Заказ #${orderId} от ${orderData.recipientName}`,
-          callback_data: `orders/${orderData.id}?save=products&${pathOrder}`}]);
+          callback_data: `orders/${orderData.id}?save=products`}]);
         // delete order from cart
         inlineKeyboardArray.push([{text: `❎ Убрать Заказ #${orderId} от ${orderData.recipientName}`,
           callback_data: `cart?deleteOrderId=${orderData.id}`}]);
@@ -794,8 +793,12 @@ catalogsActions.push( async (ctx, next) => {
     // const session = await ctx.state.cart.getSessionData();
     const currentCatalogSnapshot = await firebase.firestore().collection("catalogs").doc(catalogId).get();
     const catalog = {id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data()};
+    let catalogUrl = `c/${catalog.id}`;
+    if (ctx.session.pathCatalog) {
+      catalogUrl = ctx.session.pathCatalog;
+    }
     inlineKeyboardArray.push([{text: `⤴️ ../${catalog.name}`,
-      callback_data: ctx.session.path}]);
+      callback_data: catalogUrl}]);
     for (const tag of catalog.tags) {
       if (tag.id === ctx.state.params.get("tagSelected")) {
         // inlineKeyboardArray.push(Markup.button.callback(`✅ ${tag.name}`, `c/c/${catalog.id}?tag=${tag.id}`));
@@ -1040,8 +1043,8 @@ const uploadPhotoProduct = async (ctx, next) => {
       const publicUrl = bucket.file(`photos/products/${product.id}/2/${origin.file_unique_id}.jpg`).publicUrl();
       // get catalog url (path)
       let catalogUrl = `c/${product.catalog.id}`;
-      if (ctx.session && ctx.session.path) {
-        catalogUrl = ctx.session.path;
+      if (ctx.session.pathCatalog) {
+        catalogUrl = ctx.session.pathCatalog;
       }
       await ctx.replyWithPhoto({url: publicUrl},
           {

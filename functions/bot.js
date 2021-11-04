@@ -88,15 +88,15 @@ bot.on(["text", "contact"], async (ctx) => {
     ctx.session.scene = null;
     return;
   }
-  if (ctx.session && ctx.session.scene === "upload") {
+  if (ctx.session.scene === "upload") {
     await uploadHandler(ctx);
     return;
   }
-  if (ctx.session && ctx.session.scene === "wizardOrder") {
+  if (ctx.session.scene === "wizardOrder") {
     await cartWizard[ctx.session.cursor](ctx);
     return;
   }
-  if (ctx.session && ctx.session.scene === "editOrder") {
+  if (ctx.session.scene === "editOrder") {
     await orderWizard[ctx.session.cursor](ctx);
     return;
   }

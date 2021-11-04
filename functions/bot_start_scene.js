@@ -148,18 +148,15 @@ const cart = async (ctx, next) => {
         ...value,
       }, {merge: true});
     },
-    async saveOrder(id, editRecipient) {
+    async saveOrder(id, setData) {
+      const orderQuery = firebase.firestore().collection("orders");
       // edit order
       if (id) {
-        const order = firebase.firestore().collection("orders").doc(id);
+        const order = orderQuery.doc(id);
         // delete order products
         await order.set({
-          products: firebase.firestore.FieldValue.delete(),
-        }, {merge: true});
-        // add new products from cart recipient
-        await order.set({
           updatedAt: this.serverTimestamp,
-          products: user.cart.products,
+          ...setData,
         }, {merge: true});
       } else {
         // create new order
@@ -168,7 +165,7 @@ const cart = async (ctx, next) => {
           orderCount: firebase.firestore.FieldValue.increment(1),
         }, {merge: true});
         const user = await this.getUserData();
-        await firebase.firestore().collection("orders").add({
+        await orderQuery.add({
           userId: user.id,
           orderId: user.orderCount,
           fromBot: true,

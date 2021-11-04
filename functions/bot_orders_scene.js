@@ -11,13 +11,14 @@ ordersActions.push(async (ctx, next) => {
   if (ctx.state.routeName === "orders") {
     const startAfter = ctx.state.params.get("s");
     const endBefore = ctx.state.params.get("e");
-    let path = "";
+    let pathOrder = "";
     if (startAfter) {
-      path = `s=${startAfter}`;
+      pathOrder = `s=${startAfter}`;
     }
     if (endBefore) {
-      path = `e=${endBefore}`;
+      pathOrder = `e=${endBefore}`;
     }
+    ctx.session.pathOrder = pathOrder;
     const inlineKeyboardArray = [];
     const orderId = ctx.state.param;
     let caption = `<b>${botConfig.name} > Заказы</b>`;
@@ -26,16 +27,15 @@ ordersActions.push(async (ctx, next) => {
       const saveOrder = ctx.state.params.get("save");
       // save products from cart
       if (saveOrder === "products") {
+        const user = await ctx.state.cart.getUserData();
         // save order
-        await order.set({
+        await ctx.state.cart.saveOrder(orderId, {
           products: firebase.firestore.FieldValue.delete(),
-        }, {merge: true});
+        });
         // add new products from cart recipient
-        await order.set({
-          updatedAt: this.serverTimestamp,
+        await ctx.state.cart.saveOrder(orderId, {
           products: user.cart.products,
-        }, {merge: true});
-        await ctx.state.cart.saveOrder(orderId);
+        });
       }
       const orderSnap = await firebase.firestore().collection("orders").doc(orderId).get();
       const order = {"id": orderSnap.id, ...orderSnap.data()};
@@ -56,7 +56,6 @@ ordersActions.push(async (ctx, next) => {
               // carrierNumber: order.carrierNumber ? order.carrierNumber : null,
               // address: order.address,
               // comment: order.comment ? order.comment : null,
-              path,
             },
             products: order.products,
           });
@@ -104,12 +103,25 @@ ordersActions.push(async (ctx, next) => {
         }
       }
       // edit recipient
-      inlineKeyboardArray.push([{text: "📝 Редактировать получателя",
+      inlineKeyboardArray.push([{text: `📝 Получатель: ${order.recipientName}`,
         callback_data: `editOrder/${order.id}?edit=recipientName`}]);
+      inlineKeyboardArray.push([{text: `📝 Номер тел.: ${order.phoneNumber}`,
+        callback_data: `editOrder/${order.id}?edit=phoneNumber`}]);
+      // payment
+      inlineKeyboardArray.push([{text: `📝 Оплата: ${order.paymentId === 1 ? "ПриватБанк" : "monobank"}`,
+        callback_data: `editOrder/${order.id}?edit=address`}]);
+      inlineKeyboardArray.push([{text: `📝 Адрес: ${order.address}`,
+        callback_data: `editOrder/${order.id}?edit=address`}]);
+      inlineKeyboardArray.push([{text: `📝 Комментарий: ${order.comment ? order.comment : ""}`,
+        callback_data: `editOrder/${order.id}?edit=comment`}]);
       // edit products
       inlineKeyboardArray.push([{text: "📝 Редактировать товары",
-        callback_data: `orders/${orderId}?edit=products&${path}`}]);
-      inlineKeyboardArray.push([{text: "🧾 Заказы", callback_data: `orders?${path}`}]);
+        callback_data: `orders/${orderId}?edit=products`}]);
+      // refresh order
+      const dateTimestamp = Math.floor(Date.now() / 1000);
+      inlineKeyboardArray.push([{text: `🔄 Обновить заказ#${order.orderId}`,
+        callback_data: `orders/${order.id}?${dateTimestamp}`}]);
+      inlineKeyboardArray.push([{text: "🧾 Заказы", callback_data: `orders?${ctx.session.pathOrder}`}]);
     } else {
       // show orders
       const limit = 10;
@@ -136,7 +148,7 @@ ordersActions.push(async (ctx, next) => {
         const order = {id: doc.id, ...doc.data()};
         const date = moment.unix(order.createdAt);
         inlineKeyboardArray.push([{text: `🧾 Заказ #${order.orderId}, ${date.fromNow()}`,
-          callback_data: `orders/${order.id}?${path}`}]);
+          callback_data: `orders/${order.id}`}]);
       });
       // Set load more button
       if (!ordersSnapshot.empty) {
@@ -186,7 +198,7 @@ ordersActions.push(async (ctx, next) => {
 // order wizard
 const orderWizard = [
   async (ctx) => {
-    ctx.reply(`Текущее значение: ${ctx.session.orderId}`, {
+    ctx.replyWithHTML(`Текущее значение ${ctx.session.fieldName}: <b>${ctx.session.fieldValue}</b>`, {
       reply_markup: {
         keyboard: [["Отмена"]],
         resize_keyboard: true,
@@ -195,28 +207,58 @@ const orderWizard = [
     ctx.session.cursor = 1;
   },
   async (ctx) => {
-    // validation example
-    if (ctx.message.text.length < 2) {
+    // save order field
+    // validation
+    if (ctx.session.fieldName === "recipientName" && ctx.message.text.length < 2) {
       ctx.reply("Имя слишком короткое");
       return;
     }
+    if (ctx.session.fieldName === "phoneNumber") {
+      const checkPhone = ctx.message.text.match(/^(\+7|7|8)?([489][0-9]{2}[0-9]{7})$/);
+      if (!checkPhone) {
+        ctx.reply("Введите номер телефона в формате +7YYYXXXXXXX");
+        return;
+      }
+      ctx.message.text = "+7" + checkPhone[2];
+    }
     // save new data
     await ctx.state.cart.saveOrder(ctx.session.orderId, {
-      recipientName: ctx.message.text,
+      [ctx.session.fieldName]: ctx.message.text,
     });
     // exit scene
+    ctx.reply("Данные сохранены. Обновите заказ!🔄", {
+      reply_markup: {
+        remove_keyboard: true,
+      }});
     ctx.session.scene = null;
   },
+  async (ctx) => {
+    const inlineKeyboardArray = [];
+    inlineKeyboardArray.push([{text: "Нова Пошта", callback_data: "createOrder/carrier_number?carrier_id=1"}]);
+    inlineKeyboardArray.push([{text: "Самовывоз", callback_data: "createOrder/payment?carrier_id=2"}]);
+    inlineKeyboardArray.push([{text: "⬅️ Назад",
+      callback_data: `orders/${ctx.session.orderId}?${ctx.session.pathOrder}`}]);
+    await ctx.editMessageCaption("<b>Способ доставки</b>",
+        {
+          parse_mode: "html",
+          reply_markup: {
+            inline_keyboard: [...inlineKeyboardArray],
+          },
+        });
+  },
 ];
-
+// edit order fields
 ordersActions.push(async (ctx, next) => {
   // show order
   if (ctx.state.routeName === "editOrder") {
-    // test
     const orderId = ctx.state.param;
-    const edit = ctx.state.params.get("edit");
-    if (edit === "recipientName") {
+    const editField = ctx.state.params.get("edit");
+    if (editField) {
+      const orderSnap = await firebase.firestore().collection("orders").doc(orderId).get();
+      const order = {"id": orderSnap.id, ...orderSnap.data()};
       ctx.session.orderId = orderId;
+      ctx.session.fieldName = editField;
+      ctx.session.fieldValue = order[editField];
       orderWizard[0](ctx);
     }
     await ctx.answerCbQuery();
