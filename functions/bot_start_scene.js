@@ -177,6 +177,16 @@ const cart = async (ctx, next) => {
       // clear cart delete orderId from cart
       await this.clear(id);
     },
+    payments() {
+      const paymentsTxt = botConfig.payment;
+      const paymentsMap = new Map();
+      if (paymentsTxt) {
+        for (const paramsData of paymentsTxt.split("&")) {
+          paymentsMap.set(paramsData.split("=")[0], paramsData.split("=")[1]);
+        }
+      }
+      return paymentsMap;
+    },
   };
   ctx.state.cart = cart;
   return next();

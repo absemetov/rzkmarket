@@ -12,6 +12,12 @@ ordersActions.push(async (ctx, next) => {
     const startAfter = ctx.state.params.get("s");
     const endBefore = ctx.state.params.get("e");
     let pathOrder = "";
+    for (const entry of ctx.state.cart.payments()) { // то же самое, что и recipeMap.entries()
+      console.log(entry); // огурец,500 (и так далее)
+    }
+    ctx.state.cart.payments().forEach((value, key, map) => {
+      console.log(`${key}: ${value} ${map}`); // огурец: 500 и так далее
+    });
     if (startAfter) {
       pathOrder = `s=${startAfter}`;
     }
