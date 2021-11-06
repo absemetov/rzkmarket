@@ -182,10 +182,20 @@ const cart = async (ctx, next) => {
       const paymentsMap = new Map();
       if (paymentsTxt) {
         for (const paramsData of paymentsTxt.split("&")) {
-          paymentsMap.set(paramsData.split("=")[0], paramsData.split("=")[1]);
+          paymentsMap.set(+ paramsData.split("=")[0], paramsData.split("=")[1].trim());
         }
       }
       return paymentsMap;
+    },
+    carriers() {
+      const carriersTxt = botConfig.carrier;
+      const carriersMap = new Map();
+      if (carriersTxt) {
+        for (const paramsData of carriersTxt.split("&")) {
+          carriersMap.set(+ paramsData.split("=")[0], paramsData.split("=")[1].trim());
+        }
+      }
+      return carriersMap;
     },
   };
   ctx.state.cart = cart;

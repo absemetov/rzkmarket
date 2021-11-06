@@ -1,6 +1,6 @@
 const firebase = require("firebase-admin");
 const {botConfig, roundNumber} = require("./bot_start_scene");
-const {showCart} = require("./bot_catalog_scene");
+const {showCart, cartWizard} = require("./bot_catalog_scene");
 const moment = require("moment");
 require("moment/locale/ru");
 moment.locale("ru");
@@ -12,12 +12,6 @@ ordersActions.push(async (ctx, next) => {
     const startAfter = ctx.state.params.get("s");
     const endBefore = ctx.state.params.get("e");
     let pathOrder = "";
-    for (const entry of ctx.state.cart.payments()) { // то же самое, что и recipeMap.entries()
-      console.log(entry); // огурец,500 (и так далее)
-    }
-    ctx.state.cart.payments().forEach((value, key, map) => {
-      console.log(`${key}: ${value} ${map}`); // огурец: 500 и так далее
-    });
     if (startAfter) {
       pathOrder = `s=${startAfter}`;
     }
@@ -77,9 +71,9 @@ ordersActions.push(async (ctx, next) => {
         caption = `<b>${botConfig.name} > Заказ #${order.orderId} (${date.fromNow()})\n` +
         `${order.recipientName} ${order.phoneNumber}\n` +
         `Адрес доставки: ${order.address}, ` +
-        `${order.carrierId === 1 ? "Нова Пошта" : "Міст єкспрес"} ` +
+        `${ctx.state.cart.carriers().get(order.carrierId)} ` +
         `${order.carrierNumber ? "#" + order.carrierNumber : ""}\n` +
-        `Оплата: ${order.paymentId === 1 ? "ПриватБанк" : "monobank"}\n` +
+        `Оплата: ${ctx.state.cart.payments().get(order.paymentId)}\n` +
         `${order.comment ? "Комментарий: " + order.comment + "\n" : ""}</b>`;
         // order.products.forEach((product) => {
         //   inlineKeyboardArray.push([{text: `${product.name}, ${product.id}`,
@@ -113,9 +107,12 @@ ordersActions.push(async (ctx, next) => {
         callback_data: `editOrder/${order.id}?edit=recipientName`}]);
       inlineKeyboardArray.push([{text: `📝 Номер тел.: ${order.phoneNumber}`,
         callback_data: `editOrder/${order.id}?edit=phoneNumber`}]);
-      // payment
-      inlineKeyboardArray.push([{text: `📝 Оплата: ${order.paymentId === 1 ? "ПриватБанк" : "monobank"}`,
-        callback_data: `editOrder/${order.id}?edit=address`}]);
+      // payment and currier
+      inlineKeyboardArray.push([{text: `📝 Оплата: ${ctx.state.cart.payments().get(order.paymentId)}`,
+        callback_data: `editOrder/${order.id}?paymentId=${order.paymentId}`}]);
+      inlineKeyboardArray.push([{text: `📝 Доставка: ${ctx.state.cart.carriers().get(order.carrierId)}` +
+        `${order.carrierNumber ? " #" + order.carrierNumber : ""}`,
+      callback_data: `editOrder/${order.id}?carrierId=${order.carrierId}`}]);
       inlineKeyboardArray.push([{text: `📝 Адрес: ${order.address}`,
         callback_data: `editOrder/${order.id}?edit=address`}]);
       inlineKeyboardArray.push([{text: `📝 Комментарий: ${order.comment ? order.comment : ""}`,
@@ -238,20 +235,6 @@ const orderWizard = [
       }});
     ctx.session.scene = null;
   },
-  async (ctx) => {
-    const inlineKeyboardArray = [];
-    inlineKeyboardArray.push([{text: "Нова Пошта", callback_data: "createOrder/carrier_number?carrier_id=1"}]);
-    inlineKeyboardArray.push([{text: "Самовывоз", callback_data: "createOrder/payment?carrier_id=2"}]);
-    inlineKeyboardArray.push([{text: "⬅️ Назад",
-      callback_data: `orders/${ctx.session.orderId}?${ctx.session.pathOrder}`}]);
-    await ctx.editMessageCaption("<b>Способ доставки</b>",
-        {
-          parse_mode: "html",
-          reply_markup: {
-            inline_keyboard: [...inlineKeyboardArray],
-          },
-        });
-  },
 ];
 // edit order fields
 ordersActions.push(async (ctx, next) => {
@@ -259,6 +242,8 @@ ordersActions.push(async (ctx, next) => {
   if (ctx.state.routeName === "editOrder") {
     const orderId = ctx.state.param;
     const editField = ctx.state.params.get("edit");
+    const carrierId = ctx.state.params.get("carrierId");
+    const paymentId = ctx.state.params.get("paymentId");
     if (editField) {
       const orderSnap = await firebase.firestore().collection("orders").doc(orderId).get();
       const order = {"id": orderSnap.id, ...orderSnap.data()};
@@ -266,6 +251,36 @@ ordersActions.push(async (ctx, next) => {
       ctx.session.fieldName = editField;
       ctx.session.fieldValue = order[editField];
       orderWizard[0](ctx);
+    }
+    // show payment
+    if (paymentId) {
+      const inlineKeyboardArray = [];
+      ctx.state.cart.payments().forEach((value, key) => {
+        if (key === + paymentId) {
+          value = "✅ " + value;
+        }
+        inlineKeyboardArray.push([{text: value, callback_data: `createOrder/wizard?payment_id=${key}`}]);
+      });
+      inlineKeyboardArray.push([{text: "⬅️ Назад",
+        callback_data: `orders/${orderId}`}]);
+      await cartWizard[0](ctx, "Способ оплаты", inlineKeyboardArray);
+    }
+    // show payment
+    if (carrierId) {
+      const inlineKeyboardArray = [];
+      ctx.state.cart.carriers().forEach((value, key) => {
+        if (key === + carrierId) {
+          value = "✅ " + value;
+        }
+        if (key === 1) {
+          inlineKeyboardArray.push([{text: value, callback_data: `createOrder/payment?carrier_id=${key}`}]);
+        } else {
+          inlineKeyboardArray.push([{text: value, callback_data: `createOrder/carrier_number?carrier_id=${key}`}]);
+        }
+      });
+      inlineKeyboardArray.push([{text: "⬅️ Назад",
+        callback_data: `orders/${orderId}`}]);
+      await cartWizard[0](ctx, "Способ доставки", inlineKeyboardArray);
     }
     await ctx.answerCbQuery();
   } else {

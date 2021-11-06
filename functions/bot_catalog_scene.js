@@ -514,12 +514,9 @@ catalogsActions.push(showCart);
 
 // wizard scene
 const cartWizard = [
-  async (ctx) => {
-    const inlineKeyboardArray = [];
-    inlineKeyboardArray.push([{text: "Нова Пошта", callback_data: "createOrder/carrier_number?carrier_id=1"}]);
-    inlineKeyboardArray.push([{text: "Самовывоз", callback_data: "createOrder/payment?carrier_id=2"}]);
-    inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: "cart"}]);
-    await ctx.editMessageCaption("<b>Способ доставки</b>",
+  // show carrier services
+  async (ctx, caption, inlineKeyboardArray = []) => {
+    await ctx.editMessageCaption(`<b>${caption}:</b>`,
         {
           parse_mode: "html",
           reply_markup: {
@@ -684,9 +681,9 @@ const cartWizard = [
     ctx.replyWithHTML("<b>Проверьте даные получателя:\n" +
         `${preOrderData.recipientName} ${preOrderData.phoneNumber}\n` +
         `Адрес доставки: ${preOrderData.address}, ` +
-        `${preOrderData.carrierId === 1 ? "Нова Пошта" : "Самовывоз"} ` +
+        `${ctx.state.cart.carriers().get(preOrderData.carrierId)} ` +
         `${preOrderData.carrierNumber ? "#" + preOrderData.carrierNumber : ""}\n` +
-        `Оплата: ${preOrderData.paymentId === 1 ? "ПриватБанк" : "monobank"}\n` +
+        `Оплата: ${ctx.state.cart.payments().get(preOrderData.paymentId)}\n` +
         `${preOrderData.comment ? "Комментарий: " + preOrderData.comment : ""}</b>`,
     {
       reply_markup: {
@@ -722,7 +719,22 @@ catalogsActions.push( async (ctx, next) => {
     const todo = ctx.state.param;
     // first step carrier
     if (todo === "carrier") {
-      await cartWizard[0](ctx);
+      // set default values
+      await ctx.state.cart.setWizardData({
+        carrierNumber: null,
+        comment: null,
+      });
+      // get carriers service
+      const inlineKeyboardArray = [];
+      ctx.state.cart.carriers().forEach((value, key) => {
+        if (key === 1) {
+          inlineKeyboardArray.push([{text: value, callback_data: `createOrder/payment?carrier_id=${key}`}]);
+        } else {
+          inlineKeyboardArray.push([{text: value, callback_data: `createOrder/carrier_number?carrier_id=${key}`}]);
+        }
+      });
+      inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: "cart"}]);
+      await cartWizard[0](ctx, "Способ доставки: ", inlineKeyboardArray);
     }
     // set carrier number
     if (todo === "carrier_number") {
@@ -730,35 +742,31 @@ catalogsActions.push( async (ctx, next) => {
     }
     // order payment method
     if (todo === "payment") {
-      const inlineKeyboardArray = [];
       // save data to cart
       let carrierId = ctx.state.params.get("carrier_id");
       if (carrierId) {
         carrierId = Number(carrierId);
         await ctx.state.cart.setWizardData({carrierId});
       }
+      // if user not chuse carrier number
       let carrierNumber = ctx.state.params.get("carrier_number");
       carrierNumber = Number(carrierNumber);
-      if (carrierId === 1 && !carrierNumber) {
+      if (carrierId === 2 && !carrierNumber) {
         // return first step error
-        await cartWizard[1](ctx, "setCurrierNumber");
+        await cartWizard[1](ctx, "errorCurrierNumber");
         return;
       }
       // save carrierNumber
       if (carrierNumber) {
         await ctx.state.cart.setWizardData({carrierNumber});
       }
-      inlineKeyboardArray.push([{text: "Privat", callback_data: "createOrder/wizard?payment_id=1"}]);
-      inlineKeyboardArray.push([{text: "Mono", callback_data: "createOrder/wizard?payment_id=2"}]);
+      // show paymets service
+      const inlineKeyboardArray = [];
+      ctx.state.cart.payments().forEach((value, key) => {
+        inlineKeyboardArray.push([{text: value, callback_data: `createOrder/wizard?payment_id=${key}`}]);
+      });
       inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: "cart"}]);
-      await ctx.editMessageMedia({
-        type: "photo",
-        media: "https://picsum.photos/450/150/?random",
-        caption: "Способ оплаты",
-        parse_mode: "html",
-      }, {reply_markup: {
-        inline_keyboard: [...inlineKeyboardArray],
-      }});
+      await cartWizard[0](ctx, "Способ оплаты", inlineKeyboardArray);
     }
     // save payment and goto wizard
     if (todo === "wizard") {
