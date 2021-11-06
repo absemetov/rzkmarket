@@ -558,8 +558,9 @@ const cartWizard = [
       qty = 0;
     }
     // add carrier ID
+    const dateTimestamp = Math.floor(Date.now() / 1000);
     if (carrierId) {
-      qtyUrl += `&carrier_id=${carrierId}`;
+      qtyUrl += `&carrier_id=${carrierId}&${dateTimestamp}`;
     }
     inlineKeyboardArray.push([
       {text: "7", callback_data: `createOrder/carrier_number?number=7${qtyUrl}`},
@@ -581,9 +582,17 @@ const cartWizard = [
       {text: "🔙", callback_data: `createOrder/carrier_number?back=true${qtyUrl}`},
       {text: "AC", callback_data: `createOrder/carrier_number?carrier_id=${carrierId}`},
     ]);
-    inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `createOrder/payment?carrier_number=${qty}` +
+    // if order change callback
+    if (ctx.session.orderId) {
+      inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `editOrder/${ctx.session.orderId}?` +
+      `saveCarrierId=${carrierId}&carrierNumber=${qty}`}]);
+      inlineKeyboardArray.push([{text: "⬅️ Назад",
+        callback_data: `orders/${ctx.session.orderId}`}]);
+    } else {
+      inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `createOrder/payment?carrier_number=${qty}` +
       `&carrier_id=${carrierId}`}]);
-    inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: "cart"}]);
+      inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: "cart"}]);
+    }
     await ctx.editMessageCaption(`Введите номер отделения:\n<b>${qty}</b>` +
       `\n${error ? "Ошибка: введите номер отделения" : ""}`,
     {
