@@ -483,7 +483,7 @@ const showCart = async (ctx, next) => {
       }
       // create order
       inlineKeyboardArray.push([{text: "✅ Оформить заказ",
-        callback_data: "createOrder/carrier"}]);
+        callback_data: "cO/carrier"}]);
       // clear cart
       inlineKeyboardArray.push([{text: "🗑 Очистить корзину",
         callback_data: "cart?clear=1"}]);
@@ -529,7 +529,8 @@ const cartWizard = [
     let qty = ctx.state.params.get("qty");
     const number = ctx.state.params.get("number");
     const back = ctx.state.params.get("back");
-    const carrierId = ctx.state.params.get("carrier_id");
+    const carrierId = ctx.state.params.get("cId");
+    const orderId = ctx.state.params.get("o");
     // save data to cart
     // if (carrierId) {
     //   carrierId = Number(carrierId);
@@ -558,39 +559,43 @@ const cartWizard = [
       qty = 0;
     }
     // add carrier ID
-    const dateTimestamp = Math.floor(Date.now() / 1000);
     if (carrierId) {
-      qtyUrl += `&carrier_id=${carrierId}&${dateTimestamp}`;
+      qtyUrl += `&cId=${carrierId}`;
+    }
+    // add orderId to url
+    let paramsUrl = "";
+    if (orderId) {
+      paramsUrl = `&o=${orderId}`;
     }
     inlineKeyboardArray.push([
-      {text: "7", callback_data: `createOrder/carrier_number?number=7${qtyUrl}`},
-      {text: "8", callback_data: `createOrder/carrier_number?number=8${qtyUrl}`},
-      {text: "9", callback_data: `createOrder/carrier_number?number=9${qtyUrl}`},
+      {text: "7", callback_data: `cO/cN?number=7${qtyUrl}${paramsUrl}`},
+      {text: "8", callback_data: `cO/cN?number=8${qtyUrl}${paramsUrl}`},
+      {text: "9", callback_data: `cO/cN?number=9${qtyUrl}${paramsUrl}`},
     ]);
     inlineKeyboardArray.push([
-      {text: "4", callback_data: `createOrder/carrier_number?number=4${qtyUrl}`},
-      {text: "5", callback_data: `createOrder/carrier_number?number=5${qtyUrl}`},
-      {text: "6", callback_data: `createOrder/carrier_number?number=6${qtyUrl}`},
+      {text: "4", callback_data: `cO/cN?number=4${qtyUrl}${paramsUrl}`},
+      {text: "5", callback_data: `cO/cN?number=5${qtyUrl}${paramsUrl}`},
+      {text: "6", callback_data: `cO/cN?number=6${qtyUrl}${paramsUrl}`},
     ]);
     inlineKeyboardArray.push([
-      {text: "1", callback_data: `createOrder/carrier_number?number=1${qtyUrl}`},
-      {text: "2", callback_data: `createOrder/carrier_number?number=2${qtyUrl}`},
-      {text: "3", callback_data: `createOrder/carrier_number?number=3${qtyUrl}`},
+      {text: "1", callback_data: `cO/cN?number=1${qtyUrl}${paramsUrl}`},
+      {text: "2", callback_data: `cO/cN?number=2${qtyUrl}${paramsUrl}`},
+      {text: "3", callback_data: `cO/cN?number=3${qtyUrl}${paramsUrl}`},
     ]);
     inlineKeyboardArray.push([
-      {text: "0️", callback_data: `createOrder/carrier_number?number=0${qtyUrl}`},
-      {text: "🔙", callback_data: `createOrder/carrier_number?back=true${qtyUrl}`},
-      {text: "AC", callback_data: `createOrder/carrier_number?carrier_id=${carrierId}`},
+      {text: "0️", callback_data: `cO/cN?number=0${qtyUrl}${paramsUrl}`},
+      {text: "🔙", callback_data: `cO/cN?back=true${qtyUrl}${paramsUrl}`},
+      {text: "AC", callback_data: `cO/cN?cId=${carrierId}${paramsUrl}`},
     ]);
     // if order change callback
-    if (ctx.session.orderId) {
-      inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `editOrder/${ctx.session.orderId}?` +
-      `saveCarrierId=${carrierId}&carrierNumber=${qty}`}]);
+    if (orderId) {
+      inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `editOrder/${orderId}?` +
+      `sCid=${carrierId}&number=${qty}`}]);
       inlineKeyboardArray.push([{text: "⬅️ Назад",
-        callback_data: `orders/${ctx.session.orderId}`}]);
+        callback_data: `orders/${orderId}`}]);
     } else {
-      inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `createOrder/payment?carrier_number=${qty}` +
-      `&carrier_id=${carrierId}`}]);
+      inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `cO/payment?cN=${qty}` +
+      `&cId=${carrierId}`}]);
       inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: "cart"}]);
     }
     await ctx.editMessageCaption(`Введите номер отделения:\n<b>${qty}</b>` +
@@ -724,7 +729,7 @@ const cartWizard = [
 // save order final
 catalogsActions.push( async (ctx, next) => {
   // ctx.scene.state.name = ctx.message.text;
-  if (ctx.state.routeName === "createOrder") {
+  if (ctx.state.routeName === "cO") {
     const todo = ctx.state.param;
     // first step carrier
     if (todo === "carrier") {
@@ -737,28 +742,28 @@ catalogsActions.push( async (ctx, next) => {
       const inlineKeyboardArray = [];
       ctx.state.cart.carriers().forEach((value, key) => {
         if (key === 1) {
-          inlineKeyboardArray.push([{text: value, callback_data: `createOrder/payment?carrier_id=${key}`}]);
+          inlineKeyboardArray.push([{text: value, callback_data: `cO/payment?cId=${key}`}]);
         } else {
-          inlineKeyboardArray.push([{text: value, callback_data: `createOrder/carrier_number?carrier_id=${key}`}]);
+          inlineKeyboardArray.push([{text: value, callback_data: `cO/cN?cId=${key}`}]);
         }
       });
       inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: "cart"}]);
       await cartWizard[0](ctx, "Способ доставки: ", inlineKeyboardArray);
     }
     // set carrier number
-    if (todo === "carrier_number") {
+    if (todo === "cN") {
       await cartWizard[1](ctx);
     }
     // order payment method
     if (todo === "payment") {
       // save data to cart
-      let carrierId = ctx.state.params.get("carrier_id");
+      let carrierId = ctx.state.params.get("cId");
       if (carrierId) {
         carrierId = Number(carrierId);
         await ctx.state.cart.setWizardData({carrierId});
       }
       // if user not chuse carrier number
-      let carrierNumber = ctx.state.params.get("carrier_number");
+      let carrierNumber = ctx.state.params.get("cN");
       carrierNumber = Number(carrierNumber);
       if (carrierId === 2 && !carrierNumber) {
         // return first step error
@@ -772,7 +777,7 @@ catalogsActions.push( async (ctx, next) => {
       // show paymets service
       const inlineKeyboardArray = [];
       ctx.state.cart.payments().forEach((value, key) => {
-        inlineKeyboardArray.push([{text: value, callback_data: `createOrder/wizard?payment_id=${key}`}]);
+        inlineKeyboardArray.push([{text: value, callback_data: `cO/wizard?payment_id=${key}`}]);
       });
       inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: "cart"}]);
       await cartWizard[0](ctx, "Способ оплаты", inlineKeyboardArray);
@@ -790,8 +795,8 @@ catalogsActions.push( async (ctx, next) => {
       await ctx.deleteMessage();
       // await ctx.scene.enter("order");
       // set session
-      // await ctx.state.cart.setSessionData({scene: "createOrder", cursor: 0});
-      // ctx.session = {scene: "createOrder"};
+      // await ctx.state.cart.setSessionData({scene: "cO", cursor: 0});
+      // ctx.session = {scene: "cO"};
       // ctx.session = {cursor: 0};
       // start wizard
       cartWizard[2](ctx);

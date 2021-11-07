@@ -51,7 +51,7 @@ const showOrders = async (ctx, next) => {
               recipientName: order.recipientName,
               // phoneNumber: order.phoneNumber,
               // paymentId: order.paymentId,
-              // carrierId: order.carrierId,
+              // cId: order.cId,
               // carrierNumber: order.carrierNumber ? order.carrierNumber : null,
               // address: order.address,
               // comment: order.comment ? order.comment : null,
@@ -111,7 +111,7 @@ const showOrders = async (ctx, next) => {
         callback_data: `editOrder/${order.id}?paymentId=${order.paymentId}`}]);
       inlineKeyboardArray.push([{text: `📝 Доставка: ${ctx.state.cart.carriers().get(order.carrierId)}` +
         `${order.carrierNumber ? " #" + order.carrierNumber : ""}`,
-      callback_data: `editOrder/${order.id}?carrierId=${order.carrierId}`}]);
+      callback_data: `editOrder/${order.id}?cId=${order.carrierId}`}]);
       inlineKeyboardArray.push([{text: `📝 Адрес: ${order.address}`,
         callback_data: `editOrder/${order.id}?edit=address`}]);
       inlineKeyboardArray.push([{text: `📝 Комментарий: ${order.comment ? order.comment : ""}`,
@@ -243,15 +243,15 @@ ordersActions.push(async (ctx, next) => {
   if (ctx.state.routeName === "editOrder") {
     const orderId = ctx.state.param;
     const editField = ctx.state.params.get("edit");
-    const carrierId = ctx.state.params.get("carrierId");
-    let carrierNumber = ctx.state.params.get("carrierNumber");
-    const saveCarrierId = + ctx.state.params.get("saveCarrierId");
+    const cId = ctx.state.params.get("cId");
+    let carrierNumber = ctx.state.params.get("number");
+    const sCid = + ctx.state.params.get("sCid");
     const paymentId = ctx.state.params.get("paymentId");
     const savePaymentId = ctx.state.params.get("savePaymentId");
-    ctx.session.orderId = orderId;
     if (editField) {
       const orderSnap = await firebase.firestore().collection("orders").doc(orderId).get();
       const order = {"id": orderSnap.id, ...orderSnap.data()};
+      ctx.session.orderId = orderId;
       ctx.session.fieldName = editField;
       ctx.session.fieldValue = order[editField];
       orderWizard[0](ctx);
@@ -279,16 +279,17 @@ ordersActions.push(async (ctx, next) => {
       await showOrders(ctx, next);
     }
     // show carrier
-    if (carrierId) {
+    if (cId) {
       const inlineKeyboardArray = [];
       ctx.state.cart.carriers().forEach((value, key) => {
-        if (key === + carrierId) {
+        if (key === + cId) {
           value = "✅ " + value;
         }
         if (key === 1) {
-          inlineKeyboardArray.push([{text: value, callback_data: `editOrder/${orderId}?saveCarrierId=${key}`}]);
+          inlineKeyboardArray.push([{text: value, callback_data: `editOrder/${orderId}?sCid=${key}`}]);
         } else {
-          inlineKeyboardArray.push([{text: value, callback_data: `createOrder/carrier_number?carrier_id=${key}`}]);
+          inlineKeyboardArray.push([{text: value,
+            callback_data: `cO/cN?cId=${key}&o=${orderId}`}]);
         }
       });
       inlineKeyboardArray.push([{text: "⬅️ Назад",
@@ -296,14 +297,15 @@ ordersActions.push(async (ctx, next) => {
       await cartWizard[0](ctx, "Способ доставки", inlineKeyboardArray);
     }
     // save carrier
-    if (saveCarrierId) {
+    if (sCid) {
       await ctx.state.cart.saveOrder(orderId, {
-        carrierId: saveCarrierId,
+        carrierId: sCid,
       });
       carrierNumber = Number(carrierNumber);
-      if (saveCarrierId === 2 && !carrierNumber) {
+      if (sCid === 2 && !carrierNumber) {
         // return first step error
-        ctx.state.params.set("carrier_id", saveCarrierId)
+        ctx.state.params.set("o", orderId);
+        ctx.state.params.set("cId", sCid);
         await cartWizard[1](ctx, "errorCurrierNumber");
         return;
       }
