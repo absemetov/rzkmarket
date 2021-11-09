@@ -102,13 +102,16 @@ const showOrders = async (ctx, next) => {
         }
       }
       // edit recipient
+      // status
+      inlineKeyboardArray.push([{text: `📝 Статус: ${ctx.state.cart.statuses().get(order.statusId)}`,
+        callback_data: `editOrder/${order.id}?showStatusId=${order.statusId}`}]);
       inlineKeyboardArray.push([{text: `📝 Получатель: ${order.recipientName}`,
         callback_data: `editOrder/${order.id}?edit=recipientName`}]);
       inlineKeyboardArray.push([{text: `📝 Номер тел.: ${order.phoneNumber}`,
         callback_data: `editOrder/${order.id}?edit=phoneNumber`}]);
       // payment and currier
       inlineKeyboardArray.push([{text: `📝 Оплата: ${ctx.state.cart.payments().get(order.paymentId)}`,
-        callback_data: `editOrder/${order.id}?paymentId=${order.paymentId}`}]);
+        callback_data: `editOrder/${order.id}?showPaymentId=${order.paymentId}`}]);
       inlineKeyboardArray.push([{text: `📝 Доставка: ${ctx.state.cart.carriers().get(order.carrierId)}` +
         `${order.carrierNumber ? " #" + order.carrierNumber : ""}`,
       callback_data: `editOrder/${order.id}?cId=${order.carrierId}`}]);
@@ -243,11 +246,13 @@ ordersActions.push(async (ctx, next) => {
   if (ctx.state.routeName === "editOrder") {
     const orderId = ctx.state.param;
     const editField = ctx.state.params.get("edit");
-    const cId = ctx.state.params.get("cId");
-    let carrierNumber = ctx.state.params.get("number");
+    const cId = + ctx.state.params.get("cId");
+    const carrierNumber = + ctx.state.params.get("number");
     const sCid = + ctx.state.params.get("sCid");
-    const paymentId = ctx.state.params.get("paymentId");
-    const savePaymentId = ctx.state.params.get("savePaymentId");
+    const showPaymentId = + ctx.state.params.get("showPaymentId");
+    const paymentId = + ctx.state.params.get("paymentId");
+    const showStatusId = + ctx.state.params.get("showStatusId");
+    const statusId = + ctx.state.params.get("statusId");
     if (editField) {
       const orderSnap = await firebase.firestore().collection("orders").doc(orderId).get();
       const order = {"id": orderSnap.id, ...orderSnap.data()};
@@ -257,22 +262,22 @@ ordersActions.push(async (ctx, next) => {
       orderWizard[0](ctx);
     }
     // show payment
-    if (paymentId) {
+    if (showPaymentId) {
       const inlineKeyboardArray = [];
       ctx.state.cart.payments().forEach((value, key) => {
-        if (key === + paymentId) {
+        if (key === showPaymentId) {
           value = "✅ " + value;
         }
-        inlineKeyboardArray.push([{text: value, callback_data: `editOrder/${orderId}?savePaymentId=${key}`}]);
+        inlineKeyboardArray.push([{text: value, callback_data: `editOrder/${orderId}?paymentId=${key}`}]);
       });
       inlineKeyboardArray.push([{text: "⬅️ Назад",
         callback_data: `orders/${orderId}`}]);
       await cartWizard[0](ctx, "Способ оплаты", inlineKeyboardArray);
     }
     // save payment
-    if (savePaymentId) {
+    if (paymentId) {
       await ctx.state.cart.saveOrder(orderId, {
-        paymentId: + savePaymentId,
+        paymentId,
       });
       ctx.state.routeName = "orders";
       ctx.state.param = orderId;
@@ -282,7 +287,7 @@ ordersActions.push(async (ctx, next) => {
     if (cId) {
       const inlineKeyboardArray = [];
       ctx.state.cart.carriers().forEach((value, key) => {
-        if (key === + cId) {
+        if (key === cId) {
           value = "✅ " + value;
         }
         if (key === 1) {
@@ -301,7 +306,7 @@ ordersActions.push(async (ctx, next) => {
       await ctx.state.cart.saveOrder(orderId, {
         carrierId: sCid,
       });
-      carrierNumber = Number(carrierNumber);
+      // carrierNumber = Number(carrierNumber);
       if (sCid === 2 && !carrierNumber) {
         // return first step error
         ctx.state.params.set("o", orderId);
@@ -318,6 +323,30 @@ ordersActions.push(async (ctx, next) => {
           carrierNumber: null,
         });
       }
+      // redirect to order
+      ctx.state.routeName = "orders";
+      ctx.state.param = orderId;
+      await showOrders(ctx, next);
+    }
+    // show status
+    if (showStatusId) {
+      const inlineKeyboardArray = [];
+      ctx.state.cart.statuses().forEach((value, key) => {
+        if (key === showStatusId) {
+          value = "✅ " + value;
+        }
+        inlineKeyboardArray.push([{text: value, callback_data: `editOrder/${orderId}?statusId=${key}`}]);
+      });
+      inlineKeyboardArray.push([{text: "⬅️ Назад",
+        callback_data: `orders/${orderId}`}]);
+      await cartWizard[0](ctx, "Статус доставки", inlineKeyboardArray);
+    }
+    // save status
+    if (statusId) {
+      await ctx.state.cart.saveOrder(orderId, {
+        statusId,
+      });
+      // redirect to order
       ctx.state.routeName = "orders";
       ctx.state.param = orderId;
       await showOrders(ctx, next);

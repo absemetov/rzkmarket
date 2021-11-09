@@ -168,6 +168,7 @@ const cart = async (ctx, next) => {
         await orderQuery.add({
           userId: user.id,
           orderId: user.orderCount,
+          statusId: 1,
           fromBot: true,
           products: user.cart.products,
           createdAt: this.serverTimestamp,
@@ -196,6 +197,16 @@ const cart = async (ctx, next) => {
         }
       }
       return carriersMap;
+    },
+    statuses() {
+      const statusesTxt = botConfig.status;
+      const statusesMap = new Map();
+      if (statusesTxt) {
+        for (const paramsData of statusesTxt.split("&")) {
+          statusesMap.set(+ paramsData.split("=")[0], paramsData.split("=")[1].trim());
+        }
+      }
+      return statusesMap;
     },
   };
   ctx.state.cart = cart;
