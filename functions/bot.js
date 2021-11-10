@@ -25,7 +25,6 @@ bot.use(async (ctx, next) => {
   if (ctx.session === undefined) {
     ctx.session = {};
   }
-  // console.log(ctx.state.isAdmin);
   return next();
 });
 // use session lazy

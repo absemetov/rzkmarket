@@ -218,16 +218,18 @@ const startKeyboard = [
   {text: "🛒 Корзина", callback_data: "cart"},
 ];
 
-const ordersKeyboard = [
-  {text: "🧾 Заказы", callback_data: "orders"},
-];
-
 // start handler
 const startHandler = async (ctx) => {
   const cartProductsArray = await ctx.state.cart.products();
   startKeyboard[1].text = "🛒 Корзина";
   if (cartProductsArray.length) {
     startKeyboard[1].text += ` (${cartProductsArray.length})`;
+  }
+  // add orders keyboard
+  const adminKeyboard = [];
+  adminKeyboard.push(startKeyboard);
+  if (ctx.state.isAdmin) {
+    adminKeyboard.push([{text: "🧾 Заказы", callback_data: "orders"}])
   }
   // ctx.reply("Выберите меню", getMainKeyboard);
   // ctx.reply("Welcome to Rzk.com.ru! Monobank rates /mono Rzk Catalog /catalog");
@@ -237,7 +239,7 @@ const startHandler = async (ctx) => {
         caption: `<b>${botConfig.name}</b>`,
         parse_mode: "html",
         reply_markup: {
-          inline_keyboard: [startKeyboard, ordersKeyboard],
+          inline_keyboard: adminKeyboard,
         },
       });
   // set commands
@@ -251,6 +253,13 @@ const startHandler = async (ctx) => {
 // main route
 startActions.push(async (ctx, next) => {
   if (ctx.state.routeName === "start") {
+    // add orders keyboard
+    // add orders keyboard
+    const adminKeyboard = [];
+    adminKeyboard.push(startKeyboard);
+    if (ctx.state.isAdmin) {
+      adminKeyboard.push([{text: "🧾 Заказы", callback_data: "orders"}])
+    }
     const cartProductsArray = await ctx.state.cart.products();
     startKeyboard[1].text = "🛒 Корзина";
     if (cartProductsArray.length) {
@@ -263,7 +272,7 @@ startActions.push(async (ctx, next) => {
       parse_mode: "html",
     }, {
       reply_markup: {
-        inline_keyboard: [startKeyboard, ordersKeyboard],
+        inline_keyboard: adminKeyboard,
       },
     });
     await ctx.answerCbQuery();
