@@ -94,9 +94,10 @@ const showCatalog = async (ctx, next) => {
         // inlineKeyboardArray.push(Markup.button.callback(`📌 Tags ${selectedTag}`,
         //    `t/${currentCatalog.id}?tagSelected=${params.get("tag")}`));
         tagsArray.push({text: "📌 Фильтр",
-          callback_data: `t/${currentCatalog.id}?tagSelected=${tag}`});
+          callback_data: `t/${currentCatalog.id}`});
         // Delete or close selected tag
         if (tag) {
+          tagsArray[0].callback_data = `t/${currentCatalog.id}?tagSelected=${tag}`;
           tagsArray.push({text: `❎ ${tag}`, callback_data: `c/${currentCatalog.id}`});
         }
         inlineKeyboardArray.push(tagsArray);
@@ -288,7 +289,7 @@ catalogsActions.push( async (ctx, next) => {
       } else {
         // generate response
         const dateTimestamp = Math.floor(Date.now() / 1000);
-        paramsUrl += `&t=${dateTimestamp}`;
+        paramsUrl += `&${dateTimestamp}`;
       }
     }
     if (qty) {

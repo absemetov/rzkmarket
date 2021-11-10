@@ -22,6 +22,7 @@ const showOrders = async (ctx, next) => {
     const orderId = ctx.state.param;
     let caption = `<b>${botConfig.name} > Заказы</b>`;
     if (orderId) {
+      console.log(orderId);
       const editOrder = ctx.state.params.get("edit");
       const saveOrder = ctx.state.params.get("save");
       // save products from cart
@@ -62,8 +63,6 @@ const showOrders = async (ctx, next) => {
           ctx.state.routeName = "cart";
           await showCart(ctx, next);
           return;
-        } else {
-          // wizard order
         }
         // show order
         const date = moment.unix(order.createdAt);
@@ -96,10 +95,8 @@ const showOrders = async (ctx, next) => {
           totalQty += product.qty;
           totalSum += product.qty * product.price;
         }
-        if (totalQty) {
-          caption += `<b>Количество товара: ${totalQty}\n` +
+        caption += `<b>Количество товара: ${totalQty}\n` +
           `Сумма: ${roundNumber(totalSum)} ${botConfig.currency}</b>`;
-        }
       }
       // edit recipient
       // status
@@ -131,7 +128,14 @@ const showOrders = async (ctx, next) => {
       ctx.session.pathOrder = pathOrder;
       // show orders
       const limit = 10;
-      const mainQuery = firebase.firestore().collection("orders").orderBy("createdAt", "desc");
+      let mainQuery = firebase.firestore().collection("orders").orderBy("createdAt", "desc");
+      // Filter by tag
+      const statusId = + ctx.state.params.get("statusId");
+      let statusUrl = "";
+      if (statusId) {
+        mainQuery = mainQuery.where("statusId", "==", statusId);
+        statusUrl = `&statusId=${statusId}`;
+      }
       let query = mainQuery;
       if (startAfter) {
         const startAfterProduct = await firebase.firestore().collection("orders")
@@ -148,8 +152,19 @@ const showOrders = async (ctx, next) => {
         // defaul limit
         query = query.limit(limit);
       }
-      // get Products
+      // get orders
       const ordersSnapshot = await query.get();
+      // add status button
+      const tagsArray = [];
+      tagsArray.push({text: "📌 Фильтр",
+        callback_data: "editOrder/showStatuses"});
+      // Delete or close selected tag
+      if (statusId) {
+        tagsArray[0].callback_data = `editOrder/showStatuses?selectedStatus=${statusId}`;
+        tagsArray.push({text: `❎ ${ctx.state.cart.statuses().get(statusId)}`, callback_data: "orders"});
+      }
+      inlineKeyboardArray.push(tagsArray);
+      // add orders info
       ordersSnapshot.docs.forEach((doc) => {
         const order = {id: doc.id, ...doc.data()};
         const date = moment.unix(order.createdAt);
@@ -165,7 +180,7 @@ const showOrders = async (ctx, next) => {
         if (!ifBeforeProducts.empty) {
           // inlineKeyboardArray.push(Markup.button.callback("⬅️ Back",
           //    `c/${currentCatalog.id}?endBefore=${endBefore.id}&tag=${params.get("tag")}`));
-          prevNext.push({text: "⬅️ Назад", callback_data: `orders?e=${endBeforeSnap.id}`});
+          prevNext.push({text: "⬅️ Назад", callback_data: `orders?e=${endBeforeSnap.id}${statusUrl}`});
         }
         // startAfter
         const startAfterSnap = ordersSnapshot.docs[ordersSnapshot.docs.length - 1];
@@ -175,7 +190,7 @@ const showOrders = async (ctx, next) => {
           // inlineKeyboardArray.push(Markup.button.callback("➡️ Load more",
           //    `c/${currentCatalog.id}?startAfter=${startAfter.id}&tag=${params.get("tag")}`));
           prevNext.push({text: "➡️ Вперед",
-            callback_data: `orders?s=${startAfterSnap.id}`});
+            callback_data: `orders?s=${startAfterSnap.id}${statusUrl}`});
         }
         inlineKeyboardArray.push(prevNext);
       }
@@ -253,6 +268,20 @@ ordersActions.push(async (ctx, next) => {
     const paymentId = + ctx.state.params.get("paymentId");
     const showStatusId = + ctx.state.params.get("showStatusId");
     const statusId = + ctx.state.params.get("statusId");
+    // show statuses
+    if (orderId === "showStatuses") {
+      const selectedStatus = + ctx.state.params.get("selectedStatus");
+      const inlineKeyboardArray = [];
+      ctx.state.cart.statuses().forEach((value, key) => {
+        if (key === selectedStatus) {
+          value = "✅ " + value;
+        }
+        inlineKeyboardArray.push([{text: value, callback_data: `orders?statusId=${key}`}]);
+      });
+      inlineKeyboardArray.push([{text: "⬅️ Назад",
+        callback_data: `orders?${ctx.session.pathOrder}`}]);
+      await cartWizard[0](ctx, "Статуc заказа", inlineKeyboardArray);
+    }
     if (editField) {
       const orderSnap = await firebase.firestore().collection("orders").doc(orderId).get();
       const order = {"id": orderSnap.id, ...orderSnap.data()};
@@ -339,7 +368,7 @@ ordersActions.push(async (ctx, next) => {
       });
       inlineKeyboardArray.push([{text: "⬅️ Назад",
         callback_data: `orders/${orderId}`}]);
-      await cartWizard[0](ctx, "Статус доставки", inlineKeyboardArray);
+      await cartWizard[0](ctx, "Статус заказа", inlineKeyboardArray);
     }
     // save status
     if (statusId) {
