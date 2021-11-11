@@ -227,8 +227,10 @@ const showProduct = async (ctx, next) => {
       addButton.callback_data = `aC/${product.id}?qty=${cartProduct.qty}&a=1`;
     }
     inlineKeyboardArray.push([addButton]);
-    inlineKeyboardArray.push([{text: "📸 Upload photo",
-      callback_data: `uploadPhoto/${product.id}`}]);
+    if (ctx.state.isAdmin) {
+      inlineKeyboardArray.push([{text: "📸 Загрузить фото",
+        callback_data: `uploadPhoto/${product.id}`}]);
+    }
     // chck photos
     if (product.photos && product.photos.length) {
       // inlineKeyboardArray.push(Markup.button.callback("🖼 Show photos", `showPhotos/${product.id}`));
@@ -625,6 +627,7 @@ const cartWizard = [
       return;
     }
     await ctx.state.cart.setWizardData({address: ctx.message.text});
+    console.log(ctx.from);
     let userName = "";
     if (ctx.from.last_name) {
       userName += ctx.from.last_name;
