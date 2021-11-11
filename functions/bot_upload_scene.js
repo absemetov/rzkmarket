@@ -82,24 +82,26 @@ const uploadHandler = async (ctx) => {
     return false;
   }
   // get data for check upload process
-  const session = await ctx.state.cart.getSessionData();
+  // const session = await ctx.state.cart.getSessionData();
   // const sessionUser = firebase.firestore().collection("sessions").doc(`${ctx.from.id}-${ctx.chat.id}`);
   // const docRef = await sessionUser.get();
-  let uploading = session.uploading;
+  let uploading = ctx.session.uploading;
   // if (docRef.exists) {
   //   uploadPass = docRef.data().uploadPass;
-  const uplodingTime = session.uploadStartAt && serverTimestamp - session.uploadStartAt;
+  const uplodingTime = ctx.session.uploadStartAt && serverTimestamp - ctx.session.uploadStartAt;
   // kill process
-  if (session.uploading && uplodingTime > 570) {
+  if (ctx.session.uploading && uplodingTime > 570) {
     uploading = false;
   }
   // }
   if (!uploading) {
     // set data for check upload process
-    await ctx.state.cart.setSessionData({
-      uploading: true,
-      uploadStartAt: serverTimestamp,
-    });
+    // await ctx.state.cart.setSessionData({
+    //   uploading: true,
+    //   uploadStartAt: serverTimestamp,
+    // });
+    ctx.session.uploading = true;
+    ctx.session.uploadStartAt = serverTimestamp;
     // load goods
     const doc = new GoogleSpreadsheet(sheetId);
     try {
@@ -325,9 +327,10 @@ Catalogs: *${catalogsIsSet.size}*`);
       await ctx.replyWithMarkdown(`Sheet ${error}`);
     }
     // set data for check upload process done!
-    await ctx.state.cart.setSessionData({
-      uploading: false,
-    });
+    // await ctx.state.cart.setSessionData({
+    //   uploading: false,
+    // });
+    ctx.session.uploading = false;
   } else {
     await ctx.replyWithMarkdown("Uploading..., please wait");
   }
