@@ -234,7 +234,7 @@ const showProduct = async (ctx, next) => {
     // chck photos
     if (product.photos && product.photos.length) {
       // inlineKeyboardArray.push(Markup.button.callback("🖼 Show photos", `showPhotos/${product.id}`));
-      inlineKeyboardArray.push([{text: `🖼 Show photos (${product.photos.length})`,
+      inlineKeyboardArray.push([{text: `🖼 Показать фото (${product.photos.length})`,
         callback_data: `showPhotos/${product.id}`}]);
     }
     // Get main photo url.
@@ -627,7 +627,7 @@ const cartWizard = [
       return;
     }
     await ctx.state.cart.setWizardData({address: ctx.message.text});
-    console.log(ctx.from);
+    console.log(ctx.from.username);
     let userName = "";
     if (ctx.from.last_name) {
       userName += ctx.from.last_name;
@@ -719,10 +719,11 @@ const cartWizard = [
     if (ctx.message.text === "Оформить заказ") {
       // save order
       await ctx.state.cart.saveOrder();
-      ctx.reply("Спасибо за заказ! /shop", {
+      await ctx.reply("Спасибо за заказ! /shop", {
         reply_markup: {
           remove_keyboard: true,
         }});
+      await ctx.telegram.sendMessage(94899148, "New order from bot!" );
     }
     // leave wizard
     // await ctx.state.cart.setSessionData({scene: null});
@@ -867,9 +868,13 @@ catalogsActions.push( async (ctx, next) => {
       } else {
         publicUrl = "https://s3.eu-central-1.amazonaws.com/rzk.com.ua/250.56ad1e10bf4a01b1ff3af88752fd3412.jpg";
       }
-      inlineKeyboardArray.push([{text: "🏷 Set main", callback_data: `setMainPhoto/${product.id}?photoId=${photoId}`}]);
-      inlineKeyboardArray.push([{text: "❎ Close", callback_data: "closePhoto"}]);
-      inlineKeyboardArray.push([{text: "🗑 Delete", callback_data: `deletePhoto/${product.id}?photoId=${photoId}`}]);
+      // if admin
+      if (ctx.state.isAdmin) {
+        inlineKeyboardArray.push([{text: "🏷 Set main",
+          callback_data: `setMainPhoto/${product.id}?photoId=${photoId}`}]);
+        inlineKeyboardArray.push([{text: "🗑 Delete", callback_data: `deletePhoto/${product.id}?photoId=${photoId}`}]);
+      }
+      inlineKeyboardArray.push([{text: "❎ Закрыть", callback_data: "closePhoto"}]);
       await ctx.replyWithPhoto({url: publicUrl}, {
         caption: product.mainPhoto === photoId ?
           `✅ Photo <b>#${index + 1}</b> (Main Photo) ${product.name} (${product.id})` :
