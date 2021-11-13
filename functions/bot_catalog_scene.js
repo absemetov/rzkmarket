@@ -617,8 +617,9 @@ const cartWizard = [
         resize_keyboard: true,
       }});
     // await ctx.state.cart.setSessionData({cursor: 3});
-    ctx.session.cursor = 3;
-    ctx.session.scene = "wizardOrder";
+    await ctx.state.cart.setSessionData({scene: "wizardOrder", cursor: 3});
+    // ctx.session.cursor = 3;
+    // ctx.session.scene = "wizardOrder";
   },
   async (ctx) => {
     // save data to cart
@@ -627,7 +628,6 @@ const cartWizard = [
       return;
     }
     await ctx.state.cart.setWizardData({address: ctx.message.text});
-    console.log(ctx.from.username);
     let userName = "";
     if (ctx.from.last_name) {
       userName += ctx.from.last_name;
@@ -641,7 +641,8 @@ const cartWizard = [
         resize_keyboard: true,
       }});
     // await ctx.state.cart.setSessionData({cursor: 4});
-    ctx.session.cursor = 4;
+    await ctx.state.cart.setSessionData({cursor: 4});
+    // ctx.session.cursor = 4;
   },
   async (ctx) => {
     // validation example
@@ -664,7 +665,8 @@ const cartWizard = [
       },
     });
     // await ctx.state.cart.setSessionData({cursor: 5});
-    ctx.session.cursor = 5;
+    await ctx.state.cart.setSessionData({cursor: 5});
+    // ctx.session.cursor = 5;
   },
   async (ctx) => {
     const phoneNumber = (ctx.message.contact && ctx.message.contact.phone_number) || ctx.message.text;
@@ -687,7 +689,8 @@ const cartWizard = [
             resize_keyboard: true,
           }});
     // await ctx.state.cart.setSessionData({cursor: 6});
-    ctx.session.cursor = 6;
+    await ctx.state.cart.setSessionData({cursor: 6});
+    // ctx.session.cursor = 6;
   },
   async (ctx) => {
     if (ctx.message.text && ctx.message.text !== "Без комментариев") {
@@ -713,7 +716,8 @@ const cartWizard = [
       }});
     // leave wizard
     // await ctx.state.cart.setSessionData({cursor: 7});
-    ctx.session.cursor = 7;
+    await ctx.state.cart.setSessionData({cursor: 7});
+    // ctx.session.cursor = 7;
   },
   async (ctx, next) => {
     if (ctx.message.text === "Оформить заказ") {
@@ -724,10 +728,12 @@ const cartWizard = [
           remove_keyboard: true,
         }});
       await ctx.telegram.sendMessage(94899148, "New order from bot!" );
+      // exit scene
+      await ctx.state.cart.setSessionData({scene: null});
     }
     // leave wizard
     // await ctx.state.cart.setSessionData({scene: null});
-    ctx.session.scene = null;
+    // ctx.session.scene = null;
   },
 ];
 
@@ -753,7 +759,7 @@ catalogsActions.push( async (ctx, next) => {
         }
       });
       inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: "cart"}]);
-      await cartWizard[0](ctx, "Способ доставки: ", inlineKeyboardArray);
+      await cartWizard[0](ctx, "Способ доставки", inlineKeyboardArray);
     }
     // set carrier number
     if (todo === "cN") {

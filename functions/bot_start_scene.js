@@ -208,6 +208,20 @@ const cart = async (ctx, next) => {
       }
       return statusesMap;
     },
+    async getSessionData(value) {
+      const user = await this.getUserData();
+      if (user && user.session) {
+        return user.session;
+      }
+      return {};
+    },
+    async setSessionData(value) {
+      await this.userQuery.set({
+        session: {
+          ...value,
+        },
+      }, {merge: true});
+    },
   };
   ctx.state.cart = cart;
   return next();
@@ -231,7 +245,7 @@ const startHandler = async (ctx) => {
   if (ctx.state.isAdmin) {
     adminKeyboard.push([{text: "🧾 Заказы", callback_data: "orders"}]);
   } else {
-    adminKeyboard.push([{text: "🧾 Мои заказы", callback_data: "myOrders"}]);
+    adminKeyboard.push([{text: "🧾 Мои заказы", callback_data: `myOrders/${ctx.from.id}`}]);
   }
   // ctx.reply("Выберите меню", getMainKeyboard);
   // ctx.reply("Welcome to Rzk.com.ru! Monobank rates /mono Rzk Catalog /catalog");
@@ -262,7 +276,7 @@ startActions.push(async (ctx, next) => {
     if (ctx.state.isAdmin) {
       adminKeyboard.push([{text: "🧾 Заказы", callback_data: "orders"}]);
     } else {
-      adminKeyboard.push([{text: "🧾 Мои заказы", callback_data: "myOrders"}]);
+      adminKeyboard.push([{text: "🧾 Мои заказы", callback_data: `myOrders/${ctx.from.id}`}]);
     }
     const cartProductsArray = await ctx.state.cart.products();
     startKeyboard[1].text = "🛒 Корзина";

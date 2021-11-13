@@ -11,9 +11,14 @@ const myOrders = async (ctx, next) => {
   if (ctx.state.routeName === "myOrders") {
     const startAfter = ctx.state.params.get("s");
     const endBefore = ctx.state.params.get("e");
+    const userId = + ctx.state.param;
     const inlineKeyboardArray = [];
-    const orderId = ctx.state.param;
+    const orderId = ctx.state.params.get("orderId");
+    const adminOrder = ctx.state.params.get("adminOrder");
     let caption = `<b>${botConfig.name} > Мои заказы</b>`;
+    if (adminOrder) {
+      ctx.session.adminOrder = adminOrder;
+    }
     if (orderId) {
       const orderSnap = await firebase.firestore().collection("orders").doc(orderId).get();
       const order = {"id": orderSnap.id, ...orderSnap.data()};
@@ -54,12 +59,15 @@ const myOrders = async (ctx, next) => {
           `Сумма: ${roundNumber(totalSum)} ${botConfig.currency}</b>`;
       }
       inlineKeyboardArray.push([{text: "🧾 Мои заказы",
-        callback_data: `${ctx.session.pathOrder ? ctx.session.pathOrder : "myOrders"}`}]);
+        callback_data: `${ctx.session.myPathOrder ? ctx.session.myPathOrder : "myOrders/" + userId}`}]);
     } else {
+      // get user info
+      const userInfo = await ctx.state.cart.getUserData();
+      caption += " " + userInfo.userName;
       // show orders
-      ctx.session.pathOrder = ctx.callbackQuery.data;
+      ctx.session.myPathOrder = ctx.callbackQuery.data;
       const limit = 10;
-      const mainQuery = firebase.firestore().collection("orders").where("userId", "==", ctx.from.id)
+      const mainQuery = firebase.firestore().collection("orders").where("userId", "==", userId)
           .orderBy("createdAt", "desc");
       let query = mainQuery;
       if (startAfter) {
@@ -85,7 +93,7 @@ const myOrders = async (ctx, next) => {
         const date = moment.unix(order.createdAt);
         inlineKeyboardArray.push([{text: `🧾 Заказ #${order.orderId},` +
           `${ctx.state.cart.statuses().get(order.statusId)}, ${date.fromNow()}`,
-        callback_data: `myOrders/${order.id}`}]);
+        callback_data: `myOrders/${userId}?orderId=${order.id}`}]);
       });
       // Set load more button
       if (!ordersSnapshot.empty) {
@@ -96,7 +104,7 @@ const myOrders = async (ctx, next) => {
         if (!ifBeforeProducts.empty) {
           // inlineKeyboardArray.push(Markup.button.callback("⬅️ Back",
           //    `c/${currentCatalog.id}?endBefore=${endBefore.id}&tag=${params.get("tag")}`));
-          prevNext.push({text: "⬅️ Назад", callback_data: `myOrders?e=${endBeforeSnap.id}`});
+          prevNext.push({text: "⬅️ Назад", callback_data: `myOrders/${userId}?e=${endBeforeSnap.id}`});
         }
         // startAfter
         const startAfterSnap = ordersSnapshot.docs[ordersSnapshot.docs.length - 1];
@@ -106,11 +114,14 @@ const myOrders = async (ctx, next) => {
           // inlineKeyboardArray.push(Markup.button.callback("➡️ Load more",
           //    `c/${currentCatalog.id}?startAfter=${startAfter.id}&tag=${params.get("tag")}`));
           prevNext.push({text: "➡️ Вперед",
-            callback_data: `myOrders?s=${startAfterSnap.id}`});
+            callback_data: `myOrders/${userId}?s=${startAfterSnap.id}`});
         }
         inlineKeyboardArray.push(prevNext);
       } else {
-        inlineKeyboardArray.push([{text: "Заказов нет", callback_data: "orders"}]);
+        inlineKeyboardArray.push([{text: "У Вас пока нет заказов", callback_data: `myOrders/${userId}`}]);
+      }
+      if (ctx.session.adminOrder) {
+        inlineKeyboardArray.push([{text: "🏠 Вернуться к заказу", callback_data: `orders/${ctx.session.adminOrder}`}]);
       }
       inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: "start"}]);
     }
@@ -239,6 +250,9 @@ const showOrders = async (ctx, next) => {
       // edit products
       inlineKeyboardArray.push([{text: "📝 Редактировать товары",
         callback_data: `orders/${orderId}?edit=products`}]);
+      // edit products
+      inlineKeyboardArray.push([{text: "📝 Информация о покупателе",
+        callback_data: `myOrders/${order.userId}?adminOrder=${order.id}`}]);
       // refresh order
       const dateTimestamp = Math.floor(Date.now() / 1000);
       inlineKeyboardArray.push([{text: `🔄 Обновить заказ#${order.orderId}`,

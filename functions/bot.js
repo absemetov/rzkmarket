@@ -46,6 +46,9 @@ bot.start(async (ctx) => {
   if (ctx.from.last_name) {
     userName += " " + ctx.from.last_name;
   }
+  if (ctx.from.username) {
+    userName += " @" + ctx.from.username;
+  }
   await ctx.state.cart.setUserName({
     userName,
   });
@@ -78,12 +81,13 @@ bot.command("upload", (ctx) => {
 // if session destroyed show main keyboard
 bot.on(["text", "contact"], async (ctx) => {
   // const session = await ctx.state.cart.getSessionData();
+  const sessionFire = await ctx.state.cart.getSessionData();
   if (ctx.message.text === "Отмена") {
     ctx.reply("Для продолжения нажмите /shop", {
       reply_markup: {
         remove_keyboard: true,
       }});
-    // await ctx.state.cart.setSessionData({scene: null});
+    await ctx.state.cart.setSessionData({scene: null});
     ctx.session.scene = null;
     return;
   }
@@ -91,15 +95,15 @@ bot.on(["text", "contact"], async (ctx) => {
     await uploadHandler(ctx);
     return;
   }
-  if (ctx.session.scene === "wizardOrder") {
-    await cartWizard[ctx.session.cursor](ctx);
+  if (sessionFire.scene === "wizardOrder") {
+    await cartWizard[sessionFire.cursor](ctx);
     return;
   }
   if (ctx.session.scene === "editOrder") {
     await orderWizard[ctx.session.cursor](ctx);
     return;
   }
-  startHandler(ctx);
+  // startHandler(ctx);
 });
 
 bot.on("photo", (ctx) => uploadPhotoProduct(ctx));
