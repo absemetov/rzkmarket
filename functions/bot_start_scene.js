@@ -222,6 +222,14 @@ const cart = async (ctx, next) => {
         },
       }, {merge: true});
     },
+    async objects() {
+      const objectsQuery = await firebase.firestore().collection("objects").get();
+      const objects = [];
+      objectsQuery.docs.forEach((object) => {
+        objects.push({id: object.id, ...object.data()});
+      });
+      return objects;
+    },
   };
   ctx.state.cart = cart;
   return next();
@@ -234,28 +242,33 @@ const startKeyboard = [
 
 // start handler
 const startHandler = async (ctx) => {
-  const cartProductsArray = await ctx.state.cart.products();
-  startKeyboard[1].text = "🛒 Корзина";
-  if (cartProductsArray.length) {
-    startKeyboard[1].text += ` (${cartProductsArray.length})`;
-  }
+  // const cartProductsArray = await ctx.state.cart.products();
+  // if (cartProductsArray.length) {
+  //   startKeyboard[1].text += ` (${cartProductsArray.length})`;
+  // }
   // add orders keyboard
-  const adminKeyboard = [];
-  adminKeyboard.push(startKeyboard);
-  if (ctx.state.isAdmin) {
-    adminKeyboard.push([{text: "🧾 Заказы", callback_data: "orders"}]);
-  } else {
-    adminKeyboard.push([{text: "🧾 Мои заказы", callback_data: `myOrders/${ctx.from.id}`}]);
-  }
+  const inlineKeyboard = [];
+  // adminKeyboard.push(startKeyboard);
+  // if (ctx.state.isAdmin) {
+  //   adminKeyboard.push([{text: "🧾 Заказы", callback_data: "orders"}]);
+  // } else {
+  //   adminKeyboard.push([{text: "🧾 Мои заказы", callback_data: `myOrders/${ctx.from.id}`}]);
+  // }
   // ctx.reply("Выберите меню", getMainKeyboard);
   // ctx.reply("Welcome to Rzk.com.ru! Monobank rates /mono Rzk Catalog /catalog");
   // reply with photo necessary to show ptoduct
+  // get all Objects
+  const objects = await ctx.state.cart.objects();
+  objects.forEach((object) => {
+    console.log(object);
+    inlineKeyboard.push([{text: object.name, callback_data: `orders/${object.id}`}]);
+  });
   await ctx.replyWithPhoto("https://picsum.photos/450/150/?random",
       {
-        caption: `<b>${botConfig.name}</b>`,
+        caption: `<b>${botConfig.name} > Выберите торговый объект</b>`,
         parse_mode: "html",
         reply_markup: {
-          inline_keyboard: adminKeyboard,
+          inline_keyboard: inlineKeyboard,
         },
       });
   // set commands
