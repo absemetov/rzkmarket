@@ -59,7 +59,7 @@ upload.hears("shop", async (ctx) => {
 // upload from googleSheet
 // eslint-disable-next-line no-useless-escape
 // upload.hears(/^([a-zA-Z0-9-_]+)/, async (ctx) => {
-const uploadHandler = async (ctx) => {
+const uploadHandler = async (ctx, objectId, spreadsheets) => {
   const start = new Date();
   // Max upload goods
   const maxUploadGoods = 100;
@@ -71,7 +71,7 @@ const uploadHandler = async (ctx) => {
   const perPage = 500;
   // Get sheetId parse url
   let sheetId;
-  ctx.message.text.split("/").forEach((section) => {
+  spreadsheets.split("/").forEach((section) => {
     if (section.length === 44) {
       sheetId = section;
     }
@@ -187,12 +187,12 @@ Count rows: *${sheet.rowCount - 1}*`);
           };
           // required for arrays dont work
           const rulesProductRow = {
-            "id": "required|alpha_dash",
+            "id": "required|alpha_dash|max:20",
             "name": "required|string",
             "purchasePrice": "numeric",
             "price": "required|numeric",
-            "group.*.id": "alpha_dash",
-            "tags.*": "alpha_dash",
+            "group.*.id": "alpha_dash|max:20",
+            "tags.*": "alpha_dash|max:20",
             "unit": "required|in:м,шт",
           };
           const validateProductRow = new Validator(product, rulesProductRow);
@@ -216,7 +216,8 @@ Count rows: *${sheet.rowCount - 1}*`);
               throw new Error(`Limit *${maxUploadGoods}* goods!`);
             }
             // add products in batch
-            const productRef = firebase.firestore().collection("products").doc(product.id);
+            const productRef = firebase.firestore().collection("objects").doc(objectId)
+                .collection("products").doc(product.id);
             batchGoods.set(productRef, {
               "name": product.name,
               "purchasePrice": product.purchasePrice,
@@ -232,7 +233,8 @@ Count rows: *${sheet.rowCount - 1}*`);
             for (const catalog of groupArray) {
               // check if catalog added to batch
               if (!catalogsIsSet.has(catalog.id)) {
-                const catalogRef = firebase.firestore().collection("catalogs").doc(catalog.id);
+                const catalogRef = firebase.firestore().collection("objects").doc(objectId)
+                    .collection("catalogs").doc(catalog.id);
                 batchCatalogs.set(catalogRef, {
                   "name": catalog.name,
                   "parentId": catalog.parentId,
@@ -260,8 +262,8 @@ Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id).parentId}
                 if (!catalogsIsSet.get(groupArray[groupArray.length - 1].id).tags.has(tagsRow.id)) {
                   // if hidden tag not save
                   if (!tagsRow.hidden) {
-                    const catalogRef = firebase.firestore().collection("catalogs")
-                        .doc(groupArray[groupArray.length - 1].id);
+                    const catalogRef = firebase.firestore().collection("objects").doc(objectId)
+                        .collection("catalogs").doc(groupArray[groupArray.length - 1].id);
                     // batchCatalogs.update(catalogRef, {
                     //   "tags": firebase.firestore.FieldValue.arrayUnion({
                     //     id: tagsRow.id,
@@ -303,7 +305,8 @@ Goods: *${countUploadGoods}*
 Catalogs: *${catalogsIsSet.size}*`);
       // delete old Products
       const batchProductsDelete = firebase.firestore().batch();
-      const productsDeleteSnapshot = await firebase.firestore().collection("products")
+      const productsDeleteSnapshot = await firebase.firestore().collection("objects").doc(objectId)
+          .collection("products")
           .where("updatedAt", "!=", serverTimestamp).limit(perPage).get();
       productsDeleteSnapshot.forEach((doc) =>{
         batchProductsDelete.delete(doc.ref);
@@ -314,7 +317,8 @@ Catalogs: *${catalogsIsSet.size}*`);
       }
       // delete old catalogs
       const batchCatalogsDelete = firebase.firestore().batch();
-      const catalogsDeleteSnapshot = await firebase.firestore().collection("catalogs")
+      const catalogsDeleteSnapshot = await firebase.firestore().collection("objects").doc(objectId)
+          .collection("catalogs")
           .where("updatedAt", "!=", serverTimestamp).limit(perPage).get();
       catalogsDeleteSnapshot.forEach((doc) =>{
         batchCatalogsDelete.delete(doc.ref);

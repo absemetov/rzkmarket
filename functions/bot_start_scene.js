@@ -1,6 +1,7 @@
 // const {Scenes: {BaseScene}} = require("telegraf");
 const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
+const {uploadHandler} = require("./bot_upload_scene");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 // const start = new BaseScene("start");
 // set default project
@@ -35,8 +36,13 @@ const parseUrl = (ctx, next) => {
 // cart instance
 const cart = async (ctx, next) => {
   const cart = {
+    objectId: null,
     userQuery: firebase.firestore().collection("users").doc(`${ctx.from.id}`),
     serverTimestamp: Math.floor(Date.now() / 1000),
+    cartQuery(objectId) {
+      return firebase.firestore().collection("objects").doc(objectId)
+          .collection("carts").doc(`${ctx.from.id}`);
+    },
     async getUserData() {
       const userRef = await this.userQuery.get();
       if (userRef.exists) {
@@ -44,7 +50,8 @@ const cart = async (ctx, next) => {
       }
       return null;
     },
-    async add(product, qty) {
+    async add(objectId, product, qty) {
+      this.objectId = objectId;
       qty = Number(qty);
       let productData = {};
       if (qty) {
@@ -66,31 +73,24 @@ const cart = async (ctx, next) => {
             },
           };
         }
-        await this.userQuery.set({
-          cart: {
-            products: productData,
-          },
+        await this.cartQuery(objectId).set({
+          products: productData,
         }, {merge: true});
       } else {
         // delete product from cart
-        await this.userQuery.set({
-          cart: {
-            products: {
-              [typeof product == "object" ? product.id : product]: firebase.firestore.FieldValue.delete(),
-            },
+        await this.cartQuery(objectId).set({
+          products: {
+            [typeof product == "object" ? product.id : product]: firebase.firestore.FieldValue.delete(),
           },
         }, {merge: true});
       }
     },
-    async products() {
+    async products(objectId) {
       const products = [];
-      const user = await this.getUserData();
-      if (user) {
-        if (user.cart && user.cart.products) {
-          const cartProducts = user.cart.products;
-          for (const [id, product] of Object.entries(cartProducts)) {
-            products.push({id, ...product});
-          }
+      const cart = await this.cartQuery(objectId).get();
+      if (cart.exists) {
+        for (const [id, product] of Object.entries(cart.data().products)) {
+          products.push({id, ...product});
         }
       }
       // sort products by createdAt
@@ -99,7 +99,7 @@ const cart = async (ctx, next) => {
       });
       return products;
     },
-    async clear(withOrderData) {
+    async clear(withOrderData, objectId) {
       const clearData = {};
       if (withOrderData) {
         clearData.cart = {
@@ -111,7 +111,7 @@ const cart = async (ctx, next) => {
           products: firebase.firestore.FieldValue.delete(),
         };
       }
-      await this.userQuery.set({
+      await this.cartQuery(objectId).set({
         ...clearData,
       }, {merge: true});
     },
@@ -148,8 +148,8 @@ const cart = async (ctx, next) => {
         ...value,
       }, {merge: true});
     },
-    async saveOrder(id, setData) {
-      const orderQuery = firebase.firestore().collection("orders");
+    async saveOrder(id, setData, objectId) {
+      const orderQuery = firebase.firestore().collection("objects").doc(objectId).collection("orders");
       // edit order
       if (id) {
         const order = orderQuery.doc(id);
@@ -176,7 +176,7 @@ const cart = async (ctx, next) => {
         });
       }
       // clear cart delete orderId from cart
-      await this.clear(id);
+      await this.clear(id, objectId);
     },
     payments() {
       const paymentsTxt = botConfig.payment;
@@ -247,7 +247,7 @@ const startHandler = async (ctx) => {
   //   startKeyboard[1].text += ` (${cartProductsArray.length})`;
   // }
   // add orders keyboard
-  const inlineKeyboard = [];
+  const inlineKeyboardArray = [];
   // adminKeyboard.push(startKeyboard);
   // if (ctx.state.isAdmin) {
   //   adminKeyboard.push([{text: "🧾 Заказы", callback_data: "orders"}]);
@@ -260,20 +260,19 @@ const startHandler = async (ctx) => {
   // get all Objects
   const objects = await ctx.state.cart.objects();
   objects.forEach((object) => {
-    console.log(object);
-    inlineKeyboard.push([{text: object.name, callback_data: `orders/${object.id}`}]);
+    inlineKeyboardArray.push([{text: object.name, callback_data: `objects/${object.id}`}]);
   });
   await ctx.replyWithPhoto("https://picsum.photos/450/150/?random",
       {
         caption: `<b>${botConfig.name} > Выберите торговый объект</b>`,
         parse_mode: "html",
         reply_markup: {
-          inline_keyboard: inlineKeyboard,
+          inline_keyboard: inlineKeyboardArray,
         },
       });
   // set commands
   await ctx.telegram.setMyCommands([
-    {"command": "shop", "description": `${botConfig.name}`},
+    {"command": "objects", "description": `${botConfig.name} объекты`},
     {"command": "upload", "description": "Upload goods"},
     {"command": "mono", "description": "Monobank exchange rates "},
   ]);
@@ -312,9 +311,55 @@ startActions.push(async (ctx, next) => {
   }
 });
 
-// start.hears("where", (ctx) => ctx.reply("You are in start scene"));
+// objects
+startActions.push(async (ctx, next) => {
+  if (ctx.state.routeName === "objects") {
+    const objectId = ctx.state.param;
+    const uploadGoods = ctx.state.params.get("uploadGoods");
+    let caption = `<b>${botConfig.name} > Торговые объекты</b>`;
+    const inlineKeyboardArray = [];
+    if (objectId) {
+      // get data obj
+      const objectSnap = await firebase.firestore().collection("objects").doc(objectId).get();
+      const object = {"id": objectSnap.id, ...objectSnap.data()};
+      if (uploadGoods) {
+        await uploadHandler(ctx, objectId, object.spreadsheets);
+      }
+      // show object info
+      caption = `<b>${botConfig.name} > Торговый объект #${object.name}\n` +
+        `Контакты: ${object.phoneNumber}\n` +
+        `Адрес: ${object.address}\n` +
+        `spreadsheets: ${object.spreadsheets}\n` +
+        `Описание: ${object.description}</b>`;
+      const dateTimestamp = Math.floor(Date.now() / 1000);
+      // buttons
+      inlineKeyboardArray.push([{text: "Каталог", callback_data: `c?o=${object.id}`}]);
+      inlineKeyboardArray.push([{text: "Загрузить товары", callback_data: `objects/${object.id}?uploadGoods=1`}]);
+      inlineKeyboardArray.push([{text: "Торговые объекты", callback_data: `objects?${dateTimestamp}`}]);
+    } else {
+      // show all objects
+      const objects = await ctx.state.cart.objects();
+      objects.forEach((object) => {
+        inlineKeyboardArray.push([{text: object.name, callback_data: `objects/${object.id}`}]);
+      });
+    }
+    // render data
+    await ctx.editMessageMedia({
+      type: "photo",
+      media: "https://picsum.photos/450/150/?random",
+      caption,
+      parse_mode: "html",
+    }, {
+      reply_markup: {
+        inline_keyboard: inlineKeyboardArray,
+      },
+    });
+    await ctx.answerCbQuery();
+  } else {
+    return next();
+  }
+});
 
-// exports.start = start;
 exports.startActions = startActions;
 exports.startHandler = startHandler;
 exports.isAdmin = isAdmin;

@@ -55,7 +55,7 @@ bot.start(async (ctx) => {
   startHandler(ctx);
 });
 // rzk shop
-bot.command("shop", async (ctx) => {
+bot.command("objects", async (ctx) => {
   startHandler(ctx);
 });
 // monobank

@@ -3,7 +3,6 @@ const download = require("./download.js");
 const fs = require("fs");
 const {botConfig, roundNumber} = require("./bot_start_scene");
 const bucket = firebase.storage().bucket();
-const footerButtons = [{text: "🏠 Главная", callback_data: "start"}, {text: "🛒 Корзина", callback_data: "cart"}];
 // const {Scenes: {BaseScene, WizardScene}} = require("telegraf");
 // const {getMainKeyboard} = require("./bot_keyboards.js");
 // const catalogScene = new BaseScene("catalog");
@@ -50,11 +49,17 @@ const catalogsActions = [];
 
 const showCatalog = async (ctx, next) => {
   if (ctx.state.routeName === "c") {
-    const cartProductsArray = await ctx.state.cart.products();
-    footerButtons[1].text = "🛒 Корзина";
+    // get objId
+    const objectId = ctx.state.params.get("o");
+    const cartProductsArray = await ctx.state.cart.products(objectId);
+    let cartTxt = "🛒 Корзина";
     if (cartProductsArray.length) {
-      footerButtons[1].text += ` (${cartProductsArray.length})`;
+      cartTxt += ` (${cartProductsArray.length})`;
     }
+    const footerButtons = [
+      {text: "🏠 Главная", callback_data: `objects/${objectId}`},
+      {text: cartTxt, callback_data: `cart?o=${objectId}`},
+    ];
     const catalogId = ctx.state.param;
     const tag = ctx.state.params.get("t");
     const startAfter = ctx.state.params.get("s");
@@ -68,19 +73,22 @@ const showCatalog = async (ctx, next) => {
     ctx.session.pathCatalog = ctx.callbackQuery.data;
     // }
     // Get catalogs snap index or siblings
-    const catalogsSnapshot = await firebase.firestore().collection("catalogs")
+    const catalogsSnapshot = await firebase.firestore().collection("objects").doc(objectId)
+        .collection("catalogs")
         .where("parentId", "==", catalogId ? catalogId : null).orderBy("orderNumber").get();
     // get current catalog
     if (catalogId) {
-      const currentCatalogSnapshot = await firebase.firestore().collection("catalogs").doc(catalogId).get();
+      const currentCatalogSnapshot = await firebase.firestore().collection("objects").doc(objectId)
+          .collection("catalogs").doc(catalogId).get();
       currentCatalog = {id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data()};
       // back button
       inlineKeyboardArray.push([{text: `⤴️ ../${currentCatalog.name}`,
-        callback_data: currentCatalog.parentId ? `c/${currentCatalog.parentId}` : "c"}]);
+        callback_data: currentCatalog.parentId ? `c/${currentCatalog.parentId}?o=${objectId}` : `c?o=${objectId}`}]);
       // get products
       // textMessage += `\n> <b>${currentCatalog.name}</b>`;
       // Products query
-      let mainQuery = firebase.firestore().collection("products").where("catalog.id", "==", currentCatalog.id)
+      let mainQuery = firebase.firestore().collection("objects").doc(objectId)
+          .collection("products").where("catalog.id", "==", currentCatalog.id)
           .orderBy("orderNumber");
       // Filter by tag
       let tagUrl = "";
@@ -94,11 +102,11 @@ const showCatalog = async (ctx, next) => {
         // inlineKeyboardArray.push(Markup.button.callback(`📌 Tags ${selectedTag}`,
         //    `t/${currentCatalog.id}?tagSelected=${params.get("tag")}`));
         tagsArray.push({text: "📌 Фильтр",
-          callback_data: `t/${currentCatalog.id}`});
+          callback_data: `t/${currentCatalog.id}?o=${objectId}`});
         // Delete or close selected tag
         if (tag) {
-          tagsArray[0].callback_data = `t/${currentCatalog.id}?tagSelected=${tag}`;
-          tagsArray.push({text: `❎ ${tag}`, callback_data: `c/${currentCatalog.id}`});
+          tagsArray[0].callback_data = `t/${currentCatalog.id}?tagSelected=${tag}&o=${objectId}`;
+          tagsArray.push({text: `❎ ${tag}`, callback_data: `c/${currentCatalog.id}?o=${objectId}`});
         }
         inlineKeyboardArray.push(tagsArray);
       }
@@ -106,13 +114,15 @@ const showCatalog = async (ctx, next) => {
       // copy main query
       let query = mainQuery;
       if (startAfter) {
-        const startAfterProduct = await firebase.firestore().collection("products")
+        const startAfterProduct = await firebase.firestore().collection("objects").doc(objectId)
+            .collection("products")
             .doc(startAfter).get();
         query = query.startAfter(startAfterProduct);
       }
       // prev button
       if (endBefore) {
-        const endBeforeProduct = await firebase.firestore().collection("products")
+        const endBeforeProduct = await firebase.firestore().collection("objects").doc(objectId)
+            .collection("products")
             .doc(endBefore).get();
         query = query.endBefore(endBeforeProduct).limitToLast(10);
       } else {
@@ -126,14 +136,14 @@ const showCatalog = async (ctx, next) => {
         //    `p/${product.id}/${ctx.callbackQuery.data}`));
         // Get cart
         const addButton = {text: `📦 ${product.data().name} (${product.id}) = ${product.data().price}`+
-          ` ${botConfig.currency}`, callback_data: `aC/${product.id}`};
+          ` ${botConfig.currency}`, callback_data: `aC/${product.id}?o=${objectId}`};
         // get cart products
         const cartProduct = cartProductsArray.find((x) => x.id === product.id);
         if (cartProduct) {
           addButton.text = `🛒 ${product.data().name} (${product.id})` +
           `=${cartProduct.price} ${botConfig.currency}*${cartProduct.qty}${cartProduct.unit}` +
           `=${roundNumber(cartProduct.qty * cartProduct.price)}${botConfig.currency}`;
-          addButton.callback_data = `aC/${product.id}?qty=${cartProduct.qty}&a=1`;
+          addButton.callback_data = `aC/${product.id}?qty=${cartProduct.qty}&a=1&o=${objectId}`;
         }
         inlineKeyboardArray.push([addButton]);
       }
@@ -146,7 +156,8 @@ const showCatalog = async (ctx, next) => {
         if (!ifBeforeProducts.empty) {
           // inlineKeyboardArray.push(Markup.button.callback("⬅️ Back",
           //    `c/${currentCatalog.id}?endBefore=${endBefore.id}&tag=${params.get("tag")}`));
-          prevNext.push({text: "⬅️ Назад", callback_data: `c/${currentCatalog.id}?e=${endBeforeSnap.id}${tagUrl}`});
+          prevNext.push({text: "⬅️ Назад",
+            callback_data: `c/${currentCatalog.id}?e=${endBeforeSnap.id}${tagUrl}&o=${objectId}`});
         }
         // startAfter
         const startAfterSnap = productsSnapshot.docs[productsSnapshot.docs.length - 1];
@@ -156,7 +167,7 @@ const showCatalog = async (ctx, next) => {
           // inlineKeyboardArray.push(Markup.button.callback("➡️ Load more",
           //    `c/${currentCatalog.id}?startAfter=${startAfter.id}&tag=${params.get("tag")}`));
           prevNext.push({text: "➡️ Вперед",
-            callback_data: `c/${currentCatalog.id}?s=${startAfterSnap.id}${tagUrl}`});
+            callback_data: `c/${currentCatalog.id}?s=${startAfterSnap.id}${tagUrl}&o=${objectId}`});
         }
         inlineKeyboardArray.push(prevNext);
       }
@@ -168,7 +179,7 @@ const showCatalog = async (ctx, next) => {
     // Show catalog siblings
     catalogsSnapshot.docs.forEach((doc) => {
       // inlineKeyboardArray.push(Markup.button.callback(`🗂 ${doc.data().name}`, `c/${doc.id}`));
-      inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}`}]);
+      inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}?o=${objectId}`}]);
     });
     // footer buttons
     inlineKeyboardArray.push(footerButtons);
@@ -181,10 +192,12 @@ const showCatalog = async (ctx, next) => {
     // };
     // await ctx.editMessageText(`${textMessage}`, extraObject);
     // await ctx.editMessageCaption(`${textMessage}`, extraObject);
+    const objectSnap = await firebase.firestore().collection("objects").doc(objectId).get();
+    const object = {"id": objectSnap.id, ...objectSnap.data()};
     await ctx.editMessageMedia({
       type: "photo",
       media: "https://picsum.photos/450/150/?random",
-      caption: `<b>${botConfig.name} > Каталог</b>`,
+      caption: `<b>${botConfig.name} > ${object.name} > Каталог</b>`,
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: [...inlineKeyboardArray],
@@ -200,14 +213,19 @@ const showProduct = async (ctx, next) => {
   if (ctx.state.routeName === "p") {
     // get product data
     const productId = ctx.state.param;
+    const objectId = ctx.state.params.get("o");
     const productSnapshot = await firebase.firestore().collection("products").doc(productId).get();
     const product = {id: productSnapshot.id, ...productSnapshot.data()};
     // cart button
     const cartProductsArray = await ctx.state.cart.products();
-    footerButtons[1].text = "🛒 Корзина";
+    let cartTxt = "🛒 Корзина";
     if (cartProductsArray.length) {
-      footerButtons[1].text += ` (${cartProductsArray.length})`;
+      cartTxt += ` (${cartProductsArray.length})`;
     }
+    const footerButtons = [
+      {text: "🏠 Главная", callback_data: `objects/${objectId}`},
+      {text: cartTxt, callback_data: `cart?o=${objectId}`},
+    ];
     // generate array
     // const session = await ctx.state.cart.getSessionData();
     let catalogUrl = `c/${product.catalog.id}`;
@@ -275,6 +293,7 @@ catalogsActions.push( async (ctx, next) => {
     const added = ctx.state.params.get("a");
     const productId = ctx.state.param;
     const addValue = ctx.state.params.get("add_value");
+    const objectId = ctx.state.params.get("o");
     let qtyUrl = "";
     let paramsUrl = "";
     if (qty) {
@@ -307,17 +326,18 @@ catalogsActions.push( async (ctx, next) => {
     if (added) {
       paramsUrl += "&a=1";
     }
-    const productRef = firebase.firestore().collection("products").doc(productId);
+    const productRef = firebase.firestore().collection("objects").doc(objectId)
+        .collection("products").doc(productId);
     const productSnapshot = await productRef.get();
     if (productSnapshot.exists) {
       const product = {id: productSnapshot.id, ...productSnapshot.data()};
-      let catalogUrl = `c/${product.catalog.id}`;
+      let catalogUrl = `c/${product.catalog.id}?o=${objectId}`;
       if (ctx.session.pathCatalog) {
         catalogUrl = ctx.session.pathCatalog;
       }
       // Add product to cart
       if (addValue) {
-        await ctx.state.cart.add(added ? product.id : product, addValue);
+        await ctx.state.cart.add(objectId, added ? product.id : product, addValue);
         // redirect to catalog or cart
         // if (session.path) {
         if (!redirectToCart) {
@@ -351,9 +371,9 @@ catalogsActions.push( async (ctx, next) => {
       }
       const addButtonArray = [];
       const addButton = {text: "🛒 Добавить",
-        callback_data: `aC/${product.id}?add_value=${qty}${paramsUrl}`};
+        callback_data: `aC/${product.id}?add_value=${qty}${paramsUrl}&o=${objectId}`};
       const delButton = {text: "❎ Удалить",
-        callback_data: `aC/${product.id}?add_value=0${paramsUrl}`};
+        callback_data: `aC/${product.id}?add_value=0${paramsUrl}&o=${objectId}`};
       if (added) {
         addButtonArray.push(delButton);
       }
@@ -384,28 +404,28 @@ catalogsActions.push( async (ctx, next) => {
         inline_keyboard: [
           [{text: `⤴️ ../${product.catalog.name}`, callback_data: catalogUrl}],
           [
-            {text: "7", callback_data: `aC/${product.id}?number=7${qtyUrl}${paramsUrl}`},
-            {text: "8", callback_data: `aC/${product.id}?number=8${qtyUrl}${paramsUrl}`},
-            {text: "9", callback_data: `aC/${product.id}?number=9${qtyUrl}${paramsUrl}`},
+            {text: "7", callback_data: `aC/${product.id}?number=7${qtyUrl}${paramsUrl}&o=${objectId}`},
+            {text: "8", callback_data: `aC/${product.id}?number=8${qtyUrl}${paramsUrl}&o=${objectId}`},
+            {text: "9", callback_data: `aC/${product.id}?number=9${qtyUrl}${paramsUrl}&o=${objectId}`},
           ],
           [
-            {text: "4", callback_data: `aC/${product.id}?number=4${qtyUrl}${paramsUrl}`},
-            {text: "5", callback_data: `aC/${product.id}?number=5${qtyUrl}${paramsUrl}`},
-            {text: "6", callback_data: `aC/${product.id}?number=6${qtyUrl}${paramsUrl}`},
+            {text: "4", callback_data: `aC/${product.id}?number=4${qtyUrl}${paramsUrl}&o=${objectId}`},
+            {text: "5", callback_data: `aC/${product.id}?number=5${qtyUrl}${paramsUrl}&o=${objectId}`},
+            {text: "6", callback_data: `aC/${product.id}?number=6${qtyUrl}${paramsUrl}&o=${objectId}`},
           ],
           [
-            {text: "1", callback_data: `aC/${product.id}?number=1${qtyUrl}${paramsUrl}`},
-            {text: "2", callback_data: `aC/${product.id}?number=2${qtyUrl}${paramsUrl}`},
-            {text: "3", callback_data: `aC/${product.id}?number=3${qtyUrl}${paramsUrl}`},
+            {text: "1", callback_data: `aC/${product.id}?number=1${qtyUrl}${paramsUrl}&o=${objectId}`},
+            {text: "2", callback_data: `aC/${product.id}?number=2${qtyUrl}${paramsUrl}&o=${objectId}`},
+            {text: "3", callback_data: `aC/${product.id}?number=3${qtyUrl}${paramsUrl}&o=${objectId}`},
           ],
           [
-            {text: "0️", callback_data: `aC/${product.id}?number=0${qtyUrl}${paramsUrl}`},
-            {text: "🔙", callback_data: `aC/${product.id}?back=true${qtyUrl}${paramsUrl}`},
-            {text: "AC", callback_data: `aC/${product.id}?clear=1${paramsUrl}`},
+            {text: "0️", callback_data: `aC/${product.id}?number=0${qtyUrl}${paramsUrl}&o=${objectId}`},
+            {text: "🔙", callback_data: `aC/${product.id}?back=true${qtyUrl}${paramsUrl}&o=${objectId}`},
+            {text: "AC", callback_data: `aC/${product.id}?clear=1${paramsUrl}&o=${objectId}`},
           ],
           addButtonArray,
           [
-            {text: `⤴️ ${product.name} (${product.id})`, callback_data: `p/${product.id}`},
+            {text: `⤴️ ${product.name} (${product.id})`, callback_data: `p/${product.id}?o=${objectId}`},
           ],
         ],
       }});
@@ -438,6 +458,7 @@ const showCart = async (ctx, next) => {
     // clear cart
     const clear = ctx.state.params.get("clear");
     const deleteOrderId = ctx.state.params.get("deleteOrderId");
+    const objectId = ctx.state.params.get("o");
     if (deleteOrderId) {
       await ctx.state.cart.setCartData({
         orderData: firebase.firestore.FieldValue.delete(),
@@ -447,18 +468,20 @@ const showCart = async (ctx, next) => {
       await ctx.state.cart.clear();
     }
     const inlineKeyboardArray = [];
-    let msgTxt = `<b> ${botConfig.name} > Корзина</b>\n`;
+    const objectSnap = await firebase.firestore().collection("objects").doc(objectId).get();
+    const object = {"id": objectSnap.id, ...objectSnap.data()};
+    let msgTxt = `<b> ${botConfig.name} > ${object.name} > Корзина</b>\n`;
     // loop products
     let totalQty = 0;
     let totalSum = 0;
-    const products = await ctx.state.cart.products();
+    const products = await ctx.state.cart.products(objectId);
     for (const [index, product] of products.entries()) {
       const productTxt = `${index + 1}) ${product.name} (${product.id})` +
       `=${product.price} ${botConfig.currency}*${product.qty}${product.unit}` +
       `=${roundNumber(product.price * product.qty)}${botConfig.currency}`;
       msgTxt += `${productTxt}\n`;
       inlineKeyboardArray.push([
-        {text: `${productTxt}`, callback_data: `aC/${product.id}?qty=${product.qty}&r=1&a=1`},
+        {text: `${productTxt}`, callback_data: `aC/${product.id}?qty=${product.qty}&r=1&a=1&o=${objectId}`},
       ]);
       totalQty += product.qty;
       totalSum += product.qty * product.price;
@@ -470,7 +493,7 @@ const showCart = async (ctx, next) => {
 
     if (inlineKeyboardArray.length < 1) {
       inlineKeyboardArray.push([
-        {text: "📁 Каталог", callback_data: "c"},
+        {text: "📁 Каталог", callback_data: `c?o=${objectId}`},
       ]);
       msgTxt += "Корзина пуста";
     } else {
@@ -486,14 +509,14 @@ const showCart = async (ctx, next) => {
       }
       // create order
       inlineKeyboardArray.push([{text: "✅ Оформить заказ",
-        callback_data: "cO/carrier"}]);
+        callback_data: `cO/carrier?o=${objectId}`}]);
       // clear cart
       inlineKeyboardArray.push([{text: "🗑 Очистить корзину",
-        callback_data: "cart?clear=1"}]);
+        callback_data: `cart?clear=1&o=${objectId}`}]);
     }
     // Set Main menu
     inlineKeyboardArray.push([{text: "🏠 Главная",
-      callback_data: "start"}]);
+      callback_data: `objects/${objectId}`}]);
     // render data
     // truncate long string
     if (msgTxt.length > 1024) {
@@ -722,7 +745,7 @@ const cartWizard = [
   async (ctx, next) => {
     if (ctx.message.text === "Оформить заказ") {
       // save order
-      await ctx.state.cart.saveOrder();
+      await ctx.state.cart.saveOrder(objectId);
       await ctx.reply("Спасибо за заказ! /shop", {
         reply_markup: {
           remove_keyboard: true,
@@ -744,6 +767,9 @@ catalogsActions.push( async (ctx, next) => {
     const todo = ctx.state.param;
     // first step carrier
     if (todo === "carrier") {
+      // save objectId
+      const objectId = ctx.state.params.get("o");
+      await ctx.state.cart.setSessionData({objectId});
       // set default values
       await ctx.state.cart.setWizardData({
         carrierNumber: null,
@@ -818,15 +844,17 @@ catalogsActions.push( async (ctx, next) => {
   }
 });
 
-// Tags
+// show tags
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "t") {
     const inlineKeyboardArray = [];
     const catalogId = ctx.state.param;
+    const objectId = ctx.state.params.get("o");
     // const session = await ctx.state.cart.getSessionData();
-    const currentCatalogSnapshot = await firebase.firestore().collection("catalogs").doc(catalogId).get();
+    const currentCatalogSnapshot = await firebase.firestore().collection("objects").doc(objectId)
+        .collection("catalogs").doc(catalogId).get();
     const catalog = {id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data()};
-    let catalogUrl = `c/${catalog.id}`;
+    let catalogUrl = `c/${catalog.id}?o=${objectId}`;
     if (ctx.session.pathCatalog) {
       catalogUrl = ctx.session.pathCatalog;
     }
@@ -835,18 +863,20 @@ catalogsActions.push( async (ctx, next) => {
     for (const tag of catalog.tags) {
       if (tag.id === ctx.state.params.get("tagSelected")) {
         // inlineKeyboardArray.push(Markup.button.callback(`✅ ${tag.name}`, `c/c/${catalog.id}?tag=${tag.id}`));
-        inlineKeyboardArray.push([{text: `✅ ${tag.name}`, callback_data: `c/${catalog.id}?t=${tag.id}`}]);
+        inlineKeyboardArray.push([{text: `✅ ${tag.name}`, callback_data: `c/${catalog.id}?t=${tag.id}&o=${objectId}`}]);
       } else {
         // inlineKeyboardArray.push(Markup.button.callback(`📌 ${tag.name}`, `c/c/${catalog.id}?tag=${tag.id}`));
-        inlineKeyboardArray.push([{text: `📌 ${tag.name}`, callback_data: `c/${catalog.id}?t=${tag.id}`}]);
+        inlineKeyboardArray.push([{text: `📌 ${tag.name}`, callback_data: `c/${catalog.id}?t=${tag.id}&o=${objectId}`}]);
       }
     }
     // close tags
     // inlineKeyboardArray.push([{text: "⤴️ Перейти в каталог", callback_data: session.path}]);
+    const objectSnap = await firebase.firestore().collection("objects").doc(objectId).get();
+    const object = {"id": objectSnap.id, ...objectSnap.data()};
     await ctx.editMessageMedia({
       type: "photo",
       media: "https://picsum.photos/450/150/?random",
-      caption: `<b>${botConfig.name} > Фильтр</b>`,
+      caption: `<b>${botConfig.name} > ${object.name} > Фильтр</b>`,
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: [...inlineKeyboardArray],
