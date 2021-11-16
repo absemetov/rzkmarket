@@ -49,9 +49,7 @@ bot.start(async (ctx) => {
   if (ctx.from.username) {
     userName += " @" + ctx.from.username;
   }
-  await ctx.state.cart.setUserName({
-    userName,
-  });
+  await ctx.state.cart.setUserName(userName);
   startHandler(ctx);
 });
 // rzk shop
@@ -83,7 +81,7 @@ bot.on(["text", "contact"], async (ctx) => {
   // const session = await ctx.state.cart.getSessionData();
   const sessionFire = await ctx.state.cart.getSessionData();
   if (ctx.message.text === "Отмена") {
-    ctx.reply("Для продолжения нажмите /shop", {
+    ctx.reply("Для продолжения нажмите /objects", {
       reply_markup: {
         remove_keyboard: true,
       }});

@@ -48,7 +48,7 @@ const cart = async (ctx, next) => {
       if (userRef.exists) {
         return {id: + userRef.id, ...userRef.data()};
       }
-      return null;
+      return {};
     },
     async add(objectId, product, qty) {
       this.objectId = objectId;
@@ -88,7 +88,7 @@ const cart = async (ctx, next) => {
     async products(objectId) {
       const products = [];
       const cart = await this.cartQuery(objectId).get();
-      if (cart.exists) {
+      if (cart.exists && cart.data().products) {
         for (const [id, product] of Object.entries(cart.data().products)) {
           products.push({id, ...product});
         }
@@ -101,54 +101,45 @@ const cart = async (ctx, next) => {
     },
     async clear(withOrderData, objectId) {
       const clearData = {};
+      // clear order tmp data
       if (withOrderData) {
         clearData.cart = {
           orderData: firebase.firestore.FieldValue.delete(),
           products: firebase.firestore.FieldValue.delete(),
         };
-      } else {
-        clearData.cart = {
-          products: firebase.firestore.FieldValue.delete(),
-        };
       }
+      // clear cart
       await this.cartQuery(objectId).set({
-        ...clearData,
+        products: firebase.firestore.FieldValue.delete(),
       }, {merge: true});
     },
     async setWizardData(value) {
       await this.userQuery.set({
-        cart: {
-          wizardData: value,
-        },
+        wizardData: value,
       }, {merge: true});
     },
     async getOrderData() {
       const user = await this.getUserData();
-      if (user && user.cart.orderData) {
-        return user.cart.orderData;
+      if (user && user.orderData) {
+        return user.orderData;
       }
       return {};
     },
     async getWizardData() {
       const user = await this.getUserData();
-      if (user && user.cart.wizardData) {
-        return user.cart.wizardData;
+      if (user.wizardData) {
+        return user.wizardData;
       }
       return {};
     },
-    async setCartData(value) {
-      await this.userQuery.set({
-        cart: {
-          ...value,
-        },
-      }, {merge: true});
-    },
     async setUserName(value) {
       await this.userQuery.set({
-        ...value,
+        userName: value,
       }, {merge: true});
     },
-    async saveOrder(id, setData, objectId) {
+    async saveOrder(id, setData) {
+      const session = await this.getSessionData();
+      const objectId = session.objectId;
       const orderQuery = firebase.firestore().collection("objects").doc(objectId).collection("orders");
       // edit order
       if (id) {
@@ -165,14 +156,15 @@ const cart = async (ctx, next) => {
           orderCount: firebase.firestore.FieldValue.increment(1),
         }, {merge: true});
         const user = await this.getUserData();
+        const cart = await this.cartQuery(objectId).get();
         await orderQuery.add({
           userId: user.id,
           orderId: user.orderCount,
           statusId: 1,
           fromBot: true,
-          products: user.cart.products,
+          products: cart.data().products,
           createdAt: this.serverTimestamp,
-          ...user.cart.wizardData,
+          ...user.wizardData,
         });
       }
       // clear cart delete orderId from cart
@@ -210,10 +202,7 @@ const cart = async (ctx, next) => {
     },
     async getSessionData(value) {
       const user = await this.getUserData();
-      if (user && user.session) {
-        return user.session;
-      }
-      return {};
+      return user.session || {};
     },
     async setSessionData(value) {
       await this.userQuery.set({
@@ -229,6 +218,15 @@ const cart = async (ctx, next) => {
         objects.push({id: object.id, ...object.data()});
       });
       return objects;
+    },
+    async cartButtons(objectId) {
+      // get cart count
+      const cart = await this.cartQuery(objectId).get();
+      const cartCount = cart.exists && cart.data().products && Object.keys(cart.data().products).length || 0;
+      return [
+        {text: "🏠 Главная", callback_data: `objects/${objectId}`},
+        {text: `🛒 Корзина (${cartCount})`, callback_data: `cart?o=${objectId}`},
+      ];
     },
   };
   ctx.state.cart = cart;
@@ -260,7 +258,7 @@ const startHandler = async (ctx) => {
   // get all Objects
   const objects = await ctx.state.cart.objects();
   objects.forEach((object) => {
-    inlineKeyboardArray.push([{text: object.name, callback_data: `objects/${object.id}`}]);
+    inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
   });
   await ctx.replyWithPhoto("https://picsum.photos/450/150/?random",
       {
@@ -326,21 +324,23 @@ startActions.push(async (ctx, next) => {
         await uploadHandler(ctx, objectId, object.spreadsheets);
       }
       // show object info
-      caption = `<b>${botConfig.name} > Торговый объект #${object.name}\n` +
+      caption = `<b>${botConfig.name} > ${object.name}\n` +
         `Контакты: ${object.phoneNumber}\n` +
         `Адрес: ${object.address}\n` +
         `spreadsheets: ${object.spreadsheets}\n` +
         `Описание: ${object.description}</b>`;
       const dateTimestamp = Math.floor(Date.now() / 1000);
       // buttons
-      inlineKeyboardArray.push([{text: "Каталог", callback_data: `c?o=${object.id}`}]);
-      inlineKeyboardArray.push([{text: "Загрузить товары", callback_data: `objects/${object.id}?uploadGoods=1`}]);
-      inlineKeyboardArray.push([{text: "Торговые объекты", callback_data: `objects?${dateTimestamp}`}]);
+      const cartButtons = await ctx.state.cart.cartButtons(objectId);
+      inlineKeyboardArray.push([{text: "📁 Каталог", callback_data: `c?o=${object.id}`}]);
+      inlineKeyboardArray.push([cartButtons[1]]);
+      inlineKeyboardArray.push([{text: "➕ Загрузить товары", callback_data: `objects/${object.id}?uploadGoods=1`}]);
+      inlineKeyboardArray.push([{text: "🏪 Торговые объекты ⤴️", callback_data: `objects?${dateTimestamp}`}]);
     } else {
       // show all objects
       const objects = await ctx.state.cart.objects();
       objects.forEach((object) => {
-        inlineKeyboardArray.push([{text: object.name, callback_data: `objects/${object.id}`}]);
+        inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
       });
     }
     // render data

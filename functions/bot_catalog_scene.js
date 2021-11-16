@@ -52,14 +52,7 @@ const showCatalog = async (ctx, next) => {
     // get objId
     const objectId = ctx.state.params.get("o");
     const cartProductsArray = await ctx.state.cart.products(objectId);
-    let cartTxt = "🛒 Корзина";
-    if (cartProductsArray.length) {
-      cartTxt += ` (${cartProductsArray.length})`;
-    }
-    const footerButtons = [
-      {text: "🏠 Главная", callback_data: `objects/${objectId}`},
-      {text: cartTxt, callback_data: `cart?o=${objectId}`},
-    ];
+    const cartButtons = await ctx.state.cart.cartButtons(objectId);
     const catalogId = ctx.state.param;
     const tag = ctx.state.params.get("t");
     const startAfter = ctx.state.params.get("s");
@@ -182,7 +175,7 @@ const showCatalog = async (ctx, next) => {
       inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}?o=${objectId}`}]);
     });
     // footer buttons
-    inlineKeyboardArray.push(footerButtons);
+    inlineKeyboardArray.push(cartButtons);
     // const extraObject = {
     //   parse_mode: "Markdown",
     //   ...Markup.inlineKeyboard(inlineKeyboardArray,
@@ -745,8 +738,8 @@ const cartWizard = [
   async (ctx, next) => {
     if (ctx.message.text === "Оформить заказ") {
       // save order
-      await ctx.state.cart.saveOrder(objectId);
-      await ctx.reply("Спасибо за заказ! /shop", {
+      await ctx.state.cart.saveOrder();
+      await ctx.reply("Спасибо за заказ! /objects", {
         reply_markup: {
           remove_keyboard: true,
         }});
