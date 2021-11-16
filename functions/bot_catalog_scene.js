@@ -174,8 +174,6 @@ const showCatalog = async (ctx, next) => {
       // inlineKeyboardArray.push(Markup.button.callback(`🗂 ${doc.data().name}`, `c/${doc.id}`));
       inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}?o=${objectId}`}]);
     });
-    // footer buttons
-    inlineKeyboardArray.push(cartButtons);
     // const extraObject = {
     //   parse_mode: "Markdown",
     //   ...Markup.inlineKeyboard(inlineKeyboardArray,
@@ -187,6 +185,9 @@ const showCatalog = async (ctx, next) => {
     // await ctx.editMessageCaption(`${textMessage}`, extraObject);
     const objectSnap = await firebase.firestore().collection("objects").doc(objectId).get();
     const object = {"id": objectSnap.id, ...objectSnap.data()};
+    // footer buttons
+    cartButtons[0].text = `🏪 ${object.name}`;
+    inlineKeyboardArray.push(cartButtons);
     await ctx.editMessageMedia({
       type: "photo",
       media: "https://picsum.photos/450/150/?random",
@@ -458,7 +459,7 @@ const showCart = async (ctx, next) => {
       });
     }
     if (clear) {
-      await ctx.state.cart.clear();
+      await ctx.state.cart.clear(objectId);
     }
     const inlineKeyboardArray = [];
     const objectSnap = await firebase.firestore().collection("objects").doc(objectId).get();
@@ -508,7 +509,7 @@ const showCart = async (ctx, next) => {
         callback_data: `cart?clear=1&o=${objectId}`}]);
     }
     // Set Main menu
-    inlineKeyboardArray.push([{text: "🏠 Главная",
+    inlineKeyboardArray.push([{text: `🏪 ${object.name}`,
       callback_data: `objects/${objectId}`}]);
     // render data
     // truncate long string

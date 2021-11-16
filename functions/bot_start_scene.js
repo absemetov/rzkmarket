@@ -99,7 +99,7 @@ const cart = async (ctx, next) => {
       });
       return products;
     },
-    async clear(withOrderData, objectId) {
+    async clear(objectId, withOrderData) {
       const clearData = {};
       // clear order tmp data
       if (withOrderData) {
@@ -159,6 +159,7 @@ const cart = async (ctx, next) => {
         const cart = await this.cartQuery(objectId).get();
         await orderQuery.add({
           userId: user.id,
+          objectId,
           orderId: user.orderCount,
           statusId: 1,
           fromBot: true,
@@ -168,7 +169,7 @@ const cart = async (ctx, next) => {
         });
       }
       // clear cart delete orderId from cart
-      await this.clear(id, objectId);
+      await this.clear(objectId, id);
     },
     payments() {
       const paymentsTxt = botConfig.payment;
@@ -224,7 +225,7 @@ const cart = async (ctx, next) => {
       const cart = await this.cartQuery(objectId).get();
       const cartCount = cart.exists && cart.data().products && Object.keys(cart.data().products).length || 0;
       return [
-        {text: "🏠 Главная", callback_data: `objects/${objectId}`},
+        {text: "🏪 Главная", callback_data: `objects/${objectId}`},
         {text: `🛒 Корзина (${cartCount})`, callback_data: `cart?o=${objectId}`},
       ];
     },
@@ -247,11 +248,6 @@ const startHandler = async (ctx) => {
   // add orders keyboard
   const inlineKeyboardArray = [];
   // adminKeyboard.push(startKeyboard);
-  // if (ctx.state.isAdmin) {
-  //   adminKeyboard.push([{text: "🧾 Заказы", callback_data: "orders"}]);
-  // } else {
-  //   adminKeyboard.push([{text: "🧾 Мои заказы", callback_data: `myOrders/${ctx.from.id}`}]);
-  // }
   // ctx.reply("Выберите меню", getMainKeyboard);
   // ctx.reply("Welcome to Rzk.com.ru! Monobank rates /mono Rzk Catalog /catalog");
   // reply with photo necessary to show ptoduct
@@ -260,9 +256,15 @@ const startHandler = async (ctx) => {
   objects.forEach((object) => {
     inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
   });
+  // if (ctx.state.isAdmin) {
+  //   inlineKeyboardArray.push([{text: "🧾 Заказы", callback_data: "orders"}]);
+  // } else {
+  //   inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myOrders/${ctx.from.id}`}]);
+  // }
+  inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
   await ctx.replyWithPhoto("https://picsum.photos/450/150/?random",
       {
-        caption: `<b>${botConfig.name} > Выберите торговый объект</b>`,
+        caption: `<b>${botConfig.name}</b>`,
         parse_mode: "html",
         reply_markup: {
           inline_keyboard: inlineKeyboardArray,
@@ -314,7 +316,7 @@ startActions.push(async (ctx, next) => {
   if (ctx.state.routeName === "objects") {
     const objectId = ctx.state.param;
     const uploadGoods = ctx.state.params.get("uploadGoods");
-    let caption = `<b>${botConfig.name} > Торговые объекты</b>`;
+    let caption = `<b>${botConfig.name}</b>`;
     const inlineKeyboardArray = [];
     if (objectId) {
       // get data obj
@@ -334,14 +336,18 @@ startActions.push(async (ctx, next) => {
       const cartButtons = await ctx.state.cart.cartButtons(objectId);
       inlineKeyboardArray.push([{text: "📁 Каталог", callback_data: `c?o=${object.id}`}]);
       inlineKeyboardArray.push([cartButtons[1]]);
+      if (ctx.state.isAdmin) {
+        inlineKeyboardArray.push([{text: "🧾 Заказы admin", callback_data: "orders?o=${object.id}"}]);
+      }
       inlineKeyboardArray.push([{text: "➕ Загрузить товары", callback_data: `objects/${object.id}?uploadGoods=1`}]);
-      inlineKeyboardArray.push([{text: "🏪 Торговые объекты ⤴️", callback_data: `objects?${dateTimestamp}`}]);
+      inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: `objects?${dateTimestamp}`}]);
     } else {
       // show all objects
       const objects = await ctx.state.cart.objects();
       objects.forEach((object) => {
         inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
       });
+      inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
     }
     // render data
     await ctx.editMessageMedia({
