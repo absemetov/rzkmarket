@@ -152,6 +152,7 @@ const showOrders = async (ctx, next) => {
   if (ctx.state.routeName === "orders") {
     const startAfter = ctx.state.params.get("s");
     const endBefore = ctx.state.params.get("e");
+    const objectId = ctx.state.params.get("o");
     const inlineKeyboardArray = [];
     const orderId = ctx.state.param;
     let caption = `<b>${botConfig.name} > Заказы</b>`;
@@ -170,7 +171,8 @@ const showOrders = async (ctx, next) => {
           products: user.cart.products,
         });
       }
-      const orderSnap = await firebase.firestore().collectionGroup("orders").doc(orderId).get();
+      const orderSnap = await firebase.firestore().collection("objects").doc(objectId)
+          .collection("orders").doc(orderId).get();
       const order = {"id": orderSnap.id, ...orderSnap.data()};
       if (orderSnap.exists) {
         // edit order
@@ -265,7 +267,8 @@ const showOrders = async (ctx, next) => {
       // show orders
       ctx.session.pathOrder = ctx.callbackQuery.data;
       const limit = 10;
-      let mainQuery = firebase.firestore().collectionGroup("orders").orderBy("createdAt", "desc");
+      let mainQuery = firebase.firestore().collection("objects").doc(objectId)
+          .collection("orders").orderBy("createdAt", "desc");
       // Filter by tag
       const statusId = + ctx.state.params.get("statusId");
       let statusUrl = "";
@@ -307,7 +310,7 @@ const showOrders = async (ctx, next) => {
         const date = moment.unix(order.createdAt);
         inlineKeyboardArray.push([{text: `🧾 Заказ #${order.orderId},` +
           `${ctx.state.cart.statuses().get(order.statusId)}, ${date.fromNow()}`,
-        callback_data: `orders/${order.id}`}]);
+        callback_data: `orders/${order.id}?o=${objectId}`}]);
       });
       // Set load more button
       if (!ordersSnapshot.empty) {

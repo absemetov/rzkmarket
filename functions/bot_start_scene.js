@@ -234,12 +234,12 @@ const cart = async (ctx, next) => {
   return next();
 };
 // inline keyboard
-const startKeyboard = [
-  {text: "📁 Каталог", callback_data: "c"},
-  {text: "🛒 Корзина", callback_data: "cart"},
-];
+// const startKeyboard = [
+//   {text: "📁 Каталог", callback_data: "c"},
+//   {text: "🛒 Корзина", callback_data: "cart"},
+// ];
 
-// start handler
+// start handler show objects
 const startHandler = async (ctx) => {
   // const cartProductsArray = await ctx.state.cart.products();
   // if (cartProductsArray.length) {
@@ -279,39 +279,39 @@ const startHandler = async (ctx) => {
   // ctx.scene.enter("catalog");
 };
 // main route
-startActions.push(async (ctx, next) => {
-  if (ctx.state.routeName === "start") {
-    // add orders keyboard
-    // add orders keyboard
-    const adminKeyboard = [];
-    adminKeyboard.push(startKeyboard);
-    if (ctx.state.isAdmin) {
-      adminKeyboard.push([{text: "🧾 Заказы", callback_data: "orders"}]);
-    } else {
-      adminKeyboard.push([{text: "🧾 Мои заказы", callback_data: `myOrders/${ctx.from.id}`}]);
-    }
-    const cartProductsArray = await ctx.state.cart.products();
-    startKeyboard[1].text = "🛒 Корзина";
-    if (cartProductsArray.length) {
-      startKeyboard[1].text += ` (${cartProductsArray.length})`;
-    }
-    await ctx.editMessageMedia({
-      type: "photo",
-      media: "https://picsum.photos/450/150/?random",
-      caption: `<b>${botConfig.name}</b>`,
-      parse_mode: "html",
-    }, {
-      reply_markup: {
-        inline_keyboard: adminKeyboard,
-      },
-    });
-    await ctx.answerCbQuery();
-  } else {
-    return next();
-  }
-});
+// startActions.push(async (ctx, next) => {
+//   if (ctx.state.routeName === "start") {
+//     // add orders keyboard
+//     // add orders keyboard
+//     const adminKeyboard = [];
+//     adminKeyboard.push(startKeyboard);
+//     if (ctx.state.isAdmin) {
+//       adminKeyboard.push([{text: "🧾 Заказы", callback_data: "orders"}]);
+//     } else {
+//       adminKeyboard.push([{text: "🧾 Мои заказы", callback_data: `myOrders/${ctx.from.id}`}]);
+//     }
+//     const cartProductsArray = await ctx.state.cart.products();
+//     startKeyboard[1].text = "🛒 Корзина";
+//     if (cartProductsArray.length) {
+//       startKeyboard[1].text += ` (${cartProductsArray.length})`;
+//     }
+//     await ctx.editMessageMedia({
+//       type: "photo",
+//       media: "https://picsum.photos/450/150/?random",
+//       caption: `<b>${botConfig.name}</b>`,
+//       parse_mode: "html",
+//     }, {
+//       reply_markup: {
+//         inline_keyboard: adminKeyboard,
+//       },
+//     });
+//     await ctx.answerCbQuery();
+//   } else {
+//     return next();
+//   }
+// });
 
-// objects
+// show objects
 startActions.push(async (ctx, next) => {
   if (ctx.state.routeName === "objects") {
     const objectId = ctx.state.param;
@@ -329,7 +329,6 @@ startActions.push(async (ctx, next) => {
       caption = `<b>${botConfig.name} > ${object.name}\n` +
         `Контакты: ${object.phoneNumber}\n` +
         `Адрес: ${object.address}\n` +
-        `spreadsheets: ${object.spreadsheets}\n` +
         `Описание: ${object.description}</b>`;
       const dateTimestamp = Math.floor(Date.now() / 1000);
       // buttons
@@ -337,9 +336,9 @@ startActions.push(async (ctx, next) => {
       inlineKeyboardArray.push([{text: "📁 Каталог", callback_data: `c?o=${object.id}`}]);
       inlineKeyboardArray.push([cartButtons[1]]);
       if (ctx.state.isAdmin) {
-        inlineKeyboardArray.push([{text: "🧾 Заказы admin", callback_data: "orders?o=${object.id}"}]);
+        inlineKeyboardArray.push([{text: "🧾 Заказы admin", callback_data: `orders?o=${object.id}`}]);
+        inlineKeyboardArray.push([{text: "➕ Загрузить товары", callback_data: `objects/${object.id}?uploadGoods=1`}]);
       }
-      inlineKeyboardArray.push([{text: "➕ Загрузить товары", callback_data: `objects/${object.id}?uploadGoods=1`}]);
       inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: `objects?${dateTimestamp}`}]);
     } else {
       // show all objects
