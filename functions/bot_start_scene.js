@@ -36,7 +36,6 @@ const parseUrl = (ctx, next) => {
 // cart instance
 const cart = async (ctx, next) => {
   const cart = {
-    objectId: null,
     userQuery: firebase.firestore().collection("users").doc(`${ctx.from.id}`),
     serverTimestamp: Math.floor(Date.now() / 1000),
     cartQuery(objectId) {
@@ -51,7 +50,6 @@ const cart = async (ctx, next) => {
       return {};
     },
     async add(objectId, product, qty) {
-      this.objectId = objectId;
       qty = Number(qty);
       let productData = {};
       if (qty) {

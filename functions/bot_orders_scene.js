@@ -17,14 +17,17 @@ const myOrders = async (ctx, next) => {
     const objectId = ctx.state.params.get("o");
     const adminOrder = ctx.state.params.get("adminOrder");
     let caption = `<b>${botConfig.name} > Мои заказы</b>`;
+    const limit = 1;
     if (adminOrder) {
       ctx.session.adminOrder = adminOrder;
     }
     if (orderId) {
-      const orderSnap = await firebase.firestore().collection("objects").doc(objectId)
-          .collection("orders").doc(orderId).get();
-      const order = {"id": orderSnap.id, ...orderSnap.data()};
-      if (orderSnap.exists) {
+      // const orderSnap = await firebase.firestore().collection("objects").doc(objectId)
+      //     .collection("orders").doc(orderId).get();
+      // const order = {"id": orderSnap.id, ...orderSnap.data()};
+      // get order
+      const order = await ctx.state.store.queryRecord("orders", {objectId, id: orderId});
+      if (order) {
         // show order
         const date = moment.unix(order.createdAt);
         caption = `<b>${botConfig.name} > Заказ #${order.orderId} (${date.fromNow()})\n` +
@@ -68,20 +71,21 @@ const myOrders = async (ctx, next) => {
       caption += " " + userInfo.userName;
       // show orders
       ctx.session.myPathOrder = ctx.callbackQuery.data;
-      const limit = 10;
       const mainQuery = firebase.firestore().collectionGroup("orders").where("userId", "==", userId)
           .orderBy("createdAt", "desc");
       let query = mainQuery;
       if (startAfter) {
-        const startAfterProduct = await firebase.firestore().collection("orders")
-            .doc(startAfter).get();
+        // const startAfterProduct = await firebase.firestore().collection("orders")
+        //     .doc(startAfter).get();
+        const startAfterProduct = await ctx.state.store.getRecord("orders", {objectId, id: startAfter});
         query = query.startAfter(startAfterProduct);
       }
       // prev button
       if (endBefore) {
-        const endBeforeProduct = await firebase.firestore().collection("orders")
-            .doc(endBefore).get();
-          // set limit
+        // const endBeforeProduct = await firebase.firestore().collection("orders")
+        //     .doc(endBefore).get();
+        const endBeforeProduct = await ctx.state.store.getRecord("orders", {objectId, id: endBefore});
+        // set limit
         query = query.endBefore(endBeforeProduct).limitToLast(limit);
       } else {
         // defaul limit
@@ -106,7 +110,8 @@ const myOrders = async (ctx, next) => {
         if (!ifBeforeProducts.empty) {
           // inlineKeyboardArray.push(Markup.button.callback("⬅️ Back",
           //    `c/${currentCatalog.id}?endBefore=${endBefore.id}&tag=${params.get("tag")}`));
-          prevNext.push({text: "⬅️ Назад", callback_data: `myO/${userId}?e=${endBeforeSnap.id}`});
+          prevNext.push({text: "⬅️ Назад",
+            callback_data: `myO/${userId}?e=${endBeforeSnap.id}&o=${endBeforeSnap.data().objectId}`});
         }
         // startAfter
         const startAfterSnap = ordersSnapshot.docs[ordersSnapshot.docs.length - 1];
@@ -116,7 +121,7 @@ const myOrders = async (ctx, next) => {
           // inlineKeyboardArray.push(Markup.button.callback("➡️ Load more",
           //    `c/${currentCatalog.id}?startAfter=${startAfter.id}&tag=${params.get("tag")}`));
           prevNext.push({text: "➡️ Вперед",
-            callback_data: `myO/${userId}?s=${startAfterSnap.id}`});
+            callback_data: `myO/${userId}?s=${startAfterSnap.id}&o=${startAfterSnap.data().objectId}`});
         }
         inlineKeyboardArray.push(prevNext);
       } else {
