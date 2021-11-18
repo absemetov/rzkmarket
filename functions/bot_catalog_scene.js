@@ -763,8 +763,8 @@ catalogsActions.push( async (ctx, next) => {
       await ctx.state.cart.setSessionData({objectId});
       // set default values
       await ctx.state.cart.setWizardData({
-        carrierNumber: null,
-        comment: null,
+        carrierNumber: firebase.firestore.FieldValue.delete(),
+        comment: firebase.firestore.FieldValue.delete(),
       });
       // get carriers service
       const inlineKeyboardArray = [];

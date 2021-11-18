@@ -155,9 +155,11 @@ const cart = async (ctx, next) => {
         }, {merge: true});
         const user = await this.getUserData();
         const cart = await this.cartQuery(objectId).get();
+        const object = await firebase.firestore().collection("objects").doc(objectId).get();
         await orderQuery.add({
           userId: user.id,
           objectId,
+          objectName: object.data().name,
           orderId: user.orderCount,
           statusId: 1,
           fromBot: true,

@@ -5,16 +5,28 @@ const storeHandler = async (ctx, next) => {
       if (queryObject.objectId) {
         const modelSnap = await firebase.firestore().collection("objects").doc(queryObject.objectId)
             .collection(modelName).doc(queryObject.id).get();
+        // snap
+        if (queryObject.snap) {
+          return modelSnap;
+        }
         // check data
         if (modelSnap.exists) {
-          return {"id": modelSnap.id, ...modelSnap.data()};
+          const data = modelSnap.data();
+          const sortedArray = [];
+          if (queryObject.sort) {
+            for (const [id, product] of Object.entries(modelSnap.data()[queryObject.sort])) {
+              sortedArray.push({id, ...product});
+            }
+            // sort products by createdAt
+            sortedArray.sort(function(a, b) {
+              return a.createdAt - b.createdAt;
+            });
+            data[queryObject.sort] = sortedArray;
+          }
+          return {"id": modelSnap.id, ...data};
         }
       }
       return null;
-    },
-    async getRecord(modelName, queryObject) {
-      return await firebase.firestore().collection("objects").doc(queryObject.objectId)
-          .collection(modelName).doc(queryObject.id).get();
     },
   };
   ctx.state.store = store;
