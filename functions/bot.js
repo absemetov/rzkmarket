@@ -3,12 +3,13 @@ const firebase = require("firebase-admin");
 const {Telegraf, session} = require("telegraf");
 // const firestoreSession = require("telegraf-session-firestore");
 firebase.initializeApp();
-const {startActions, startHandler, parseUrl, cart, botConfig, isAdmin} = require("./bot_start_scene");
+const {startActions, startHandler, parseUrl, isAdmin} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
 const {uploadHandler} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
 const {uploadPhotoProduct, catalogsActions, cartWizard} = require("./bot_catalog_scene");
-const {storeHandler} = require("./bot_keyboards.js");
+const {store, cart} = require("./bot_keyboards.js");
+const botConfig = functions.config().env.bot;
 // const {MenuMiddleware} = require("telegraf-inline-menu");
 const bot = new Telegraf(botConfig.token, {
   handlerTimeout: 540000,
@@ -16,7 +17,7 @@ const bot = new Telegraf(botConfig.token, {
 // const stage = new Stage([upload, catalogScene, orderWizard]);
 // cart session instance
 bot.use(session());
-bot.use(storeHandler, cart, isAdmin);
+bot.use(isAdmin);
 bot.use(async (ctx, next) => {
   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
     console.log("callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
