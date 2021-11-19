@@ -3,62 +3,113 @@ const firebase = require("firebase-admin");
 const botConfig = functions.config().env.bot;
 // store inst
 const store = {
-  async queryRecord(modelName, queryObject) {
-    if (queryObject.objectId) {
-      const modelSnap = await firebase.firestore().collection("objects").doc(queryObject.objectId)
-          .collection(modelName).doc(queryObject.id).get();
-      // snap
-      if (queryObject.snap) {
-        return modelSnap;
-      }
-      // check data
-      if (modelSnap.exists) {
-        const data = modelSnap.data();
-        const sortedArray = [];
-        if (queryObject.sort) {
-          for (const [id, product] of Object.entries(modelSnap.data()[queryObject.sort])) {
-            sortedArray.push({id, ...product});
-          }
-          // sort products by createdAt
-          sortedArray.sort(function(a, b) {
-            return a.createdAt - b.createdAt;
-          });
-          data[queryObject.sort] = sortedArray;
+  async queryRecord(modelObject, queryObject) {
+    const modelSnap = await this.getQuery(modelObject).get();
+    // snap
+    if (queryObject.snap) {
+      return modelSnap;
+    }
+    // check data
+    if (modelSnap.exists) {
+      const sortedArray = [];
+      const data = modelSnap.data();
+      if (queryObject.sort && data[queryObject.sort]) {
+        for (const [id, product] of Object.entries(data[queryObject.sort])) {
+          sortedArray.push({id, ...product});
         }
+        // sort products by createdAt
+        sortedArray.sort(function(a, b) {
+          return a.createdAt - b.createdAt;
+        });
+        data[queryObject.sort] = sortedArray;
+      }
+      // output
+      if (queryObject.single) {
+        return sortedArray;
+      } else {
         return {"id": modelSnap.id, ...data};
       }
     }
     return null;
   },
-  async createRecord(modelName, dataObject) {
-    // merge true
-    if (dataObject.objectId) {
-      const query = firebase.firestore().collection("objects").doc(dataObject.objectId)
-          .collection(modelName).doc(dataObject.id);
-      const dataSet = {};
-      for (const [key, value] of Object.entries(dataObject)) {
-        console.log(`${key}: ${value}`);
-        if (key !== "id" || key !== "objectId") {
-          dataSet[key] = value;
+  async createRecord(modelObject, dataObject) {
+    // save data with merge
+    await this.getQuery(modelObject).set({
+      ...dataObject,
+    }, {merge: true});
+  },
+  async findRecord(modelObject, field) {
+    const modelSnap = await this.getQuery(modelObject).get();
+    // check data
+    if (modelSnap.exists) {
+      if (field) {
+        if (modelSnap.data()[field]) {
+          return {...modelSnap.data()[field]};
         }
+      } else {
+        return {id: modelSnap.id, ...modelSnap.data()};
       }
-      await query.set({
-        ...dataSet,
-      }, {merge: true});
     }
+    return {};
+  },
+  async findAll(modelName) {
+    const modelSnap = await firebase.firestore().collection(modelName).get();
+    const outputArray = [];
+    modelSnap.docs.forEach((model) => {
+      outputArray.push({id: model.id, ...model.data()});
+    });
+    return outputArray;
+  },
+  getQuery(modelObject) {
+    let query = firebase.firestore();
+    for (const [key, value] of Object.entries(modelObject)) {
+      // doc id must be string!!!
+      query = query.collection(key).doc(value.toString());
+    }
+    return query;
+  },
+  payments() {
+    const paymentsTxt = botConfig.payment;
+    const paymentsMap = new Map();
+    if (paymentsTxt) {
+      for (const paramsData of paymentsTxt.split("&")) {
+        paymentsMap.set(+ paramsData.split("=")[0], paramsData.split("=")[1].trim());
+      }
+    }
+    return paymentsMap;
+  },
+  carriers() {
+    const carriersTxt = botConfig.carrier;
+    const carriersMap = new Map();
+    if (carriersTxt) {
+      for (const paramsData of carriersTxt.split("&")) {
+        carriersMap.set(+ paramsData.split("=")[0], paramsData.split("=")[1].trim());
+      }
+    }
+    return carriersMap;
+  },
+  statuses() {
+    const statusesTxt = botConfig.status;
+    const statusesMap = new Map();
+    if (statusesTxt) {
+      for (const paramsData of statusesTxt.split("&")) {
+        statusesMap.set(+ paramsData.split("=")[0], paramsData.split("=")[1].trim());
+      }
+    }
+    return statusesMap;
   },
 };
 
 // cart instance
 const cart = {
-  userQuery: firebase.firestore().collection("users").doc(`${ctx.from.id}`),
   serverTimestamp: Math.floor(Date.now() / 1000),
-  async getUserData() {
-    const userRef = await this.userQuery.get();
-    if (userRef.exists) {
-      return {id: + userRef.id, ...userRef.data()};
-    }
-    return {};
+  async getUserData(userId) {
+    // const userRef = await this.userQuery.get();
+    // if (userRef.exists) {
+    //   return {id: + userRef.id, ...userRef.data()};
+    // }
+    // return {};
+    return store.findRecord("users", userId);
   },
   async add(objectId, userId, product, qty) {
     qty = Number(qty);
@@ -85,7 +136,7 @@ const cart = {
       // await this.cartQuery(objectId).set({
       //   products: productData,
       // }, {merge: true});
-      await store.createRecord("carts", {objectId, id: userId, products: productData});
+      await store.createRecord({"objects": objectId, "carts": userId}, {products: productData});
     } else {
       // delete product from cart
       // await this.cartQuery(objectId).set({
@@ -93,7 +144,7 @@ const cart = {
       //     [typeof product == "object" ? product.id : product]: firebase.firestore.FieldValue.delete(),
       //   },
       // }, {merge: true});
-      await store.createRecord("carts", {objectId, id: userId, products: {
+      await store.createRecord({"objects": objectId, "carts": userId}, {products: {
         [typeof product == "object" ? product.id : product]: firebase.firestore.FieldValue.delete(),
       }});
     }
@@ -101,7 +152,7 @@ const cart = {
   async products(objectId, userId) {
     // const products = [];
     // const cart = await this.cartQuery(objectId).get();
-    const cart = await store.queryRecord("carts", {objectId, id: userId, sort: "products"});
+    const products = await store.queryRecord({"objects": objectId, "carts": userId}, {sort: "products", single: true});
     // if (cart.exists && cart.data().products) {
     //   for (const [id, product] of Object.entries(cart.data().products)) {
     //     products.push({id, ...product});
@@ -111,7 +162,7 @@ const cart = {
     // products.sort(function(a, b) {
     //   return a.createdAt - b.createdAt;
     // });
-    return cart.products;
+    return products;
   },
   async clear(objectId, withOrderData) {
     const clearData = {};
@@ -146,11 +197,11 @@ const cart = {
     }
     return {};
   },
-  async setUserName(value) {
-    await this.userQuery.set({
-      userName: value,
-    }, {merge: true});
-  },
+  // async setUserName(value) {
+  //   await this.userQuery.set({
+  //     userName: value,
+  //   }, {merge: true});
+  // },
   async saveOrder(id, setData) {
     const session = await this.getSessionData();
     const objectId = session.objectId;
@@ -187,62 +238,33 @@ const cart = {
     // clear cart delete orderId from cart
     await this.clear(objectId, id);
   },
-  payments() {
-    const paymentsTxt = botConfig.payment;
-    const paymentsMap = new Map();
-    if (paymentsTxt) {
-      for (const paramsData of paymentsTxt.split("&")) {
-        paymentsMap.set(+ paramsData.split("=")[0], paramsData.split("=")[1].trim());
-      }
-    }
-    return paymentsMap;
-  },
-  carriers() {
-    const carriersTxt = botConfig.carrier;
-    const carriersMap = new Map();
-    if (carriersTxt) {
-      for (const paramsData of carriersTxt.split("&")) {
-        carriersMap.set(+ paramsData.split("=")[0], paramsData.split("=")[1].trim());
-      }
-    }
-    return carriersMap;
-  },
-  statuses() {
-    const statusesTxt = botConfig.status;
-    const statusesMap = new Map();
-    if (statusesTxt) {
-      for (const paramsData of statusesTxt.split("&")) {
-        statusesMap.set(+ paramsData.split("=")[0], paramsData.split("=")[1].trim());
-      }
-    }
-    return statusesMap;
-  },
-  async getSessionData(value) {
-    const user = await this.getUserData();
-    return user.session || {};
-  },
-  async setSessionData(value) {
-    await this.userQuery.set({
-      session: {
-        ...value,
-      },
-    }, {merge: true});
-  },
-  async objects() {
-    const objectsQuery = await firebase.firestore().collection("objects").get();
-    const objects = [];
-    objectsQuery.docs.forEach((object) => {
-      objects.push({id: object.id, ...object.data()});
-    });
-    return objects;
-  },
-  async cartButtons(objectId) {
+  // async getSessionData(value) {
+  //   const user = await this.getUserData();
+  //   return user.session || {};
+  // },
+  // async setSessionData(value) {
+  //   await this.userQuery.set({
+  //     session: {
+  //       ...value,
+  //     },
+  //   }, {merge: true});
+  // },
+  // async objects() {
+  //   const objectsQuery = await firebase.firestore().collection("objects").get();
+  //   const objects = [];
+  //   objectsQuery.docs.forEach((object) => {
+  //     objects.push({id: object.id, ...object.data()});
+  //   });
+  //   return objects;
+  // },
+  async cartButtons(objectId, userId) {
     // get cart count
-    const cart = await this.cartQuery(objectId).get();
-    const cartCount = cart.exists && cart.data().products && Object.keys(cart.data().products).length || 0;
+    // const cart = await this.cartQuery(objectId).get();
+    const cartProducts = await store
+        .queryRecord({"objects": objectId, "carts": userId}, {sort: "products", single: true});
     return [
       {text: "🏪 Главная", callback_data: `objects/${objectId}`},
-      {text: `🛒 Корзина (${cartCount})`, callback_data: `cart?o=${objectId}`},
+      {text: `🛒 Корзина (${cartProducts && cartProducts.length || 0})`, callback_data: `cart?o=${objectId}`},
     ];
   },
 };

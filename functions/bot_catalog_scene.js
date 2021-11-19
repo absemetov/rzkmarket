@@ -1,10 +1,12 @@
+const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
 const download = require("./download.js");
 const fs = require("fs");
-const {botConfig, roundNumber} = require("./bot_start_scene");
+const {roundNumber} = require("./bot_start_scene");
 const bucket = firebase.storage().bucket();
 // const {Scenes: {BaseScene, WizardScene}} = require("telegraf");
-// const {getMainKeyboard} = require("./bot_keyboards.js");
+const {cart} = require("./bot_keyboards.js");
+const botConfig = functions.config().env.bot;
 // const catalogScene = new BaseScene("catalog");
 // catalogScene.use(async (ctx, next) => {
 //   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
@@ -51,8 +53,9 @@ const showCatalog = async (ctx, next) => {
   if (ctx.state.routeName === "c") {
     // get objId
     const objectId = ctx.state.params.get("o");
-    const cartProductsArray = await ctx.state.cart.products(objectId);
-    const cartButtons = await ctx.state.cart.cartButtons(objectId);
+    // const cartProductsArray = await ctx.state.cart.products(objectId);
+    const cartProductsArray = await cart.products(objectId, ctx.from.id);
+    const cartButtons = await cart.cartButtons(objectId, ctx.from.id);
     const catalogId = ctx.state.param;
     const tag = ctx.state.params.get("t");
     const startAfter = ctx.state.params.get("s");
@@ -131,7 +134,7 @@ const showCatalog = async (ctx, next) => {
         const addButton = {text: `📦 ${product.data().name} (${product.id}) = ${product.data().price}`+
           ` ${botConfig.currency}`, callback_data: `aC/${product.id}?o=${objectId}`};
         // get cart products
-        const cartProduct = cartProductsArray.find((x) => x.id === product.id);
+        const cartProduct = cartProductsArray && cartProductsArray.find((x) => x.id === product.id);
         if (cartProduct) {
           addButton.text = `🛒 ${product.data().name} (${product.id})` +
           `=${cartProduct.price} ${botConfig.currency}*${cartProduct.qty}${cartProduct.unit}` +
@@ -212,8 +215,9 @@ const showProduct = async (ctx, next) => {
         .collection("products").doc(productId).get();
     const product = {id: productSnapshot.id, ...productSnapshot.data()};
     // cart button
-    const cartProductsArray = await ctx.state.cart.products(objectId);
-    const cartButtons = await ctx.state.cart.cartButtons(objectId);
+    // const cartProductsArray = await ctx.state.cart.products(objectId);
+    const cartProductsArray = await cart.products(objectId, ctx.from.id);
+    const cartButtons = await cart.cartButtons(objectId, ctx.from.id);
     // generate array
     // const session = await ctx.state.cart.getSessionData();
     let catalogUrl = `c/${product.catalog.id}?o=${objectId}`;
@@ -226,7 +230,7 @@ const showProduct = async (ctx, next) => {
     // default add button
     const addButton = {text: "🛒 Добавить в корзину", callback_data: `aC/${product.id}?o=${objectId}`};
     // get cart products
-    const cartProduct = cartProductsArray.find((x) => x.id === product.id);
+    const cartProduct = cartProductsArray && cartProductsArray.find((x) => x.id === product.id);
     if (cartProduct) {
       addButton.text = `🛒 ${cartProduct.qty} ${cartProduct.unit} ` +
       ` ${roundNumber(cartProduct.qty * cartProduct.price)} ${botConfig.currency}`;
@@ -326,7 +330,7 @@ catalogsActions.push( async (ctx, next) => {
       }
       // Add product to cart
       if (addValue) {
-        await ctx.state.cart.add(objectId, added ? product.id : product, addValue);
+        await cart.add(objectId, ctx.from.id, added ? product.id : product, addValue);
         // redirect to catalog or cart
         // if (session.path) {
         if (!redirectToCart) {
@@ -465,7 +469,7 @@ const showCart = async (ctx, next) => {
     // loop products
     let totalQty = 0;
     let totalSum = 0;
-    const products = await ctx.state.cart.products(objectId);
+    const products = await cart.products(objectId, ctx.from.id);
     for (const [index, product] of products.entries()) {
       const productTxt = `${index + 1}) ${product.name} (${product.id})` +
       `=${product.price} ${botConfig.currency}*${product.qty}${product.unit}` +

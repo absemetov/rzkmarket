@@ -1,6 +1,9 @@
+const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
-const {botConfig, roundNumber} = require("./bot_start_scene");
+const {roundNumber} = require("./bot_start_scene");
 const {showCart, cartWizard} = require("./bot_catalog_scene");
+const {store} = require("./bot_keyboards.js");
+const botConfig = functions.config().env.bot;
 const moment = require("moment");
 require("moment/locale/ru");
 moment.locale("ru");
@@ -17,7 +20,7 @@ const myOrders = async (ctx, next) => {
     const objectId = ctx.state.params.get("o");
     const adminOrder = ctx.state.params.get("adminOrder");
     let caption = `<b>${botConfig.name} > Мои заказы</b>`;
-    const limit = 10;
+    const limit = 1;
     if (adminOrder) {
       ctx.session.adminOrder = adminOrder;
     }
@@ -26,19 +29,19 @@ const myOrders = async (ctx, next) => {
       //     .collection("orders").doc(orderId).get();
       // const order = {"id": orderSnap.id, ...orderSnap.data()};
       // get order
-      const order = await ctx.state.store.queryRecord("orders", {objectId, id: orderId, sort: "products"});
+      const order = await store.queryRecord({"objects": objectId, "orders": orderId}, {sort: "products"});
       if (order) {
         // show order
         const date = moment.unix(order.createdAt);
         caption = `<b>${botConfig.name} >` +
         `Заказ #${order.orderId} (${date.fromNow()})\n` +
         `Склад: ${order.objectName}\n` +
-        `Статус: ${ctx.state.cart.statuses().get(order.statusId)}\n` +
+        `Статус: ${store.statuses().get(order.statusId)}\n` +
         `${order.recipientName} ${order.phoneNumber}\n` +
         `Адрес доставки: ${order.address}, ` +
-        `${ctx.state.cart.carriers().get(order.carrierId)} ` +
+        `${store.carriers().get(order.carrierId)} ` +
         `${order.carrierNumber ? "#" + order.carrierNumber : ""}\n` +
-        `Оплата: ${ctx.state.cart.payments().get(order.paymentId)}\n` +
+        `Оплата: ${store.payments().get(order.paymentId)}\n` +
         `${order.comment ? "Комментарий: " + order.comment + "\n" : ""}</b>`;
         // order.products.forEach((product) => {
         //   inlineKeyboardArray.push([{text: `${product.name}, ${product.id}`,
@@ -80,14 +83,14 @@ const myOrders = async (ctx, next) => {
       if (startAfter) {
         // const startAfterProduct = await firebase.firestore().collection("orders")
         //     .doc(startAfter).get();
-        const startAfterProduct = await ctx.state.store.queryRecord("orders", {objectId, id: startAfter, snap: true});
+        const startAfterProduct = await store.queryRecord({"objects": objectId, "orders": startAfter}, {snap: true});
         query = query.startAfter(startAfterProduct);
       }
       // prev button
       if (endBefore) {
         // const endBeforeProduct = await firebase.firestore().collection("orders")
         //     .doc(endBefore).get();
-        const endBeforeProduct = await ctx.state.store.queryRecord("orders", {objectId, id: endBefore, snap: true});
+        const endBeforeProduct = await store.queryRecord({"objects": objectId, "orders": endBefore}, {snap: true});
         // set limit
         query = query.endBefore(endBeforeProduct).limitToLast(limit);
       } else {
@@ -101,7 +104,7 @@ const myOrders = async (ctx, next) => {
         const order = {id: doc.id, ...doc.data()};
         const date = moment.unix(order.createdAt);
         inlineKeyboardArray.push([{text: `🧾 Заказ #${order.orderId},` +
-          `${ctx.state.cart.statuses().get(order.statusId)}, ${date.fromNow()}`,
+          `${store.statuses().get(order.statusId)}, ${date.fromNow()}`,
         callback_data: `myO/${userId}?oId=${order.id}&o=${order.objectId}`}]);
       });
       // Set load more button
@@ -213,9 +216,9 @@ const showOrders = async (ctx, next) => {
         caption = `<b>${botConfig.name} > Заказ #${order.orderId} (${date.fromNow()})\n` +
         `${order.recipientName} ${order.phoneNumber}\n` +
         `Адрес доставки: ${order.address}, ` +
-        `${ctx.state.cart.carriers().get(order.carrierId)} ` +
+        `${store.carriers().get(order.carrierId)} ` +
         `${order.carrierNumber ? "#" + order.carrierNumber : ""}\n` +
-        `Оплата: ${ctx.state.cart.payments().get(order.paymentId)}\n` +
+        `Оплата: ${store.payments().get(order.paymentId)}\n` +
         `${order.comment ? "Комментарий: " + order.comment + "\n" : ""}</b>`;
         // order.products.forEach((product) => {
         //   inlineKeyboardArray.push([{text: `${product.name}, ${product.id}`,
@@ -244,16 +247,16 @@ const showOrders = async (ctx, next) => {
       }
       // edit recipient
       // status
-      inlineKeyboardArray.push([{text: `📝 Статус: ${ctx.state.cart.statuses().get(order.statusId)}`,
+      inlineKeyboardArray.push([{text: `📝 Статус: ${store.statuses().get(order.statusId)}`,
         callback_data: `editOrder/${order.id}?showStatusId=${order.statusId}`}]);
       inlineKeyboardArray.push([{text: `📝 Получатель: ${order.recipientName}`,
         callback_data: `editOrder/${order.id}?edit=recipientName`}]);
       inlineKeyboardArray.push([{text: `📝 Номер тел.: ${order.phoneNumber}`,
         callback_data: `editOrder/${order.id}?edit=phoneNumber`}]);
       // payment and currier
-      inlineKeyboardArray.push([{text: `📝 Оплата: ${ctx.state.cart.payments().get(order.paymentId)}`,
+      inlineKeyboardArray.push([{text: `📝 Оплата: ${store.payments().get(order.paymentId)}`,
         callback_data: `editOrder/${order.id}?showPaymentId=${order.paymentId}`}]);
-      inlineKeyboardArray.push([{text: `📝 Доставка: ${ctx.state.cart.carriers().get(order.carrierId)}` +
+      inlineKeyboardArray.push([{text: `📝 Доставка: ${store.carriers().get(order.carrierId)}` +
         `${order.carrierNumber ? " #" + order.carrierNumber : ""}`,
       callback_data: `editOrder/${order.id}?cId=${order.carrierId}`}]);
       inlineKeyboardArray.push([{text: `📝 Адрес: ${order.address}`,
@@ -310,7 +313,7 @@ const showOrders = async (ctx, next) => {
       // Delete or close selected tag
       if (statusId) {
         tagsArray[0].callback_data = `editOrder/showStatuses?selectedStatus=${statusId}`;
-        tagsArray.push({text: `❎ ${ctx.state.cart.statuses().get(statusId)}`, callback_data: "orders"});
+        tagsArray.push({text: `❎ ${store.statuses().get(statusId)}`, callback_data: "orders"});
       }
       inlineKeyboardArray.push(tagsArray);
       // add orders info
@@ -318,7 +321,7 @@ const showOrders = async (ctx, next) => {
         const order = {id: doc.id, ...doc.data()};
         const date = moment.unix(order.createdAt);
         inlineKeyboardArray.push([{text: `🧾 Заказ #${order.orderId},` +
-          `${ctx.state.cart.statuses().get(order.statusId)}, ${date.fromNow()}`,
+          `${store.statuses().get(order.statusId)}, ${date.fromNow()}`,
         callback_data: `orders/${order.id}?o=${objectId}`}]);
       });
       // Set load more button
@@ -425,7 +428,7 @@ ordersActions.push(async (ctx, next) => {
     if (orderId === "showStatuses") {
       const selectedStatus = + ctx.state.params.get("selectedStatus");
       const inlineKeyboardArray = [];
-      ctx.state.cart.statuses().forEach((value, key) => {
+      store.statuses().forEach((value, key) => {
         if (key === selectedStatus) {
           value = "✅ " + value;
         }
@@ -446,7 +449,7 @@ ordersActions.push(async (ctx, next) => {
     // show payment
     if (showPaymentId) {
       const inlineKeyboardArray = [];
-      ctx.state.cart.payments().forEach((value, key) => {
+      store.payments().forEach((value, key) => {
         if (key === showPaymentId) {
           value = "✅ " + value;
         }
@@ -468,7 +471,7 @@ ordersActions.push(async (ctx, next) => {
     // show carrier
     if (cId) {
       const inlineKeyboardArray = [];
-      ctx.state.cart.carriers().forEach((value, key) => {
+      store.carriers().forEach((value, key) => {
         if (key === cId) {
           value = "✅ " + value;
         }
@@ -513,7 +516,7 @@ ordersActions.push(async (ctx, next) => {
     // show status
     if (showStatusId) {
       const inlineKeyboardArray = [];
-      ctx.state.cart.statuses().forEach((value, key) => {
+      store.statuses().forEach((value, key) => {
         if (key === showStatusId) {
           value = "✅ " + value;
         }

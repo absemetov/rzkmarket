@@ -8,7 +8,7 @@ const {monoHandler, monoActions} = require("./bot_mono_scene");
 const {uploadHandler} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
 const {uploadPhotoProduct, catalogsActions, cartWizard} = require("./bot_catalog_scene");
-const {store, cart} = require("./bot_keyboards.js");
+const {store} = require("./bot_keyboards.js");
 const botConfig = functions.config().env.bot;
 // const {MenuMiddleware} = require("telegraf-inline-menu");
 const bot = new Telegraf(botConfig.token, {
@@ -20,7 +20,7 @@ bot.use(session());
 bot.use(isAdmin);
 bot.use(async (ctx, next) => {
   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
-    console.log("callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
+    console.log("=============callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
   }
   // set session
   if (ctx.session === undefined) {
@@ -50,7 +50,8 @@ bot.start(async (ctx) => {
   if (ctx.from.username) {
     userName += " @" + ctx.from.username;
   }
-  await ctx.state.cart.setUserName(userName);
+  // await ctx.state.cart.setUserName(userName);
+  await store.createRecord({"users": ctx.from.id}, {userName});
   startHandler(ctx);
 });
 // rzk shop
@@ -80,13 +81,15 @@ bot.command("upload", (ctx) => {
 // if session destroyed show main keyboard
 bot.on(["text", "contact"], async (ctx) => {
   // const session = await ctx.state.cart.getSessionData();
-  const sessionFire = await ctx.state.cart.getSessionData();
+  // const sessionFire = await ctx.state.cart.getSessionData();
+  const sessionFire = await store.findRecord({"users": ctx.from.id}, "session");
   if (ctx.message.text === "Отмена") {
     ctx.reply("Для продолжения нажмите /objects", {
       reply_markup: {
         remove_keyboard: true,
       }});
-    await ctx.state.cart.setSessionData({scene: null});
+    // await ctx.state.cart.setSessionData({scene: null});
+    await store.createRecord({"users": ctx.from.id}, {"session": {scene: firebase.firestore.FieldValue.delete()}});
     ctx.session.scene = null;
     return;
   }

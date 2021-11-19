@@ -2,7 +2,7 @@
 const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
 const {uploadHandler} = require("./bot_upload_scene");
-// const {getMainKeyboard} = require("./bot_keyboards.js");
+const {store, cart} = require("./bot_keyboards.js");
 // const start = new BaseScene("start");
 // set default project
 const botConfig = functions.config().env.bot;
@@ -53,7 +53,7 @@ const startHandler = async (ctx) => {
   // ctx.reply("Welcome to Rzk.com.ru! Monobank rates /mono Rzk Catalog /catalog");
   // reply with photo necessary to show ptoduct
   // get all Objects
-  const objects = await ctx.state.cart.objects();
+  const objects = await store.findAll("objects");
   objects.forEach((object) => {
     inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
   });
@@ -133,7 +133,7 @@ startActions.push(async (ctx, next) => {
         `Описание: ${object.description}</b>`;
       const dateTimestamp = Math.floor(Date.now() / 1000);
       // buttons
-      const cartButtons = await ctx.state.cart.cartButtons(objectId);
+      const cartButtons = await cart.cartButtons(objectId, ctx.from.id);
       inlineKeyboardArray.push([{text: "📁 Каталог", callback_data: `c?o=${object.id}`}]);
       inlineKeyboardArray.push([cartButtons[1]]);
       if (ctx.state.isAdmin) {
@@ -143,7 +143,8 @@ startActions.push(async (ctx, next) => {
       inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: `objects?${dateTimestamp}`}]);
     } else {
       // show all objects
-      const objects = await ctx.state.cart.objects();
+      // const objects = await ctx.state.cart.objects();
+      const objects = await store.findAll("objects");
       objects.forEach((object) => {
         inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
       });
