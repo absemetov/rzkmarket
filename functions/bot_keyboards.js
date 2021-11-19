@@ -43,14 +43,19 @@ const store = {
     // check data
     if (modelSnap.exists) {
       if (field) {
-        if (modelSnap.data()[field]) {
-          return {...modelSnap.data()[field]};
-        }
+        const fields = field.split(".");
+        let fieldData = modelSnap.data();
+        fields.forEach((fieldItem) => {
+          if (fieldData[fieldItem]) {
+            fieldData = fieldData[fieldItem];
+          }
+        });
+        return {...fieldData};
       } else {
         return {id: modelSnap.id, ...modelSnap.data()};
       }
     }
-    return {};
+    return null;
   },
   async findAll(modelName) {
     const modelSnap = await firebase.firestore().collection(modelName).get();
@@ -162,21 +167,24 @@ const cart = {
     // products.sort(function(a, b) {
     //   return a.createdAt - b.createdAt;
     // });
-    return products;
+    return products || [];
   },
-  async clear(objectId, withOrderData) {
-    const clearData = {};
+  async clear(objectId, userId) {
+    // const clearData = {};
     // clear order tmp data
-    if (withOrderData) {
-      clearData.cart = {
-        orderData: firebase.firestore.FieldValue.delete(),
-        products: firebase.firestore.FieldValue.delete(),
-      };
-    }
-    // clear cart
-    await this.cartQuery(objectId).set({
+    // if (withOrderData) {
+    //   clearData.cart = {
+    //     orderData: firebase.firestore.FieldValue.delete(),
+    //     products: firebase.firestore.FieldValue.delete(),
+    //   };
+    // }
+    // // clear cart
+    // await this.cartQuery(objectId).set({
+    //   products: firebase.firestore.FieldValue.delete(),
+    // }, {merge: true});
+    await store.createRecord({"objects": objectId, "carts": userId}, {
       products: firebase.firestore.FieldValue.delete(),
-    }, {merge: true});
+    });
   },
   async setWizardData(value) {
     await this.userQuery.set({

@@ -2,7 +2,7 @@ const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
 const {roundNumber} = require("./bot_start_scene");
 const {showCart, cartWizard} = require("./bot_catalog_scene");
-const {store} = require("./bot_keyboards.js");
+const {store, cart} = require("./bot_keyboards.js");
 const botConfig = functions.config().env.bot;
 const moment = require("moment");
 require("moment/locale/ru");
@@ -168,7 +168,7 @@ const showOrders = async (ctx, next) => {
     const orderId = ctx.state.param;
     let caption = `<b>${botConfig.name} > Заказы</b>`;
     if (orderId) {
-      const editOrder = ctx.state.params.get("edit");
+      const editOrder = ctx.state.params.get("eO");
       const saveOrder = ctx.state.params.get("save");
       // save products from cart
       if (saveOrder === "products") {
@@ -183,29 +183,42 @@ const showOrders = async (ctx, next) => {
           products: cart.data().products,
         });
       }
-      const orderSnap = await firebase.firestore().collection("objects").doc(objectId)
-          .collection("orders").doc(orderId).get();
-      const order = {"id": orderSnap.id, ...orderSnap.data()};
-      if (orderSnap.exists) {
+      // const orderSnap = await firebase.firestore().collection("objects").doc(objectId)
+      //     .collection("orders").doc(orderId).get();
+      // const order = {"id": orderSnap.id, ...orderSnap.data()};
+      const order = await store.queryRecord({"objects": objectId, "orders": orderId}, {sort: "products"});
+      if (order) {
         // edit order
-        if (editOrder === "products") {
+        if (editOrder === "prod") {
           // clear cart then export!!!
-          await ctx.state.cart.clear();
+          await cart.clear(objectId, ctx.from.id);
           // export order to cart
-          await ctx.state.cart.setCartData({
-            orderData: {
-              id: order.id,
-              orderId: order.orderId,
-              recipientName: order.recipientName,
-              // phoneNumber: order.phoneNumber,
-              // paymentId: order.paymentId,
-              // cId: order.cId,
-              // carrierNumber: order.carrierNumber ? order.carrierNumber : null,
-              // address: order.address,
-              // comment: order.comment ? order.comment : null,
-            },
-            products: order.products,
-          });
+          // await ctx.state.cart.setCartData({
+          //   orderData: {
+          //     id: order.id,
+          //     orderId: order.orderId,
+          //     recipientName: order.recipientName,
+          //     // phoneNumber: order.phoneNumber,
+          //     // paymentId: order.paymentId,
+          //     // cId: order.cId,
+          //     // carrierNumber: order.carrierNumber ? order.carrierNumber : null,
+          //     // address: order.address,
+          //     // comment: order.comment ? order.comment : null,
+          //   },
+          //   products: order.products,
+          // });
+          await store.createRecord({"users": ctx.from.id}, {"session": {orderData: {
+            id: order.id,
+            orderId: order.orderId,
+            recipientName: order.recipientName,
+            // phoneNumber: order.phoneNumber,
+            // paymentId: order.paymentId,
+            // cId: order.cId,
+            // carrierNumber: order.carrierNumber ? order.carrierNumber : null,
+            // address: order.address,
+            // comment: order.comment ? order.comment : null,
+          }}});
+          await store.createRecord({"objects": objectId, "carts": ctx.from.id}, {products: order.products});
           // set route name
           ctx.state.routeName = "cart";
           await showCart(ctx, next);
@@ -265,7 +278,7 @@ const showOrders = async (ctx, next) => {
         callback_data: `editOrder/${order.id}?edit=comment`}]);
       // edit products
       inlineKeyboardArray.push([{text: "📝 Редактировать товары",
-        callback_data: `orders/${orderId}?edit=products`}]);
+        callback_data: `orders/${orderId}?eO=prod&o=${objectId}`}]);
       // edit products
       inlineKeyboardArray.push([{text: "📝 Информация о покупателе",
         callback_data: `myO/${order.userId}?adminOrder=${order.id}`}]);

@@ -5,7 +5,7 @@ const fs = require("fs");
 const {roundNumber} = require("./bot_start_scene");
 const bucket = firebase.storage().bucket();
 // const {Scenes: {BaseScene, WizardScene}} = require("telegraf");
-const {cart} = require("./bot_keyboards.js");
+const {cart, store} = require("./bot_keyboards.js");
 const botConfig = functions.config().env.bot;
 // const catalogScene = new BaseScene("catalog");
 // catalogScene.use(async (ctx, next) => {
@@ -493,7 +493,8 @@ const showCart = async (ctx, next) => {
       msgTxt += "Корзина пуста";
     } else {
       // order button
-      const orderData = await ctx.state.cart.getOrderData();
+      // const orderData = await ctx.state.cart.getOrderData();
+      const orderData = await store.findRecord({"users": ctx.from.id}, "session.orderData");
       const orderId = orderData.orderId;
       if (orderId) {
         inlineKeyboardArray.push([{text: `✅ Сохранить Заказ #${orderId} от ${orderData.recipientName}`,
