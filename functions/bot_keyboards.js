@@ -3,7 +3,7 @@ const firebase = require("firebase-admin");
 const botConfig = functions.config().env.bot;
 // store inst
 const store = {
-  async queryRecord(modelObject, queryObject) {
+  async queryRecord(modelObject, queryObject = {}) {
     const modelSnap = await this.getQuery(modelObject).get();
     // snap
     if (queryObject.snap) {
@@ -56,6 +56,40 @@ const store = {
       }
     }
     return null;
+  },
+  async deleteRecord(modelObject, field) {
+    const fields = field.split(".");
+    // const fields = "session.orderData.yandex.ru".split(".");
+    // const jsonStr = '{"session": {"order" : 1}}';
+    let output = "";
+    let quates = "";
+    fields.forEach((data) => {
+      console.log(data);
+      output += `{"${data}": `;
+      quates += "}";
+    });
+    // console.log(output+"1}}");
+    const obj = JSON.parse(output+`1${quates}`);
+    // console.log(obj)
+    arraySave = [];
+    fields.forEach((data, index) => {
+      if (arraySave[index - 1]) {
+        if (index === fields.length - 1) {
+          arraySave.push(arraySave[index - 1][data] = "delete");
+        } else {
+          arraySave.push(arraySave[index - 1][data]);
+        }
+      } else {
+        arraySave.push(obj[data]);
+      }
+      // console.log(arraySave[index]);
+    });
+    console.log(obj["session"]["orderData"]);
+    console.log(obj);
+    // {"session": {"order" : 1}}
+    // await this.getQuery(modelObject).set({
+    //   ...dataObject,
+    // }, {merge: true});
   },
   async findAll(modelName) {
     const modelSnap = await firebase.firestore().collection(modelName).get();

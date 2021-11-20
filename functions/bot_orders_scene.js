@@ -168,62 +168,11 @@ const showOrders = async (ctx, next) => {
     const orderId = ctx.state.param;
     let caption = `<b>${botConfig.name} > Заказы</b>`;
     if (orderId) {
-      const editOrder = ctx.state.params.get("eO");
-      const saveOrder = ctx.state.params.get("save");
-      // save products from cart
-      if (saveOrder === "products") {
-        // const user = await ctx.state.cart.getUserData();
-        const cart = await this.cartQuery(objectId).get();
-        // save order
-        await ctx.state.cart.saveOrder(orderId, {
-          products: firebase.firestore.FieldValue.delete(),
-        });
-        // add new products from cart recipient
-        await ctx.state.cart.saveOrder(orderId, {
-          products: cart.data().products,
-        });
-      }
       // const orderSnap = await firebase.firestore().collection("objects").doc(objectId)
       //     .collection("orders").doc(orderId).get();
       // const order = {"id": orderSnap.id, ...orderSnap.data()};
       const order = await store.queryRecord({"objects": objectId, "orders": orderId}, {sort: "products"});
       if (order) {
-        // edit order
-        if (editOrder === "prod") {
-          // clear cart then export!!!
-          await cart.clear(objectId, ctx.from.id);
-          // export order to cart
-          // await ctx.state.cart.setCartData({
-          //   orderData: {
-          //     id: order.id,
-          //     orderId: order.orderId,
-          //     recipientName: order.recipientName,
-          //     // phoneNumber: order.phoneNumber,
-          //     // paymentId: order.paymentId,
-          //     // cId: order.cId,
-          //     // carrierNumber: order.carrierNumber ? order.carrierNumber : null,
-          //     // address: order.address,
-          //     // comment: order.comment ? order.comment : null,
-          //   },
-          //   products: order.products,
-          // });
-          await store.createRecord({"users": ctx.from.id}, {"session": {orderData: {
-            id: order.id,
-            orderId: order.orderId,
-            recipientName: order.recipientName,
-            // phoneNumber: order.phoneNumber,
-            // paymentId: order.paymentId,
-            // cId: order.cId,
-            // carrierNumber: order.carrierNumber ? order.carrierNumber : null,
-            // address: order.address,
-            // comment: order.comment ? order.comment : null,
-          }}});
-          await store.createRecord({"objects": objectId, "carts": ctx.from.id}, {products: order.products});
-          // set route name
-          ctx.state.routeName = "cart";
-          await showCart(ctx, next);
-          return;
-        }
         // show order
         const date = moment.unix(order.createdAt);
         caption = `<b>${botConfig.name} > Заказ #${order.orderId} (${date.fromNow()})\n` +
@@ -278,7 +227,7 @@ const showOrders = async (ctx, next) => {
         callback_data: `editOrder/${order.id}?edit=comment`}]);
       // edit products
       inlineKeyboardArray.push([{text: "📝 Редактировать товары",
-        callback_data: `orders/${orderId}?eO=prod&o=${objectId}`}]);
+        callback_data: `editOrder/${orderId}?eP=1&o=${objectId}`}]);
       // edit products
       inlineKeyboardArray.push([{text: "📝 Информация о покупателе",
         callback_data: `myO/${order.userId}?adminOrder=${order.id}`}]);
@@ -426,7 +375,6 @@ const orderWizard = [
 ];
 // edit order fields
 ordersActions.push(async (ctx, next) => {
-  // show order
   if (ctx.state.routeName === "editOrder") {
     const orderId = ctx.state.param;
     const editField = ctx.state.params.get("edit");
@@ -437,6 +385,70 @@ ordersActions.push(async (ctx, next) => {
     const paymentId = + ctx.state.params.get("paymentId");
     const showStatusId = + ctx.state.params.get("showStatusId");
     const statusId = + ctx.state.params.get("statusId");
+    const objectId = ctx.state.params.get("o");
+    // edit produc
+    // edit order
+    const editProducts = ctx.state.params.get("eP");
+    const saveProducts = ctx.state.params.get("sP");
+    // save products from cart
+    if (saveProducts) {
+      // const user = await ctx.state.cart.getUserData();
+      // const cart = await this.cartQuery(objectId).get();
+      const products = await store.findRecord({"objects": objectId, "carts": ctx.from.id}, "products");
+      // delete old products
+      // await ctx.state.cart.saveOrder(orderId, {
+      //   products: firebase.firestore.FieldValue.delete(),
+      // });
+      await store.createRecord({"objects": objectId, "orders": orderId}, {
+        products: firebase.firestore.FieldValue.delete(),
+      });
+      // add new products from cart recipient
+      // await ctx.state.cart.saveOrder(orderId, {
+      //   products: cart.data().products,
+      // });
+      await store.createRecord({"objects": objectId, "orders": orderId}, {
+        products,
+      });
+      // redirect to order
+      ctx.state.routeName = "orders";
+      ctx.state.param = orderId;
+      await showOrders(ctx, next);
+    }
+    if (editProducts) {
+      // clear cart then export!!!
+      const order = await store.queryRecord({"objects": objectId, "orders": orderId});
+      await cart.clear(objectId, ctx.from.id);
+      // export order to cart
+      // await ctx.state.cart.setCartData({
+      //   orderData: {
+      //     id: order.id,
+      //     orderId: order.orderId,
+      //     recipientName: order.recipientName,
+      //     // phoneNumber: order.phoneNumber,
+      //     // paymentId: order.paymentId,
+      //     // cId: order.cId,
+      //     // carrierNumber: order.carrierNumber ? order.carrierNumber : null,
+      //     // address: order.address,
+      //     // comment: order.comment ? order.comment : null,
+      //   },
+      //   products: order.products,
+      // });
+      await store.createRecord({"users": ctx.from.id}, {"session": {orderData: {
+        id: order.id,
+        orderId: order.orderId,
+        recipientName: order.recipientName,
+        // phoneNumber: order.phoneNumber,
+        // paymentId: order.paymentId,
+        // cId: order.cId,
+        // carrierNumber: order.carrierNumber ? order.carrierNumber : null,
+        // address: order.address,
+        // comment: order.comment ? order.comment : null,
+      }}});
+      await store.createRecord({"objects": objectId, "carts": ctx.from.id}, {products: order.products});
+      // set route name
+      ctx.state.routeName = "cart";
+      await showCart(ctx, next);
+    }
     // show statuses
     if (orderId === "showStatuses") {
       const selectedStatus = + ctx.state.params.get("selectedStatus");

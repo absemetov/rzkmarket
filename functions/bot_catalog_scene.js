@@ -455,9 +455,10 @@ const showCart = async (ctx, next) => {
     const deleteOrderId = ctx.state.params.get("deleteOrderId");
     const objectId = ctx.state.params.get("o");
     if (deleteOrderId) {
-      await ctx.state.cart.setCartData({
-        orderData: firebase.firestore.FieldValue.delete(),
-      });
+      // await ctx.state.cart.setCartData({
+      //   orderData: firebase.firestore.FieldValue.delete(),
+      // });
+      await store.deleteRecord({"users": ctx.from.id}, "session.orderData");
     }
     if (clear) {
       await ctx.state.cart.clear(objectId);
@@ -498,7 +499,7 @@ const showCart = async (ctx, next) => {
       const orderId = orderData.orderId;
       if (orderId) {
         inlineKeyboardArray.push([{text: `✅ Сохранить Заказ #${orderId} от ${orderData.recipientName}`,
-          callback_data: `orders/${orderData.id}?save=products`}]);
+          callback_data: `editOrder/${orderData.id}?sP=1&o=${objectId}`}]);
         // delete order from cart
         inlineKeyboardArray.push([{text: `❎ Убрать Заказ #${orderId} от ${orderData.recipientName}`,
           callback_data: `cart?deleteOrderId=${orderData.id}`}]);
