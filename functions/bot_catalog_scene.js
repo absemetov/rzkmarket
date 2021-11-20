@@ -54,7 +54,8 @@ const showCatalog = async (ctx, next) => {
     // get objId
     const objectId = ctx.state.params.get("o");
     // const cartProductsArray = await ctx.state.cart.products(objectId);
-    const cartProductsArray = await cart.products(objectId, ctx.from.id);
+    // const cartProductsArray = await cart.products(objectId, ctx.from.id);
+    const cartProductsArray = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`, "products");
     const cartButtons = await cart.cartButtons(objectId, ctx.from.id);
     const catalogId = ctx.state.param;
     const tag = ctx.state.params.get("t");
@@ -134,7 +135,8 @@ const showCatalog = async (ctx, next) => {
         const addButton = {text: `📦 ${product.data().name} (${product.id}) = ${product.data().price}`+
           ` ${botConfig.currency}`, callback_data: `aC/${product.id}?o=${objectId}`};
         // get cart products
-        const cartProduct = cartProductsArray && cartProductsArray.find((x) => x.id === product.id);
+        // const cartProduct = cartProductsArray && cartProductsArray.find((x) => x.id === product.id);
+        const cartProduct = cartProductsArray && cartProductsArray[product.id];
         if (cartProduct) {
           addButton.text = `🛒 ${product.data().name} (${product.id})` +
           `=${cartProduct.price} ${botConfig.currency}*${cartProduct.qty}${cartProduct.unit}` +
@@ -211,12 +213,14 @@ const showProduct = async (ctx, next) => {
     // get product data
     const productId = ctx.state.param;
     const objectId = ctx.state.params.get("o");
-    const productSnapshot = await firebase.firestore().collection("objects").doc(objectId)
-        .collection("products").doc(productId).get();
-    const product = {id: productSnapshot.id, ...productSnapshot.data()};
+    // const productSnapshot = await firebase.firestore().collection("objects").doc(objectId)
+    //     .collection("products").doc(productId).get();
+    // const product = {id: productSnapshot.id, ...productSnapshot.data()};
+    const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
     // cart button
     // const cartProductsArray = await ctx.state.cart.products(objectId);
-    const cartProductsArray = await cart.products(objectId, ctx.from.id);
+    // const cartProductsArray = await cart.products(objectId, ctx.from.id);
+    const cartProductsArray = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`, "products");
     const cartButtons = await cart.cartButtons(objectId, ctx.from.id);
     // generate array
     // const session = await ctx.state.cart.getSessionData();
@@ -230,7 +234,8 @@ const showProduct = async (ctx, next) => {
     // default add button
     const addButton = {text: "🛒 Добавить в корзину", callback_data: `aC/${product.id}?o=${objectId}`};
     // get cart products
-    const cartProduct = cartProductsArray && cartProductsArray.find((x) => x.id === product.id);
+    // const cartProduct = cartProductsArray && cartProductsArray.find((x) => x.id === product.id);
+    const cartProduct = cartProductsArray && cartProductsArray[product.id];
     if (cartProduct) {
       addButton.text = `🛒 ${cartProduct.qty} ${cartProduct.unit} ` +
       ` ${roundNumber(cartProduct.qty * cartProduct.price)} ${botConfig.currency}`;
@@ -285,7 +290,7 @@ catalogsActions.push( async (ctx, next) => {
     const redirectToCart = ctx.state.params.get("r");
     const added = ctx.state.params.get("a");
     const productId = ctx.state.param;
-    const addValue = ctx.state.params.get("add_value");
+    const addValue = ctx.state.params.get("addVal");
     const objectId = ctx.state.params.get("o");
     let qtyUrl = "";
     let paramsUrl = "";
@@ -319,18 +324,19 @@ catalogsActions.push( async (ctx, next) => {
     if (added) {
       paramsUrl += "&a=1";
     }
-    const productRef = firebase.firestore().collection("objects").doc(objectId)
-        .collection("products").doc(productId);
-    const productSnapshot = await productRef.get();
-    if (productSnapshot.exists) {
-      const product = {id: productSnapshot.id, ...productSnapshot.data()};
+    // const productRef = firebase.firestore().collection("objects").doc(objectId)
+    //     .collection("products").doc(productId);
+    // const productSnapshot = await productRef.get();
+    const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
+    if (product) {
+      // const product = {id: productSnapshot.id, ...productSnapshot.data()};
       let catalogUrl = `c/${product.catalog.id}?o=${objectId}`;
       if (ctx.session.pathCatalog) {
         catalogUrl = ctx.session.pathCatalog;
       }
       // Add product to cart
       if (addValue) {
-        await cart.add(objectId, ctx.from.id, added ? product.id : product, addValue);
+        await cart.add(objectId, ctx.from.id, added ? product.id : product, addValue, added);
         // redirect to catalog or cart
         // if (session.path) {
         if (!redirectToCart) {
@@ -364,9 +370,9 @@ catalogsActions.push( async (ctx, next) => {
       }
       const addButtonArray = [];
       const addButton = {text: "🛒 Добавить",
-        callback_data: `aC/${product.id}?add_value=${qty}${paramsUrl}&o=${objectId}`};
+        callback_data: `aC/${product.id}?addVal=${qty}${paramsUrl}&o=${objectId}`};
       const delButton = {text: "❎ Удалить",
-        callback_data: `aC/${product.id}?add_value=0${paramsUrl}&o=${objectId}`};
+        callback_data: `aC/${product.id}?addVal=0${paramsUrl}&o=${objectId}`};
       if (added) {
         addButtonArray.push(delButton);
       }
@@ -464,8 +470,9 @@ const showCart = async (ctx, next) => {
       await ctx.state.cart.clear(objectId);
     }
     const inlineKeyboardArray = [];
-    const objectSnap = await firebase.firestore().collection("objects").doc(objectId).get();
-    const object = {"id": objectSnap.id, ...objectSnap.data()};
+    // const objectSnap = await firebase.firestore().collection("objects").doc(objectId).get();
+    // const object = {"id": objectSnap.id, ...objectSnap.data()};
+    const object = await store.findRecord(`objects/${objectId}`);
     let msgTxt = `<b> ${botConfig.name} > ${object.name} > Корзина</b>\n`;
     // loop products
     let totalQty = 0;
@@ -495,7 +502,8 @@ const showCart = async (ctx, next) => {
     } else {
       // order button
       // const orderData = await ctx.state.cart.getOrderData();
-      const orderData = await store.findRecord({"users": ctx.from.id}, "session.orderData");
+      const orderData = await store.findRecord(`users/${ctx.from.id}`, "session.orderData");
+      console.log(orderData);
       const orderId = orderData.orderId;
       if (orderId) {
         inlineKeyboardArray.push([{text: `✅ Сохранить Заказ #${orderId} от ${orderData.recipientName}`,

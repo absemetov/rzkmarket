@@ -394,21 +394,19 @@ ordersActions.push(async (ctx, next) => {
     if (saveProducts) {
       // const user = await ctx.state.cart.getUserData();
       // const cart = await this.cartQuery(objectId).get();
-      const products = await store.findRecord({"objects": objectId, "carts": ctx.from.id}, "products");
+      const products = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`, "products");
       // delete old products
       // await ctx.state.cart.saveOrder(orderId, {
       //   products: firebase.firestore.FieldValue.delete(),
       // });
-      await store.createRecord({"objects": objectId, "orders": orderId}, {
-        products: firebase.firestore.FieldValue.delete(),
-      });
+      await store.deleteRecord(`objects/${objectId}/orders/${orderId}`, "products");
+      await store.deleteRecord(`users/${ctx.from.id}`, "session.orderData");
+      await store.deleteRecord(`objects/${objectId}/carts/${ctx.from.id}`, "products");
       // add new products from cart recipient
       // await ctx.state.cart.saveOrder(orderId, {
       //   products: cart.data().products,
       // });
-      await store.createRecord({"objects": objectId, "orders": orderId}, {
-        products,
-      });
+      await store.updateRecord(`objects/${objectId}/orders/${orderId}`, {products});
       // redirect to order
       ctx.state.routeName = "orders";
       ctx.state.param = orderId;
@@ -416,7 +414,7 @@ ordersActions.push(async (ctx, next) => {
     }
     if (editProducts) {
       // clear cart then export!!!
-      const order = await store.queryRecord({"objects": objectId, "orders": orderId});
+      const order = await store.queryRecord(`objects/${objectId}/orders/${orderId}`);
       await cart.clear(objectId, ctx.from.id);
       // export order to cart
       // await ctx.state.cart.setCartData({

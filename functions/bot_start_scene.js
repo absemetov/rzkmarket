@@ -1,6 +1,5 @@
 // const {Scenes: {BaseScene}} = require("telegraf");
 const functions = require("firebase-functions");
-const firebase = require("firebase-admin");
 const {uploadHandler} = require("./bot_upload_scene");
 const {store, cart} = require("./bot_keyboards.js");
 // const start = new BaseScene("start");
@@ -121,8 +120,10 @@ startActions.push(async (ctx, next) => {
     const inlineKeyboardArray = [];
     if (objectId) {
       // get data obj
-      const objectSnap = await firebase.firestore().collection("objects").doc(objectId).get();
-      const object = {"id": objectSnap.id, ...objectSnap.data()};
+      // const objectSnap = await firebase.firestore().collection("objects").doc(objectId).get();
+      // const object = {"id": objectSnap.id, ...objectSnap.data()};
+      const object = await store.findRecord(`objects/${objectId}`);
+      // upload goods action
       if (uploadGoods) {
         await uploadHandler(ctx, objectId, object.spreadsheets);
       }

@@ -3,8 +3,8 @@ const firebase = require("firebase-admin");
 const botConfig = functions.config().env.bot;
 // store inst
 const store = {
-  async queryRecord(modelObject, queryObject = {}) {
-    const modelSnap = await this.getQuery(modelObject).get();
+  async queryRecord(path, queryObject = {}) {
+    const modelSnap = await this.getQuery(path).get();
     // snap
     if (queryObject.snap) {
       return modelSnap;
@@ -32,80 +32,109 @@ const store = {
     }
     return null;
   },
-  async createRecord(modelObject, dataObject) {
-    // save data with merge
-    await this.getQuery(modelObject).set({
-      ...dataObject,
-    }, {merge: true});
-  },
-  async findRecord(modelObject, field) {
-    const modelSnap = await this.getQuery(modelObject).get();
-    // check data
+  async findRecord(path, field) {
+    const modelSnap = await this.getQuery(path).get();
     if (modelSnap.exists) {
       if (field) {
+        // return modelSnap.data()[field];
         const fields = field.split(".");
         let fieldData = modelSnap.data();
+        let iteration = 0;
         fields.forEach((fieldItem) => {
           if (fieldData[fieldItem]) {
             fieldData = fieldData[fieldItem];
+            iteration ++;
           }
         });
-        return {...fieldData};
+        // find data
+        if (iteration === fields.length) {
+          return {...fieldData};
+        } else {
+          return {};
+        }
       } else {
         return {id: modelSnap.id, ...modelSnap.data()};
       }
     }
+    // check data
+    // if (modelSnap.exists) {
+    // if (field) {
+    //   const fields = field.split(".");
+    //   let fieldData = modelSnap.data();
+    //   fields.forEach((fieldItem) => {
+    //     if (fieldData[fieldItem]) {
+    //       fieldData = fieldData[fieldItem];
+    //     }
+    //   });
+    //   return {...fieldData};
+    // } else {
+    //   return {id: modelSnap.id, ...modelSnap.data()};
+    // }
+    //   return modelSnap.data()[field];
+    // }
     return null;
   },
-  async deleteRecord(modelObject, field) {
-    const fields = field.split(".");
+  async createRecord(path, field) {
+    // nested "dot notation" not work!!!
+    await this.getQuery(path).set({
+      ...field,
+    }, {merge: true});
+  },
+  async updateRecord(path, field) {
+    // nested "dot notation" work only when update first create doc
+    await this.getQuery(path).update({
+      ...field,
+    });
+  },
+  async deleteRecord(path, field) {
+    // const fields = field.split(".");
     // const fields = "session.orderData.yandex.ru".split(".");
     // const jsonStr = '{"session": {"order" : 1}}';
-    let output = "";
-    let quates = "";
-    fields.forEach((data) => {
-      console.log(data);
-      output += `{"${data}": `;
-      quates += "}";
-    });
+    // let output = "";
+    // let quates = "";
+    // fields.forEach((data) => {
+    //   console.log(data);
+    //   output += `{"${data}": `;
+    //   quates += "}";
+    // });
     // console.log(output+"1}}");
-    const obj = JSON.parse(output+`1${quates}`);
+    // const obj = JSON.parse(output+`1${quates}`);
     // console.log(obj)
-    arraySave = [];
-    fields.forEach((data, index) => {
-      if (arraySave[index - 1]) {
-        if (index === fields.length - 1) {
-          arraySave.push(arraySave[index - 1][data] = "delete");
-        } else {
-          arraySave.push(arraySave[index - 1][data]);
-        }
-      } else {
-        arraySave.push(obj[data]);
-      }
-      // console.log(arraySave[index]);
-    });
-    console.log(obj["session"]["orderData"]);
-    console.log(obj);
+    // arraySave = [];
+    // fields.forEach((data, index) => {
+    //   if (arraySave[index - 1]) {
+    //     if (index === fields.length - 1) {
+    //       arraySave.push(arraySave[index - 1][data] = "delete");
+    //     } else {
+    //       arraySave.push(arraySave[index - 1][data]);
+    //     }
+    //   } else {
+    //     arraySave.push(obj[data]);
+    //   }
+    // console.log(arraySave[index]);
+    // });
+    // console.log(obj["session"]["orderData"]);
+    // console.log(obj);
     // {"session": {"order" : 1}}
-    // await this.getQuery(modelObject).set({
-    //   ...dataObject,
-    // }, {merge: true});
+    await this.getQuery(path).update({
+      [field]: firebase.firestore.FieldValue.delete(),
+    }, {merge: true});
   },
-  async findAll(modelName) {
-    const modelSnap = await firebase.firestore().collection(modelName).get();
+  async findAll(collectionName) {
+    const modelSnap = await firebase.firestore().collection(collectionName).get();
     const outputArray = [];
     modelSnap.docs.forEach((model) => {
       outputArray.push({id: model.id, ...model.data()});
     });
     return outputArray;
   },
-  getQuery(modelObject) {
-    let query = firebase.firestore();
-    for (const [key, value] of Object.entries(modelObject)) {
-      // doc id must be string!!!
-      query = query.collection(key).doc(value.toString());
-    }
-    return query;
+  getQuery(path) {
+    // let query = firebase.firestore();
+    // for (const [key, value] of Object.entries(modelObject)) {
+    //   // doc id must be string!!!
+    //   query = query.collection(key).doc(value.toString());
+    // }
+    return firebase.firestore().doc(path);
   },
   payments() {
     const paymentsTxt = botConfig.payment;
@@ -150,13 +179,13 @@ const cart = {
     // return {};
     return store.findRecord("users", userId);
   },
-  async add(objectId, userId, product, qty) {
+  async add(objectId, userId, product, qty, added) {
     qty = Number(qty);
-    let productData = {};
+    let products = {};
     if (qty) {
       // add product to cart or edit
       if (typeof product == "object") {
-        productData = {
+        products = {
           [product.id]: {
             name: product.name,
             price: product.price,
@@ -166,7 +195,7 @@ const cart = {
           },
         };
       } else {
-        productData = {
+        products = {
           [product]: {
             qty: qty,
           },
@@ -175,7 +204,11 @@ const cart = {
       // await this.cartQuery(objectId).set({
       //   products: productData,
       // }, {merge: true});
-      await store.createRecord({"objects": objectId, "carts": userId}, {products: productData});
+      if (added) {
+        await store.updateRecord(`objects/${objectId}/carts/${userId}`, {products});
+      } else {
+        await store.createRecord(`objects/${objectId}/carts/${userId}`, {products});
+      }
     } else {
       // delete product from cart
       // await this.cartQuery(objectId).set({
@@ -183,25 +216,24 @@ const cart = {
       //     [typeof product == "object" ? product.id : product]: firebase.firestore.FieldValue.delete(),
       //   },
       // }, {merge: true});
-      await store.createRecord({"objects": objectId, "carts": userId}, {products: {
-        [typeof product == "object" ? product.id : product]: firebase.firestore.FieldValue.delete(),
-      }});
+      await store.deleteRecord(`objects/${objectId}/carts/${userId}`,
+          `products.${typeof product == "object" ? product.id : product}`);
     }
   },
   async products(objectId, userId) {
-    // const products = [];
+    const products = [];
     // const cart = await this.cartQuery(objectId).get();
-    const products = await store.queryRecord({"objects": objectId, "carts": userId}, {sort: "products", single: true});
-    // if (cart.exists && cart.data().products) {
-    //   for (const [id, product] of Object.entries(cart.data().products)) {
-    //     products.push({id, ...product});
-    //   }
-    // }
-    // // sort products by createdAt
-    // products.sort(function(a, b) {
-    //   return a.createdAt - b.createdAt;
-    // });
-    return products || [];
+    const cartProducts = await store.findRecord(`objects/${objectId}/carts/${userId}`, "products");
+    if (cartProducts) {
+      for (const [id, product] of Object.entries(cartProducts)) {
+        products.push({id, ...product});
+      }
+    }
+    // sort products by createdAt
+    products.sort(function(a, b) {
+      return a.createdAt - b.createdAt;
+    });
+    return products;
   },
   async clear(objectId, userId) {
     // const clearData = {};
@@ -216,9 +248,7 @@ const cart = {
     // await this.cartQuery(objectId).set({
     //   products: firebase.firestore.FieldValue.delete(),
     // }, {merge: true});
-    await store.createRecord({"objects": objectId, "carts": userId}, {
-      products: firebase.firestore.FieldValue.delete(),
-    });
+    await store.deleteRecord(`objects/${objectId}/carts/${userId}`, "products");
   },
   async setWizardData(value) {
     await this.userQuery.set({
@@ -302,11 +332,11 @@ const cart = {
   async cartButtons(objectId, userId) {
     // get cart count
     // const cart = await this.cartQuery(objectId).get();
-    const cartProducts = await store
-        .queryRecord({"objects": objectId, "carts": userId}, {sort: "products", single: true});
+    const cartProducts = await store.findRecord(`objects/${objectId}/carts/${userId}`, "products");
     return [
       {text: "🏪 Главная", callback_data: `objects/${objectId}`},
-      {text: `🛒 Корзина (${cartProducts && cartProducts.length || 0})`, callback_data: `cart?o=${objectId}`},
+      {text: `🛒 Корзина (${cartProducts && Object.keys(cartProducts).length || 0})`,
+        callback_data: `cart?o=${objectId}`},
     ];
   },
 };

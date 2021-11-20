@@ -51,7 +51,7 @@ bot.start(async (ctx) => {
     userName += " @" + ctx.from.username;
   }
   // await ctx.state.cart.setUserName(userName);
-  await store.createRecord({"users": ctx.from.id}, {userName});
+  await store.createRecord(`users/${ctx.from.id}`, {userName});
   startHandler(ctx);
 });
 // rzk shop
@@ -82,14 +82,14 @@ bot.command("upload", (ctx) => {
 bot.on(["text", "contact"], async (ctx) => {
   // const session = await ctx.state.cart.getSessionData();
   // const sessionFire = await ctx.state.cart.getSessionData();
-  const sessionFire = await store.findRecord({"users": ctx.from.id}, "session");
+  const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");
   if (ctx.message.text === "Отмена") {
     ctx.reply("Для продолжения нажмите /objects", {
       reply_markup: {
         remove_keyboard: true,
       }});
     // await ctx.state.cart.setSessionData({scene: null});
-    await store.createRecord({"users": ctx.from.id}, {"session": {scene: firebase.firestore.FieldValue.delete()}});
+    await store.updateRecord(`users/${ctx.from.id}`, {"session.scene": null});
     ctx.session.scene = null;
     return;
   }
