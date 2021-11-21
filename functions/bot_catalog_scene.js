@@ -220,7 +220,6 @@ const showProduct = async (ctx, next) => {
     // cart button
     // const cartProductsArray = await ctx.state.cart.products(objectId);
     // const cartProductsArray = await cart.products(objectId, ctx.from.id);
-    const cartProductsArray = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`, "products");
     const cartButtons = await cart.cartButtons(objectId, ctx.from.id);
     // generate array
     // const session = await ctx.state.cart.getSessionData();
@@ -235,7 +234,9 @@ const showProduct = async (ctx, next) => {
     const addButton = {text: "🛒 Добавить в корзину", callback_data: `aC/${product.id}?o=${objectId}`};
     // get cart products
     // const cartProduct = cartProductsArray && cartProductsArray.find((x) => x.id === product.id);
-    const cartProduct = cartProductsArray && cartProductsArray[product.id];
+    const cartProduct = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`,
+        `products.${productId}`);
+    // const cartProduct = cartProductsArray && cartProductsArray[product.id];
     if (cartProduct) {
       addButton.text = `🛒 ${cartProduct.qty} ${cartProduct.unit} ` +
       ` ${roundNumber(cartProduct.qty * cartProduct.price)} ${botConfig.currency}`;
@@ -336,7 +337,7 @@ catalogsActions.push( async (ctx, next) => {
       }
       // Add product to cart
       if (addValue) {
-        await cart.add(objectId, ctx.from.id, added ? product.id : product, addValue, added);
+        await cart.add(objectId, ctx.from.id, added ? product.id : product, addValue);
         // redirect to catalog or cart
         // if (session.path) {
         if (!redirectToCart) {
@@ -466,8 +467,10 @@ const showCart = async (ctx, next) => {
       // });
       await store.deleteRecord({"users": ctx.from.id}, "session.orderData");
     }
+    // clear cart
     if (clear) {
-      await ctx.state.cart.clear(objectId);
+      // await ctx.state.cart.clear(objectId);
+      await cart.clear(objectId, ctx.from.id);
     }
     const inlineKeyboardArray = [];
     // const objectSnap = await firebase.firestore().collection("objects").doc(objectId).get();
@@ -503,9 +506,8 @@ const showCart = async (ctx, next) => {
       // order button
       // const orderData = await ctx.state.cart.getOrderData();
       const orderData = await store.findRecord(`users/${ctx.from.id}`, "session.orderData");
-      console.log(orderData);
-      const orderId = orderData.orderId;
-      if (orderId) {
+      if (orderData) {
+        const orderId = orderData.orderId;
         inlineKeyboardArray.push([{text: `✅ Сохранить Заказ #${orderId} от ${orderData.recipientName}`,
           callback_data: `editOrder/${orderData.id}?sP=1&o=${objectId}`}]);
         // delete order from cart
@@ -514,7 +516,7 @@ const showCart = async (ctx, next) => {
       }
       // create order
       inlineKeyboardArray.push([{text: "✅ Оформить заказ",
-        callback_data: `cO/carrier?o=${objectId}`}]);
+        callback_data: `cO/payment?o=${objectId}`}]);
       // clear cart
       inlineKeyboardArray.push([{text: "🗑 Очистить корзину",
         callback_data: `cart?clear=1&o=${objectId}`}]);
@@ -625,9 +627,9 @@ const cartWizard = [
       inlineKeyboardArray.push([{text: "⬅️ Назад",
         callback_data: `orders/${orderId}`}]);
     } else {
-      inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `cO/payment?cN=${qty}` +
+      inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `cO/wizard?cN=${qty}` +
       `&cId=${carrierId}`}]);
-      inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: "cart"}]);
+      // inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: "cart"}]);
     }
     await ctx.editMessageCaption(`Введите номер отделения:\n<b>${qty}</b>` +
       `\n${error ? "Ошибка: введите номер отделения" : ""}`,
@@ -645,7 +647,8 @@ const cartWizard = [
         resize_keyboard: true,
       }});
     // await ctx.state.cart.setSessionData({cursor: 3});
-    await ctx.state.cart.setSessionData({scene: "wizardOrder", cursor: 3});
+    // await ctx.state.cart.setSessionData({scene: "wizardOrder", cursor: 3});
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": "wizardOrder", "cursor": 3}});
     // ctx.session.cursor = 3;
     // ctx.session.scene = "wizardOrder";
   },
@@ -655,7 +658,9 @@ const cartWizard = [
       ctx.reply("Адрес слишком короткий");
       return;
     }
-    await ctx.state.cart.setWizardData({address: ctx.message.text});
+    // await ctx.state.cart.setWizardData({address: ctx.message.text});
+    const address = ctx.message.text;
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {address}}});
     let userName = "";
     if (ctx.from.last_name) {
       userName += ctx.from.last_name;
@@ -669,7 +674,7 @@ const cartWizard = [
         resize_keyboard: true,
       }});
     // await ctx.state.cart.setSessionData({cursor: 4});
-    await ctx.state.cart.setSessionData({cursor: 4});
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 4}});
     // ctx.session.cursor = 4;
   },
   async (ctx) => {
@@ -679,7 +684,9 @@ const cartWizard = [
       return;
     }
     // save data to cart
-    await ctx.state.cart.setWizardData({recipientName: ctx.message.text});
+    // await ctx.state.cart.setWizardData({recipientName: ctx.message.text});
+    const recipientName = ctx.message.text;
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {recipientName}}});
     ctx.reply("Введите номер телефона", {
       reply_markup: {
         keyboard: [
@@ -693,19 +700,21 @@ const cartWizard = [
       },
     });
     // await ctx.state.cart.setSessionData({cursor: 5});
-    await ctx.state.cart.setSessionData({cursor: 5});
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 5}});
     // ctx.session.cursor = 5;
   },
   async (ctx) => {
-    const phoneNumber = (ctx.message.contact && ctx.message.contact.phone_number) || ctx.message.text;
+    const phoneNumberRegExp = (ctx.message.contact && ctx.message.contact.phone_number) || ctx.message.text;
     // const checkPhoneUa = phoneNumber.match(/^(\+380|0)?([1-9]{1}\d{8})$/);
-    const checkPhone = phoneNumber.match(/^(\+7|7|8)?([489][0-9]{2}[0-9]{7})$/);
+    const checkPhone = phoneNumberRegExp.match(/^(\+7|7|8)?([489][0-9]{2}[0-9]{7})$/);
     if (!checkPhone) {
       ctx.reply("Введите номер телефона в формате +7YYYXXXXXXX");
       return;
     }
     // save phone to cart
-    await ctx.state.cart.setWizardData({phoneNumber: "+7" + checkPhone[2]});
+    // await ctx.state.cart.setWizardData({phoneNumber: "+7" + checkPhone[2]});
+    const phoneNumber = "+7" + checkPhone[2];
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {phoneNumber}}});
     // comment order
     ctx.replyWithHTML("Комментарий к заказу:",
         {
@@ -717,22 +726,25 @@ const cartWizard = [
             resize_keyboard: true,
           }});
     // await ctx.state.cart.setSessionData({cursor: 6});
-    await ctx.state.cart.setSessionData({cursor: 6});
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 6}});
     // ctx.session.cursor = 6;
   },
   async (ctx) => {
     if (ctx.message.text && ctx.message.text !== "Без комментариев") {
       // save phone to cart
-      await ctx.state.cart.setWizardData({comment: ctx.message.text});
+      // await ctx.state.cart.setWizardData({comment: ctx.message.text});
+      const comment = ctx.message.text;
+      await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {comment}}});
     }
     // get preorder data
-    const preOrderData = await ctx.state.cart.getWizardData();
+    // const preOrderData = await ctx.state.cart.getWizardData();
+    const preOrderData = await store.findRecord(`users/${ctx.from.id}`, "session.wizardData");
     ctx.replyWithHTML("<b>Проверьте даные получателя:\n" +
         `${preOrderData.recipientName} ${preOrderData.phoneNumber}\n` +
         `Адрес доставки: ${preOrderData.address}, ` +
-        `${ctx.state.cart.carriers().get(preOrderData.carrierId)} ` +
+        `${store.carriers().get(preOrderData.carrierId)} ` +
         `${preOrderData.carrierNumber ? "#" + preOrderData.carrierNumber : ""}\n` +
-        `Оплата: ${ctx.state.cart.payments().get(preOrderData.paymentId)}\n` +
+        `Оплата: ${store.payments().get(preOrderData.paymentId)}\n` +
         `${preOrderData.comment ? "Комментарий: " + preOrderData.comment : ""}</b>`,
     {
       reply_markup: {
@@ -744,7 +756,7 @@ const cartWizard = [
       }});
     // leave wizard
     // await ctx.state.cart.setSessionData({cursor: 7});
-    await ctx.state.cart.setSessionData({cursor: 7});
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 7}});
     // ctx.session.cursor = 7;
   },
   async (ctx, next) => {
@@ -757,7 +769,8 @@ const cartWizard = [
         }});
       await ctx.telegram.sendMessage(94899148, "New order from bot!" );
       // exit scene
-      await ctx.state.cart.setSessionData({scene: null});
+      // await ctx.state.cart.setSessionData({scene: null});
+      await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": null}});
     }
     // leave wizard
     // await ctx.state.cart.setSessionData({scene: null});
@@ -772,24 +785,26 @@ catalogsActions.push( async (ctx, next) => {
     const todo = ctx.state.param;
     // first step carrier
     if (todo === "carrier") {
-      // save objectId
+      // save payment and clear old data use updateRecord
+      const paymentId = + ctx.state.params.get("payment_id");
       const objectId = ctx.state.params.get("o");
-      await ctx.state.cart.setSessionData({objectId});
+      // await store.setWizardData({paymentId});
+      await store.updateRecord(`users/${ctx.from.id}`, {"session.wizardData": {paymentId}});
       // set default values
-      await ctx.state.cart.setWizardData({
-        carrierNumber: firebase.firestore.FieldValue.delete(),
-        comment: firebase.firestore.FieldValue.delete(),
-      });
+      // await ctx.state.cart.setWizardData({
+      //   carrierNumber: firebase.firestore.FieldValue.delete(),
+      //   comment: firebase.firestore.FieldValue.delete(),
+      // });
       // get carriers service
       const inlineKeyboardArray = [];
-      ctx.state.cart.carriers().forEach((value, key) => {
+      store.carriers().forEach((value, key) => {
         if (key === 1) {
-          inlineKeyboardArray.push([{text: value, callback_data: `cO/payment?cId=${key}`}]);
+          inlineKeyboardArray.push([{text: value, callback_data: `cO/wizard?cId=${key}`}]);
         } else {
           inlineKeyboardArray.push([{text: value, callback_data: `cO/cN?cId=${key}`}]);
         }
       });
-      inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: "cart"}]);
+      inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: `cart?o=${objectId}`}]);
       await cartWizard[0](ctx, "Способ доставки", inlineKeyboardArray);
     }
     // set carrier number
@@ -798,15 +813,26 @@ catalogsActions.push( async (ctx, next) => {
     }
     // order payment method
     if (todo === "payment") {
-      // save data to cart
-      let carrierId = ctx.state.params.get("cId");
-      if (carrierId) {
-        carrierId = Number(carrierId);
-        await ctx.state.cart.setWizardData({carrierId});
-      }
+      // save objectId
+      const objectId = ctx.state.params.get("o");
+      // await ctx.state.cart.setSessionData({objectId});
+      await store.createRecord(`users/${ctx.from.id}`, {session: {objectId}});
+      // show paymets service
+      const inlineKeyboardArray = [];
+      store.payments().forEach((value, key) => {
+        inlineKeyboardArray.push([{text: value, callback_data: `cO/carrier?payment_id=${key}&o=${objectId}`}]);
+      });
+      inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: `cart?o=${objectId}`}]);
+      await cartWizard[0](ctx, "Способ оплаты", inlineKeyboardArray);
+    }
+    // save payment and goto wizard
+    if (todo === "wizard") {
+      // save carrier
+      const carrierId = + ctx.state.params.get("cId");
+      // await ctx.state.cart.setWizardData({carrierId});
+      await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {carrierId}}});
       // if user not chuse carrier number
-      let carrierNumber = ctx.state.params.get("cN");
-      carrierNumber = Number(carrierNumber);
+      const carrierNumber = + ctx.state.params.get("cN");
       if (carrierId === 2 && !carrierNumber) {
         // return first step error
         await cartWizard[1](ctx, "errorCurrierNumber");
@@ -814,25 +840,8 @@ catalogsActions.push( async (ctx, next) => {
       }
       // save carrierNumber
       if (carrierNumber) {
-        await ctx.state.cart.setWizardData({carrierNumber});
-      }
-      // show paymets service
-      const inlineKeyboardArray = [];
-      ctx.state.cart.payments().forEach((value, key) => {
-        inlineKeyboardArray.push([{text: value, callback_data: `cO/wizard?payment_id=${key}`}]);
-      });
-      inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: "cart"}]);
-      await cartWizard[0](ctx, "Способ оплаты", inlineKeyboardArray);
-    }
-    // save payment and goto wizard
-    if (todo === "wizard") {
-      let paymentId = ctx.state.params.get("payment_id");
-      if (paymentId) {
-        paymentId = Number(paymentId);
-      }
-      // save data to cart
-      if (paymentId) {
-        await ctx.state.cart.setWizardData({paymentId});
+        // await ctx.state.cart.setWizardData({carrierNumber});
+        await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {carrierNumber}}});
       }
       await ctx.deleteMessage();
       // await ctx.scene.enter("order");

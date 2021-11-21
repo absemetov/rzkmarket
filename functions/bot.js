@@ -89,7 +89,7 @@ bot.on(["text", "contact"], async (ctx) => {
         remove_keyboard: true,
       }});
     // await ctx.state.cart.setSessionData({scene: null});
-    await store.updateRecord(`users/${ctx.from.id}`, {"session.scene": null});
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": null}});
     ctx.session.scene = null;
     return;
   }

@@ -3,40 +3,36 @@ const firebase = require("firebase-admin");
 const botConfig = functions.config().env.bot;
 // store inst
 const store = {
-  async queryRecord(path, queryObject = {}) {
-    const modelSnap = await this.getQuery(path).get();
-    // snap
-    if (queryObject.snap) {
-      return modelSnap;
-    }
-    // check data
-    if (modelSnap.exists) {
-      const sortedArray = [];
-      const data = modelSnap.data();
-      if (queryObject.sort && data[queryObject.sort]) {
-        for (const [id, product] of Object.entries(data[queryObject.sort])) {
-          sortedArray.push({id, ...product});
-        }
-        // sort products by createdAt
-        sortedArray.sort(function(a, b) {
-          return a.createdAt - b.createdAt;
-        });
-        data[queryObject.sort] = sortedArray;
-      }
-      // output
-      if (queryObject.single) {
-        return sortedArray;
-      } else {
-        return {"id": modelSnap.id, ...data};
-      }
-    }
-    return null;
-  },
+  // async queryRecord(path, queryObject = {}) {
+  //   const modelSnap = await this.getQuery(path).get();
+  //   // check data
+  //   if (modelSnap.exists) {
+  //     const sortedArray = [];
+  //     const data = modelSnap.data();
+  //     if (queryObject.sort && data[queryObject.sort]) {
+  //       for (const [id, product] of Object.entries(data[queryObject.sort])) {
+  //         sortedArray.push({id, ...product});
+  //       }
+  //       // sort products by createdAt
+  //       sortedArray.sort(function(a, b) {
+  //         return a.createdAt - b.createdAt;
+  //       });
+  //       data[queryObject.sort] = sortedArray;
+  //     }
+  //     // output
+  //     if (queryObject.single) {
+  //       return sortedArray;
+  //     } else {
+  //       return {"id": modelSnap.id, ...data};
+  //     }
+  //   }
+  //   return null;
+  // },
   async findRecord(path, field) {
     const modelSnap = await this.getQuery(path).get();
     if (modelSnap.exists) {
       if (field) {
-        // return modelSnap.data()[field];
+        // find nested data
         const fields = field.split(".");
         let fieldData = modelSnap.data();
         let iteration = 0;
@@ -46,11 +42,10 @@ const store = {
             iteration ++;
           }
         });
-        // find data
         if (iteration === fields.length) {
           return {...fieldData};
         } else {
-          return {};
+          return null;
         }
       } else {
         return {id: modelSnap.id, ...modelSnap.data()};
@@ -82,6 +77,7 @@ const store = {
   },
   async updateRecord(path, field) {
     // nested "dot notation" work only when update first create doc
+    // worning!!! be careful siblings data cleare!!! use createRecord
     await this.getQuery(path).update({
       ...field,
     });
@@ -118,7 +114,7 @@ const store = {
     // {"session": {"order" : 1}}
     await this.getQuery(path).update({
       [field]: firebase.firestore.FieldValue.delete(),
-    }, {merge: true});
+    });
   },
   async findAll(collectionName) {
     const modelSnap = await firebase.firestore().collection(collectionName).get();
@@ -166,6 +162,17 @@ const store = {
     }
     return statusesMap;
   },
+  sort(field) {
+    const sortedArray = [];
+    for (const [id, product] of Object.entries(field)) {
+      sortedArray.push({id, ...product});
+    }
+    // sort products by createdAt
+    sortedArray.sort(function(a, b) {
+      return a.createdAt - b.createdAt;
+    });
+    return sortedArray;
+  },
 };
 
 // cart instance
@@ -179,7 +186,7 @@ const cart = {
     // return {};
     return store.findRecord("users", userId);
   },
-  async add(objectId, userId, product, qty, added) {
+  async add(objectId, userId, product, qty) {
     qty = Number(qty);
     let products = {};
     if (qty) {
@@ -204,11 +211,7 @@ const cart = {
       // await this.cartQuery(objectId).set({
       //   products: productData,
       // }, {merge: true});
-      if (added) {
-        await store.updateRecord(`objects/${objectId}/carts/${userId}`, {products});
-      } else {
-        await store.createRecord(`objects/${objectId}/carts/${userId}`, {products});
-      }
+      await store.createRecord(`objects/${objectId}/carts/${userId}`, {products});
     } else {
       // delete product from cart
       // await this.cartQuery(objectId).set({
@@ -221,19 +224,9 @@ const cart = {
     }
   },
   async products(objectId, userId) {
-    const products = [];
     // const cart = await this.cartQuery(objectId).get();
     const cartProducts = await store.findRecord(`objects/${objectId}/carts/${userId}`, "products");
-    if (cartProducts) {
-      for (const [id, product] of Object.entries(cartProducts)) {
-        products.push({id, ...product});
-      }
-    }
-    // sort products by createdAt
-    products.sort(function(a, b) {
-      return a.createdAt - b.createdAt;
-    });
-    return products;
+    return store.sort(cartProducts);
   },
   async clear(objectId, userId) {
     // const clearData = {};

@@ -399,7 +399,8 @@ ordersActions.push(async (ctx, next) => {
       // await ctx.state.cart.saveOrder(orderId, {
       //   products: firebase.firestore.FieldValue.delete(),
       // });
-      await store.deleteRecord(`objects/${objectId}/orders/${orderId}`, "products");
+      // when USE updateRecord delete products not nessesary
+      // await store.deleteRecord(`objects/${objectId}/orders/${orderId}`, "products");
       await store.deleteRecord(`users/${ctx.from.id}`, "session.orderData");
       await store.deleteRecord(`objects/${objectId}/carts/${ctx.from.id}`, "products");
       // add new products from cart recipient
