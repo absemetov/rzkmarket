@@ -18,22 +18,22 @@ const myOrders = async (ctx, next) => {
     const inlineKeyboardArray = [];
     const orderId = ctx.state.params.get("oId");
     const objectId = ctx.state.params.get("o");
-    const adminOrder = ctx.state.params.get("adminOrder");
     let caption = `<b>${botConfig.name} > Мои заказы</b>`;
-    const limit = 1;
-    if (adminOrder) {
-      ctx.session.adminOrder = adminOrder;
+    if (ctx.session.pathOrderCurrent) {
+      const userData = await store.findRecord(`users/${userId}`);
+      caption = `Заказы от ${userData.userName}`;
     }
+    const limit = 1;
     if (orderId) {
       // const orderSnap = await firebase.firestore().collection("objects").doc(objectId)
       //     .collection("orders").doc(orderId).get();
       // const order = {"id": orderSnap.id, ...orderSnap.data()};
       // get order
-      const order = await store.queryRecord({"objects": objectId, "orders": orderId}, {sort: "products"});
+      const order = await store.findRecord(`objects/${objectId}/orders/${orderId}`);
       if (order) {
         // show order
         const date = moment.unix(order.createdAt);
-        caption = `<b>${botConfig.name} >` +
+        caption += " <b>" +
         `Заказ #${order.orderId} (${date.fromNow()})\n` +
         `Склад: ${order.objectName}\n` +
         `Статус: ${store.statuses().get(order.statusId)}\n` +
@@ -58,7 +58,7 @@ const myOrders = async (ctx, next) => {
         //   return a.createdAt - b.createdAt;
         // });
         // for (const [index, product] of order.products.entries()) {
-        order.products.forEach((product, index) => {
+        store.sort(order.products).forEach((product, index) => {
           const productTxt = `${index + 1}) ${product.name} (${product.id})` +
         `=${product.price} ${botConfig.currency}*${product.qty}${product.unit}` +
         `=${roundNumber(product.price * product.qty)}${botConfig.currency}`;
@@ -83,14 +83,14 @@ const myOrders = async (ctx, next) => {
       if (startAfter) {
         // const startAfterProduct = await firebase.firestore().collection("orders")
         //     .doc(startAfter).get();
-        const startAfterProduct = await store.queryRecord({"objects": objectId, "orders": startAfter}, {snap: true});
+        const startAfterProduct = await store.getQuery(`objects${objectId}/orders/${startAfter}`).get();
         query = query.startAfter(startAfterProduct);
       }
       // prev button
       if (endBefore) {
         // const endBeforeProduct = await firebase.firestore().collection("orders")
         //     .doc(endBefore).get();
-        const endBeforeProduct = await store.queryRecord({"objects": objectId, "orders": endBefore}, {snap: true});
+        const endBeforeProduct = await store.getQuery(`objects${objectId}/orders/${endBefore}`).get();
         // set limit
         query = query.endBefore(endBeforeProduct).limitToLast(limit);
       } else {
@@ -133,8 +133,9 @@ const myOrders = async (ctx, next) => {
       } else {
         inlineKeyboardArray.push([{text: "У Вас пока нет заказов", callback_data: `myO/${userId}`}]);
       }
-      if (ctx.session.adminOrder) {
-        inlineKeyboardArray.push([{text: "🏠 Вернуться к заказу", callback_data: `orders/${ctx.session.adminOrder}`}]);
+      if (ctx.session.pathOrderCurrent) {
+        inlineKeyboardArray.push([{text: "🏠 Вернуться к заказу",
+          callback_data: `${ctx.session.pathOrderCurrent}`}]);
       }
       inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: "objects"}]);
     }
@@ -166,14 +167,15 @@ const showOrders = async (ctx, next) => {
     const objectId = ctx.state.params.get("o");
     const inlineKeyboardArray = [];
     const orderId = ctx.state.param;
-    let caption = `<b>${botConfig.name} > Заказы</b>`;
+    let caption = `<b>${botConfig.name} > Заказы Admin</b>`;
     if (orderId) {
       // const orderSnap = await firebase.firestore().collection("objects").doc(objectId)
       //     .collection("orders").doc(orderId).get();
       // const order = {"id": orderSnap.id, ...orderSnap.data()};
-      const order = await store.queryRecord({"objects": objectId, "orders": orderId}, {sort: "products"});
+      const order = await store.findRecord(`objects/${objectId}/orders/${orderId}`);
       if (order) {
         // show order
+        ctx.session.pathOrderCurrent = ctx.callbackQuery.data;
         const date = moment.unix(order.createdAt);
         caption = `<b>${botConfig.name} > Заказ #${order.orderId} (${date.fromNow()})\n` +
         `${order.recipientName} ${order.phoneNumber}\n` +
@@ -188,22 +190,30 @@ const showOrders = async (ctx, next) => {
         // });
         let totalQty = 0;
         let totalSum = 0;
-        const products = [];
-        for (const [id, product] of Object.entries(order.products)) {
-          products.push({id, ...product});
-        }
-        // sort products by createdAt
-        products.sort(function(a, b) {
-          return a.createdAt - b.createdAt;
-        });
-        for (const [index, product] of products.entries()) {
+        // const products = [];
+        // for (const [id, product] of Object.entries(order.products)) {
+        //   products.push({id, ...product});
+        // }
+        // // sort products by createdAt
+        // products.sort(function(a, b) {
+        //   return a.createdAt - b.createdAt;
+        // });
+        // for (const [index, product] of products.entries()) {
+        //   const productTxt = `${index + 1})${product.name} (${product.id})` +
+        // `=${product.price} ${botConfig.currency}*${product.qty}${product.unit}` +
+        // `=${roundNumber(product.price * product.qty)}${botConfig.currency}`;
+        //   caption += `${productTxt}\n`;
+        //   totalQty += product.qty;
+        //   totalSum += product.qty * product.price;
+        // }
+        store.sort(order.products).forEach((product, index) => {
           const productTxt = `${index + 1})${product.name} (${product.id})` +
         `=${product.price} ${botConfig.currency}*${product.qty}${product.unit}` +
         `=${roundNumber(product.price * product.qty)}${botConfig.currency}`;
           caption += `${productTxt}\n`;
           totalQty += product.qty;
           totalSum += product.qty * product.price;
-        }
+        });
         caption += `<b>Количество товара: ${totalQty}\n` +
           `Сумма: ${roundNumber(totalSum)} ${botConfig.currency}</b>`;
       }
@@ -229,14 +239,16 @@ const showOrders = async (ctx, next) => {
       inlineKeyboardArray.push([{text: "📝 Редактировать товары",
         callback_data: `editOrder/${orderId}?eP=1&o=${objectId}`}]);
       // edit products
+      // inlineKeyboardArray.push([{text: "📝 Информация о покупателе",
+      //   callback_data: `myO/${order.userId}`}]);
       inlineKeyboardArray.push([{text: "📝 Информация о покупателе",
-        callback_data: `myO/${order.userId}?adminOrder=${order.id}`}]);
+        callback_data: `editOrder?userId=${order.userId}&o=${order.objectId}`}]);
       // refresh order
       const dateTimestamp = Math.floor(Date.now() / 1000);
       inlineKeyboardArray.push([{text: `🔄 Обновить заказ#${order.orderId}`,
         callback_data: `orders/${order.id}?${dateTimestamp}`}]);
       inlineKeyboardArray.push([{text: "🧾 Заказы",
-        callback_data: `${ctx.session.pathOrder ? ctx.session.pathOrder : "orders"}`}]);
+        callback_data: `${ctx.session.pathOrder ? ctx.session.pathOrder : "orders?o=" + order.objectId}`}]);
     } else {
       // show orders
       ctx.session.pathOrder = ctx.callbackQuery.data;
@@ -252,15 +264,17 @@ const showOrders = async (ctx, next) => {
       }
       let query = mainQuery;
       if (startAfter) {
-        const startAfterProduct = await firebase.firestore().collection("orders")
-            .doc(startAfter).get();
+        // const startAfterProduct = await firebase.firestore().collection("orders")
+        //     .doc(startAfter).get();
+        const startAfterProduct = await store.getQuery(`objects${objectId}/orders/${startAfter}`).get();
         query = query.startAfter(startAfterProduct);
       }
       // prev button
       if (endBefore) {
-        const endBeforeProduct = await firebase.firestore().collection("orders")
-            .doc(endBefore).get();
-          // set limit
+        // const endBeforeProduct = await firebase.firestore().collection("orders")
+        //     .doc(endBefore).get();
+        const endBeforeProduct = await store.getQuery(`objects${objectId}/orders/${endBefore}`).get();
+        // set limit
         query = query.endBefore(endBeforeProduct).limitToLast(limit);
       } else {
         // defaul limit
@@ -386,8 +400,18 @@ ordersActions.push(async (ctx, next) => {
     const showStatusId = + ctx.state.params.get("showStatusId");
     const statusId = + ctx.state.params.get("statusId");
     const objectId = ctx.state.params.get("o");
+    const userId = ctx.state.params.get("userId");
+    // show user info creator
+    if (userId) {
+      const inlineKeyboardArray = [];
+      const userData = await store.findRecord(`users/${userId}`);
+      inlineKeyboardArray.push([{text: `Заказы ${userData.userName}`,
+        callback_data: `myO/${userId}`}]);
+      inlineKeyboardArray.push([{text: "⬅️ Назад",
+        callback_data: `${ctx.session.pathOrderCurrent ? ctx.session.pathOrderCurrent : `orders?o=${objectId}`}`}]);
+      await cartWizard[0](ctx, `${userData.userName}, orderCount: ${userData.orderCount}`, inlineKeyboardArray);
+    }
     // edit produc
-    // edit order
     const editProducts = ctx.state.params.get("eP");
     const saveProducts = ctx.state.params.get("sP");
     // save products from cart
@@ -415,7 +439,7 @@ ordersActions.push(async (ctx, next) => {
     }
     if (editProducts) {
       // clear cart then export!!!
-      const order = await store.queryRecord(`objects/${objectId}/orders/${orderId}`);
+      const order = await store.findRecord(`objects/${objectId}/orders/${orderId}`);
       await cart.clear(objectId, ctx.from.id);
       // export order to cart
       // await ctx.state.cart.setCartData({
@@ -432,18 +456,24 @@ ordersActions.push(async (ctx, next) => {
       //   },
       //   products: order.products,
       // });
-      await store.createRecord({"users": ctx.from.id}, {"session": {orderData: {
+      await store.updateRecord(`users/${ctx.from.id}`, {"session.orderData": {
         id: order.id,
         orderId: order.orderId,
         recipientName: order.recipientName,
-        // phoneNumber: order.phoneNumber,
-        // paymentId: order.paymentId,
-        // cId: order.cId,
-        // carrierNumber: order.carrierNumber ? order.carrierNumber : null,
-        // address: order.address,
-        // comment: order.comment ? order.comment : null,
-      }}});
-      await store.createRecord({"objects": objectId, "carts": ctx.from.id}, {products: order.products});
+      }});
+      // await store.updateRecord({"users": ctx.from.id}, {"session": {orderData: {
+      //   id: order.id,
+      //   orderId: order.orderId,
+      //   recipientName: order.recipientName,
+      //   // phoneNumber: order.phoneNumber,
+      //   // paymentId: order.paymentId,
+      //   // cId: order.cId,
+      //   // carrierNumber: order.carrierNumber ? order.carrierNumber : null,
+      //   // address: order.address,
+      //   // comment: order.comment ? order.comment : null,
+      // }}});
+      // await store.createRecord({"objects": objectId, "carts": ctx.from.id}, {products: order.products});
+      await store.updateRecord(`objects/${objectId}/carts/${ctx.from.id}`, {products: order.products});
       // set route name
       ctx.state.routeName = "cart";
       await showCart(ctx, next);

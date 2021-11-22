@@ -762,7 +762,7 @@ const cartWizard = [
   async (ctx, next) => {
     if (ctx.message.text === "Оформить заказ") {
       // save order
-      await ctx.state.cart.saveOrder();
+      await cart.createOrder(ctx.from.id);
       await ctx.reply("Спасибо за заказ! /objects", {
         reply_markup: {
           remove_keyboard: true,

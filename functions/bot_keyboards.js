@@ -243,65 +243,68 @@ const cart = {
     // }, {merge: true});
     await store.deleteRecord(`objects/${objectId}/carts/${userId}`, "products");
   },
-  async setWizardData(value) {
-    await this.userQuery.set({
-      wizardData: value,
-    }, {merge: true});
-  },
-  async getOrderData() {
-    const user = await this.getUserData();
-    if (user && user.orderData) {
-      return user.orderData;
-    }
-    return {};
-  },
-  async getWizardData() {
-    const user = await this.getUserData();
-    if (user.wizardData) {
-      return user.wizardData;
-    }
-    return {};
-  },
+  // async setWizardData(value) {
+  //   await this.userQuery.set({
+  //     wizardData: value,
+  //   }, {merge: true});
+  // },
+  // async getOrderData() {
+  //   const user = await this.getUserData();
+  //   if (user && user.orderData) {
+  //     return user.orderData;
+  //   }
+  //   return {};
+  // },
+  // async getWizardData() {
+  //   const user = await this.getUserData();
+  //   if (user.wizardData) {
+  //     return user.wizardData;
+  //   }
+  //   return {};
+  // },
   // async setUserName(value) {
   //   await this.userQuery.set({
   //     userName: value,
   //   }, {merge: true});
   // },
-  async saveOrder(id, setData) {
-    const session = await this.getSessionData();
-    const objectId = session.objectId;
+  async createOrder(userId) {
+    // const session = await this.getSessionData();
+    await store.createRecord(`users/${userId}`, {orderCount: firebase.firestore.FieldValue.increment(1)});
+    const userData = await store.findRecord(`users/${userId}`);
+    const objectId = userData.session.objectId;
     const orderQuery = firebase.firestore().collection("objects").doc(objectId).collection("orders");
     // edit order
-    if (id) {
-      const order = orderQuery.doc(id);
-      // delete order products
-      await order.set({
-        updatedAt: this.serverTimestamp,
-        ...setData,
-      }, {merge: true});
-    } else {
-      // create new order
-      // set counter
-      await this.userQuery.set({
-        orderCount: firebase.firestore.FieldValue.increment(1),
-      }, {merge: true});
-      const user = await this.getUserData();
-      const cart = await this.cartQuery(objectId).get();
-      const object = await firebase.firestore().collection("objects").doc(objectId).get();
-      await orderQuery.add({
-        userId: user.id,
-        objectId,
-        objectName: object.data().name,
-        orderId: user.orderCount,
-        statusId: 1,
-        fromBot: true,
-        products: cart.data().products,
-        createdAt: this.serverTimestamp,
-        ...user.wizardData,
-      });
-    }
+    // if (id) {
+    //   const order = orderQuery.doc(id);
+    //   // delete order products
+    //   await order.set({
+    //     updatedAt: this.serverTimestamp,
+    //     ...setData,
+    //   }, {merge: true});
+    // } else {
+    // create new order
+    // await this.userQuery.set({
+    //   orderCount: firebase.firestore.FieldValue.increment(1),
+    // }, {merge: true});
+    // set counter
+    const cartProducts = await store.findRecord(`objects/${objectId}/carts/${userId}`, "products");
+    // const user = await this.getUserData();
+    // const cart = await this.cartQuery(objectId).get();
+    const object = await store.findRecord(`objects/${objectId}`);
+    await orderQuery.add({
+      userId: + userData.id,
+      objectId,
+      objectName: object.name,
+      orderId: userData.orderCount,
+      statusId: 1,
+      fromBot: true,
+      products: cartProducts,
+      createdAt: this.serverTimestamp,
+      ...userData.session.wizardData,
+    });
+    // }
     // clear cart delete orderId from cart
-    await this.clear(objectId, id);
+    await this.clear(objectId, userId);
   },
   // async getSessionData(value) {
   //   const user = await this.getUserData();
