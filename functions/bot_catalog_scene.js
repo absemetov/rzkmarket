@@ -563,7 +563,8 @@ const cartWizard = [
     const number = ctx.state.params.get("number");
     const back = ctx.state.params.get("back");
     const carrierId = ctx.state.params.get("cId");
-    const orderId = ctx.state.params.get("o");
+    const orderId = ctx.state.params.get("oId");
+    const objectId = ctx.state.params.get("o");
     // save data to cart
     // if (carrierId) {
     //   carrierId = Number(carrierId);
@@ -598,7 +599,7 @@ const cartWizard = [
     // add orderId to url
     let paramsUrl = "";
     if (orderId) {
-      paramsUrl = `&o=${orderId}`;
+      paramsUrl = `&oId=${orderId}&o=${objectId}`;
     }
     inlineKeyboardArray.push([
       {text: "7", callback_data: `cO/cN?number=7${qtyUrl}${paramsUrl}`},
@@ -622,10 +623,10 @@ const cartWizard = [
     ]);
     // if order change callback
     if (orderId) {
-      inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `editOrder/${orderId}?` +
-      `sCid=${carrierId}&number=${qty}`}]);
+      inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `eO/${orderId}?` +
+      `sCid=${carrierId}&number=${qty}&o=${objectId}`}]);
       inlineKeyboardArray.push([{text: "⬅️ Назад",
-        callback_data: `orders/${orderId}`}]);
+        callback_data: `orders/${orderId}?o=${objectId}`}]);
     } else {
       inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `cO/wizard?cN=${qty}` +
       `&cId=${carrierId}`}]);

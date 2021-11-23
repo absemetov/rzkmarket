@@ -175,19 +175,21 @@ const store = {
     }
     return sortedArray;
   },
+  formatOrderNumber(userId, orderNumber) {
+    return `${userId}-${("000" + orderNumber).slice(-4)}`;
+  },
 };
 
 // cart instance
 const cart = {
-  serverTimestamp: Math.floor(Date.now() / 1000),
-  async getUserData(userId) {
-    // const userRef = await this.userQuery.get();
-    // if (userRef.exists) {
-    //   return {id: + userRef.id, ...userRef.data()};
-    // }
-    // return {};
-    return store.findRecord("users", userId);
-  },
+  // async getUserData(userId) {
+  // const userRef = await this.userQuery.get();
+  // if (userRef.exists) {
+  //   return {id: + userRef.id, ...userRef.data()};
+  // }
+  // return {};
+  // return store.findRecord("users", userId);
+  // },
   async add(objectId, userId, product, qty) {
     qty = Number(qty);
     let products = {};
@@ -200,7 +202,7 @@ const cart = {
             price: product.price,
             unit: product.unit,
             qty: qty,
-            createdAt: this.serverTimestamp,
+            createdAt: Math.floor(Date.now() / 1000),
           },
         };
       } else {
@@ -301,7 +303,7 @@ const cart = {
       statusId: 1,
       fromBot: true,
       products: cartProducts,
-      createdAt: this.serverTimestamp,
+      createdAt: Math.floor(Date.now() / 1000),
       ...userData.session.wizardData,
     });
     // }

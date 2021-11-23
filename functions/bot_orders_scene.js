@@ -34,7 +34,7 @@ const myOrders = async (ctx, next) => {
         // show order
         const date = moment.unix(order.createdAt);
         caption += " <b>> " +
-        `Заказ #${order.orderNumber} (${date.fromNow()})\n` +
+        `Заказ #${store.formatOrderNumber(order.userId, order.orderNumber)} (${date.fromNow()})\n` +
         `Склад: ${order.objectName}\n` +
         `Статус: ${store.statuses().get(order.statusId)}\n` +
         `${order.recipientName} ${order.phoneNumber}\n` +
@@ -103,7 +103,7 @@ const myOrders = async (ctx, next) => {
       ordersSnapshot.docs.forEach((doc) => {
         const order = {id: doc.id, ...doc.data()};
         const date = moment.unix(order.createdAt);
-        inlineKeyboardArray.push([{text: `🧾 Заказ #${order.orderNumber},` +
+        inlineKeyboardArray.push([{text: `🧾 Заказ #${store.formatOrderNumber(order.userId, order.orderNumber)},` +
           `${store.statuses().get(order.statusId)}, ${date.fromNow()}`,
         callback_data: `myO/${userId}?oId=${order.id}&o=${order.objectId}`}]);
       });
@@ -177,7 +177,8 @@ const showOrders = async (ctx, next) => {
         // show order
         ctx.session.pathOrderCurrent = ctx.callbackQuery.data;
         const date = moment.unix(order.createdAt);
-        caption = `<b>${botConfig.name} > Заказ #${order.orderNumber} (${date.fromNow()})\n` +
+        caption = `<b>${botConfig.name} > Заказ #${store.formatOrderNumber(order.userId, order.orderNumber)}` +
+        ` (${date.fromNow()})\n` +
         `${order.recipientName} ${order.phoneNumber}\n` +
         `Адрес доставки: ${order.address}, ` +
         `${store.carriers().get(order.carrierId)} ` +
@@ -220,33 +221,33 @@ const showOrders = async (ctx, next) => {
       // edit recipient
       // status
       inlineKeyboardArray.push([{text: `📝 Статус: ${store.statuses().get(order.statusId)}`,
-        callback_data: `editOrder/${order.id}?showStatusId=${order.statusId}`}]);
+        callback_data: `eO/${order.id}?sSI=${order.statusId}&o=${objectId}`}]);
       inlineKeyboardArray.push([{text: `📝 Получатель: ${order.recipientName}`,
-        callback_data: `editOrder/${order.id}?edit=recipientName`}]);
+        callback_data: `eO/${order.id}?e=recipientName&o=${objectId}`}]);
       inlineKeyboardArray.push([{text: `📝 Номер тел.: ${order.phoneNumber}`,
-        callback_data: `editOrder/${order.id}?edit=phoneNumber`}]);
+        callback_data: `eO/${order.id}?e=phoneNumber&o=${objectId}`}]);
       // payment and currier
       inlineKeyboardArray.push([{text: `📝 Оплата: ${store.payments().get(order.paymentId)}`,
-        callback_data: `editOrder/${order.id}?showPaymentId=${order.paymentId}`}]);
+        callback_data: `eO/${order.id}?showPay=${order.paymentId}&o=${objectId}`}]);
       inlineKeyboardArray.push([{text: `📝 Доставка: ${store.carriers().get(order.carrierId)}` +
         `${order.carrierNumber ? " #" + order.carrierNumber : ""}`,
-      callback_data: `editOrder/${order.id}?cId=${order.carrierId}`}]);
+      callback_data: `eO/${order.id}?cId=${order.carrierId}&o=${objectId}`}]);
       inlineKeyboardArray.push([{text: `📝 Адрес: ${order.address}`,
-        callback_data: `editOrder/${order.id}?edit=address`}]);
+        callback_data: `eO/${order.id}?e=address&o=${objectId}`}]);
       inlineKeyboardArray.push([{text: `📝 Комментарий: ${order.comment ? order.comment : ""}`,
-        callback_data: `editOrder/${order.id}?edit=comment`}]);
+        callback_data: `eO/${order.id}?e=comment&o=${objectId}`}]);
       // edit products
       inlineKeyboardArray.push([{text: "📝 Редактировать товары",
-        callback_data: `editOrder/${orderId}?eP=1&o=${objectId}`}]);
+        callback_data: `eO/${orderId}?eP=1&o=${objectId}`}]);
       // edit products
       // inlineKeyboardArray.push([{text: "📝 Информация о покупателе",
       //   callback_data: `myO/${order.userId}`}]);
       inlineKeyboardArray.push([{text: "📝 Информация о покупателе",
-        callback_data: `editOrder?userId=${order.userId}&o=${order.objectId}`}]);
+        callback_data: `eO?userId=${order.userId}&o=${order.objectId}`}]);
       // refresh order
       const dateTimestamp = Math.floor(Date.now() / 1000);
       inlineKeyboardArray.push([{text: `🔄 Обновить заказ#${order.orderNumber}`,
-        callback_data: `orders/${order.id}?${dateTimestamp}`}]);
+        callback_data: `orders/${order.id}?${dateTimestamp}&o=${objectId}`}]);
       inlineKeyboardArray.push([{text: "🧾 Заказы",
         callback_data: `${ctx.session.pathOrder ? ctx.session.pathOrder : "orders?o=" + order.objectId}`}]);
     } else {
@@ -296,7 +297,7 @@ const showOrders = async (ctx, next) => {
       ordersSnapshot.docs.forEach((doc) => {
         const order = {id: doc.id, ...doc.data()};
         const date = moment.unix(order.createdAt);
-        inlineKeyboardArray.push([{text: `🧾 Заказ #${order.orderNumber},` +
+        inlineKeyboardArray.push([{text: `🧾 Заказ #${store.formatOrderNumber(order.userId, order.orderNumber)},` +
           `${store.statuses().get(order.statusId)}, ${date.fromNow()}`,
         callback_data: `orders/${order.id}?o=${objectId}`}]);
       });
@@ -376,9 +377,11 @@ const orderWizard = [
       ctx.message.text = "+7" + checkPhone[2];
     }
     // save new data
-    await ctx.state.cart.saveOrder(ctx.session.orderId, {
-      [ctx.session.fieldName]: ctx.message.text,
-    });
+    // await ctx.state.cart.saveOrder(ctx.session.orderId, {
+    //   [ctx.session.fieldName]: ctx.message.text,
+    // });
+    await store.updateRecord(`objects/${ctx.session.objectId}/orders/${ctx.session.orderId}`,
+        {[ctx.session.fieldName]: ctx.message.text});
     // exit scene
     ctx.reply("Данные сохранены. Обновите заказ!🔄", {
       reply_markup: {
@@ -389,16 +392,16 @@ const orderWizard = [
 ];
 // edit order fields
 ordersActions.push(async (ctx, next) => {
-  if (ctx.state.routeName === "editOrder") {
+  if (ctx.state.routeName === "eO") {
     const orderId = ctx.state.param;
-    const editField = ctx.state.params.get("edit");
+    const editField = ctx.state.params.get("e");
     const cId = + ctx.state.params.get("cId");
     const carrierNumber = + ctx.state.params.get("number");
     const sCid = + ctx.state.params.get("sCid");
-    const showPaymentId = + ctx.state.params.get("showPaymentId");
+    const showPaymentId = + ctx.state.params.get("showPay");
     const paymentId = + ctx.state.params.get("paymentId");
-    const showStatusId = + ctx.state.params.get("showStatusId");
-    const statusId = + ctx.state.params.get("statusId");
+    const showStatusId = + ctx.state.params.get("sSI");
+    const statusId = + ctx.state.params.get("sId");
     const objectId = ctx.state.params.get("o");
     const userId = ctx.state.params.get("userId");
     // show user info creator
@@ -493,9 +496,11 @@ ordersActions.push(async (ctx, next) => {
       await cartWizard[0](ctx, "Статуc заказа", inlineKeyboardArray);
     }
     if (editField) {
-      const orderSnap = await firebase.firestore().collection("orders").doc(orderId).get();
-      const order = {"id": orderSnap.id, ...orderSnap.data()};
+      // const orderSnap = await firebase.firestore().collection("orders").doc(orderId).get();
+      // const order = {"id": orderSnap.id, ...orderSnap.data()};
+      const order = await store.findRecord(`objects/${objectId}/orders/${orderId}`);
       ctx.session.orderId = orderId;
+      ctx.session.objectId = objectId;
       ctx.session.fieldName = editField;
       ctx.session.fieldValue = order[editField];
       orderWizard[0](ctx);
@@ -507,19 +512,20 @@ ordersActions.push(async (ctx, next) => {
         if (key === showPaymentId) {
           value = "✅ " + value;
         }
-        inlineKeyboardArray.push([{text: value, callback_data: `editOrder/${orderId}?paymentId=${key}`}]);
+        inlineKeyboardArray.push([{text: value, callback_data: `eO/${orderId}?paymentId=${key}&o=${objectId}`}]);
       });
       inlineKeyboardArray.push([{text: "⬅️ Назад",
-        callback_data: `orders/${orderId}`}]);
+        callback_data: `orders/${orderId}?o=${objectId}`}]);
       await cartWizard[0](ctx, "Способ оплаты", inlineKeyboardArray);
     }
     // save payment
     if (paymentId) {
-      await ctx.state.cart.saveOrder(orderId, {
-        paymentId,
-      });
+      // await ctx.state.cart.saveOrder(orderId, {
+      //   paymentId,
+      // });
+      await store.updateRecord(`objects/${objectId}/orders/${orderId}`, {paymentId});
       ctx.state.routeName = "orders";
-      ctx.state.param = orderId;
+      // ctx.state.param = orderId;
       await showOrders(ctx, next);
     }
     // show carrier
@@ -530,14 +536,14 @@ ordersActions.push(async (ctx, next) => {
           value = "✅ " + value;
         }
         if (key === 1) {
-          inlineKeyboardArray.push([{text: value, callback_data: `editOrder/${orderId}?sCid=${key}`}]);
+          inlineKeyboardArray.push([{text: value, callback_data: `eO/${orderId}?sCid=${key}&o=${objectId}`}]);
         } else {
           inlineKeyboardArray.push([{text: value,
-            callback_data: `cO/cN?cId=${key}&o=${orderId}`}]);
+            callback_data: `cO/cN?cId=${key}&oId=${orderId}&o=${objectId}`}]);
         }
       });
       inlineKeyboardArray.push([{text: "⬅️ Назад",
-        callback_data: `orders/${orderId}`}]);
+        callback_data: `orders/${orderId}?o=${objectId}`}]);
       await cartWizard[0](ctx, "Способ доставки", inlineKeyboardArray);
     }
     // save carrier
@@ -574,7 +580,7 @@ ordersActions.push(async (ctx, next) => {
         if (key === showStatusId) {
           value = "✅ " + value;
         }
-        inlineKeyboardArray.push([{text: value, callback_data: `editOrder/${orderId}?statusId=${key}`}]);
+        inlineKeyboardArray.push([{text: value, callback_data: `eO/${orderId}?sId=${key}&o=${objectId}`}]);
       });
       inlineKeyboardArray.push([{text: "⬅️ Назад",
         callback_data: `orders/${orderId}`}]);
@@ -582,12 +588,14 @@ ordersActions.push(async (ctx, next) => {
     }
     // save status
     if (statusId) {
-      await ctx.state.cart.saveOrder(orderId, {
-        statusId,
-      });
+      // await ctx.state.cart.saveOrder(orderId, {
+      //   statusId,
+      // });
+      await store.updateRecord(`objects/${objectId}/orders/${orderId}`, {statusId});
       // redirect to order
       ctx.state.routeName = "orders";
-      ctx.state.param = orderId;
+      // ctx.state.param = orderId;
+      // ctx.state.params.set("o") = objectId;
       await showOrders(ctx, next);
     }
     await ctx.answerCbQuery();
