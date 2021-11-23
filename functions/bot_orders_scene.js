@@ -33,8 +33,8 @@ const myOrders = async (ctx, next) => {
       if (order) {
         // show order
         const date = moment.unix(order.createdAt);
-        caption += " <b>" +
-        `Заказ #${order.orderId} (${date.fromNow()})\n` +
+        caption += " <b>> " +
+        `Заказ #${order.orderNumber} (${date.fromNow()})\n` +
         `Склад: ${order.objectName}\n` +
         `Статус: ${store.statuses().get(order.statusId)}\n` +
         `${order.recipientName} ${order.phoneNumber}\n` +
@@ -83,14 +83,14 @@ const myOrders = async (ctx, next) => {
       if (startAfter) {
         // const startAfterProduct = await firebase.firestore().collection("orders")
         //     .doc(startAfter).get();
-        const startAfterProduct = await store.getQuery(`objects${objectId}/orders/${startAfter}`).get();
+        const startAfterProduct = await store.getQuery(`objects/${objectId}/orders/${startAfter}`).get();
         query = query.startAfter(startAfterProduct);
       }
       // prev button
       if (endBefore) {
         // const endBeforeProduct = await firebase.firestore().collection("orders")
         //     .doc(endBefore).get();
-        const endBeforeProduct = await store.getQuery(`objects${objectId}/orders/${endBefore}`).get();
+        const endBeforeProduct = await store.getQuery(`objects/${objectId}/orders/${endBefore}`).get();
         // set limit
         query = query.endBefore(endBeforeProduct).limitToLast(limit);
       } else {
@@ -103,7 +103,7 @@ const myOrders = async (ctx, next) => {
       ordersSnapshot.docs.forEach((doc) => {
         const order = {id: doc.id, ...doc.data()};
         const date = moment.unix(order.createdAt);
-        inlineKeyboardArray.push([{text: `🧾 Заказ #${order.orderId},` +
+        inlineKeyboardArray.push([{text: `🧾 Заказ #${order.orderNumber},` +
           `${store.statuses().get(order.statusId)}, ${date.fromNow()}`,
         callback_data: `myO/${userId}?oId=${order.id}&o=${order.objectId}`}]);
       });
@@ -177,7 +177,7 @@ const showOrders = async (ctx, next) => {
         // show order
         ctx.session.pathOrderCurrent = ctx.callbackQuery.data;
         const date = moment.unix(order.createdAt);
-        caption = `<b>${botConfig.name} > Заказ #${order.orderId} (${date.fromNow()})\n` +
+        caption = `<b>${botConfig.name} > Заказ #${order.orderNumber} (${date.fromNow()})\n` +
         `${order.recipientName} ${order.phoneNumber}\n` +
         `Адрес доставки: ${order.address}, ` +
         `${store.carriers().get(order.carrierId)} ` +
@@ -245,7 +245,7 @@ const showOrders = async (ctx, next) => {
         callback_data: `editOrder?userId=${order.userId}&o=${order.objectId}`}]);
       // refresh order
       const dateTimestamp = Math.floor(Date.now() / 1000);
-      inlineKeyboardArray.push([{text: `🔄 Обновить заказ#${order.orderId}`,
+      inlineKeyboardArray.push([{text: `🔄 Обновить заказ#${order.orderNumber}`,
         callback_data: `orders/${order.id}?${dateTimestamp}`}]);
       inlineKeyboardArray.push([{text: "🧾 Заказы",
         callback_data: `${ctx.session.pathOrder ? ctx.session.pathOrder : "orders?o=" + order.objectId}`}]);
@@ -296,7 +296,7 @@ const showOrders = async (ctx, next) => {
       ordersSnapshot.docs.forEach((doc) => {
         const order = {id: doc.id, ...doc.data()};
         const date = moment.unix(order.createdAt);
-        inlineKeyboardArray.push([{text: `🧾 Заказ #${order.orderId},` +
+        inlineKeyboardArray.push([{text: `🧾 Заказ #${order.orderNumber},` +
           `${store.statuses().get(order.statusId)}, ${date.fromNow()}`,
         callback_data: `orders/${order.id}?o=${objectId}`}]);
       });
@@ -458,7 +458,7 @@ ordersActions.push(async (ctx, next) => {
       // });
       await store.updateRecord(`users/${ctx.from.id}`, {"session.orderData": {
         id: order.id,
-        orderId: order.orderId,
+        orderNumber: order.orderNumber,
         recipientName: order.recipientName,
       }});
       // await store.updateRecord({"users": ctx.from.id}, {"session": {orderData: {

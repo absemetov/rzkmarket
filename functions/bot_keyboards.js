@@ -164,13 +164,15 @@ const store = {
   },
   sort(field) {
     const sortedArray = [];
-    for (const [id, product] of Object.entries(field)) {
-      sortedArray.push({id, ...product});
+    if (field) {
+      for (const [id, product] of Object.entries(field)) {
+        sortedArray.push({id, ...product});
+      }
+      // sort products by createdAt
+      sortedArray.sort(function(a, b) {
+        return a.createdAt - b.createdAt;
+      });
     }
-    // sort products by createdAt
-    sortedArray.sort(function(a, b) {
-      return a.createdAt - b.createdAt;
-    });
     return sortedArray;
   },
 };
@@ -295,7 +297,7 @@ const cart = {
       userId: + userData.id,
       objectId,
       objectName: object.name,
-      orderId: userData.orderCount,
+      orderNumber: userData.orderCount,
       statusId: 1,
       fromBot: true,
       products: cartProducts,
