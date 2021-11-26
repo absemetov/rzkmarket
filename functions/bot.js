@@ -5,7 +5,7 @@ const {Telegraf, session} = require("telegraf");
 firebase.initializeApp();
 const {startActions, startHandler, parseUrl, isAdmin} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
-const {uploadHandler} = require("./bot_upload_scene");
+const {uploadActions} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
 const {uploadPhotoProduct, catalogsActions, cartWizard} = require("./bot_catalog_scene");
 const {store} = require("./bot_keyboards.js");
@@ -36,7 +36,7 @@ bot.use(async (ctx, next) => {
 // bot.use();
 // eslint-disable-next-line no-useless-escape
 bot.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/,
-    parseUrl, ...startActions, ...catalogsActions, ...ordersActions, ...monoActions);
+    parseUrl, ...startActions, ...catalogsActions, ...ordersActions, ...uploadActions, ...monoActions);
 // start bot
 bot.start(async (ctx) => {
   // set user data
@@ -64,17 +64,17 @@ bot.command("mono", async (ctx) => {
   monoHandler(ctx);
 });
 // Upload scene
-bot.command("upload", (ctx) => {
-  // await ctx.state.cart.setSessionData({scene: "upload"});
-  ctx.session.scene = "upload";
-  ctx.reply("Вставьте ссылку Google Sheet", {
-    reply_markup: {
-      keyboard: [["Отмена"]],
-      resize_keyboard: true,
-    }});
-  // session.scene = "upload";
-  // ctx.scene.enter("upload");
-});
+// bot.command("upload", (ctx) => {
+// await ctx.state.cart.setSessionData({scene: "upload"});
+// ctx.session.scene = "upload";
+// ctx.reply("Вставьте ссылку Google Sheet", {
+// reply_markup: {
+// keyboard: [["Отмена"]],
+// resize_keyboard: true,
+// }});
+// session.scene = "upload";
+// ctx.scene.enter("upload");
+// });
 // Catalog scene
 // bot.command("catalog", async (ctx) => ctx.scene.enter("catalog"));
 
@@ -93,10 +93,10 @@ bot.on(["text", "contact"], async (ctx) => {
     ctx.session.scene = null;
     return;
   }
-  if (ctx.session.scene === "upload") {
-    await uploadHandler(ctx);
-    return;
-  }
+  // if (ctx.session.scene === "upload") {
+  //   await uploadHandler(ctx);
+  //   return;
+  // }
   if (sessionFire.scene === "wizardOrder") {
     await cartWizard[sessionFire.cursor](ctx);
     return;

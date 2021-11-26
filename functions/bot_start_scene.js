@@ -1,6 +1,5 @@
 // const {Scenes: {BaseScene}} = require("telegraf");
 const functions = require("firebase-functions");
-const {uploadHandler} = require("./bot_upload_scene");
 const {store, cart} = require("./bot_keyboards.js");
 // const start = new BaseScene("start");
 // set default project
@@ -71,11 +70,10 @@ const startHandler = async (ctx) => {
         },
       });
   // set commands
-  await ctx.telegram.setMyCommands([
-    {"command": "objects", "description": `${botConfig.name} объекты`},
-    {"command": "upload", "description": "Upload goods"},
-    {"command": "mono", "description": "Monobank exchange rates "},
-  ]);
+  // await ctx.telegram.setMyCommands([
+  //   {"command": "objects", "description": `${botConfig.name} объекты`},
+  //   {"command": "mono", "description": "Monobank exchange rates "},
+  // ]);
   // ctx.scene.enter("catalog");
 };
 // main route
@@ -115,7 +113,6 @@ const startHandler = async (ctx) => {
 startActions.push(async (ctx, next) => {
   if (ctx.state.routeName === "objects") {
     const objectId = ctx.state.param;
-    const uploadGoods = ctx.state.params.get("uploadGoods");
     let caption = `<b>${botConfig.name}</b>`;
     const inlineKeyboardArray = [];
     if (objectId) {
@@ -123,25 +120,22 @@ startActions.push(async (ctx, next) => {
       // const objectSnap = await firebase.firestore().collection("objects").doc(objectId).get();
       // const object = {"id": objectSnap.id, ...objectSnap.data()};
       const object = await store.findRecord(`objects/${objectId}`);
-      // upload goods action
-      if (uploadGoods) {
-        await uploadHandler(ctx, objectId, object.spreadsheets);
-      }
       // show object info
       caption = `<b>${botConfig.name} > ${object.name}\n` +
         `Контакты: ${object.phoneNumber}\n` +
         `Адрес: ${object.address}\n` +
         `Описание: ${object.description}</b>`;
-      const dateTimestamp = Math.floor(Date.now() / 1000);
+      // const dateTimestamp = Math.floor(Date.now() / 1000);
       // buttons
       const cartButtons = await cart.cartButtons(objectId, ctx.from.id);
       inlineKeyboardArray.push([{text: "📁 Каталог", callback_data: `c?o=${object.id}`}]);
       inlineKeyboardArray.push([cartButtons[1]]);
       if (ctx.state.isAdmin) {
         inlineKeyboardArray.push([{text: "🧾 Заказы admin", callback_data: `orders?o=${object.id}`}]);
-        inlineKeyboardArray.push([{text: "➕ Загрузить товары", callback_data: `objects/${object.id}?uploadGoods=1`}]);
+        inlineKeyboardArray.push([{text: "➕ Загрузить товары",
+          callback_data: `uploadGoods/${object.id}`}]);
       }
-      inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: `objects?${dateTimestamp}`}]);
+      inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: "objects"}]);
     } else {
       // show all objects
       // const objects = await ctx.state.cart.objects();
