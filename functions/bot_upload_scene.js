@@ -208,12 +208,12 @@ const uploadActions = [async (ctx, next) => {
             };
             // required for arrays dont work
             const rulesProductRow = {
-              "id": "required|alpha_dash|max:20",
+              "id": "required|alpha_dash|max:16",
               "name": "required|string",
               "purchasePrice": "numeric",
               "price": "required|numeric",
-              "group.*.id": "alpha_dash|max:20",
-              "tags.*": "alpha_dash|max:20",
+              "group.*.id": "alpha_dash|max:16",
+              "tags.*": "alpha_dash|max:12",
               "unit": "required|in:м,шт",
             };
             const validateProductRow = new Validator(product, rulesProductRow);

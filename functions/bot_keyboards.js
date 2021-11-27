@@ -223,8 +223,10 @@ const cart = {
       //     [typeof product == "object" ? product.id : product]: firebase.firestore.FieldValue.delete(),
       //   },
       // }, {merge: true});
-      await store.deleteRecord(`objects/${objectId}/carts/${userId}`,
-          `products.${typeof product == "object" ? product.id : product}`);
+      if (typeof product !== "object") {
+        await store.deleteRecord(`objects/${objectId}/carts/${userId}`,
+            `products.${typeof product == "object" ? product.id : product}`);
+      }
     }
   },
   async products(objectId, userId) {
