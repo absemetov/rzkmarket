@@ -422,7 +422,7 @@ catalogsActions.push( async (ctx, next) => {
           ],
           [
             {text: "0️", callback_data: `aC/${product.id}?number=0${qtyUrl}${paramsUrl}&o=${objectId}`},
-            {text: "🔙", callback_data: `aC/${product.id}?back=true${qtyUrl}${paramsUrl}&o=${objectId}`},
+            {text: "🔙", callback_data: `aC/${product.id}?back=1${qtyUrl}${paramsUrl}&o=${objectId}`},
             {text: "AC", callback_data: `aC/${product.id}?clear=1${paramsUrl}&o=${objectId}`},
           ],
           addButtonArray,
@@ -618,7 +618,7 @@ const cartWizard = [
     ]);
     inlineKeyboardArray.push([
       {text: "0️", callback_data: `cO/cN?number=0${qtyUrl}${paramsUrl}`},
-      {text: "🔙", callback_data: `cO/cN?back=true${qtyUrl}${paramsUrl}`},
+      {text: "🔙", callback_data: `cO/cN?back=1${qtyUrl}${paramsUrl}`},
       {text: "AC", callback_data: `cO/cN?cId=${carrierId}${paramsUrl}`},
     ]);
     // if order change callback

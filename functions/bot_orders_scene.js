@@ -167,6 +167,7 @@ const showOrders = async (ctx, next) => {
     const objectId = ctx.state.params.get("o");
     const inlineKeyboardArray = [];
     const orderId = ctx.state.param;
+    const limit = 1;
     let caption = `<b>${botConfig.name} > Заказы Admin</b>`;
     if (orderId) {
       // const orderSnap = await firebase.firestore().collection("objects").doc(objectId)
@@ -229,9 +230,15 @@ const showOrders = async (ctx, next) => {
       // payment and currier
       inlineKeyboardArray.push([{text: `📝 Оплата: ${store.payments().get(order.paymentId)}`,
         callback_data: `eO/${order.id}?showPay=${order.paymentId}&o=${objectId}`}]);
-      inlineKeyboardArray.push([{text: `📝 Доставка: ${store.carriers().get(order.carrierId)}` +
+      if (order.carrierId === 2) {
+        inlineKeyboardArray.push([{text: `📝 Доставка: ${store.carriers().get(order.carrierId)}` +
         `${order.carrierNumber ? " #" + order.carrierNumber : ""}`,
-      callback_data: `eO/${order.id}?cId=${order.carrierId}&o=${objectId}`}]);
+        callback_data: `eO/${order.id}?cId=${order.carrierId}&number=${order.carrierNumber}&o=${objectId}`}]);
+      } else {
+        inlineKeyboardArray.push([{text: `📝 Доставка: ${store.carriers().get(order.carrierId)}` +
+        `${order.carrierNumber ? " #" + order.carrierNumber : ""}`,
+        callback_data: `eO/${order.id}?cId=${order.carrierId}&o=${objectId}`}]);
+      }
       inlineKeyboardArray.push([{text: `📝 Адрес: ${order.address}`,
         callback_data: `eO/${order.id}?e=address&o=${objectId}`}]);
       inlineKeyboardArray.push([{text: `📝 Комментарий: ${order.comment ? order.comment : ""}`,
@@ -247,13 +254,13 @@ const showOrders = async (ctx, next) => {
       // refresh order
       const dateTimestamp = Math.floor(Date.now() / 1000);
       inlineKeyboardArray.push([{text: `🔄 Обновить заказ#${order.orderNumber}`,
-        callback_data: `orders/${order.id}?${dateTimestamp}&o=${objectId}`}]);
+        callback_data: `orders/${order.id}?o=${objectId}&${dateTimestamp}`}]);
       inlineKeyboardArray.push([{text: "🧾 Заказы",
         callback_data: `${ctx.session.pathOrder ? ctx.session.pathOrder : "orders?o=" + order.objectId}`}]);
     } else {
       // show orders
+      ctx.session.pathOrderCurrent = null;
       ctx.session.pathOrder = ctx.callbackQuery.data;
-      const limit = 10;
       let mainQuery = firebase.firestore().collection("objects").doc(objectId)
           .collection("orders").orderBy("createdAt", "desc");
       // Filter by tag
@@ -267,14 +274,14 @@ const showOrders = async (ctx, next) => {
       if (startAfter) {
         // const startAfterProduct = await firebase.firestore().collection("orders")
         //     .doc(startAfter).get();
-        const startAfterProduct = await store.getQuery(`objects${objectId}/orders/${startAfter}`).get();
+        const startAfterProduct = await store.getQuery(`objects/${objectId}/orders/${startAfter}`).get();
         query = query.startAfter(startAfterProduct);
       }
       // prev button
       if (endBefore) {
         // const endBeforeProduct = await firebase.firestore().collection("orders")
         //     .doc(endBefore).get();
-        const endBeforeProduct = await store.getQuery(`objects${objectId}/orders/${endBefore}`).get();
+        const endBeforeProduct = await store.getQuery(`objects/${objectId}/orders/${endBefore}`).get();
         // set limit
         query = query.endBefore(endBeforeProduct).limitToLast(limit);
       } else {
@@ -286,11 +293,11 @@ const showOrders = async (ctx, next) => {
       // add status button
       const tagsArray = [];
       tagsArray.push({text: "📌 Статус заказа",
-        callback_data: "editOrder/showStatuses"});
+        callback_data: `eO/showStatuses?o=${objectId}`});
       // Delete or close selected tag
       if (statusId) {
-        tagsArray[0].callback_data = `editOrder/showStatuses?selectedStatus=${statusId}`;
-        tagsArray.push({text: `❎ ${store.statuses().get(statusId)}`, callback_data: "orders"});
+        tagsArray[0].callback_data = `eO/showStatuses?selectedStatus=${statusId}&o=${objectId}`;
+        tagsArray.push({text: `❎ ${store.statuses().get(statusId)}`, callback_data: `orders?o=${objectId}`});
       }
       inlineKeyboardArray.push(tagsArray);
       // add orders info
@@ -310,7 +317,8 @@ const showOrders = async (ctx, next) => {
         if (!ifBeforeProducts.empty) {
           // inlineKeyboardArray.push(Markup.button.callback("⬅️ Back",
           //    `c/${currentCatalog.id}?endBefore=${endBefore.id}&tag=${params.get("tag")}`));
-          prevNext.push({text: "⬅️ Назад", callback_data: `orders?e=${endBeforeSnap.id}${statusUrl}`});
+          prevNext.push({text: "⬅️ Назад",
+            callback_data: `orders?e=${endBeforeSnap.id}${statusUrl}&o=${endBeforeSnap.data().objectId}`});
         }
         // startAfter
         const startAfterSnap = ordersSnapshot.docs[ordersSnapshot.docs.length - 1];
@@ -320,11 +328,11 @@ const showOrders = async (ctx, next) => {
           // inlineKeyboardArray.push(Markup.button.callback("➡️ Load more",
           //    `c/${currentCatalog.id}?startAfter=${startAfter.id}&tag=${params.get("tag")}`));
           prevNext.push({text: "➡️ Вперед",
-            callback_data: `orders?s=${startAfterSnap.id}${statusUrl}`});
+            callback_data: `orders?s=${startAfterSnap.id}${statusUrl}&o=${startAfterSnap.data().objectId}`});
         }
         inlineKeyboardArray.push(prevNext);
       } else {
-        inlineKeyboardArray.push([{text: "Заказов нет", callback_data: "orders"}]);
+        inlineKeyboardArray.push([{text: "Заказов нет", callback_data: `orders?o=${objectId}`}]);
       }
       inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: "objects"}]);
     }
@@ -489,10 +497,10 @@ ordersActions.push(async (ctx, next) => {
         if (key === selectedStatus) {
           value = "✅ " + value;
         }
-        inlineKeyboardArray.push([{text: value, callback_data: `orders?statusId=${key}`}]);
+        inlineKeyboardArray.push([{text: value, callback_data: `orders?statusId=${key}&o=${objectId}`}]);
       });
       inlineKeyboardArray.push([{text: "⬅️ Назад",
-        callback_data: `${ctx.session.pathOrder ? ctx.session.pathOrder : "orders"}`}]);
+        callback_data: `${ctx.session.pathOrder ? ctx.session.pathOrder : `orders?o=${objectId}`}`}]);
       await cartWizard[0](ctx, "Статуc заказа", inlineKeyboardArray);
     }
     if (editField) {
@@ -548,29 +556,32 @@ ordersActions.push(async (ctx, next) => {
     }
     // save carrier
     if (sCid) {
-      await ctx.state.cart.saveOrder(orderId, {
-        carrierId: sCid,
-      });
+      // await ctx.state.cart.saveOrder(orderId, {
+      //   carrierId: sCid,
+      // });
+      await store.updateRecord(`objects/${objectId}/orders/${orderId}`, {carrierId: sCid});
       // carrierNumber = Number(carrierNumber);
       if (sCid === 2 && !carrierNumber) {
         // return first step error
-        ctx.state.params.set("o", orderId);
+        ctx.state.params.set("oId", orderId);
         ctx.state.params.set("cId", sCid);
         await cartWizard[1](ctx, "errorCurrierNumber");
         return;
       }
       if (carrierNumber) {
-        await ctx.state.cart.saveOrder(orderId, {
-          carrierNumber,
-        });
+        // await ctx.state.cart.saveOrder(orderId, {
+        //   carrierNumber,
+        // });
+        await store.updateRecord(`objects/${objectId}/orders/${orderId}`, {carrierNumber});
       } else {
-        await ctx.state.cart.saveOrder(orderId, {
-          carrierNumber: null,
-        });
+        // await ctx.state.cart.saveOrder(orderId, {
+        //   carrierNumber: null,
+        // });
+        await store.updateRecord(`objects/${objectId}/orders/${orderId}`, {carrierNumber: null});
       }
       // redirect to order
       ctx.state.routeName = "orders";
-      ctx.state.param = orderId;
+      // ctx.state.param = orderId;
       await showOrders(ctx, next);
     }
     // show status

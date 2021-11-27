@@ -68,7 +68,8 @@ const uploadActions = [async (ctx, next) => {
     const maxUploadGoods = 100;
     // Catalogs set array
     const catalogsIsSet = new Map();
-    let countUploadGoods = 0;
+    // Products set array
+    const productIsSet = new Set();
     // const serverTimestamp = firebase.firestore.FieldValue.serverTimestamp();
     const serverTimestamp = Math.floor(Date.now() / 1000);
     const perPage = 500;
@@ -233,10 +234,16 @@ const uploadActions = [async (ctx, next) => {
             // save data to firestore
             if (validateProductRow.passes()) {
               // check limit goods
-              if (countUploadGoods === maxUploadGoods) {
+              if (productIsSet.size === maxUploadGoods) {
                 throw new Error(`Limit *${maxUploadGoods}* goods!`);
               }
               // add products in batch
+              // check id product is unic
+              if (productIsSet.has(product.id)) {
+                throw new Error(`Product ID *${product.id}* in row *${rows[j].rowIndex}* is exist`);
+              } else {
+                productIsSet.add(product.id);
+              }
               const productRef = firebase.firestore().collection("objects").doc(objectId)
                   .collection("products").doc(product.id);
               batchGoods.set(productRef, {
@@ -244,7 +251,7 @@ const uploadActions = [async (ctx, next) => {
                 "purchasePrice": product.purchasePrice,
                 "price": product.price,
                 "unit": product.unit,
-                "orderNumber": countUploadGoods,
+                "orderNumber": productIsSet.size,
                 "catalog": groupArray[groupArray.length - 1],
                 "tags": tags,
                 "tagsNames": tagsNames,
@@ -254,16 +261,16 @@ const uploadActions = [async (ctx, next) => {
               for (const catalog of groupArray) {
                 // check if catalog added to batch
                 if (!catalogsIsSet.has(catalog.id)) {
+                  catalogsIsSet.set(catalog.id, {parentId: catalog.parentId, tags: new Set()});
                   const catalogRef = firebase.firestore().collection("objects").doc(objectId)
                       .collection("catalogs").doc(catalog.id);
                   batchCatalogs.set(catalogRef, {
                     "name": catalog.name,
                     "parentId": catalog.parentId,
-                    "orderNumber": countUploadGoods,
+                    "orderNumber": catalogsIsSet.size,
                     "updatedAt": serverTimestamp,
                     "tags": firebase.firestore.FieldValue.delete(),
                   }, {merge: true});
-                  catalogsIsSet.set(catalog.id, {parentId: catalog.parentId, tags: new Set()});
                   // check batch limit 500
                   if (++batchCatalogsCount === perPage) {
                     batchArray.push(batchCatalogs.commit());
@@ -304,7 +311,6 @@ const uploadActions = [async (ctx, next) => {
                   catalogsIsSet.get(groupArray[groupArray.length - 1].id).tags.add(tagsRow.id);
                 }
               }
-              countUploadGoods ++;
             }
           }
           // add bath goods to array
@@ -322,7 +328,7 @@ const uploadActions = [async (ctx, next) => {
         // after upload show upload info
         const ms = new Date() - start;
         await ctx.replyWithMarkdown(`Data uploaded in *${Math.floor(ms/1000)}*s:
-  Goods: *${countUploadGoods}*
+  Goods: *${productIsSet.size}*
   Catalogs: *${catalogsIsSet.size}*`);
         // delete old Products
         const batchProductsDelete = firebase.firestore().batch();
