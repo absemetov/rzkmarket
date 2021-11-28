@@ -193,9 +193,10 @@ const showCatalog = async (ctx, next) => {
     // footer buttons
     cartButtons[0].text = `🏪 ${object.name}`;
     inlineKeyboardArray.push(cartButtons);
+    const publicImgUrl = bucket.file("photos/main/logo_rzk_com_ru.png").publicUrl();
     await ctx.editMessageMedia({
       type: "photo",
-      media: "https://picsum.photos/450/150/?random",
+      media: publicImgUrl,
       caption: `<b>${botConfig.name} > ${object.name} > Каталог</b>`,
       parse_mode: "html",
     }, {reply_markup: {
@@ -465,7 +466,8 @@ const showCart = async (ctx, next) => {
       // await ctx.state.cart.setCartData({
       //   orderData: firebase.firestore.FieldValue.delete(),
       // });
-      await store.deleteRecord({"users": ctx.from.id}, "session.orderData");
+      // await store.deleteRecord({"users": ctx.from.id}, "session.orderData");
+      await store.deleteRecord(`users/${ctx.from.id}`, "session.orderData");
     }
     // clear cart
     if (clear) {
@@ -507,12 +509,12 @@ const showCart = async (ctx, next) => {
       // const orderData = await ctx.state.cart.getOrderData();
       const orderData = await store.findRecord(`users/${ctx.from.id}`, "session.orderData");
       if (orderData) {
-        const orderId = orderData.orderId;
+        const orderId = orderData.orderNumber;
         inlineKeyboardArray.push([{text: `✅ Сохранить Заказ #${orderId} от ${orderData.recipientName}`,
-          callback_data: `editOrder/${orderData.id}?sP=1&o=${objectId}`}]);
+          callback_data: `eO/${orderData.id}?sP=1&o=${objectId}`}]);
         // delete order from cart
         inlineKeyboardArray.push([{text: `❎ Убрать Заказ #${orderId} от ${orderData.recipientName}`,
-          callback_data: `cart?deleteOrderId=${orderData.id}`}]);
+          callback_data: `cart?deleteOrderId=${orderData.id}&o=${objectId}`}]);
       }
       // create order
       inlineKeyboardArray.push([{text: "✅ Оформить заказ",
@@ -530,9 +532,10 @@ const showCart = async (ctx, next) => {
       msgTxt = msgTxt.substring(0, 1024);
     }
     // edit message
+    const publicImgUrl = bucket.file("photos/main/logo_rzk_com_ru.png").publicUrl();
     await ctx.editMessageMedia({
       type: "photo",
-      media: "https://picsum.photos/450/150/?random",
+      media: publicImgUrl,
       caption: msgTxt,
       parse_mode: "html",
     }, {reply_markup: {
@@ -559,9 +562,9 @@ const cartWizard = [
   },
   async (ctx, error) => {
     const inlineKeyboardArray = [];
-    let qty = ctx.state.params.get("qty");
-    const number = ctx.state.params.get("number");
-    const back = ctx.state.params.get("back");
+    let qty = ctx.state.params.get("q");
+    const number = ctx.state.params.get("n");
+    const back = ctx.state.params.get("b");
     const carrierId = ctx.state.params.get("cId");
     const orderId = ctx.state.params.get("oId");
     const objectId = ctx.state.params.get("o");
@@ -588,7 +591,7 @@ const cartWizard = [
       }
     }
     if (qty) {
-      qtyUrl = `&qty=${qty}`;
+      qtyUrl = `&q=${qty}`;
     } else {
       qty = 0;
     }
@@ -602,29 +605,29 @@ const cartWizard = [
       paramsUrl = `&oId=${orderId}&o=${objectId}`;
     }
     inlineKeyboardArray.push([
-      {text: "7", callback_data: `cO/cN?number=7${qtyUrl}${paramsUrl}`},
-      {text: "8", callback_data: `cO/cN?number=8${qtyUrl}${paramsUrl}`},
-      {text: "9", callback_data: `cO/cN?number=9${qtyUrl}${paramsUrl}`},
+      {text: "7", callback_data: `cO/cN?n=7${qtyUrl}${paramsUrl}`},
+      {text: "8", callback_data: `cO/cN?n=8${qtyUrl}${paramsUrl}`},
+      {text: "9", callback_data: `cO/cN?n=9${qtyUrl}${paramsUrl}`},
     ]);
     inlineKeyboardArray.push([
-      {text: "4", callback_data: `cO/cN?number=4${qtyUrl}${paramsUrl}`},
-      {text: "5", callback_data: `cO/cN?number=5${qtyUrl}${paramsUrl}`},
-      {text: "6", callback_data: `cO/cN?number=6${qtyUrl}${paramsUrl}`},
+      {text: "4", callback_data: `cO/cN?n=4${qtyUrl}${paramsUrl}`},
+      {text: "5", callback_data: `cO/cN?n=5${qtyUrl}${paramsUrl}`},
+      {text: "6", callback_data: `cO/cN?n=6${qtyUrl}${paramsUrl}`},
     ]);
     inlineKeyboardArray.push([
-      {text: "1", callback_data: `cO/cN?number=1${qtyUrl}${paramsUrl}`},
-      {text: "2", callback_data: `cO/cN?number=2${qtyUrl}${paramsUrl}`},
-      {text: "3", callback_data: `cO/cN?number=3${qtyUrl}${paramsUrl}`},
+      {text: "1", callback_data: `cO/cN?n=1${qtyUrl}${paramsUrl}`},
+      {text: "2", callback_data: `cO/cN?n=2${qtyUrl}${paramsUrl}`},
+      {text: "3", callback_data: `cO/cN?n=3${qtyUrl}${paramsUrl}`},
     ]);
     inlineKeyboardArray.push([
-      {text: "0️", callback_data: `cO/cN?number=0${qtyUrl}${paramsUrl}`},
-      {text: "🔙", callback_data: `cO/cN?back=1${qtyUrl}${paramsUrl}`},
+      {text: "0️", callback_data: `cO/cN?n=0${qtyUrl}${paramsUrl}`},
+      {text: "🔙", callback_data: `cO/cN?b=1${qtyUrl}${paramsUrl}`},
       {text: "AC", callback_data: `cO/cN?cId=${carrierId}${paramsUrl}`},
     ]);
     // if order change callback
     if (orderId) {
       inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `eO/${orderId}?` +
-      `sCid=${carrierId}&number=${qty}&o=${objectId}`}]);
+      `sCid=${carrierId}&n=${qty}&o=${objectId}`}]);
       inlineKeyboardArray.push([{text: "⬅️ Назад",
         callback_data: `orders/${orderId}?o=${objectId}`}]);
     } else {
@@ -888,9 +891,10 @@ catalogsActions.push( async (ctx, next) => {
     // inlineKeyboardArray.push([{text: "⤴️ Перейти в каталог", callback_data: session.path}]);
     const objectSnap = await firebase.firestore().collection("objects").doc(objectId).get();
     const object = {"id": objectSnap.id, ...objectSnap.data()};
+    const publicImgUrl = bucket.file("photos/main/logo_rzk_com_ru.png").publicUrl();
     await ctx.editMessageMedia({
       type: "photo",
-      media: "https://picsum.photos/450/150/?random",
+      media: publicImgUrl,
       caption: `<b>${botConfig.name} > ${object.name} > Фильтр</b>`,
       parse_mode: "html",
     }, {reply_markup: {

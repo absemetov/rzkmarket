@@ -1,5 +1,6 @@
 const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
+const bucket = firebase.storage().bucket();
 const {roundNumber} = require("./bot_start_scene");
 const {showCart, cartWizard} = require("./bot_catalog_scene");
 const {store, cart} = require("./bot_keyboards.js");
@@ -23,7 +24,7 @@ const myOrders = async (ctx, next) => {
       const userData = await store.findRecord(`users/${userId}`);
       caption = `Заказы от ${userData.userName}`;
     }
-    const limit = 1;
+    const limit = 10;
     if (orderId) {
       // const orderSnap = await firebase.firestore().collection("objects").doc(objectId)
       //     .collection("orders").doc(orderId).get();
@@ -143,9 +144,10 @@ const myOrders = async (ctx, next) => {
     if (caption.length > 1024) {
       caption = caption.substring(0, 1024);
     }
+    const publicImgUrl = bucket.file("photos/main/logo_rzk_com_ru.png").publicUrl();
     await ctx.editMessageMedia({
       type: "photo",
-      media: "https://picsum.photos/450/150/?random",
+      media: publicImgUrl,
       caption,
       parse_mode: "html",
     }, {
@@ -167,8 +169,9 @@ const showOrders = async (ctx, next) => {
     const objectId = ctx.state.params.get("o");
     const inlineKeyboardArray = [];
     const orderId = ctx.state.param;
-    const limit = 1;
-    let caption = `<b>${botConfig.name} > Заказы Admin</b>`;
+    const limit = 10;
+    const object = await store.findRecord(`objects/${objectId}`);
+    let caption = `<b>${botConfig.name} > Заказы ${object.name}</b>`;
     if (orderId) {
       // const orderSnap = await firebase.firestore().collection("objects").doc(objectId)
       //     .collection("orders").doc(orderId).get();
@@ -178,7 +181,8 @@ const showOrders = async (ctx, next) => {
         // show order
         ctx.session.pathOrderCurrent = ctx.callbackQuery.data;
         const date = moment.unix(order.createdAt);
-        caption = `<b>${botConfig.name} > Заказ #${store.formatOrderNumber(order.userId, order.orderNumber)}` +
+        caption = `<b>${botConfig.name} > ${order.objectName} >` +
+        ` Заказ #${store.formatOrderNumber(order.userId, order.orderNumber)}` +
         ` (${date.fromNow()})\n` +
         `${order.recipientName} ${order.phoneNumber}\n` +
         `Адрес доставки: ${order.address}, ` +
@@ -233,7 +237,7 @@ const showOrders = async (ctx, next) => {
       if (order.carrierId === 2) {
         inlineKeyboardArray.push([{text: `📝 Доставка: ${store.carriers().get(order.carrierId)}` +
         `${order.carrierNumber ? " #" + order.carrierNumber : ""}`,
-        callback_data: `eO/${order.id}?cId=${order.carrierId}&number=${order.carrierNumber}&o=${objectId}`}]);
+        callback_data: `eO/${order.id}?cId=${order.carrierId}&n=${order.carrierNumber}&o=${objectId}`}]);
       } else {
         inlineKeyboardArray.push([{text: `📝 Доставка: ${store.carriers().get(order.carrierId)}` +
         `${order.carrierNumber ? " #" + order.carrierNumber : ""}`,
@@ -340,9 +344,10 @@ const showOrders = async (ctx, next) => {
     if (caption.length > 1024) {
       caption = caption.substring(0, 1024);
     }
+    const publicImgUrl = bucket.file("photos/main/logo_rzk_com_ru.png").publicUrl();
     await ctx.editMessageMedia({
       type: "photo",
-      media: "https://picsum.photos/450/150/?random",
+      media: publicImgUrl,
       caption,
       parse_mode: "html",
     }, {
@@ -404,7 +409,7 @@ ordersActions.push(async (ctx, next) => {
     const orderId = ctx.state.param;
     const editField = ctx.state.params.get("e");
     const cId = + ctx.state.params.get("cId");
-    const carrierNumber = + ctx.state.params.get("number");
+    const carrierNumber = + ctx.state.params.get("n");
     const sCid = + ctx.state.params.get("sCid");
     const showPaymentId = + ctx.state.params.get("showPay");
     const paymentId = + ctx.state.params.get("paymentId");
@@ -547,7 +552,8 @@ ordersActions.push(async (ctx, next) => {
           inlineKeyboardArray.push([{text: value, callback_data: `eO/${orderId}?sCid=${key}&o=${objectId}`}]);
         } else {
           inlineKeyboardArray.push([{text: value,
-            callback_data: `cO/cN?cId=${key}&oId=${orderId}&o=${objectId}`}]);
+            callback_data: `cO/cN?cId=${key}&oId=${orderId}&o=${objectId}` +
+            `${carrierNumber ? "&q=" + carrierNumber : ""}`}]);
         }
       });
       inlineKeyboardArray.push([{text: "⬅️ Назад",

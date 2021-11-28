@@ -1,5 +1,7 @@
 // const {Scenes: {BaseScene}} = require("telegraf");
 const functions = require("firebase-functions");
+const firebase = require("firebase-admin");
+const bucket = firebase.storage().bucket();
 const {store, cart} = require("./bot_keyboards.js");
 // const start = new BaseScene("start");
 // set default project
@@ -61,7 +63,9 @@ const startHandler = async (ctx) => {
   //   inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myOrders/${ctx.from.id}`}]);
   // }
   inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
-  await ctx.replyWithPhoto("https://picsum.photos/450/150/?random",
+  // add main photo
+  const publicImgUrl = bucket.file("photos/main/logo_rzk_com_ru.png").publicUrl();
+  await ctx.replyWithPhoto(publicImgUrl,
       {
         caption: `<b>${botConfig.name}</b>`,
         parse_mode: "html",
@@ -146,9 +150,10 @@ startActions.push(async (ctx, next) => {
       inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
     }
     // render data
+    const publicImgUrl = bucket.file("photos/main/logo_rzk_com_ru.png").publicUrl();
     await ctx.editMessageMedia({
       type: "photo",
-      media: "https://picsum.photos/450/150/?random",
+      media: publicImgUrl,
       caption,
       parse_mode: "html",
     }, {

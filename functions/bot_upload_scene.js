@@ -185,10 +185,10 @@ const uploadActions = [async (ctx, next) => {
                 tagName = tagName.trim();
                 let tagId = cyrillicToTranslit.transform(tagName, "-").toLowerCase();
                 let tagHidden = false;
-                if (tagId.substring(0, 2) === "--") {
+                if (tagId.substring(0, 1) === "+") {
                   tagHidden = true;
-                  tagId = tagId.substring(2);
-                  tagName = tagName.substring(2);
+                  tagId = tagId.substring(1);
+                  tagName = tagName.substring(1);
                 }
                 tagsNames.push({
                   id: tagId,
