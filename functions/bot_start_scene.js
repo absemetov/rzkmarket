@@ -64,6 +64,7 @@ const startHandler = async (ctx) => {
   // }
   inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
   // add main photo
+  // await bucket.makePublic();
   const publicImgUrl = bucket.file("photos/main/logo_rzk_com_ru.png").publicUrl();
   await ctx.replyWithPhoto(publicImgUrl,
       {
@@ -136,6 +137,8 @@ startActions.push(async (ctx, next) => {
       inlineKeyboardArray.push([cartButtons[1]]);
       if (ctx.state.isAdmin) {
         inlineKeyboardArray.push([{text: "🧾 Заказы admin", callback_data: `orders?o=${object.id}`}]);
+        inlineKeyboardArray.push([{text: "📸 Загрузить фото каталогов",
+          callback_data: `c?o=${object.id}&u=1`}]);
         inlineKeyboardArray.push([{text: "➕ Загрузить товары",
           callback_data: `uploadGoods/${object.id}`}]);
       }

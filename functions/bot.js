@@ -7,7 +7,7 @@ const {startActions, startHandler, parseUrl, isAdmin} = require("./bot_start_sce
 const {monoHandler, monoActions} = require("./bot_mono_scene");
 const {uploadActions} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
-const {uploadPhotoProduct, catalogsActions, cartWizard} = require("./bot_catalog_scene");
+const {uploadPhotoProduct, uploadPhotoCat, catalogsActions, cartWizard} = require("./bot_catalog_scene");
 const {store} = require("./bot_keyboards.js");
 const botConfig = functions.config().env.bot;
 // const {MenuMiddleware} = require("telegraf-inline-menu");
@@ -108,7 +108,14 @@ bot.on(["text", "contact"], async (ctx) => {
   // startHandler(ctx);
 });
 
-bot.on("photo", (ctx) => uploadPhotoProduct(ctx));
+bot.on("photo", (ctx) => {
+  if (ctx.session.scene === "uploadPhotoProduct") {
+    uploadPhotoProduct(ctx);
+  }
+  if (ctx.session.scene === "uploadPhotoCat") {
+    uploadPhotoCat(ctx);
+  }
+});
 // bot.telegram.sendMessage(94899148, "Bot Rzk.com.ua ready!" );
 
 bot.catch((error) => {
