@@ -61,7 +61,7 @@ const showCatalog = async (ctx, next) => {
     const startAfter = ctx.state.params.get("s");
     const endBefore = ctx.state.params.get("e");
     const uploadPhotoCat = ctx.state.params.get("u");
-    let publicImgUrl = bucket.file("photos/main/logo_rzk_com_ru.png").publicUrl();
+    let publicImgUrl = bucket.file(botConfig.logo).publicUrl();
     // and show upload catalog photo
     let uUrl = "";
     if (uploadPhotoCat) {
@@ -287,7 +287,7 @@ const showProduct = async (ctx, next) => {
         publicImgUrl = bucket.file(`photos/${objectId}/products/${product.id}/2/${product.mainPhoto}.jpg`).publicUrl();
       }
     } else {
-      publicImgUrl = "https://s3.eu-central-1.amazonaws.com/rzk.com.ua/250.56ad1e10bf4a01b1ff3af88752fd3412.jpg";
+      publicImgUrl = bucket.file(botConfig.logo).publicUrl();
     }
     // Set Main menu
     inlineKeyboardArray.push(cartButtons);
@@ -417,7 +417,7 @@ catalogsActions.push( async (ctx, next) => {
               .publicUrl();
         }
       } else {
-        publicImgUrl = "https://s3.eu-central-1.amazonaws.com/rzk.com.ua/250.56ad1e10bf4a01b1ff3af88752fd3412.jpg";
+        publicImgUrl = bucket.file(botConfig.logo).publicUrl();
       }
       await ctx.editMessageMedia({
         type: "photo",
@@ -556,7 +556,7 @@ const showCart = async (ctx, next) => {
       msgTxt = msgTxt.substring(0, 1024);
     }
     // edit message
-    const publicImgUrl = bucket.file("photos/main/logo_rzk_com_ru.png").publicUrl();
+    const publicImgUrl = bucket.file(botConfig.logo).publicUrl();
     await ctx.editMessageMedia({
       type: "photo",
       media: publicImgUrl,
@@ -918,7 +918,7 @@ catalogsActions.push( async (ctx, next) => {
     // const objectSnap = await firebase.firestore().collection("objects").doc(objectId).get();
     // const object = {"id": objectSnap.id, ...objectSnap.data()};
     const object = await store.findRecord(`objects/${objectId}`);
-    const publicImgUrl = bucket.file("photos/main/logo_rzk_com_ru.png").publicUrl();
+    const publicImgUrl = bucket.file(botConfig.logo).publicUrl();
     await ctx.editMessageMedia({
       type: "photo",
       media: publicImgUrl,

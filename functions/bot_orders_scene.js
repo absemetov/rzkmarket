@@ -144,7 +144,7 @@ const myOrders = async (ctx, next) => {
     if (caption.length > 1024) {
       caption = caption.substring(0, 1024);
     }
-    const publicImgUrl = bucket.file("photos/main/logo_rzk_com_ru.png").publicUrl();
+    const publicImgUrl = bucket.file(botConfig.logo).publicUrl();
     await ctx.editMessageMedia({
       type: "photo",
       media: publicImgUrl,
@@ -344,7 +344,7 @@ const showOrders = async (ctx, next) => {
     if (caption.length > 1024) {
       caption = caption.substring(0, 1024);
     }
-    const publicImgUrl = bucket.file("photos/main/logo_rzk_com_ru.png").publicUrl();
+    const publicImgUrl = bucket.file(botConfig.logo).publicUrl();
     await ctx.editMessageMedia({
       type: "photo",
       media: publicImgUrl,

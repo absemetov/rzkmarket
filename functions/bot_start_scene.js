@@ -64,8 +64,8 @@ const startHandler = async (ctx) => {
   // }
   inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
   // add main photo
-  // await bucket.makePublic();
-  const publicImgUrl = bucket.file("photos/main/logo_rzk_com_ru.png").publicUrl();
+  await bucket.makePublic();
+  const publicImgUrl = bucket.file(botConfig.logo).publicUrl();
   await ctx.replyWithPhoto(publicImgUrl,
       {
         caption: `<b>${botConfig.name}</b>`,
@@ -153,7 +153,7 @@ startActions.push(async (ctx, next) => {
       inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
     }
     // render data
-    const publicImgUrl = bucket.file("photos/main/logo_rzk_com_ru.png").publicUrl();
+    const publicImgUrl = bucket.file(botConfig.logo).publicUrl();
     await ctx.editMessageMedia({
       type: "photo",
       media: publicImgUrl,
