@@ -628,6 +628,11 @@ const cartWizard = [
     if (orderId) {
       paramsUrl = `&oId=${orderId}&o=${objectId}`;
     }
+    // add rnd param to fast load
+    let rnd = "";
+    if (error || !Number(number)) {
+      rnd = Math.random().toFixed(2).substring(2);
+    }
     inlineKeyboardArray.push([
       {text: "7", callback_data: `cO/cN?n=7${qtyUrl}${paramsUrl}`},
       {text: "8", callback_data: `cO/cN?n=8${qtyUrl}${paramsUrl}`},
@@ -651,12 +656,12 @@ const cartWizard = [
     // if order change callback
     if (orderId) {
       inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `eO/${orderId}?` +
-      `sCid=${carrierId}&n=${qty}&o=${objectId}`}]);
+      `sCid=${carrierId}&n=${qty}&o=${objectId}&${rnd}`}]);
       inlineKeyboardArray.push([{text: "⬅️ Назад",
         callback_data: `orders/${orderId}?o=${objectId}`}]);
     } else {
       inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `cO/wizard?cN=${qty}` +
-      `&cId=${carrierId}`}]);
+      `&cId=${carrierId}&${rnd}`}]);
       // inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: "cart"}]);
     }
     await ctx.editMessageCaption(`Введите номер отделения:\n<b>${qty}</b>` +
@@ -737,12 +742,12 @@ const cartWizard = [
     const regexpPhoneRu = new RegExp(botConfig.phoneregexp);
     const checkPhone = phoneNumberText.match(regexpPhoneRu);
     if (!checkPhone) {
-      ctx.reply("Введите номер телефона в формате +7YYYXXXXXXX");
+      ctx.reply(`Введите номер телефона в формате ${botConfig.phonetemplate}`);
       return;
     }
     // save phone to cart
     // await ctx.state.cart.setWizardData({phoneNumber: "+7" + checkPhone[2]});
-    const phoneNumber = "+7" + checkPhone[2];
+    const phoneNumber = `${botConfig.phonecode}${checkPhone[2]}`;
     await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {phoneNumber}}});
     // comment order
     ctx.replyWithHTML("Комментарий к заказу:",
@@ -1260,6 +1265,12 @@ const uploadPhotoCat = async (ctx, next) => {
     if (!origin) {
       await ctx.reply("Choose large photo!");
       return next();
+    }
+    // delete old photos
+    if (catalog.photo) {
+      await bucket.deleteFiles({
+        prefix: `photos/${objectId}/catalogs/${catalogId}`,
+      });
     }
     // get photos url
     const originUrl = await ctx.telegram.getFileLink(origin.file_id);

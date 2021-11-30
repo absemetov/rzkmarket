@@ -64,7 +64,7 @@ const startHandler = async (ctx) => {
   // }
   inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
   // add main photo
-  await bucket.makePublic();
+  // await bucket.makePublic();
   const publicImgUrl = bucket.file(botConfig.logo).publicUrl();
   await ctx.replyWithPhoto(publicImgUrl,
       {

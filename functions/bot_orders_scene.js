@@ -256,9 +256,9 @@ const showOrders = async (ctx, next) => {
       inlineKeyboardArray.push([{text: "📝 Информация о покупателе",
         callback_data: `eO?userId=${order.userId}&o=${order.objectId}`}]);
       // refresh order
-      const dateTimestamp = Math.floor(Date.now() / 1000);
+      const rnd = Math.random().toFixed(2).substring(2);
       inlineKeyboardArray.push([{text: `🔄 Обновить заказ#${order.orderNumber}`,
-        callback_data: `orders/${order.id}?o=${objectId}&${dateTimestamp}`}]);
+        callback_data: `orders/${order.id}?o=${objectId}&${rnd}`}]);
       inlineKeyboardArray.push([{text: "🧾 Заказы",
         callback_data: `${ctx.session.pathOrder ? ctx.session.pathOrder : "orders?o=" + order.objectId}`}]);
     } else {
@@ -382,12 +382,18 @@ const orderWizard = [
       return;
     }
     if (ctx.session.fieldName === "phoneNumber") {
-      const checkPhone = ctx.message.text.match(/^(\+7|7|8)?([489][0-9]{2}[0-9]{7})$/);
+      // const checkPhone = ctx.message.text.match(/^(\+7|7|8)?([489][0-9]{2}[0-9]{7})$/);
+      // if (!checkPhone) {
+      //   ctx.reply("Введите номер телефона в формате +7YYYXXXXXXX");
+      //   return;
+      // }
+      const regexpPhone = new RegExp(botConfig.phoneregexp);
+      const checkPhone = ctx.message.text.match(regexpPhone);
       if (!checkPhone) {
-        ctx.reply("Введите номер телефона в формате +7YYYXXXXXXX");
+        ctx.reply(`Введите номер телефона в формате ${botConfig.phonetemplate}`);
         return;
       }
-      ctx.message.text = "+7" + checkPhone[2];
+      ctx.message.text = `${botConfig.phonecode}${checkPhone[2]}`;
     }
     // save new data
     // await ctx.state.cart.saveOrder(ctx.session.orderId, {
