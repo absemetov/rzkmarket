@@ -431,7 +431,8 @@ ordersActions.push(async (ctx, next) => {
         callback_data: `myO/${userId}`}]);
       inlineKeyboardArray.push([{text: "⬅️ Назад",
         callback_data: `${ctx.session.pathOrderCurrent ? ctx.session.pathOrderCurrent : `orders?o=${objectId}`}`}]);
-      await cartWizard[0](ctx, `${userData.userName}, orderCount: ${userData.orderCount}`, inlineKeyboardArray);
+      await cartWizard[0](ctx, `${userData.userName}, <a href="tg://user?id=${userId}">${userId}</a>,` +
+        `orderCount: ${userData.orderCount}`, inlineKeyboardArray);
     }
     // edit produc
     const editProducts = ctx.state.params.get("eP");

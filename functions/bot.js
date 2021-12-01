@@ -3,6 +3,7 @@ const firebase = require("firebase-admin");
 const {Telegraf, session} = require("telegraf");
 // const firestoreSession = require("telegraf-session-firestore");
 firebase.initializeApp();
+const bucket = firebase.storage().bucket();
 const {startActions, startHandler, parseUrl, isAdmin} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
 const {uploadActions} = require("./bot_upload_scene");
@@ -52,7 +53,37 @@ bot.start(async (ctx) => {
   }
   // await ctx.state.cart.setUserName(userName);
   await store.createRecord(`users/${ctx.from.id}`, {userName});
-  startHandler(ctx);
+  // deep linking parsing
+  const link = ctx.message.text.split(" ")[1];
+  const path = link.split("OBJECT");
+  const catalogId = path[0];
+  const objectId = path[1];
+  if (catalogId && objectId) {
+    const catalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
+    const object = await store.findRecord(`objects/${objectId}`);
+    const inlineKeyboardArray = [];
+    if (catalog && object) {
+      inlineKeyboardArray.push([{text: `🗂 Перейти в каталог ${catalog.name}`,
+        callback_data: `c/${catalogId}?o=${objectId}`}]);
+      const publicImgUrl = bucket.file(botConfig.logo).publicUrl();
+      const caption = `<b>${botConfig.name} > ${object.name}\n` +
+        `Контакты: ${object.phoneNumber}\n` +
+        `Адрес: ${object.address}\n` +
+        `Описание: ${object.description}</b>`;
+      await ctx.replyWithPhoto(publicImgUrl,
+          {
+            caption,
+            parse_mode: "html",
+            reply_markup: {
+              inline_keyboard: inlineKeyboardArray,
+            },
+          });
+    } else {
+      startHandler(ctx);
+    }
+  } else {
+    startHandler(ctx);
+  }
 });
 // rzk shop
 bot.command("objects", async (ctx) => {
