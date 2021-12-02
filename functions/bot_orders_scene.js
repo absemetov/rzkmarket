@@ -19,10 +19,10 @@ const myOrders = async (ctx, next) => {
     const inlineKeyboardArray = [];
     const orderId = ctx.state.params.get("oId");
     const objectId = ctx.state.params.get("o");
-    let caption = `<b>${botConfig.name} > Мои заказы</b>`;
+    let caption = `<b>${ctx.state.bot_first_name} > Мои заказы</b>`;
     if (ctx.session.pathOrderCurrent) {
-      const userData = await store.findRecord(`users/${userId}`);
-      caption = `Заказы от ${userData.userName}`;
+      // const userData = await store.findRecord(`users/${userId}`);
+      caption = `Заказы от ${userId}`;
     }
     const limit = 10;
     if (orderId) {
@@ -171,7 +171,7 @@ const showOrders = async (ctx, next) => {
     const orderId = ctx.state.param;
     const limit = 10;
     const object = await store.findRecord(`objects/${objectId}`);
-    let caption = `<b>${botConfig.name} > Заказы ${object.name}</b>`;
+    let caption = `<b>${ctx.state.bot_first_name} > Заказы ${object.name}</b>`;
     if (orderId) {
       // const orderSnap = await firebase.firestore().collection("objects").doc(objectId)
       //     .collection("orders").doc(orderId).get();
@@ -181,7 +181,7 @@ const showOrders = async (ctx, next) => {
         // show order
         ctx.session.pathOrderCurrent = ctx.callbackQuery.data;
         const date = moment.unix(order.createdAt);
-        caption = `<b>${botConfig.name} > ${order.objectName} >` +
+        caption = `<b>${ctx.state.bot_first_name} > ${order.objectName} >` +
         ` Заказ #${store.formatOrderNumber(order.userId, order.orderNumber)}` +
         ` (${date.fromNow()})\n` +
         `${order.recipientName} ${order.phoneNumber}\n` +
@@ -426,13 +426,12 @@ ordersActions.push(async (ctx, next) => {
     // show user info creator
     if (userId) {
       const inlineKeyboardArray = [];
-      const userData = await store.findRecord(`users/${userId}`);
-      inlineKeyboardArray.push([{text: `Заказы ${userData.userName}`,
+      // const userData = await store.findRecord(`users/${userId}`);
+      inlineKeyboardArray.push([{text: `Заказы from User ${userId}`,
         callback_data: `myO/${userId}`}]);
       inlineKeyboardArray.push([{text: "⬅️ Назад",
         callback_data: `${ctx.session.pathOrderCurrent ? ctx.session.pathOrderCurrent : `orders?o=${objectId}`}`}]);
-      await cartWizard[0](ctx, `${userData.userName}, <a href="tg://user?id=${userId}">${userId}</a>,` +
-        `orderCount: ${userData.orderCount}`, inlineKeyboardArray);
+      await cartWizard[0](ctx, `User <a href="tg://user?id=${userId}">${userId}</a>`, inlineKeyboardArray);
     }
     // edit produc
     const editProducts = ctx.state.params.get("eP");

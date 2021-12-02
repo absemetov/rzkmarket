@@ -273,8 +273,9 @@ const cart = {
   //     userName: value,
   //   }, {merge: true});
   // },
-  async createOrder(userId) {
+  async createOrder(ctx) {
     // const session = await this.getSessionData();
+    const userId = ctx.from.id;
     await store.createRecord(`users/${userId}`, {orderCount: firebase.firestore.FieldValue.increment(1)});
     const userData = await store.findRecord(`users/${userId}`);
     const objectId = userData.session.objectId;
@@ -311,6 +312,9 @@ const cart = {
     // }
     // clear cart delete orderId from cart
     await this.clear(objectId, userId);
+    // notify admin
+    await ctx.telegram.sendMessage(94899148, `<b>New order from bot! Object ${object.name} ` +
+    `<a href="tg://user?id=${ctx.from.id}">User ${ctx.from.id}</a></b>`, {parse_mode: "html"});
   },
   // async getSessionData(value) {
   //   const user = await this.getUserData();

@@ -27,6 +27,9 @@ bot.use(async (ctx, next) => {
   if (ctx.session === undefined) {
     ctx.session = {};
   }
+  // set bot name adn
+  ctx.state.bot_first_name = bot.botInfo.first_name;
+  ctx.state.bot_username = bot.botInfo.username;
   return next();
 });
 // use session lazy
@@ -40,50 +43,68 @@ bot.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/,
     parseUrl, ...startActions, ...catalogsActions, ...ordersActions, ...uploadActions, ...monoActions);
 // start bot
 bot.start(async (ctx) => {
-  // set user data
-  let userName = "";
-  if (ctx.from.first_name) {
-    userName += ctx.from.first_name;
-  }
-  if (ctx.from.last_name) {
-    userName += " " + ctx.from.last_name;
-  }
-  if (ctx.from.username) {
-    userName += " @" + ctx.from.username;
-  }
-  // await ctx.state.cart.setUserName(userName);
-  await store.createRecord(`users/${ctx.from.id}`, {userName});
   // deep linking parsing
-  const link = ctx.message.text.split(" ")[1];
-  const path = link.split("OBJECT");
-  const catalogId = path[0];
-  const objectId = path[1];
-  if (catalogId && objectId) {
-    const catalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
+  const pathProduct = ctx.message.text.match(/OBJECT([a-zA-Z0-9-_]+)PRODUCT([a-zA-Z0-9-_]+)/);
+  const pathCatalog = ctx.message.text.match(/OBJECT([a-zA-Z0-9-_]+)CATALOG([a-zA-Z0-9-_]+)/);
+  // const link = ctx.message.text.split(" ")[1];
+  // const path = link.split("OBJECT");
+  const inlineKeyboardArray = [];
+  let caption = "";
+  if (pathProduct) {
+    const productId = pathProduct[2];
+    const objectId = pathProduct[1];
+    const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
     const object = await store.findRecord(`objects/${objectId}`);
-    const inlineKeyboardArray = [];
-    if (catalog && object) {
-      inlineKeyboardArray.push([{text: `🗂 Перейти в каталог ${catalog.name}`,
-        callback_data: `c/${catalogId}?o=${objectId}`}]);
-      const publicImgUrl = bucket.file(botConfig.logo).publicUrl();
-      const caption = `<b>${botConfig.name} > ${object.name}\n` +
+    if (object) {
+      if (product) {
+        inlineKeyboardArray.push([{text: `🗂 Перейти в товар ${product.name} (${product.id})`,
+          callback_data: `p/${product.id}?o=${objectId}`}]);
+      } else {
+        inlineKeyboardArray.push([{text: "🗂 Перейти в каталоги",
+          callback_data: `c?o=${objectId}`}]);
+      }
+      caption = `<b>${ctx.state.bot_first_name} > ${object.name}\n` +
         `Контакты: ${object.phoneNumber}\n` +
         `Адрес: ${object.address}\n` +
         `Описание: ${object.description}</b>`;
-      await ctx.replyWithPhoto(publicImgUrl,
-          {
-            caption,
-            parse_mode: "html",
-            reply_markup: {
-              inline_keyboard: inlineKeyboardArray,
-            },
-          });
-    } else {
-      startHandler(ctx);
     }
-  } else {
-    startHandler(ctx);
   }
+  if (pathCatalog) {
+    const catalogId = pathCatalog[2];
+    const objectId = pathCatalog[1];
+    const catalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
+    const object = await store.findRecord(`objects/${objectId}`);
+    if (object) {
+      if (catalog) {
+        inlineKeyboardArray.push([{text: `🗂 Перейти в каталог ${catalog.name}`,
+          callback_data: `c/${catalogId}?o=${objectId}`}]);
+      } else {
+        inlineKeyboardArray.push([{text: "🗂 Перейти в каталоги",
+          callback_data: `c?o=${objectId}`}]);
+      }
+      caption = `<b>${ctx.state.bot_first_name} > ${object.name}\n` +
+        `Контакты: ${object.phoneNumber}\n` +
+        `Адрес: ${object.address}\n` +
+        `Описание: ${object.description}</b>`;
+    }
+  }
+  if (caption) {
+    const publicImgUrl = bucket.file(botConfig.logo).publicUrl();
+    await ctx.replyWithPhoto(publicImgUrl,
+        {
+          caption,
+          parse_mode: "html",
+          reply_markup: {
+            inline_keyboard: inlineKeyboardArray,
+          },
+        });
+  } else {
+    await startHandler(ctx);
+  }
+  // admin notify
+  await ctx.telegram.sendMessage(94899148, `<b>New subsc! <a href="tg://user?id=${ctx.from.id}">${ctx.from.id}</a>\n`+
+  `Message: ${ctx.message.text}</b>`,
+  {parse_mode: "html"});
 });
 // rzk shop
 bot.command("objects", async (ctx) => {

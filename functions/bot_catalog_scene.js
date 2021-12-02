@@ -221,7 +221,8 @@ const showCatalog = async (ctx, next) => {
     await ctx.editMessageMedia({
       type: "photo",
       media: publicImgUrl,
-      caption: `<b>${botConfig.name} > ${object.name} > Каталог</b>`,
+      caption: `<b>${ctx.state.bot_first_name} > ${object.name} > Каталог</b>\n` +
+        `t.me/${ctx.state.bot_username}?start=OBJECT${objectId}CATALOG${catalogId ? catalogId : "c"}`,
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: [...inlineKeyboardArray],
@@ -290,11 +291,16 @@ const showProduct = async (ctx, next) => {
       publicImgUrl = bucket.file(botConfig.logo).publicUrl();
     }
     // Set Main menu
+    const object = await store.findRecord(`objects/${objectId}`);
+    // footer buttons
+    cartButtons[0].text = `🏪 ${object.name}`;
     inlineKeyboardArray.push(cartButtons);
     await ctx.editMessageMedia({
       type: "photo",
       media: publicImgUrl,
-      caption: `<b>${product.name} (${product.id})\nЦена ${product.price} ${botConfig.currency}</b>`,
+      caption: `<b>${ctx.state.bot_first_name} > ${object.name}\n` +
+      `${product.name} (${product.id})\nЦена ${product.price} ${botConfig.currency}</b>\n` +
+      `t.me/${ctx.state.bot_username}?start=OBJECT${objectId}PRODUCT${productId}`,
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: [...inlineKeyboardArray],
@@ -502,7 +508,7 @@ const showCart = async (ctx, next) => {
     // const objectSnap = await firebase.firestore().collection("objects").doc(objectId).get();
     // const object = {"id": objectSnap.id, ...objectSnap.data()};
     const object = await store.findRecord(`objects/${objectId}`);
-    let msgTxt = `<b> ${botConfig.name} > ${object.name} > Корзина</b>\n`;
+    let msgTxt = `<b> ${ctx.state.bot_first_name} > ${object.name} > Корзина</b>\n`;
     // loop products
     let totalQty = 0;
     let totalSum = 0;
@@ -796,12 +802,11 @@ const cartWizard = [
   async (ctx, next) => {
     if (ctx.message.text === "Оформить заказ") {
       // save order
-      await cart.createOrder(ctx.from.id);
+      await cart.createOrder(ctx);
       await ctx.reply("Спасибо за заказ! /objects", {
         reply_markup: {
           remove_keyboard: true,
         }});
-      await ctx.telegram.sendMessage(94899148, "New order from bot!" );
       // exit scene
       // await ctx.state.cart.setSessionData({scene: null});
       await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": null}});
@@ -927,7 +932,7 @@ catalogsActions.push( async (ctx, next) => {
     await ctx.editMessageMedia({
       type: "photo",
       media: publicImgUrl,
-      caption: `<b>${botConfig.name} > ${object.name} > Фильтр</b>`,
+      caption: `<b>${ctx.state.bot_first_name} > ${object.name} > Фильтр</b>`,
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: [...inlineKeyboardArray],

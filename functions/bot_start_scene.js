@@ -68,7 +68,7 @@ const startHandler = async (ctx) => {
   const publicImgUrl = bucket.file(botConfig.logo).publicUrl();
   await ctx.replyWithPhoto(publicImgUrl,
       {
-        caption: `<b>${botConfig.name}</b>`,
+        caption: `<b>${ctx.state.bot_first_name}</b>`,
         parse_mode: "html",
         reply_markup: {
           inline_keyboard: inlineKeyboardArray,
@@ -76,7 +76,7 @@ const startHandler = async (ctx) => {
       });
   // set commands
   // await ctx.telegram.setMyCommands([
-  //   {"command": "objects", "description": `${botConfig.name} объекты`},
+  //   {"command": "objects", "description": `${ctx.state.bot_first_name} объекты`},
   //   {"command": "mono", "description": "Monobank exchange rates "},
   // ]);
   // ctx.scene.enter("catalog");
@@ -101,7 +101,7 @@ const startHandler = async (ctx) => {
 //     await ctx.editMessageMedia({
 //       type: "photo",
 //       media: "https://picsum.photos/450/150/?random",
-//       caption: `<b>${botConfig.name}</b>`,
+//       caption: `<b>${ctx.state.bot_first_name}</b>`,
 //       parse_mode: "html",
 //     }, {
 //       reply_markup: {
@@ -118,7 +118,7 @@ const startHandler = async (ctx) => {
 startActions.push(async (ctx, next) => {
   if (ctx.state.routeName === "objects") {
     const objectId = ctx.state.param;
-    let caption = `<b>${botConfig.name}</b>`;
+    let caption = `<b>${ctx.state.bot_first_name}</b>`;
     const inlineKeyboardArray = [];
     if (objectId) {
       // get data obj
@@ -126,7 +126,7 @@ startActions.push(async (ctx, next) => {
       // const object = {"id": objectSnap.id, ...objectSnap.data()};
       const object = await store.findRecord(`objects/${objectId}`);
       // show object info
-      caption = `<b>${botConfig.name} > ${object.name}\n` +
+      caption = `<b>${ctx.state.bot_first_name} > ${object.name}\n` +
         `Контакты: ${object.phoneNumber}\n` +
         `Адрес: ${object.address}\n` +
         `Описание: ${object.description}</b>`;
