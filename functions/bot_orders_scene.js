@@ -344,7 +344,10 @@ const showOrders = async (ctx, next) => {
     if (caption.length > 1024) {
       caption = caption.substring(0, 1024);
     }
-    const publicImgUrl = bucket.file(botConfig.logo).publicUrl();
+    let publicImgUrl = bucket.file(botConfig.logo).publicUrl();
+    if (object.logo) {
+      publicImgUrl = bucket.file(`photos/${objectId}/logo/2/${object.logo}.jpg`).publicUrl();
+    }
     await ctx.editMessageMedia({
       type: "photo",
       media: publicImgUrl,

@@ -116,7 +116,9 @@ const uploadActions = [async (ctx, next) => {
         // start upload
         await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
         await doc.loadInfo(); // loads document properties and worksheets
-        const sheet = doc.sheetsByIndex[0];
+        // const sheet = doc.sheetsByIndex[0];
+        // use sheet by Id
+        const sheet = doc.sheetsById[object.sheetId];
         await ctx.replyWithMarkdown(`Load goods from ...
   Sheet name: *${doc.title}*
   Count rows: *${sheet.rowCount - 1}*`);

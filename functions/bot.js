@@ -4,7 +4,7 @@ const {Telegraf, session} = require("telegraf");
 // const firestoreSession = require("telegraf-session-firestore");
 firebase.initializeApp();
 const bucket = firebase.storage().bucket();
-const {startActions, startHandler, parseUrl, isAdmin} = require("./bot_start_scene");
+const {startActions, startHandler, parseUrl, isAdmin, uploadPhotoObj} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
 const {uploadActions} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
@@ -166,6 +166,9 @@ bot.on("photo", (ctx) => {
   }
   if (ctx.session.scene === "uploadPhotoCat") {
     uploadPhotoCat(ctx);
+  }
+  if (ctx.session.scene === "uploadPhotoObj") {
+    uploadPhotoObj(ctx);
   }
 });
 // bot.telegram.sendMessage(94899148, "Bot Rzk.com.ua ready!" );

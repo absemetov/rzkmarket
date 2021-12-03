@@ -3,6 +3,8 @@ const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
 const bucket = firebase.storage().bucket();
 const {store, cart} = require("./bot_keyboards.js");
+const download = require("./download.js");
+const fs = require("fs");
 // const start = new BaseScene("start");
 // set default project
 const botConfig = functions.config().env.bot;
@@ -120,6 +122,7 @@ startActions.push(async (ctx, next) => {
     const objectId = ctx.state.param;
     let caption = `<b>${ctx.state.bot_first_name}</b>`;
     const inlineKeyboardArray = [];
+    let publicImgUrl = bucket.file(botConfig.logo).publicUrl();
     if (objectId) {
       // get data obj
       // const objectSnap = await firebase.firestore().collection("objects").doc(objectId).get();
@@ -139,10 +142,16 @@ startActions.push(async (ctx, next) => {
         inlineKeyboardArray.push([{text: "🧾 Заказы admin", callback_data: `orders?o=${object.id}`}]);
         inlineKeyboardArray.push([{text: "📸 Загрузить фото каталогов",
           callback_data: `c?o=${object.id}&u=1`}]);
+        inlineKeyboardArray.push([{text: "📸 Загрузить фото объекта",
+          callback_data: `uploadPhotoObj/${object.id}`}]);
         inlineKeyboardArray.push([{text: "➕ Загрузить товары",
           callback_data: `uploadGoods/${object.id}`}]);
       }
       inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: "objects"}]);
+      // set logo obj
+      if (object.logo) {
+        publicImgUrl = bucket.file(`photos/${objectId}/logo/2/${object.logo}.jpg`).publicUrl();
+      }
     } else {
       // show all objects
       // const objects = await ctx.state.cart.objects();
@@ -153,7 +162,6 @@ startActions.push(async (ctx, next) => {
       inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
     }
     // render data
-    const publicImgUrl = bucket.file(botConfig.logo).publicUrl();
     await ctx.editMessageMedia({
       type: "photo",
       media: publicImgUrl,
@@ -170,8 +178,127 @@ startActions.push(async (ctx, next) => {
   }
 });
 
+startActions.push( async (ctx, next) => {
+  if (ctx.state.routeName === "uploadPhotoObj") {
+    // save productId to session data
+    // await ctx.state.cart.setSessionData({productId: ctx.state.param});
+    // const objectId = ctx.state.params.get("o");
+    const objectId = ctx.state.param;
+    // ctx.session.catalogId = catalogId;
+    ctx.session.objectId = objectId;
+    ctx.session.scene = "uploadPhotoObj";
+    // enter catalog scene
+    // if (ctx.scene.current) {
+    //   if (ctx.scene.current.id !== "catalog") {
+    //     ctx.scene.enter("catalog");
+    //   }
+    // } else {
+    //   ctx.scene.enter("catalog");
+    // }
+    // const productRef = firebase.firestore().collection("objects").doc(objectId)
+    //     .collection("products").doc(ctx.state.param);
+    // const productSnapshot = await productRef.get();
+    // const product = {id: productSnapshot.id, ...productSnapshot.data()};
+    const object = await store.findRecord(`objects/${objectId}`);
+    ctx.replyWithHTML(`Добавьте фото <b>${object.name} (${object.id})</b>`);
+    await ctx.answerCbQuery();
+  } else {
+    return next();
+  }
+});
+
+// upload catalog photo
+const uploadPhotoObj = async (ctx, next) => {
+  // const session = await ctx.state.cart.getSessionData();
+  // const catalogId = ctx.session.catalogId;
+  const objectId = ctx.session.objectId;
+  if (objectId) {
+    // make bucket is public
+    // await bucket.makePublic();
+    const object = await store.findRecord(`objects/${objectId}`);
+    // upload Photo
+    // upload only one photo!!!
+    if (ctx.message.media_group_id) {
+      await ctx.reply("Choose only one Photo!");
+      return next();
+    }
+    // get telegram file_id photos data
+    const origin = ctx.message.photo[3];
+    const big = ctx.message.photo[2];
+    const thumbnail = ctx.message.photo[1];
+    // If 720*1280 photo[3] empty
+    if (!origin) {
+      await ctx.reply("Choose large photo!");
+      return next();
+    }
+    // delete old photos
+    if (object.logo) {
+      await bucket.deleteFiles({
+        prefix: `photos/${objectId}/logo`,
+      });
+    }
+    // get photos url
+    const originUrl = await ctx.telegram.getFileLink(origin.file_id);
+    const bigUrl = await ctx.telegram.getFileLink(big.file_id);
+    const thumbnailUrl = await ctx.telegram.getFileLink(thumbnail.file_id);
+    try {
+      // download photos from telegram server
+      const originFilePath = await download(originUrl.href);
+      const bigFilePath = await download(bigUrl.href);
+      const thumbnailFilePath = await download(thumbnailUrl.href);
+      // upload photo file
+      await bucket.upload(originFilePath, {
+        destination: `photos/${objectId}/logo/3/${origin.file_unique_id}.jpg`,
+      });
+      await bucket.upload(bigFilePath, {
+        destination: `photos/${objectId}/logo/2/${origin.file_unique_id}.jpg`,
+      });
+      await bucket.upload(thumbnailFilePath, {
+        destination: `photos/${objectId}/logo/1/${origin.file_unique_id}.jpg`,
+      });
+      // delete download file
+      fs.unlinkSync(originFilePath);
+      fs.unlinkSync(bigFilePath);
+      fs.unlinkSync(thumbnailFilePath);
+    } catch (e) {
+      console.log("Download failed");
+      console.log(e.message);
+      await ctx.reply(`Error upload photos ${e.message}`);
+    }
+    // save fileID to Firestore
+    // await catalog.update({
+    //   photo: firebase.firestore.FieldValue.arrayUnion(origin.file_unique_id),
+    // });
+    await store.updateRecord(`objects/${objectId}`, {
+      logo: origin.file_unique_id,
+    });
+    const publicUrl = bucket.file(`photos/${objectId}/logo/2/${origin.file_unique_id}.jpg`)
+        .publicUrl();
+    // get catalog url (path)
+    const catalogUrl = `objects/${objectId}`;
+    await ctx.replyWithPhoto({url: publicUrl},
+        {
+          caption: `${object.name} (${object.id}) photo uploaded`,
+          reply_markup: {
+            inline_keyboard: [
+              [{text: "⤴️ Goto object",
+                callback_data: catalogUrl}],
+            ],
+          },
+        });
+    // ctx.session.productId = null;
+    // await ctx.state.cart.setSessionData({productId: null});
+    // ctx.session.catalogId = null;
+    ctx.session.objectId = null;
+    ctx.session.scene = null;
+  } else {
+    ctx.reply("Please select a product to upload Photo");
+  }
+};
+
 exports.startActions = startActions;
 exports.startHandler = startHandler;
 exports.isAdmin = isAdmin;
 exports.parseUrl = parseUrl;
 exports.roundNumber = roundNumber;
+exports.uploadPhotoObj = uploadPhotoObj;

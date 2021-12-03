@@ -62,6 +62,10 @@ const showCatalog = async (ctx, next) => {
     const endBefore = ctx.state.params.get("e");
     const uploadPhotoCat = ctx.state.params.get("u");
     let publicImgUrl = bucket.file(botConfig.logo).publicUrl();
+    const object = await store.findRecord(`objects/${objectId}`);
+    if (object.logo) {
+      publicImgUrl = bucket.file(`photos/${objectId}/logo/2/${object.logo}.jpg`).publicUrl();
+    }
     // and show upload catalog photo
     let uUrl = "";
     if (uploadPhotoCat) {
@@ -213,7 +217,6 @@ const showCatalog = async (ctx, next) => {
     // const objectSnap = await firebase.firestore().collection("objects").doc(objectId).get();
     // const object = {"id": objectSnap.id, ...objectSnap.data()};
     // add photo to catalog
-    const object = await store.findRecord(`objects/${objectId}`);
     // footer buttons
     cartButtons[0].text = `🏪 ${object.name}`;
     inlineKeyboardArray.push(cartButtons);
@@ -280,18 +283,19 @@ const showProduct = async (ctx, next) => {
         callback_data: `showPhotos/${product.id}?o=${objectId}`}]);
     }
     // Get main photo url.
-    let publicImgUrl = "";
+    let publicImgUrl = bucket.file(botConfig.logo).publicUrl();
+    const object = await store.findRecord(`objects/${objectId}`);
+    if (object.logo) {
+      publicImgUrl = bucket.file(`photos/${objectId}/logo/2/${object.logo}.jpg`).publicUrl();
+    }
     if (product.mainPhoto) {
       const photoExists = await bucket.file(`photos/${objectId}/products/${product.id}/2/${product.mainPhoto}.jpg`)
           .exists();
       if (photoExists[0]) {
         publicImgUrl = bucket.file(`photos/${objectId}/products/${product.id}/2/${product.mainPhoto}.jpg`).publicUrl();
       }
-    } else {
-      publicImgUrl = bucket.file(botConfig.logo).publicUrl();
     }
     // Set Main menu
-    const object = await store.findRecord(`objects/${objectId}`);
     // footer buttons
     cartButtons[0].text = `🏪 ${object.name}`;
     inlineKeyboardArray.push(cartButtons);
@@ -414,7 +418,11 @@ catalogsActions.push( async (ctx, next) => {
       // }
       addButtonArray.push(addButton);
       // Get main photo url.
-      let publicImgUrl = "";
+      let publicImgUrl = bucket.file(botConfig.logo).publicUrl();
+      const object = await store.findRecord(`objects/${objectId}`);
+      if (object.logo) {
+        publicImgUrl = bucket.file(`photos/${objectId}/logo/2/${object.logo}.jpg`).publicUrl();
+      }
       if (product.mainPhoto) {
         const photoExists = await bucket.file(`photos/${objectId}/products/${product.id}/2/${product.mainPhoto}.jpg`)
             .exists();
@@ -422,8 +430,6 @@ catalogsActions.push( async (ctx, next) => {
           publicImgUrl = bucket.file(`photos/${objectId}/products/${product.id}/2/${product.mainPhoto}.jpg`)
               .publicUrl();
         }
-      } else {
-        publicImgUrl = bucket.file(botConfig.logo).publicUrl();
       }
       await ctx.editMessageMedia({
         type: "photo",
@@ -562,7 +568,10 @@ const showCart = async (ctx, next) => {
       msgTxt = msgTxt.substring(0, 1024);
     }
     // edit message
-    const publicImgUrl = bucket.file(botConfig.logo).publicUrl();
+    let publicImgUrl = bucket.file(botConfig.logo).publicUrl();
+    if (object.logo) {
+      publicImgUrl = bucket.file(`photos/${objectId}/logo/2/${object.logo}.jpg`).publicUrl();
+    }
     await ctx.editMessageMedia({
       type: "photo",
       media: publicImgUrl,
@@ -928,7 +937,10 @@ catalogsActions.push( async (ctx, next) => {
     // const objectSnap = await firebase.firestore().collection("objects").doc(objectId).get();
     // const object = {"id": objectSnap.id, ...objectSnap.data()};
     const object = await store.findRecord(`objects/${objectId}`);
-    const publicImgUrl = bucket.file(botConfig.logo).publicUrl();
+    let publicImgUrl = bucket.file(botConfig.logo).publicUrl();
+    if (object.logo) {
+      publicImgUrl = bucket.file(`photos/${objectId}/logo/2/${object.logo}.jpg`).publicUrl();
+    }
     await ctx.editMessageMedia({
       type: "photo",
       media: publicImgUrl,
