@@ -431,6 +431,11 @@ catalogsActions.push( async (ctx, next) => {
               .publicUrl();
         }
       }
+      const uploadPhotoButton =[];
+      if (ctx.state.isAdmin) {
+        uploadPhotoButton.push({text: "📸 Загрузить фото",
+          callback_data: `uploadPhotoProduct/${product.id}?o=${objectId}`});
+      }
       await ctx.editMessageMedia({
         type: "photo",
         media: publicImgUrl,
@@ -463,6 +468,7 @@ catalogsActions.push( async (ctx, next) => {
             {text: "AC", callback_data: `aC/${product.id}?clear=1${paramsUrl}&o=${objectId}`},
           ],
           addButtonArray,
+          uploadPhotoButton,
           [
             {text: `⤴️ ${product.name} (${product.id})`, callback_data: `p/${product.id}?o=${objectId}`},
           ],
@@ -1091,9 +1097,15 @@ catalogsActions.push( async (ctx, next) => {
     // await ctx.state.cart.setSessionData({productId: ctx.state.param});
     const objectId = ctx.state.params.get("o");
     const productId = ctx.state.param;
-    ctx.session.productId = productId;
-    ctx.session.objectId = objectId;
-    ctx.session.scene = "uploadPhotoProduct";
+    // ctx.session.productId = productId;
+    // ctx.session.objectId = objectId;
+    // ctx.session.scene = "uploadPhotoProduct";
+    // firestore session
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {
+      "scene": "uploadPhotoProduct",
+      objectId,
+      productId,
+    }});
     // enter catalog scene
     // if (ctx.scene.current) {
     //   if (ctx.scene.current.id !== "catalog") {
@@ -1121,9 +1133,14 @@ catalogsActions.push( async (ctx, next) => {
     // await ctx.state.cart.setSessionData({productId: ctx.state.param});
     const objectId = ctx.state.params.get("o");
     const catalogId = ctx.state.param;
-    ctx.session.catalogId = catalogId;
-    ctx.session.objectId = objectId;
-    ctx.session.scene = "uploadPhotoCat";
+    // ctx.session.catalogId = catalogId;
+    // ctx.session.objectId = objectId;
+    // ctx.session.scene = "uploadPhotoCat";
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {
+      "scene": "uploadPhotoCat",
+      objectId,
+      catalogId,
+    }});
     // enter catalog scene
     // if (ctx.scene.current) {
     //   if (ctx.scene.current.id !== "catalog") {
@@ -1145,10 +1162,11 @@ catalogsActions.push( async (ctx, next) => {
 });
 
 // Upload product photos
-const uploadPhotoProduct = async (ctx, next) => {
+const uploadPhotoProduct = async (ctx, objectId, productId) => {
   // const session = await ctx.state.cart.getSessionData();
-  const productId = ctx.session.productId;
-  const objectId = ctx.session.objectId;
+  // const productId = ctx.session.productId;
+  // const objectId = ctx.session.objectId;
+  let start = new Date();
   if (productId && objectId) {
     // make bucket is public
     // await bucket.makePublic();
@@ -1171,7 +1189,7 @@ const uploadPhotoProduct = async (ctx, next) => {
       // upload only one photo!!!
       if (ctx.message.media_group_id) {
         await ctx.reply("Choose only one Photo!");
-        return next();
+        return;
       }
       // get telegram file_id photos data
       const origin = ctx.message.photo[3];
@@ -1180,7 +1198,7 @@ const uploadPhotoProduct = async (ctx, next) => {
       // If 720*1280 photo[3] empty
       if (!origin) {
         await ctx.reply("Choose large photo!");
-        return next();
+        return;
       }
       // get photos url
       const originUrl = await ctx.telegram.getFileLink(origin.file_id);
@@ -1191,6 +1209,9 @@ const uploadPhotoProduct = async (ctx, next) => {
         const originFilePath = await download(originUrl.href);
         const bigFilePath = await download(bigUrl.href);
         const thumbnailFilePath = await download(thumbnailUrl.href);
+        // test time
+        console.log(`==============Photo downloaded in *${Math.floor((new Date() - start)/1000)}*s`);
+        start = new Date();
         // upload photo file
         await bucket.upload(originFilePath, {
           destination: `photos/${objectId}/products/${product.id}/3/${origin.file_unique_id}.jpg`,
@@ -1205,6 +1226,9 @@ const uploadPhotoProduct = async (ctx, next) => {
         fs.unlinkSync(originFilePath);
         fs.unlinkSync(bigFilePath);
         fs.unlinkSync(thumbnailFilePath);
+        // test time
+        console.log(`==============Data uploaded in *${Math.floor((new Date() - start)/1000)}*s`);
+        start = new Date();
       } catch (e) {
         console.log("Download failed");
         console.log(e.message);
@@ -1235,6 +1259,8 @@ const uploadPhotoProduct = async (ctx, next) => {
       if (ctx.session.pathCatalog) {
         catalogUrl = ctx.session.pathCatalog;
       }
+      // test time
+      console.log(`================Data ready ${publicUrl} in *${Math.floor((new Date() - start)/1000)}*s`);
       await ctx.replyWithPhoto({url: publicUrl},
           {
             caption: `${product.name} (${product.id}) photo uploaded`,
@@ -1251,19 +1277,24 @@ const uploadPhotoProduct = async (ctx, next) => {
     }
     // ctx.session.productId = null;
     // await ctx.state.cart.setSessionData({productId: null});
-    ctx.session.productId = null;
-    ctx.session.objectId = null;
-    ctx.session.scene = null;
+    // ctx.session.productId = null;
+    // ctx.session.objectId = null;
+    // ctx.session.scene = null;
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {
+      "scene": null,
+      "objectId": null,
+      "productId": null,
+    }});
   } else {
     ctx.reply("Please select a product to upload Photo");
   }
 };
 
 // upload catalog photo
-const uploadPhotoCat = async (ctx, next) => {
+const uploadPhotoCat = async (ctx, objectId, catalogId) => {
   // const session = await ctx.state.cart.getSessionData();
-  const catalogId = ctx.session.catalogId;
-  const objectId = ctx.session.objectId;
+  // const catalogId = ctx.session.catalogId;
+  // const objectId = ctx.session.objectId;
   if (catalogId && objectId) {
     // make bucket is public
     // await bucket.makePublic();
@@ -1272,7 +1303,7 @@ const uploadPhotoCat = async (ctx, next) => {
     // upload only one photo!!!
     if (ctx.message.media_group_id) {
       await ctx.reply("Choose only one Photo!");
-      return next();
+      return;
     }
     // get telegram file_id photos data
     const origin = ctx.message.photo[3];
@@ -1281,7 +1312,7 @@ const uploadPhotoCat = async (ctx, next) => {
     // If 720*1280 photo[3] empty
     if (!origin) {
       await ctx.reply("Choose large photo!");
-      return next();
+      return;
     }
     // delete old photos
     if (catalog.photo) {
@@ -1340,9 +1371,14 @@ const uploadPhotoCat = async (ctx, next) => {
         });
     // ctx.session.productId = null;
     // await ctx.state.cart.setSessionData({productId: null});
-    ctx.session.catalogId = null;
-    ctx.session.objectId = null;
-    ctx.session.scene = null;
+    // ctx.session.catalogId = null;
+    // ctx.session.objectId = null;
+    // ctx.session.scene = null;
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {
+      "scene": null,
+      "objectId": null,
+      "catalogId": null,
+    }});
   } else {
     ctx.reply("Please select a product to upload Photo");
   }

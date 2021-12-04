@@ -160,23 +160,24 @@ bot.on(["text", "contact"], async (ctx) => {
   // startHandler(ctx);
 });
 
-bot.on("photo", (ctx) => {
-  if (ctx.session.scene === "uploadPhotoProduct") {
+bot.on("photo", async (ctx) => {
+  const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");
+  if (sessionFire.scene === "uploadPhotoProduct") {
     ctx.reply("uploadPhotoProduct start");
-    uploadPhotoProduct(ctx);
+    uploadPhotoProduct(ctx, sessionFire.objectId, sessionFire.productId);
     return;
   }
-  if (ctx.session.scene === "uploadPhotoCat") {
+  if (sessionFire.scene === "uploadPhotoCat") {
     ctx.reply("uploadPhotoCat start");
-    uploadPhotoCat(ctx);
+    uploadPhotoCat(ctx, sessionFire.objectId, sessionFire.catalogId);
     return;
   }
-  if (ctx.session.scene === "uploadPhotoObj") {
+  if (sessionFire.scene === "uploadPhotoObj") {
     ctx.reply("uploadPhotoObj start");
-    uploadPhotoObj(ctx);
+    uploadPhotoObj(ctx, sessionFire.objectId);
     return;
   }
-  ctx.reply("session is null");
+  ctx.reply("session scene is null");
 });
 // bot.telegram.sendMessage(94899148, "Bot Rzk.com.ua ready!" );
 

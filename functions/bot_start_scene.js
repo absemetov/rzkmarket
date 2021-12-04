@@ -185,8 +185,12 @@ startActions.push( async (ctx, next) => {
     // const objectId = ctx.state.params.get("o");
     const objectId = ctx.state.param;
     // ctx.session.catalogId = catalogId;
-    ctx.session.objectId = objectId;
-    ctx.session.scene = "uploadPhotoObj";
+    // ctx.session.objectId = objectId;
+    // ctx.session.scene = "uploadPhotoObj";
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {
+      "scene": "uploadPhotoObj",
+      objectId,
+    }});
     // enter catalog scene
     // if (ctx.scene.current) {
     //   if (ctx.scene.current.id !== "catalog") {
@@ -208,10 +212,10 @@ startActions.push( async (ctx, next) => {
 });
 
 // upload catalog photo
-const uploadPhotoObj = async (ctx, next) => {
+const uploadPhotoObj = async (ctx, objectId) => {
   // const session = await ctx.state.cart.getSessionData();
   // const catalogId = ctx.session.catalogId;
-  const objectId = ctx.session.objectId;
+  // const objectId = ctx.session.objectId;
   if (objectId) {
     // make bucket is public
     // await bucket.makePublic();
@@ -220,7 +224,7 @@ const uploadPhotoObj = async (ctx, next) => {
     // upload only one photo!!!
     if (ctx.message.media_group_id) {
       await ctx.reply("Choose only one Photo!");
-      return next();
+      return;
     }
     // get telegram file_id photos data
     const origin = ctx.message.photo[3];
@@ -229,7 +233,7 @@ const uploadPhotoObj = async (ctx, next) => {
     // If 720*1280 photo[3] empty
     if (!origin) {
       await ctx.reply("Choose large photo!");
-      return next();
+      return;
     }
     // delete old photos
     if (object.logo) {
@@ -289,8 +293,12 @@ const uploadPhotoObj = async (ctx, next) => {
     // ctx.session.productId = null;
     // await ctx.state.cart.setSessionData({productId: null});
     // ctx.session.catalogId = null;
-    ctx.session.objectId = null;
-    ctx.session.scene = null;
+    // ctx.session.objectId = null;
+    // ctx.session.scene = null;
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {
+      "scene": null,
+      "objectId": null,
+    }});
   } else {
     ctx.reply("Please select a product to upload Photo");
   }
