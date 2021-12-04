@@ -76,19 +76,22 @@ const uploadActions = [async (ctx, next) => {
     // Get sheetId parse url
     const objectId = ctx.state.param;
     const object = await store.findRecord(`objects/${objectId}`);
-    const sheetId = object.spreadsheets.split("/").reduce((sum, section) => {
-      if (section.length === 44) {
-        return section;
-        // return;
-      } else {
-        // save data
-        return sum;
-      }
-    }, "");
-    if (!sheetId) {
-      await ctx.replyWithMarkdown("Sheet not found, please set data");
+    // const sheetId = object.spreadsheets.split("/").reduce((sum, section) => {
+    //   if (section.length === 44) {
+    //     return section;
+    //     // return;
+    //   } else {
+    //     // save data
+    //     return sum;
+    //   }
+    // }, "");
+    const sheetUrl = object.spreadsheets.match(/d\/(.*)\/edit#gid=([0-9]+)/);
+    if (!sheetUrl) {
+      await ctx.replyWithMarkdown("SheetID or listID not found, please check you url.");
       return false;
     }
+    const sheetId = sheetUrl[1];
+    const listId = sheetUrl[2];
     // get data for check upload process
     // const session = await ctx.state.cart.getSessionData();
     // const sessionUser = firebase.firestore().collection("sessions").doc(`${ctx.from.id}-${ctx.chat.id}`);
@@ -118,9 +121,10 @@ const uploadActions = [async (ctx, next) => {
         await doc.loadInfo(); // loads document properties and worksheets
         // const sheet = doc.sheetsByIndex[0];
         // use sheet by Id
-        const sheet = doc.sheetsById[object.sheetId];
+        const sheet = doc.sheetsById[listId];
         await ctx.replyWithMarkdown(`Load goods from ...
   Sheet name: *${doc.title}*
+  List ID: *${listId}*
   Count rows: *${sheet.rowCount - 1}*`);
         let rowCount = sheet.rowCount;
         // read rows

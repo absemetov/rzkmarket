@@ -134,7 +134,10 @@ bot.command("mono", async (ctx) => {
 bot.on(["text", "contact"], async (ctx) => {
   // const session = await ctx.state.cart.getSessionData();
   // const sessionFire = await ctx.state.cart.getSessionData();
-  const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");
+  if (ctx.session.scene === "editOrder") {
+    await orderWizard[ctx.session.cursor](ctx);
+    return;
+  }
   if (ctx.message.text === "Отмена") {
     ctx.reply("Для продолжения нажмите /objects", {
       reply_markup: {
@@ -149,12 +152,9 @@ bot.on(["text", "contact"], async (ctx) => {
   //   await uploadHandler(ctx);
   //   return;
   // }
+  const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");
   if (sessionFire.scene === "wizardOrder") {
     await cartWizard[sessionFire.cursor](ctx);
-    return;
-  }
-  if (ctx.session.scene === "editOrder") {
-    await orderWizard[ctx.session.cursor](ctx);
     return;
   }
   // startHandler(ctx);
@@ -162,14 +162,21 @@ bot.on(["text", "contact"], async (ctx) => {
 
 bot.on("photo", (ctx) => {
   if (ctx.session.scene === "uploadPhotoProduct") {
+    ctx.reply("uploadPhotoProduct start");
     uploadPhotoProduct(ctx);
+    return;
   }
   if (ctx.session.scene === "uploadPhotoCat") {
+    ctx.reply("uploadPhotoCat start");
     uploadPhotoCat(ctx);
+    return;
   }
   if (ctx.session.scene === "uploadPhotoObj") {
+    ctx.reply("uploadPhotoObj start");
     uploadPhotoObj(ctx);
+    return;
   }
+  ctx.reply("session is null");
 });
 // bot.telegram.sendMessage(94899148, "Bot Rzk.com.ua ready!" );
 
