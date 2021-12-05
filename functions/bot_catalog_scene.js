@@ -1206,29 +1206,54 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
       const thumbnailUrl = await ctx.telegram.getFileLink(thumbnail.file_id);
       try {
         // download photos from telegram server
-        const originFilePath = await download(originUrl.href);
-        const bigFilePath = await download(bigUrl.href);
-        const thumbnailFilePath = await download(thumbnailUrl.href);
-        // test time
-        console.log(`==============Photo downloaded in *${Math.floor((new Date() - start)/1000)}*s`);
+        const results = await Promise.all([
+          download(originUrl.href),
+          download(bigUrl.href),
+          download(thumbnailUrl.href),
+        ]);
+        console.log(originUrl.href);
+        // const originFilePath = await download(originUrl.href);
+        const originFilePath = results[0];
+        console.log(`==============Data download all photos in *${Math.floor((new Date() - start)/1000)}*s`);
+        // start = new Date();
+        // const bigFilePath = await download(bigUrl.href);
+        const bigFilePath = results[1];
+        // console.log(`==============Data download bigUrl in *${Math.floor((new Date() - start)/1000)}*s`);
+        // start = new Date();
+        // const thumbnailFilePath = await download(thumbnailUrl.href);
+        const thumbnailFilePath = results[2];
+        // console.log(`==============Data download thumbnail in *${Math.floor((new Date() - start)/1000)}*s`);
         start = new Date();
-        // upload photo file
-        await bucket.upload(originFilePath, {
-          destination: `photos/${objectId}/products/${product.id}/3/${origin.file_unique_id}.jpg`,
-        });
-        await bucket.upload(bigFilePath, {
-          destination: `photos/${objectId}/products/${product.id}/2/${origin.file_unique_id}.jpg`,
-        });
-        await bucket.upload(thumbnailFilePath, {
-          destination: `photos/${objectId}/products/${product.id}/1/${origin.file_unique_id}.jpg`,
-        });
+        // upload photo files
+        await Promise.all([
+          bucket.upload(originFilePath, {
+            destination: `photos/${objectId}/products/${product.id}/3/${origin.file_unique_id}.jpg`,
+          }),
+          bucket.upload(bigFilePath, {
+            destination: `photos/${objectId}/products/${product.id}/2/${origin.file_unique_id}.jpg`,
+          }),
+          bucket.upload(thumbnailFilePath, {
+            destination: `photos/${objectId}/products/${product.id}/1/${origin.file_unique_id}.jpg`,
+          }),
+        ]);
+        // await bucket.upload(originFilePath, {
+        //   destination: `photos/${objectId}/products/${product.id}/3/${origin.file_unique_id}.jpg`,
+        // });
+        console.log(`==============Data uploaded all photos in *${Math.floor((new Date() - start)/1000)}*s`);
+        // start = new Date();
+        // await bucket.upload(bigFilePath, {
+        //   destination: `photos/${objectId}/products/${product.id}/2/${origin.file_unique_id}.jpg`,
+        // });
+        // console.log(`==============Data uploaded gzip 2 in *${Math.floor((new Date() - start)/1000)}*s`);
+        // start = new Date();
+        // await bucket.upload(thumbnailFilePath, {
+        //   destination: `photos/${objectId}/products/${product.id}/1/${origin.file_unique_id}.jpg`,
+        // });
+        // console.log(`==============Data uploaded gzip 3 in *${Math.floor((new Date() - start)/1000)}*s`);
         // delete download file
         fs.unlinkSync(originFilePath);
         fs.unlinkSync(bigFilePath);
         fs.unlinkSync(thumbnailFilePath);
-        // test time
-        console.log(`==============Data uploaded in *${Math.floor((new Date() - start)/1000)}*s`);
-        start = new Date();
       } catch (e) {
         console.log("Download failed");
         console.log(e.message);
@@ -1259,8 +1284,6 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
       if (ctx.session.pathCatalog) {
         catalogUrl = ctx.session.pathCatalog;
       }
-      // test time
-      console.log(`================Data ready ${publicUrl} in *${Math.floor((new Date() - start)/1000)}*s`);
       await ctx.replyWithPhoto({url: publicUrl},
           {
             caption: `${product.name} (${product.id}) photo uploaded`,
