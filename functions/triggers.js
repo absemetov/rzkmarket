@@ -1,7 +1,7 @@
 const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
 // add createdAt field
-exports.productSetCreatedAt = functions.firestore
+exports.productSetCreatedAt = functions.region("europe-central2").firestore
     .document("objects/{objectId}/products/{docId}")
     .onCreate((snap, context) => {
       const newValue = snap.data();
@@ -10,7 +10,7 @@ exports.productSetCreatedAt = functions.firestore
       }, {merge: true});
     });
 // add createdAt field
-exports.catalogSetCreatedAt = functions.firestore
+exports.catalogSetCreatedAt = functions.region("europe-central2").firestore
     .document("objects/{objectId}/catalogs/{docId}")
     .onCreate((snap, context) => {
       const newValue = snap.data();
@@ -19,7 +19,7 @@ exports.catalogSetCreatedAt = functions.firestore
       }, {merge: true});
     });
 // delete product photos
-exports.productPhotoDelete = functions.firestore
+exports.productPhotoDelete = functions.region("europe-central2").firestore
     .document("objects/{objectId}/products/{productId}")
     .onDelete(async (snap, context) => {
       const bucket = firebase.storage().bucket();
@@ -31,7 +31,7 @@ exports.productPhotoDelete = functions.firestore
       return null;
     });
 // delete catalog photos
-exports.catalogPhotoDelete = functions.firestore
+exports.catalogPhotoDelete = functions.region("europe-central2").firestore
     .document("objects/{objectId}/catalogs/{catalogId}")
     .onDelete(async (snap, context) => {
       const bucket = firebase.storage().bucket();

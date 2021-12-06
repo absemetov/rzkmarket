@@ -1,15 +1,55 @@
 const fs = require("fs");
+const mkdirp = fs.promises.mkdir;
+const path = require("path");
+const os = require("os");
 const https = require("https");
-const {basename} = require("path");
+// const {basename} = require("path");
+const axios = require("axios");
 const TIMEOUT = 10000;
 // Creates /tmp/a/apple, regardless of whether `/tmp` and /tmp/a exist.
 // fs.mkdir("/tmp/rzk", {recursive: true}, (err) => {
 //   if (err) throw err;
 // });
-module.exports = function(url) {
+exports.download = async function(url) {
+  // axios image download with response type "stream"
+  const response = await axios({
+    method: "GET",
+    url,
+    responseType: "stream",
+  });
   const myURL = new URL(url);
-  const fileName = basename(myURL.pathname);
-  const file = fs.createWriteStream(`/tmp/${fileName}`);
+  // get file name exm file_95.jpg
+  const fileName = path.basename(myURL.pathname);
+  const tempLocalFile = path.join(os.tmpdir(), "/rzk", fileName);
+  const tempLocalDir = path.dirname(tempLocalFile);
+  // Create the temp directory where the storage file will be downloaded.
+  await mkdirp(tempLocalDir, {recursive: true});
+  const file = fs.createWriteStream(tempLocalFile);
+
+  // pipe the result stream into a file on disc
+  response.data.pipe(file);
+
+  // return a promise and resolve when download finishes
+  return new Promise((resolve, reject) => {
+    response.data.on("end", () => {
+      resolve(tempLocalFile);
+    });
+
+    response.data.on("error", (err) => {
+      reject(err);
+    });
+  });
+};
+
+exports.downloadHttps = async function(url) {
+  const myURL = new URL(url);
+  // get file name exm file_95.jpg
+  const fileName = path.basename(myURL.pathname);
+  const tempLocalFile = path.join(os.tmpdir(), "/rzk", fileName);
+  const tempLocalDir = path.dirname(tempLocalFile);
+  // Create the temp directory where the storage file will be downloaded.
+  await mkdirp(tempLocalDir, {recursive: true});
+  const file = fs.createWriteStream(tempLocalFile);
   // http.get(url, function(response) {
   //   response.pipe(file);
   // });
@@ -29,7 +69,7 @@ module.exports = function(url) {
           .on("end", function() {
             file.end();
             // console.log(`${url} downloaded to: ${file.path}`);
-            resolve(file.path);
+            resolve(tempLocalFile);
           })
           .on("error", function(err) {
             reject(err);

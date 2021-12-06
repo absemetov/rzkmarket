@@ -10,7 +10,7 @@ const config = {
 
 const nuxt = new Nuxt(config);
 
-exports.app = functions.https.onRequest(async (req, res) => {
+exports.app = functions.region("europe-central2").https.onRequest(async (req, res) => {
   await nuxt.ready();
   // res.set('Cache-Control', 'public, max-age=300, s-maxage=600');
   nuxt.render(req, res);

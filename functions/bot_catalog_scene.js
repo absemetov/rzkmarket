@@ -1,6 +1,6 @@
 const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
-const download = require("./download.js");
+const {download} = require("./download.js");
 const fs = require("fs");
 const {roundNumber} = require("./bot_start_scene");
 const bucket = firebase.storage().bucket();
@@ -1211,7 +1211,6 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
           download(bigUrl.href),
           download(thumbnailUrl.href),
         ]);
-        console.log(originUrl.href);
         // const originFilePath = await download(originUrl.href);
         const originFilePath = results[0];
         console.log(`==============Data download all photos in *${Math.floor((new Date() - start)/1000)}*s`);

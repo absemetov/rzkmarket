@@ -203,11 +203,13 @@ const runtimeOpts = {
 // Enable graceful stop
 // process.once("SIGINT", () => bot.stop("SIGINT"));
 // process.once("SIGTERM", () => bot.stop("SIGTERM"));
-
-exports.bot = functions.runWith(runtimeOpts).https.onRequest(async (req, res) => {
-  try {
-    await bot.handleUpdate(req.body);
-  } finally {
-    res.status(200).end();
-  }
-});
+// Warsaw
+// region("europe-central2")
+exports.bot = functions.region("europe-central2").
+    runWith(runtimeOpts).https.onRequest(async (req, res) => {
+      try {
+        await bot.handleUpdate(req.body);
+      } finally {
+        res.status(200).end();
+      }
+    });

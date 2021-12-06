@@ -16,7 +16,7 @@
   "dependencies": {
     "@googleapis/content": "^1.2.0",
     "@nuxtjs/firebase": "^7.5.0",
-    "axios": "^0.21.1",
+    "axios": "^0.24.0",
     "core-js": "^3.9.1",
     "currency-codes": "^2.1.0",
     "cyrillic-to-translit-js": "^3.1.0",
