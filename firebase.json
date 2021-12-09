@@ -1,8 +1,8 @@
 {
   "hosting": [
     {
-      "target": "rzk.com.ua",
-      "public": "public",
+      "target": "rzk.com.ru",
+      "public": "sites/rzk.com.ru",
       "ignore": [
         "firebase.json",
         "**/.*",
@@ -11,7 +11,7 @@
       "rewrites": [
         {
           "source": "**",
-          "function": "app"
+          "function": "express"
         }
       ]
     },

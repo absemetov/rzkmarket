@@ -12,6 +12,13 @@
           "rzk-market-ua"
         ]
       }
+    },
+    "rzk-market-ru": {
+      "hosting": {
+        "rzk.com.ru": [
+          "rzk-market-ru"
+        ]
+      }
     }
   }
 }
