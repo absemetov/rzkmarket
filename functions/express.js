@@ -1,21 +1,66 @@
 const functions = require("firebase-functions");
+const admin = require("firebase-admin");
 const express = require("express");
 const app = express();
-app.get("/", (req, res) => {
-  const date = new Date();
-  // London is UTC + 1hr;
-  const hours = (date.getHours() % 12) + 1;
+// Import the functions you need from the SDKs you need
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCAlwdkBIhxIi-LhJIcQtZWlU3AazrdyRU",
+  authDomain: "rzk-warsaw-ru.firebaseapp.com",
+  projectId: "rzk-warsaw-ru",
+  storageBucket: "rzk-warsaw-ru.appspot.com",
+  messagingSenderId: "178707604007",
+  appId: "1:178707604007:web:4171adc3d5bb5d019ee402",
+  measurementId: "${config.measurementId}",
+};
+
+// Initialize Firebase
+const rzkWarsawRu = admin.initializeApp(firebaseConfig, "rzk-warsaw-ru");
+app.get("/", async (req, res) => {
+  const object = await rzkWarsawRu.firestore().doc("objects/absemetov").get();
+  console.log("=======================", object.data().name);
   res.send(`
-    <!doctype html>
+  <!doctype html>
+  <html lang="ru">
     <head>
-      <title>Time</title>
-      <link rel="stylesheet" href="/style.css">
-      <script src="/script.js"></script>
+      <!-- Required meta tags -->
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <!-- Bootstrap CSS -->
+      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+      rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3"
+      crossorigin="anonymous">
+      <title>Интернет-магазин RZK Market Крым: купить элетротовары, кабель, провод, автоматика, лампы в Крыму</title>
+      <meta name="description" content="Интернет-магазин RZK Маркет Крым: кабель, провод, розетки, выключатели,
+      автоматика. ✓ Доставка по всему Крыму $ Выгодные цены и скидки %">
+      <meta name="keywords" content="rzk маркет крым, rzk, надир абсеметов">
+      <meta name="robots" content="index,follow">
     </head>
     <body>
-      <p>In London, the clock strikes:
-        <span id="bongs">${"BONG ".repeat(hours)}</span></p>
-      <button onClick="refresh(this)">Refresh</button>
+      <h1>Купить электротовары оптом и в розницу. Склады Симферополь, Саки</h1>
+      <h1><a href="tel:+79788986431">+7 978 89 86 431</a></h1>
+      <h1>Заказ можно оформить через Telegram Bot <a href="//t.me/RzkCrimeaBot?start=fromsite">RzkCrimeaBot</a></h1>
+  
+      <!-- Optional JavaScript; choose one of the two! -->
+  
+      <!-- Option 1: Bootstrap Bundle with Popper -->
+      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+      crossorigin="anonymous"></script>
+  
+      <!-- Option 2: Separate Popper and Bootstrap JS -->
+      <!--
+      <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"
+      integrity="sha384-7+zCNj/IqJ95wo16oMtfsKbZ9ccEh31eOz1HGyDuCQ6wgnyJNSYdrPa03rtR1zdB"
+      crossorigin="anonymous"></script>
+      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"
+      integrity="sha384-QJHtvGhmr9XOIpI6YVutG+2QOK9T+ZnN4kzFN1RtK3zEFEIsxhlmWl5/YESvpZ13"
+      crossorigin="anonymous"></script>
+      -->
     </body>
   </html>`);
 });
