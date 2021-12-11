@@ -19,6 +19,13 @@
           "rzk-market-ru"
         ]
       }
+    },
+    "rzk-warsaw-ru": {
+      "hosting": {
+        "rzk.com.ru": [
+          "rzk-warsaw-ru"
+        ]
+      }
     }
   }
 }

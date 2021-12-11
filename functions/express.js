@@ -2,27 +2,15 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const express = require("express");
 const app = express();
-// Import the functions you need from the SDKs you need
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyCAlwdkBIhxIi-LhJIcQtZWlU3AazrdyRU",
-  authDomain: "rzk-warsaw-ru.firebaseapp.com",
-  projectId: "rzk-warsaw-ru",
-  storageBucket: "rzk-warsaw-ru.appspot.com",
-  messagingSenderId: "178707604007",
-  appId: "1:178707604007:web:4171adc3d5bb5d019ee402",
-  measurementId: "${config.measurementId}",
-};
-
+// const serviceAccount = require("./rzk-warsaw-ru-firebase-adminsdk-nzfp6-0e594387ad.json");
 // Initialize Firebase
-const rzkWarsawRu = admin.initializeApp(firebaseConfig, "rzk-warsaw-ru");
+// const rzkWarsawRu = admin.initializeApp({
+//   credential: admin.credential.cert(serviceAccount),
+// }, "warsaw");
+// main route
 app.get("/", async (req, res) => {
-  const object = await rzkWarsawRu.firestore().doc("objects/absemetov").get();
-  console.log("=======================", object.data().name);
+  const objectSnap = await admin.firestore().collection("objects").doc("absemetov").get();
+  const object = {"id": objectSnap.id, ...objectSnap.data()};
   res.send(`
   <!doctype html>
   <html lang="ru">
@@ -43,15 +31,16 @@ app.get("/", async (req, res) => {
     <body>
       <h1>Купить электротовары оптом и в розницу. Склады Симферополь, Саки</h1>
       <h1><a href="tel:+79788986431">+7 978 89 86 431</a></h1>
-      <h1>Заказ можно оформить через Telegram Bot <a href="//t.me/RzkCrimeaBot?start=fromsite">RzkCrimeaBot</a></h1>
-  
+      <h1>Заказ можно оформить через Telegram Bot <a href="//t.me/RzkCrimeaBot?start=fromsite">
+      https://t.me/RzkCrimeaBot</a></h1>
+      <h2>${object.id} ${object.name}</h2>
       <!-- Optional JavaScript; choose one of the two! -->
-  
+
       <!-- Option 1: Bootstrap Bundle with Popper -->
       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
       integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
       crossorigin="anonymous"></script>
-  
+
       <!-- Option 2: Separate Popper and Bootstrap JS -->
       <!--
       <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"
