@@ -2,7 +2,6 @@ const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
 const {Telegraf, session} = require("telegraf");
 // const firestoreSession = require("telegraf-session-firestore");
-firebase.initializeApp();
 const bucket = firebase.storage().bucket();
 const {startActions, startHandler, parseUrl, isAdmin, uploadPhotoObj} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
@@ -201,8 +200,8 @@ const runtimeOpts = {
 };
 
 // Enable graceful stop
-// process.once("SIGINT", () => bot.stop("SIGINT"));
-// process.once("SIGTERM", () => bot.stop("SIGTERM"));
+process.once("SIGINT", () => bot.stop("SIGINT"));
+process.once("SIGTERM", () => bot.stop("SIGTERM"));
 // Warsaw
 // region("europe-central2")
 exports.bot = functions.region("europe-central2").

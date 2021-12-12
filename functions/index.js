@@ -1,3 +1,6 @@
+const admin = require("firebase-admin");
+// init firebase service
+admin.initializeApp();
 const app = require("./app");
 const bot = require("./bot");
 const express = require("./express");
