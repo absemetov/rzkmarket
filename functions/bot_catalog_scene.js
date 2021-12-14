@@ -1206,6 +1206,7 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
       const thumbnailUrl = await ctx.telegram.getFileLink(thumbnail.file_id);
       try {
         // download photos from telegram server
+        console.log(originUrl.href, bigUrl.href, thumbnailUrl.href);
         const results = await Promise.all([
           download(originUrl.href),
           download(bigUrl.href),

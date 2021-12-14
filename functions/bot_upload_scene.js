@@ -85,9 +85,9 @@ const uploadActions = [async (ctx, next) => {
     //     return sum;
     //   }
     // }, "");
-    const sheetUrl = object.spreadsheets.match(/d\/(.*)\/edit#gid=([0-9]+)/);
+    const sheetUrl = object.spreadsheets && object.spreadsheets.match(/d\/(.*)\/edit#gid=([0-9]+)/);
     if (!sheetUrl) {
-      await ctx.replyWithMarkdown("SheetID or listID not found, please check you url.");
+      await ctx.replyWithMarkdown("SheetID or listID not found, please check you url (object.spreadsheets)");
       return false;
     }
     const sheetId = sheetUrl[1];
