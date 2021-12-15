@@ -12,7 +12,8 @@
     "export-server": "rm -rf functions/.nuxt && mkdir -p functions/.nuxt/dist && cp -r .nuxt/dist/server functions/.nuxt/dist",
     "export-public": "rm -rf public && mkdir -p public/_nuxt && cp -r .nuxt/dist/client/. public/_nuxt && cp -r static/. public",
     "deploy-fire": "firebase deploy --only hosting:rzk.com.ua,functions:app",
-    "deploy": "yarn export-server && yarn export-public && yarn deploy-fire"
+    "deploy": "yarn export-server && yarn export-public && yarn deploy-fire",
+    "pr" : "firebase projects:list"
   },
   "dependencies": {
     "@nuxtjs/firebase": "^7.5.0",

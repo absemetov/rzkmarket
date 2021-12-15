@@ -9,6 +9,7 @@ const {uploadActions} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
 const {uploadPhotoProduct, uploadPhotoCat, catalogsActions, cartWizard} = require("./bot_catalog_scene");
 const {store} = require("./bot_keyboards.js");
+const {testUpload} = require("./express.js");
 const botConfig = functions.config().env.bot;
 // const {MenuMiddleware} = require("telegraf-inline-menu");
 const bot = new Telegraf(botConfig.token, {
@@ -114,6 +115,12 @@ bot.command("mono", async (ctx) => {
   // ctx.scene.enter("monoScene");
   monoHandler(ctx);
 });
+
+// test upload
+bot.command("upload", async (ctx) => {
+  // ctx.scene.enter("monoScene");
+  await testUpload();
+});
 // Upload scene
 // bot.command("upload", (ctx) => {
 // await ctx.state.cart.setSessionData({scene: "upload"});
@@ -163,7 +170,7 @@ bot.on("photo", async (ctx) => {
   const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");
   if (sessionFire.scene === "uploadPhotoProduct") {
     ctx.reply("uploadPhotoProduct start");
-    uploadPhotoProduct(ctx, sessionFire.objectId, sessionFire.productId);
+    await uploadPhotoProduct(ctx, sessionFire.objectId, sessionFire.productId);
     return;
   }
   if (sessionFire.scene === "uploadPhotoCat") {

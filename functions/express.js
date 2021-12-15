@@ -2,6 +2,9 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const express = require("express");
 const app = express();
+const {download} = require("./download.js");
+const bucket = admin.storage().bucket();
+const fs = require("fs");
 // const serviceAccount = require("./rzk-warsaw-ru-firebase-adminsdk-nzfp6-0e594387ad.json");
 // Initialize Firebase
 // const rzkWarsawRu = admin.initializeApp({
@@ -54,4 +57,45 @@ app.get("/", async (req, res) => {
   </html>`);
 });
 
+// test upload functions
+const testUpload = async (req, res) => {
+  const startDownloadTime = new Date();
+  // download img urls
+  const results = await Promise.all([
+    download("https://api.telegram.org/file/bot2018210947:AAG45eIRQuj65Cs6reABIbDgWMxwNatHquI/photos/file_153.jpg"),
+    download("https://api.telegram.org/file/bot2018210947:AAG45eIRQuj65Cs6reABIbDgWMxwNatHquI/photos/file_154.jpg"),
+    download("https://api.telegram.org/file/bot2018210947:AAG45eIRQuj65Cs6reABIbDgWMxwNatHquI/photos/file_155.jpg"),
+  ]);
+  const downloadTime = Math.floor((new Date() - startDownloadTime)/1000);
+  // get file path
+  const originFilePath = results[0];
+  const bigFilePath = results[1];
+  const thumbnailFilePath = results[2];
+  // start upload to Storage
+  const startUploadTime = new Date();
+  // upload photo files
+  await Promise.all([
+    bucket.upload(originFilePath, {
+      destination: "uploads/1/1.jpg",
+    }),
+    bucket.upload(bigFilePath, {
+      destination: "uploads/2/1.jpg",
+    }),
+    bucket.upload(thumbnailFilePath, {
+      destination: "uploads/3/1.jpg",
+    }),
+  ]);
+  // await bucket.upload(originFilePath, {
+  //   destination: `photos/${objectId}/products/${product.id}/3/${origin.file_unique_id}.jpg`,
+  // });
+  const uploadTime = Math.floor((new Date() - startUploadTime)/1000);
+  fs.unlinkSync(originFilePath);
+  fs.unlinkSync(bigFilePath);
+  fs.unlinkSync(thumbnailFilePath);
+  console.log(`downloadTime :${downloadTime}, uploadTime: ${uploadTime}`);
+};
+
+// upload img
+app.get("/upload-img", testUpload);
 exports.express = functions.https.onRequest(app);
+exports.testUpload = testUpload;

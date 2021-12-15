@@ -1206,15 +1206,15 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
       const thumbnailUrl = await ctx.telegram.getFileLink(thumbnail.file_id);
       try {
         // download photos from telegram server
-        console.log(originUrl.href, bigUrl.href, thumbnailUrl.href);
+        // console.log(originUrl.href, bigUrl.href, thumbnailUrl.href);
         const results = await Promise.all([
           download(originUrl.href),
           download(bigUrl.href),
           download(thumbnailUrl.href),
         ]);
         // const originFilePath = await download(originUrl.href);
-        const originFilePath = results[0];
         console.log(`==============Data download all photos in *${Math.floor((new Date() - start)/1000)}*s`);
+        const originFilePath = results[0];
         // start = new Date();
         // const bigFilePath = await download(bigUrl.href);
         const bigFilePath = results[1];
