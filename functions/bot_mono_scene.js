@@ -8,8 +8,8 @@ const moment = require("moment");
 // const monoScene = new BaseScene("monoScene");
 const monoActions = [];
 
-const monoHandler = (ctx) => {
-  ctx.reply("Выберите валюту", {
+const monoHandler = async (ctx) => {
+  await ctx.reply("Выберите валюту", {
     reply_markup: {
       inline_keyboard: [
         [

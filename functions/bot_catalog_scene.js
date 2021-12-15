@@ -4,57 +4,14 @@ const {download} = require("./download.js");
 const fs = require("fs");
 const {roundNumber} = require("./bot_start_scene");
 const bucket = firebase.storage().bucket();
-// const {Scenes: {BaseScene, WizardScene}} = require("telegraf");
 const {cart, store} = require("./bot_keyboards.js");
 const botConfig = functions.config().env.bot;
-// const catalogScene = new BaseScene("catalog");
-// catalogScene.use(async (ctx, next) => {
-//   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
-// console.log("Catalog scene another callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
-//   }
-//   return next();
-// });
-
-// enter to scene
-// catalog.enter(async (ctx) => {
-//   const catalogsSnapshot = await firebase.firestore().collection("catalogs")
-//       .where("parentId", "==", null).orderBy("orderNumber").get();
-//   // generate catalogs array
-//   const catalogsArray = [];
-//   catalogsSnapshot.docs.forEach((doc) => {
-//     catalogsArray.push(Markup.button.callback(`🗂 ${doc.data().name}`, `c/${doc.id}`));
-//   });
-//   // return ctx.replyWithMarkdown("RZK Market Catalog", Markup.inlineKeyboard(catalogsArray));
-//   // reply with photo necessary to show ptoduct
-//   return ctx.replyWithPhoto("https://picsum.photos/450/150/?random",
-//       {
-//         caption: "Rzk Market Catalog 🇺🇦",
-//         parse_mode: "Markdown",
-//         ...Markup.inlineKeyboard(catalogsArray),
-//       });
-// });
-
-// catalog.leave((ctx) => {
-//   ctx.reply("Menu", getMainKeyboard);
-// });
-
-// catalogScene.hears("where", (ctx) => ctx.reply("You are in catalog scene"));
-
-// catalogScene.hears("back", (ctx) => {
-//   ctx.scene.leave();
-// });
-
-// test actions array
+// catalogs actions array
 const catalogsActions = [];
-
 // Show Catalogs and goods
-
 const showCatalog = async (ctx, next) => {
   if (ctx.state.routeName === "c") {
-    // get objId
     const objectId = ctx.state.params.get("o");
-    // const cartProductsArray = await ctx.state.cart.products(objectId);
-    // const cartProductsArray = await cart.products(objectId, ctx.from.id);
     const cartButtons = await cart.cartButtons(objectId, ctx.from.id);
     const catalogId = ctx.state.param;
     const tag = ctx.state.params.get("t");
@@ -72,29 +29,18 @@ const showCatalog = async (ctx, next) => {
       uUrl += "&u=1";
     }
     const inlineKeyboardArray =[];
-    // let currentCatalog = {};
-    // save path to session
-    // if (!noPath) {
-    // await ctx.state.cart.setSessionData({path: ctx.callbackQuery.data});
     ctx.session.pathCatalog = ctx.callbackQuery.data;
-    // }
-    // get current catalog
     if (catalogId) {
-      // const currentCatalogSnapshot = await firebase.firestore().collection("objects").doc(objectId)
-      //     .collection("catalogs").doc(catalogId).get();
-      // currentCatalog = {id: currentCatalogSnapshot.id, ...currentCatalogSnapshot.data()};
       const currentCatalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
       // back button
       inlineKeyboardArray.push([{text: `⤴️ ../${currentCatalog.name}`,
         callback_data: currentCatalog.parentId ? `c/${currentCatalog.parentId}?o=${objectId}${uUrl}` :
         `c?o=${objectId}${uUrl}`}]);
-      // get products
-      // textMessage += `\n> <b>${currentCatalog.name}</b>`;
       if (ctx.state.isAdmin && uploadPhotoCat) {
         inlineKeyboardArray.push([{text: `📸 Загрузить фото каталога ${currentCatalog.name}`,
           callback_data: `uploadPhotoCat/${currentCatalog.id}?o=${objectId}`}]);
       }
-      // Products query
+      // products query
       let mainQuery = firebase.firestore().collection("objects").doc(objectId)
           .collection("products").where("catalog.id", "==", currentCatalog.id)
           .orderBy("orderNumber");
@@ -104,11 +50,9 @@ const showCatalog = async (ctx, next) => {
         mainQuery = mainQuery.where("tags", "array-contains", tag);
         tagUrl = `&t=${tag}`;
       }
-      // Add tags button
+      // add tags button
       if (currentCatalog.tags) {
         const tagsArray = [];
-        // inlineKeyboardArray.push(Markup.button.callback(`📌 Tags ${selectedTag}`,
-        //    `t/${currentCatalog.id}?tagSelected=${params.get("tag")}`));
         tagsArray.push({text: "📌 Фильтр",
           callback_data: `t/${currentCatalog.id}?o=${objectId}`});
         // Delete or close selected tag
@@ -118,8 +62,7 @@ const showCatalog = async (ctx, next) => {
         }
         inlineKeyboardArray.push(tagsArray);
       }
-      // Paginate goods
-      // copy main query
+      // paginate goods, copy main query
       let query = mainQuery;
       if (startAfter) {
         const startAfterProduct = await firebase.firestore().collection("objects").doc(objectId)
@@ -136,19 +79,15 @@ const showCatalog = async (ctx, next) => {
       } else {
         query = query.limit(10);
       }
-      // get Products
+      // get products
       const productsSnapshot = await query.get();
       // get cart product
       const cartProductsArray = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`, "products");
       // generate products array
       for (const product of productsSnapshot.docs) {
-        // inlineKeyboardArray.push(Markup.button.callback(`📦 ${product.data().name} (${product.id})`,
-        //    `p/${product.id}/${ctx.callbackQuery.data}`));
-        // Get cart
         const addButton = {text: `📦 ${product.data().name} (${product.id}) = ${product.data().price}`+
           ` ${botConfig.currency}`, callback_data: `aC/${product.id}?o=${objectId}`};
         // get cart products
-        // const cartProduct = cartProductsArray && cartProductsArray.find((x) => x.id === product.id);
         const cartProduct = cartProductsArray && cartProductsArray[product.id];
         if (cartProduct) {
           addButton.text = `🛒 ${product.data().name} (${product.id})` +
@@ -165,8 +104,6 @@ const showCatalog = async (ctx, next) => {
         const endBeforeSnap = productsSnapshot.docs[0];
         const ifBeforeProducts = await mainQuery.endBefore(endBeforeSnap).limitToLast(1).get();
         if (!ifBeforeProducts.empty) {
-          // inlineKeyboardArray.push(Markup.button.callback("⬅️ Back",
-          //    `c/${currentCatalog.id}?endBefore=${endBefore.id}&tag=${params.get("tag")}`));
           prevNext.push({text: "⬅️ Назад",
             callback_data: `c/${currentCatalog.id}?e=${endBeforeSnap.id}${tagUrl}&o=${objectId}`});
         }
@@ -174,18 +111,11 @@ const showCatalog = async (ctx, next) => {
         const startAfterSnap = productsSnapshot.docs[productsSnapshot.docs.length - 1];
         const ifAfterProducts = await mainQuery.startAfter(startAfterSnap).limit(1).get();
         if (!ifAfterProducts.empty) {
-          // startAfter iqual s
-          // inlineKeyboardArray.push(Markup.button.callback("➡️ Load more",
-          //    `c/${currentCatalog.id}?startAfter=${startAfter.id}&tag=${params.get("tag")}`));
           prevNext.push({text: "➡️ Вперед",
             callback_data: `c/${currentCatalog.id}?s=${startAfterSnap.id}${tagUrl}&o=${objectId}`});
         }
         inlineKeyboardArray.push(prevNext);
       }
-      // =====
-      // add back button
-      // inlineKeyboardArray.push(Markup.button.callback("⤴️ Parent catalog",
-      //  currentCatalog.parentId ? `c/${currentCatalog.parentId}` : "c/"));
       // get photo catalog
       if (currentCatalog.photo) {
         const photoExists = await bucket.file(`photos/${objectId}/catalogs/${currentCatalog.id}/2/` +
@@ -196,28 +126,13 @@ const showCatalog = async (ctx, next) => {
         }
       }
     }
-    // Show catalog siblings
-    // Get catalogs snap index or siblings
+    // show catalog siblings, get catalogs snap index or siblings
     const catalogsSnapshot = await firebase.firestore().collection("objects").doc(objectId)
         .collection("catalogs")
         .where("parentId", "==", catalogId ? catalogId : null).orderBy("orderNumber").get();
     catalogsSnapshot.docs.forEach((doc) => {
-      // inlineKeyboardArray.push(Markup.button.callback(`🗂 ${doc.data().name}`, `c/${doc.id}`));
       inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}?o=${objectId}${uUrl}`}]);
     });
-    // const extraObject = {
-    //   parse_mode: "Markdown",
-    //   ...Markup.inlineKeyboard(inlineKeyboardArray,
-    //       {wrap: (btn, index, currentRow) => {
-    //         return index <= 20;
-    //       }}),
-    // };
-    // await ctx.editMessageText(`${textMessage}`, extraObject);
-    // await ctx.editMessageCaption(`${textMessage}`, extraObject);
-    // const objectSnap = await firebase.firestore().collection("objects").doc(objectId).get();
-    // const object = {"id": objectSnap.id, ...objectSnap.data()};
-    // add photo to catalog
-    // footer buttons
     cartButtons[0].text = `🏪 ${object.name}`;
     inlineKeyboardArray.push(cartButtons);
     // render
@@ -242,30 +157,19 @@ const showProduct = async (ctx, next) => {
     // get product data
     const productId = ctx.state.param;
     const objectId = ctx.state.params.get("o");
-    // const productSnapshot = await firebase.firestore().collection("objects").doc(objectId)
-    //     .collection("products").doc(productId).get();
-    // const product = {id: productSnapshot.id, ...productSnapshot.data()};
     const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
-    // cart button
-    // const cartProductsArray = await ctx.state.cart.products(objectId);
-    // const cartProductsArray = await cart.products(objectId, ctx.from.id);
     const cartButtons = await cart.cartButtons(objectId, ctx.from.id);
-    // generate array
-    // const session = await ctx.state.cart.getSessionData();
     let catalogUrl = `c/${product.catalog.id}?o=${objectId}`;
     if (ctx.session.pathCatalog) {
       catalogUrl = ctx.session.pathCatalog;
     }
     const inlineKeyboardArray = [];
-    // inlineKeyboardArray.push(Markup.button.callback("📸 Upload photo", `uploadPhotos/${product.id}`));
     inlineKeyboardArray.push([{text: `⤴️ ../${product.catalog.name}`, callback_data: catalogUrl}]);
     // default add button
     const addButton = {text: "🛒 Добавить в корзину", callback_data: `aC/${product.id}?o=${objectId}`};
     // get cart products
-    // const cartProduct = cartProductsArray && cartProductsArray.find((x) => x.id === product.id);
     const cartProduct = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`,
         `products.${productId}`);
-    // const cartProduct = cartProductsArray && cartProductsArray[product.id];
     if (cartProduct) {
       addButton.text = `🛒 ${cartProduct.qty} ${cartProduct.unit} ` +
       ` ${roundNumber(cartProduct.qty * cartProduct.price)} ${botConfig.currency}`;
@@ -278,7 +182,6 @@ const showProduct = async (ctx, next) => {
     }
     // chck photos
     if (product.photos && product.photos.length) {
-      // inlineKeyboardArray.push(Markup.button.callback("🖼 Show photos", `showPhotos/${product.id}`));
       inlineKeyboardArray.push([{text: `🖼 Показать фото (${product.photos.length})`,
         callback_data: `showPhotos/${product.id}?o=${objectId}`}]);
     }
@@ -295,7 +198,6 @@ const showProduct = async (ctx, next) => {
         publicImgUrl = bucket.file(`photos/${objectId}/products/${product.id}/2/${product.mainPhoto}.jpg`).publicUrl();
       }
     }
-    // Set Main menu
     // footer buttons
     cartButtons[0].text = `🏪 ${object.name}`;
     inlineKeyboardArray.push(cartButtons);
@@ -319,7 +221,6 @@ catalogsActions.push(showProduct);
 // add product to cart by keyboard
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "aC") {
-    // const session = await ctx.state.cart.getSessionData();
     let qty = ctx.state.params.get("qty");
     const number = ctx.state.params.get("number");
     const back = ctx.state.params.get("back");
@@ -360,45 +261,30 @@ catalogsActions.push( async (ctx, next) => {
     if (added) {
       paramsUrl += "&a=1";
     }
-    // const productRef = firebase.firestore().collection("objects").doc(objectId)
-    //     .collection("products").doc(productId);
-    // const productSnapshot = await productRef.get();
     const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
     if (product) {
-      // const product = {id: productSnapshot.id, ...productSnapshot.data()};
       let catalogUrl = `c/${product.catalog.id}?o=${objectId}`;
       if (ctx.session.pathCatalog) {
         catalogUrl = ctx.session.pathCatalog;
       }
-      // Add product to cart
+      // add product to cart
       if (addValue) {
         await cart.add(objectId, ctx.from.id, added ? product.id : product, addValue);
-        // redirect to catalog or cart
-        // if (session.path) {
         if (!redirectToCart) {
-          // generate params to show catalog
           ctx.state.routeName = "c";
           // eslint-disable-next-line no-useless-escape
           const regPath = catalogUrl.match(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/);
           ctx.state.param = regPath[2];
           const args = regPath[3];
-          // parse url params
-          // const params = new Map();
           ctx.state.params.clear();
           if (args) {
             for (const paramsData of args.split("&")) {
               ctx.state.params.set(paramsData.split("=")[0], paramsData.split("=")[1]);
             }
           }
-          // add flag for not save
-          // ctx.state.params.set("np", 1);
-          // params.set("cb", 1);
-          // ctx.state.params = params;
           ctx.callbackQuery.data = catalogUrl;
           await showCatalog(ctx, next);
         } else {
-          // ctx.state.routeName = "p";
-          // await showProduct(ctx, next);
           ctx.state.routeName = "cart";
           await showCart(ctx, next);
         }
@@ -412,12 +298,8 @@ catalogsActions.push( async (ctx, next) => {
       if (added) {
         addButtonArray.push(delButton);
       }
-      // if (redirect) {
-      //   addButton.callback_data = `cart/${product.id}?qty=${qty}`;
-      //   delButton.callback_data = `cart/${product.id}?qty=0`;
-      // }
       addButtonArray.push(addButton);
-      // Get main photo url.
+      // get main photo url.
       let publicImgUrl = bucket.file(botConfig.logo).publicUrl();
       const object = await store.findRecord(`objects/${objectId}`);
       if (object.logo) {
@@ -484,44 +366,19 @@ catalogsActions.push( async (ctx, next) => {
 // show cart
 const showCart = async (ctx, next) => {
   if (ctx.state.routeName === "cart") {
-    // await ctx.state.cart.setSessionData({path: null});
-    // get orderId for edit
-    // if (!orderId) {
-    //   // default values
-    //   await ctx.state.cart.setData({
-    //     cart: {
-    //       orderData: {
-    //         carrierNumber: firebase.firestore.FieldValue.delete(),
-    //         comment: firebase.firestore.FieldValue.delete(),
-    //       },
-    //     },
-    //     session: {
-    //       path: firebase.firestore.FieldValue.delete(),
-    //     },
-    //   });
-    // }
-    // clear cart
     const clear = ctx.state.params.get("clear");
     const deleteOrderId = ctx.state.params.get("deleteOrderId");
     const objectId = ctx.state.params.get("o");
     if (deleteOrderId) {
-      // await ctx.state.cart.setCartData({
-      //   orderData: firebase.firestore.FieldValue.delete(),
-      // });
-      // await store.deleteRecord({"users": ctx.from.id}, "session.orderData");
       await store.deleteRecord(`users/${ctx.from.id}`, "session.orderData");
     }
     // clear cart
     if (clear) {
-      // await ctx.state.cart.clear(objectId);
       await cart.clear(objectId, ctx.from.id);
     }
     const inlineKeyboardArray = [];
-    // const objectSnap = await firebase.firestore().collection("objects").doc(objectId).get();
-    // const object = {"id": objectSnap.id, ...objectSnap.data()};
     const object = await store.findRecord(`objects/${objectId}`);
     let msgTxt = `<b> ${ctx.state.bot_first_name} > ${object.name} > Корзина</b>\n`;
-    // loop products
     let totalQty = 0;
     let totalSum = 0;
     const products = await cart.products(objectId, ctx.from.id);
@@ -547,8 +404,6 @@ const showCart = async (ctx, next) => {
       ]);
       msgTxt += "Корзина пуста";
     } else {
-      // order button
-      // const orderData = await ctx.state.cart.getOrderData();
       const orderData = await store.findRecord(`users/${ctx.from.id}`, "session.orderData");
       if (orderData) {
         const orderId = orderData.orderNumber;
@@ -568,7 +423,6 @@ const showCart = async (ctx, next) => {
     // Set Main menu
     inlineKeyboardArray.push([{text: `🏪 ${object.name}`,
       callback_data: `objects/${objectId}`}]);
-    // render data
     // truncate long string
     if (msgTxt.length > 1024) {
       msgTxt = msgTxt.substring(0, 1024);
@@ -613,11 +467,6 @@ const cartWizard = [
     const carrierId = ctx.state.params.get("cId");
     const orderId = ctx.state.params.get("oId");
     const objectId = ctx.state.params.get("o");
-    // save data to cart
-    // if (carrierId) {
-    //   carrierId = Number(carrierId);
-    //   // await ctx.state.cart.setOrderData({carrierId});
-    // }
     let qtyUrl = "";
     if (qty) {
       if (number) {
@@ -626,9 +475,6 @@ const cartWizard = [
       if (back) {
         qty = qty.slice(0, -1);
       }
-      // if (clear) {
-      //   qty = 0;
-      // }
     } else {
       // add first
       if (Number(number)) {
@@ -683,7 +529,6 @@ const cartWizard = [
     } else {
       inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `cO/wizard?cN=${qty}` +
       `&cId=${carrierId}&${rnd}`}]);
-      // inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: "cart"}]);
     }
     await ctx.editMessageCaption(`Введите номер отделения:\n<b>${qty}</b>` +
       `\n${error ? "Ошибка: введите номер отделения" : ""}`,
@@ -700,19 +545,13 @@ const cartWizard = [
         keyboard: [["Отмена"]],
         resize_keyboard: true,
       }});
-    // await ctx.state.cart.setSessionData({cursor: 3});
-    // await ctx.state.cart.setSessionData({scene: "wizardOrder", cursor: 3});
     await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": "wizardOrder", "cursor": 3}});
-    // ctx.session.cursor = 3;
-    // ctx.session.scene = "wizardOrder";
   },
   async (ctx) => {
-    // save data to cart
     if (ctx.message.text.length < 2) {
-      ctx.reply("Адрес слишком короткий");
+      await ctx.reply("Адрес слишком короткий");
       return;
     }
-    // await ctx.state.cart.setWizardData({address: ctx.message.text});
     const address = ctx.message.text;
     await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {address}}});
     let userName = "";
@@ -722,26 +561,21 @@ const cartWizard = [
     if (ctx.from.first_name) {
       userName += " " + ctx.from.first_name;
     }
-    ctx.reply("Введите фамилию и имя получателя, или выберите себя", {
+    await ctx.reply("Введите фамилию и имя получателя, или выберите себя", {
       reply_markup: {
         keyboard: [[userName], ["Отмена"]],
         resize_keyboard: true,
       }});
-    // await ctx.state.cart.setSessionData({cursor: 4});
     await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 4}});
-    // ctx.session.cursor = 4;
   },
   async (ctx) => {
-    // validation example
     if (ctx.message.text.length < 2) {
-      ctx.reply("Имя слишком короткое");
+      await ctx.reply("Имя слишком короткое");
       return;
     }
-    // save data to cart
-    // await ctx.state.cart.setWizardData({recipientName: ctx.message.text});
     const recipientName = ctx.message.text;
     await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {recipientName}}});
-    ctx.reply("Введите номер телефона", {
+    await ctx.reply("Введите номер телефона", {
       reply_markup: {
         keyboard: [
           [{
@@ -753,25 +587,19 @@ const cartWizard = [
         resize_keyboard: true,
       },
     });
-    // await ctx.state.cart.setSessionData({cursor: 5});
     await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 5}});
-    // ctx.session.cursor = 5;
   },
   async (ctx) => {
     const phoneNumberText = (ctx.message.contact && ctx.message.contact.phone_number) || ctx.message.text;
-    // const checkPhoneUa = phoneNumber.match(/^(\+380|0)?([1-9]{1}\d{8})$/);
     const regexpPhoneRu = new RegExp(botConfig.phoneregexp);
     const checkPhone = phoneNumberText.match(regexpPhoneRu);
     if (!checkPhone) {
-      ctx.reply(`Введите номер телефона в формате ${botConfig.phonetemplate}`);
+      await ctx.reply(`Введите номер телефона в формате ${botConfig.phonetemplate}`);
       return;
     }
-    // save phone to cart
-    // await ctx.state.cart.setWizardData({phoneNumber: "+7" + checkPhone[2]});
     const phoneNumber = `${botConfig.phonecode}${checkPhone[2]}`;
     await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {phoneNumber}}});
-    // comment order
-    ctx.replyWithHTML("Комментарий к заказу:",
+    await ctx.replyWithHTML("Комментарий к заказу:",
         {
           reply_markup: {
             keyboard: [
@@ -780,21 +608,16 @@ const cartWizard = [
             ],
             resize_keyboard: true,
           }});
-    // await ctx.state.cart.setSessionData({cursor: 6});
     await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 6}});
-    // ctx.session.cursor = 6;
   },
   async (ctx) => {
     if (ctx.message.text && ctx.message.text !== "Без комментариев") {
-      // save phone to cart
-      // await ctx.state.cart.setWizardData({comment: ctx.message.text});
       const comment = ctx.message.text;
       await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {comment}}});
     }
     // get preorder data
-    // const preOrderData = await ctx.state.cart.getWizardData();
     const preOrderData = await store.findRecord(`users/${ctx.from.id}`, "session.wizardData");
-    ctx.replyWithHTML("<b>Проверьте даные получателя:\n" +
+    await ctx.replyWithHTML("<b>Проверьте даные получателя:\n" +
         `${preOrderData.recipientName} ${preOrderData.phoneNumber}\n` +
         `Адрес доставки: ${preOrderData.address}, ` +
         `${store.carriers().get(preOrderData.carrierId)} ` +

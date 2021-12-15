@@ -108,12 +108,12 @@ bot.start(async (ctx) => {
 });
 // rzk shop
 bot.command("objects", async (ctx) => {
-  startHandler(ctx);
+  await startHandler(ctx);
 });
 // monobank
 bot.command("mono", async (ctx) => {
   // ctx.scene.enter("monoScene");
-  monoHandler(ctx);
+  await monoHandler(ctx);
 });
 
 // test upload
@@ -145,7 +145,7 @@ bot.on(["text", "contact"], async (ctx) => {
     return;
   }
   if (ctx.message.text === "Отмена") {
-    ctx.reply("Для продолжения нажмите /objects", {
+    await ctx.reply("Для продолжения нажмите /objects", {
       reply_markup: {
         remove_keyboard: true,
       }});
@@ -169,18 +169,18 @@ bot.on(["text", "contact"], async (ctx) => {
 bot.on("photo", async (ctx) => {
   const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");
   if (sessionFire.scene === "uploadPhotoProduct") {
-    ctx.reply("uploadPhotoProduct start");
+    await ctx.reply("uploadPhotoProduct start");
     await uploadPhotoProduct(ctx, sessionFire.objectId, sessionFire.productId);
     return;
   }
   if (sessionFire.scene === "uploadPhotoCat") {
-    ctx.reply("uploadPhotoCat start");
-    uploadPhotoCat(ctx, sessionFire.objectId, sessionFire.catalogId);
+    await ctx.reply("uploadPhotoCat start");
+    await uploadPhotoCat(ctx, sessionFire.objectId, sessionFire.catalogId);
     return;
   }
   if (sessionFire.scene === "uploadPhotoObj") {
-    ctx.reply("uploadPhotoObj start");
-    uploadPhotoObj(ctx, sessionFire.objectId);
+    await ctx.reply("uploadPhotoObj start");
+    await uploadPhotoObj(ctx, sessionFire.objectId);
     return;
   }
   ctx.reply("session scene is null");

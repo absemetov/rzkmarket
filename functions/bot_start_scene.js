@@ -204,7 +204,7 @@ startActions.push( async (ctx, next) => {
     // const productSnapshot = await productRef.get();
     // const product = {id: productSnapshot.id, ...productSnapshot.data()};
     const object = await store.findRecord(`objects/${objectId}`);
-    ctx.replyWithHTML(`Добавьте фото <b>${object.name} (${object.id})</b>`);
+    await ctx.replyWithHTML(`Добавьте фото <b>${object.name} (${object.id})</b>`);
     await ctx.answerCbQuery();
   } else {
     return next();
@@ -300,7 +300,7 @@ const uploadPhotoObj = async (ctx, objectId) => {
       "objectId": null,
     }});
   } else {
-    ctx.reply("Please select a product to upload Photo");
+    await ctx.reply("Please select a product to upload Photo");
   }
 };
 
