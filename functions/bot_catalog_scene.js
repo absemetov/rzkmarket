@@ -924,9 +924,14 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
         return;
       }
       // get photos url
-      const originUrl = await ctx.telegram.getFileLink(origin.file_id);
-      const bigUrl = await ctx.telegram.getFileLink(big.file_id);
-      const thumbnailUrl = await ctx.telegram.getFileLink(thumbnail.file_id);
+      const resultsUrl = await Promise.all([
+        ctx.telegram.getFileLink(origin.file_id),
+        ctx.telegram.getFileLink(big.file_id),
+        ctx.telegram.getFileLink(thumbnail.file_id),
+      ]);
+      const originUrl = resultsUrl[0];
+      const bigUrl = resultsUrl[1];
+      const thumbnailUrl = resultsUrl[2];
       try {
         // download photos from telegram server
         const results = await Promise.all([
@@ -1023,24 +1028,36 @@ const uploadPhotoCat = async (ctx, objectId, catalogId) => {
       });
     }
     // get photos url
-    const originUrl = await ctx.telegram.getFileLink(origin.file_id);
-    const bigUrl = await ctx.telegram.getFileLink(big.file_id);
-    const thumbnailUrl = await ctx.telegram.getFileLink(thumbnail.file_id);
+    const resultsUrl = await Promise.all([
+      ctx.telegram.getFileLink(origin.file_id),
+      ctx.telegram.getFileLink(big.file_id),
+      ctx.telegram.getFileLink(thumbnail.file_id),
+    ]);
+    const originUrl = resultsUrl[0];
+    const bigUrl = resultsUrl[1];
+    const thumbnailUrl = resultsUrl[2];
     try {
       // download photos from telegram server
-      const originFilePath = await download(originUrl.href);
-      const bigFilePath = await download(bigUrl.href);
-      const thumbnailFilePath = await download(thumbnailUrl.href);
+      const results = await Promise.all([
+        download(originUrl.href),
+        download(bigUrl.href),
+        download(thumbnailUrl.href),
+      ]);
+      const originFilePath = results[0];
+      const bigFilePath = results[1];
+      const thumbnailFilePath = results[2];
       // upload photo file
-      await bucket.upload(originFilePath, {
-        destination: `photos/${objectId}/catalogs/${catalog.id}/3/${origin.file_unique_id}.jpg`,
-      });
-      await bucket.upload(bigFilePath, {
-        destination: `photos/${objectId}/catalogs/${catalog.id}/2/${origin.file_unique_id}.jpg`,
-      });
-      await bucket.upload(thumbnailFilePath, {
-        destination: `photos/${objectId}/catalogs/${catalog.id}/1/${origin.file_unique_id}.jpg`,
-      });
+      await Promise.all([
+        bucket.upload(originFilePath, {
+          destination: `photos/${objectId}/catalogs/${catalog.id}/3/${origin.file_unique_id}.jpg`,
+        }),
+        bucket.upload(bigFilePath, {
+          destination: `photos/${objectId}/catalogs/${catalog.id}/2/${origin.file_unique_id}.jpg`,
+        }),
+        bucket.upload(thumbnailFilePath, {
+          destination: `photos/${objectId}/catalogs/${catalog.id}/1/${origin.file_unique_id}.jpg`,
+        }),
+      ]);
       // delete download file
       fs.unlinkSync(originFilePath);
       fs.unlinkSync(bigFilePath);
