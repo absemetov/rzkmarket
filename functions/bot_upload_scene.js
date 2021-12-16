@@ -7,7 +7,7 @@ const Validator = require("validatorjs");
 const {google} = require("googleapis");
 const CyrillicToTranslit = require("cyrillic-to-translit-js");
 const cyrillicToTranslit = new CyrillicToTranslit();
-const {store} = require("./bot_keyboards.js");
+const {store} = require("./bot_store_cart.js");
 // const upload = new BaseScene("upload");
 // enter scene
 // upload.enter((ctx) => ctx.reply("Вставьте ссылку Google Sheet"));

@@ -76,7 +76,7 @@ const store = {
     }, {merge: true});
   },
   async updateRecord(path, field) {
-    // nested "dot notation" work only when update first create doc
+    // nested "dot notation" work only when update exist doc
     // worning!!! be careful siblings data cleare!!! use createRecord
     await this.getQuery(path).update({
       ...field,

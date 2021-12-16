@@ -3,7 +3,7 @@ const firebase = require("firebase-admin");
 const bucket = firebase.storage().bucket();
 const {roundNumber} = require("./bot_start_scene");
 const {showCart, cartWizard} = require("./bot_catalog_scene");
-const {store, cart} = require("./bot_keyboards.js");
+const {store, cart} = require("./bot_store_cart.js");
 const botConfig = functions.config().env.bot;
 const moment = require("moment");
 require("moment/locale/ru");
