@@ -1,13 +1,9 @@
 const firebase = require("firebase-admin");
 const axios = require("axios");
 const cc = require("currency-codes");
-// const {Scenes: {BaseScene}} = require("telegraf");
 const moment = require("moment");
-// const {getMainKeyboard, getMonoKeyboard} = require("./bot_keyboards.js");
-// const {MenuTemplate, createBackMainMenuButtons} = require("telegraf-inline-menu");
-// const monoScene = new BaseScene("monoScene");
 const monoActions = [];
-
+// handler
 const monoHandler = async (ctx) => {
   await ctx.reply("Выберите валюту", {
     reply_markup: {
@@ -23,8 +19,7 @@ const monoHandler = async (ctx) => {
       ],
     }});
 };
-
-// Currency controller
+// currency controller
 monoActions.push(async (ctx, next) => {
   if (ctx.state.routeName === "mono") {
     const currencyName = ctx.state.param;
@@ -50,25 +45,7 @@ monoActions.push(async (ctx, next) => {
   }
 });
 
-// monoScene.leave((ctx) => {
-//   ctx.reply("Menu", getMainKeyboard);
-// });
-
-// monoScene.hears("where", (ctx) => ctx.reply("You are in mono scene"));
-
-// monoScene.hears("back", (ctx) => ctx.scene.leave());
-
-// listen all text messages
-// monoScene.on("text", async (ctx) => {
-//   const currencyObj = await getCurrency();
-//   const currency = currencyObj[ctx.message.text];
-//   if (currency) {
-//     ctx.replyWithMarkdown(monoMarkdown(currency));
-//   } else {
-//     ctx.replyWithMarkdown(`Currency *${ctx.message.text}* not found`);
-//   }
-// });
-
+// render mono
 function monoMarkdown(currency) {
   const currencyCode = cc.number(currency.currencyCodeA).code;
   const date = moment.unix(currency.date);
@@ -82,41 +59,33 @@ async function updateData(currenciesFirestore) {
   try {
     // get data from monobank
     const currenciesMonobank = await axios.get("https://api.monobank.ua/bank/currency");
-
     const usdRate = currenciesMonobank.data.find((data) => {
       return data.currencyCodeA === Number(cc.code("USD").number);
     });
-
     const eurRate = currenciesMonobank.data.find((data) => {
       return data.currencyCodeA === Number(cc.code("EUR").number);
     });
-
     const rubRate = currenciesMonobank.data.find((data) => {
       return data.currencyCodeA === Number(cc.code("RUB").number);
     });
-
     // save data
-
     const dateUpdated = Math.floor(Date.now() / 1000);
-
-    await firebase.firestore().doc("currencies/USD").set({updatedAt: dateUpdated, ...usdRate});
-    await firebase.firestore().doc("currencies/EUR").set({updatedAt: dateUpdated, ...eurRate});
-    await firebase.firestore().doc("currencies/RUB").set({updatedAt: dateUpdated, ...rubRate});
-
+    await Promise.all([
+      firebase.firestore().doc("currencies/USD").set({updatedAt: dateUpdated, ...usdRate}),
+      firebase.firestore().doc("currencies/EUR").set({updatedAt: dateUpdated, ...eurRate}),
+      firebase.firestore().doc("currencies/RUB").set({updatedAt: dateUpdated, ...rubRate}),
+    ]);
     return {USD: usdRate, EUR: eurRate, RUB: rubRate};
   } catch (error) {
-    // res.send(error.response.data.errorDescription);
     return {};
   }
 }
 
 async function getCurrency(currencyName) {
   const currenciesFirestore = await firebase.firestore().collection("currencies").get();
-
   let currencyResult = {};
   const currencyResultOld = {};
   const dateTimestamp = Math.floor(Date.now() / 1000);
-
   currenciesFirestore.forEach((doc) => {
     const timeDiff = dateTimestamp - doc.data().updatedAt;
     if (timeDiff < 3600) {
@@ -125,7 +94,6 @@ async function getCurrency(currencyName) {
       currencyResultOld[doc.id] = doc.data();
     }
   });
-
   // if empty collection or old data
   if ( Object.keys(currencyResult).length === 0 ) {
     currencyResult = await updateData();
@@ -134,7 +102,6 @@ async function getCurrency(currencyName) {
       currencyResult = currencyResultOld;
     }
   }
-
   return currencyResult;
 }
 

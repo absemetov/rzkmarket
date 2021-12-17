@@ -2,9 +2,9 @@ const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
 const {download} = require("./download.js");
 const fs = require("fs");
-const {roundNumber} = require("./bot_start_scene");
+const {roundNumber, photoCheckUrl} = require("./bot_start_scene");
 const bucket = firebase.storage().bucket();
-const {cart, store} = require("./bot_store_cart.jss");
+const {cart, store} = require("./bot_store_cart.js");
 const botConfig = functions.config().env.bot;
 // catalogs actions array
 const catalogsActions = [];
@@ -18,10 +18,10 @@ const showCatalog = async (ctx, next) => {
     const startAfter = ctx.state.params.get("s");
     const endBefore = ctx.state.params.get("e");
     const uploadPhotoCat = ctx.state.params.get("u");
-    let publicImgUrl = bucket.file(botConfig.logo).publicUrl();
+    let publicImgUrl = botConfig.logo;
     const object = await store.findRecord(`objects/${objectId}`);
     if (object.logo) {
-      publicImgUrl = bucket.file(`photos/${objectId}/logo/2/${object.logo}.jpg`).publicUrl();
+      publicImgUrl = `photos/${objectId}/logo/2/${object.logo}.jpg`;
     }
     // and show upload catalog photo
     let uUrl = "";
@@ -118,12 +118,7 @@ const showCatalog = async (ctx, next) => {
       }
       // get photo catalog
       if (currentCatalog.photo) {
-        const photoExists = await bucket.file(`photos/${objectId}/catalogs/${currentCatalog.id}/2/` +
-        `${currentCatalog.photo}.jpg`).exists();
-        if (photoExists[0]) {
-          publicImgUrl = bucket.file(`photos/${objectId}/catalogs/${currentCatalog.id}/2/${currentCatalog.photo}.jpg`)
-              .publicUrl();
-        }
+        publicImgUrl = `photos/${objectId}/catalogs/${currentCatalog.id}/2/${currentCatalog.photo}.jpg`;
       }
     }
     // show catalog siblings, get catalogs snap index or siblings
@@ -136,9 +131,10 @@ const showCatalog = async (ctx, next) => {
     cartButtons[0].text = `🏪 ${object.name}`;
     inlineKeyboardArray.push(cartButtons);
     // render
+    const media = await photoCheckUrl(publicImgUrl);
     await ctx.editMessageMedia({
       type: "photo",
-      media: publicImgUrl,
+      media: media,
       caption: `<b>${ctx.state.bot_first_name} > ${object.name} > Каталог</b>\n` +
         `t.me/${ctx.state.bot_username}?start=OBJECT${objectId}CATALOG${catalogId ? catalogId : "c"}`,
       parse_mode: "html",
@@ -186,24 +182,21 @@ const showProduct = async (ctx, next) => {
         callback_data: `showPhotos/${product.id}?o=${objectId}`}]);
     }
     // Get main photo url.
-    let publicImgUrl = bucket.file(botConfig.logo).publicUrl();
+    let publicImgUrl = botConfig.logo;
     const object = await store.findRecord(`objects/${objectId}`);
     if (object.logo) {
-      publicImgUrl = bucket.file(`photos/${objectId}/logo/2/${object.logo}.jpg`).publicUrl();
+      publicImgUrl = `photos/${objectId}/logo/2/${object.logo}.jpg`;
     }
     if (product.mainPhoto) {
-      const photoExists = await bucket.file(`photos/${objectId}/products/${product.id}/2/${product.mainPhoto}.jpg`)
-          .exists();
-      if (photoExists[0]) {
-        publicImgUrl = bucket.file(`photos/${objectId}/products/${product.id}/2/${product.mainPhoto}.jpg`).publicUrl();
-      }
+      publicImgUrl = `photos/${objectId}/products/${product.id}/2/${product.mainPhoto}.jpg`;
     }
     // footer buttons
     cartButtons[0].text = `🏪 ${object.name}`;
     inlineKeyboardArray.push(cartButtons);
+    const media = await photoCheckUrl(publicImgUrl);
     await ctx.editMessageMedia({
       type: "photo",
-      media: publicImgUrl,
+      media,
       caption: `<b>${ctx.state.bot_first_name} > ${object.name}\n` +
       `${product.name} (${product.id})\nЦена ${product.price} ${botConfig.currency}</b>\n` +
       `t.me/${ctx.state.bot_username}?start=OBJECT${objectId}PRODUCT${productId}`,
@@ -300,27 +293,23 @@ catalogsActions.push( async (ctx, next) => {
       }
       addButtonArray.push(addButton);
       // get main photo url.
-      let publicImgUrl = bucket.file(botConfig.logo).publicUrl();
+      let publicImgUrl = botConfig.logo;
       const object = await store.findRecord(`objects/${objectId}`);
       if (object.logo) {
-        publicImgUrl = bucket.file(`photos/${objectId}/logo/2/${object.logo}.jpg`).publicUrl();
+        publicImgUrl = `photos/${objectId}/logo/2/${object.logo}.jpg`;
       }
       if (product.mainPhoto) {
-        const photoExists = await bucket.file(`photos/${objectId}/products/${product.id}/2/${product.mainPhoto}.jpg`)
-            .exists();
-        if (photoExists[0]) {
-          publicImgUrl = bucket.file(`photos/${objectId}/products/${product.id}/2/${product.mainPhoto}.jpg`)
-              .publicUrl();
-        }
+        publicImgUrl = `photos/${objectId}/products/${product.id}/2/${product.mainPhoto}.jpg`;
       }
       const uploadPhotoButton =[];
       if (ctx.state.isAdmin) {
         uploadPhotoButton.push({text: "📸 Загрузить фото",
           callback_data: `uploadPhotoProduct/${product.id}?o=${objectId}`});
       }
+      const media = await photoCheckUrl(publicImgUrl);
       await ctx.editMessageMedia({
         type: "photo",
-        media: publicImgUrl,
+        media,
         caption: `${product.name} (${product.id})` +
         `\nЦена ${product.price} ${botConfig.currency}` +
         `\nСумма ${roundNumber(qty * product.price)} ${botConfig.currency}` +
@@ -428,13 +417,14 @@ const showCart = async (ctx, next) => {
       msgTxt = msgTxt.substring(0, 1024);
     }
     // edit message
-    let publicImgUrl = bucket.file(botConfig.logo).publicUrl();
+    let publicImgUrl = botConfig.logo;
     if (object.logo) {
-      publicImgUrl = bucket.file(`photos/${objectId}/logo/2/${object.logo}.jpg`).publicUrl();
+      publicImgUrl = `photos/${objectId}/logo/2/${object.logo}.jpg`;
     }
+    const media = await photoCheckUrl(publicImgUrl);
     await ctx.editMessageMedia({
       type: "photo",
-      media: publicImgUrl,
+      media,
       caption: msgTxt,
       parse_mode: "html",
     }, {reply_markup: {
@@ -540,7 +530,7 @@ const cartWizard = [
     });
   },
   async (ctx) => {
-    ctx.reply("Укажите адрес доставки (город)", {
+    await ctx.reply("Укажите адрес доставки (город)", {
       reply_markup: {
         keyboard: [["Отмена"]],
         resize_keyboard: true,
@@ -728,13 +718,14 @@ catalogsActions.push( async (ctx, next) => {
       }
     }
     const object = await store.findRecord(`objects/${objectId}`);
-    let publicImgUrl = bucket.file(botConfig.logo).publicUrl();
+    let publicImgUrl = botConfig.logo;
     if (object.logo) {
-      publicImgUrl = bucket.file(`photos/${objectId}/logo/2/${object.logo}.jpg`).publicUrl();
+      publicImgUrl = `photos/${objectId}/logo/2/${object.logo}.jpg`;
     }
+    const media = await photoCheckUrl(publicImgUrl);
     await ctx.editMessageMedia({
       type: "photo",
-      media: publicImgUrl,
+      media,
       caption: `<b>${ctx.state.bot_first_name} > ${object.name} > Фильтр</b>`,
       parse_mode: "html",
     }, {reply_markup: {
@@ -756,12 +747,6 @@ catalogsActions.push( async (ctx, next) => {
     const product = {id: productSnapshot.id, ...productSnapshot.data()};
     for (const [index, photoId] of product.photos.entries()) {
       const inlineKeyboardArray = [];
-      // check if file exists
-      let publicUrl = bucket.file(botConfig.logo).publicUrl();
-      const photoExists = await bucket.file(`photos/${objectId}/products/${product.id}/2/${photoId}.jpg`).exists();
-      if (photoExists[0]) {
-        publicUrl = bucket.file(`photos/${objectId}/products/${product.id}/2/${photoId}.jpg`).publicUrl();
-      }
       // if admin
       if (ctx.state.isAdmin) {
         inlineKeyboardArray.push([{text: "🏷 Set main",
@@ -774,7 +759,8 @@ catalogsActions.push( async (ctx, next) => {
       if (product.mainPhoto === photoId) {
         caption = "✅ " + caption;
       }
-      await ctx.replyWithPhoto({url: publicUrl}, {
+      const media = await photoCheckUrl(`photos/${objectId}/products/${product.id}/2/${photoId}.jpg`);
+      await ctx.replyWithPhoto(media, {
         caption,
         parse_mode: "html",
         reply_markup: {
@@ -974,14 +960,13 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
           photos: firebase.firestore.FieldValue.arrayUnion(origin.file_unique_id),
         });
       }
-      const publicUrl = bucket.file(`photos/${objectId}/products/${product.id}/2/${origin.file_unique_id}.jpg`)
-          .publicUrl();
       // get catalog url (path)
       let catalogUrl = `c/${product.catalog.id}?o=${objectId}&u=1`;
       if (ctx.session.pathCatalog) {
         catalogUrl = ctx.session.pathCatalog;
       }
-      await ctx.replyWithPhoto({url: publicUrl},
+      const media = await photoCheckUrl(`photos/${objectId}/products/${product.id}/2/${origin.file_unique_id}.jpg`);
+      await ctx.replyWithPhoto(media,
           {
             caption: `${product.name} (${product.id}) photo uploaded`,
             reply_markup: {
@@ -1070,11 +1055,10 @@ const uploadPhotoCat = async (ctx, objectId, catalogId) => {
     await store.updateRecord(`objects/${objectId}/catalogs/${catalog.id}`, {
       photo: origin.file_unique_id,
     });
-    const publicUrl = bucket.file(`photos/${objectId}/catalogs/${catalog.id}/2/${origin.file_unique_id}.jpg`)
-        .publicUrl();
     // get catalog url (path)
     const catalogUrl = `c/${catalog.id}?o=${objectId}`;
-    await ctx.replyWithPhoto({url: publicUrl},
+    const media = await photoCheckUrl(`photos/${objectId}/catalogs/${catalog.id}/2/${origin.file_unique_id}.jpg`);
+    await ctx.replyWithPhoto(media,
         {
           caption: `${catalog.name} (${catalog.id}) photo uploaded`,
           reply_markup: {

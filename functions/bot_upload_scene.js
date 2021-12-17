@@ -1,6 +1,4 @@
 const firebase = require("firebase-admin");
-// const {Scenes: {BaseScene}} = require("telegraf");
-// const {getMainKeyboard, getBackKeyboard} = require("./bot_keyboards.js");
 const {GoogleSpreadsheet} = require("google-spreadsheet");
 const creds = require("./rzk-com-ua-d1d3248b8410.json");
 const Validator = require("validatorjs");
@@ -8,24 +6,6 @@ const {google} = require("googleapis");
 const CyrillicToTranslit = require("cyrillic-to-translit-js");
 const cyrillicToTranslit = new CyrillicToTranslit();
 const {store} = require("./bot_store_cart.js");
-// const upload = new BaseScene("upload");
-// enter scene
-// upload.enter((ctx) => ctx.reply("Вставьте ссылку Google Sheet"));
-// , {
-//   reply_markup: {
-//     keyboard: [["back"]],
-//     one_time_keyboard: true,
-//     resize_keyboard: true,
-//   }}
-// upload.leave((ctx) => {
-//   ctx.reply("Successful sales!", {
-//     reply_markup: {
-//       remove_keyboard: true,
-//     }});
-//   ctx.scene.enter("start");
-// });
-// upload.hears("where", (ctx) => ctx.reply("You are in upload scene"));
-// upload.hears("back", (ctx) => ctx.scene.leave());
 // merch center
 async (ctx) => {
   const content = google.content("v2.1");
@@ -59,8 +39,6 @@ async (ctx) => {
   console.log(res.data);
 };
 // upload from googleSheet
-// eslint-disable-next-line no-useless-escape
-// upload.hears(/^([a-zA-Z0-9-_]+)/, async (ctx) => {
 const uploadActions = [async (ctx, next) => {
   if (ctx.state.routeName === "uploadGoods") {
     const start = new Date();
@@ -93,24 +71,14 @@ const uploadActions = [async (ctx, next) => {
     const sheetId = sheetUrl[1];
     const listId = sheetUrl[2];
     // get data for check upload process
-    // const session = await ctx.state.cart.getSessionData();
-    // const sessionUser = firebase.firestore().collection("sessions").doc(`${ctx.from.id}-${ctx.chat.id}`);
-    // const docRef = await sessionUser.get();
     let uploading = ctx.session.uploading;
-    // if (docRef.exists) {
-    //   uploadPass = docRef.data().uploadPass;
     const uplodingTime = ctx.session.uploadStartAt && serverTimestamp - ctx.session.uploadStartAt;
     // kill process
     if (ctx.session.uploading && uplodingTime > 570) {
       uploading = false;
     }
-    // }
     if (!uploading) {
       // set data for check upload process
-      // await ctx.state.cart.setSessionData({
-      //   uploading: true,
-      //   uploadStartAt: serverTimestamp,
-      // });
       ctx.session.uploading = true;
       ctx.session.uploadStartAt = serverTimestamp;
       // load goods
@@ -119,8 +87,6 @@ const uploadActions = [async (ctx, next) => {
         // start upload
         await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
         await doc.loadInfo(); // loads document properties and worksheets
-        // const sheet = doc.sheetsByIndex[0];
-        // use sheet by Id
         const sheet = doc.sheetsById[listId];
         await ctx.replyWithMarkdown(`Load goods from ...
   Sheet name: *${doc.title}*
@@ -298,13 +264,6 @@ const uploadActions = [async (ctx, next) => {
                     if (!tagsRow.hidden) {
                       const catalogRef = firebase.firestore().collection("objects").doc(objectId)
                           .collection("catalogs").doc(groupArray[groupArray.length - 1].id);
-                      // batchCatalogs.update(catalogRef, {
-                      //   "tags": firebase.firestore.FieldValue.arrayUnion({
-                      //     id: tagsRow.id,
-                      //     name: tagsRow.name,
-                      //   }),
-                      // });
-                      // console.log(tagsRow.name);
                       batchCatalogsTags.set(catalogRef, {
                         "tags": firebase.firestore.FieldValue.arrayUnion({
                           id: tagsRow.id,
@@ -346,7 +305,7 @@ const uploadActions = [async (ctx, next) => {
         });
         await batchProductsDelete.commit();
         if (productsDeleteSnapshot.size) {
-          ctx.replyWithMarkdown(`*${productsDeleteSnapshot.size}* products deleted`);
+          await ctx.replyWithMarkdown(`*${productsDeleteSnapshot.size}* products deleted`);
         }
         // delete old catalogs
         const batchCatalogsDelete = firebase.firestore().batch();
@@ -358,7 +317,7 @@ const uploadActions = [async (ctx, next) => {
         });
         await batchCatalogsDelete.commit();
         if (catalogsDeleteSnapshot.size) {
-          ctx.replyWithMarkdown(`*${catalogsDeleteSnapshot.size}* catalogs deleted`);
+          await ctx.replyWithMarkdown(`*${catalogsDeleteSnapshot.size}* catalogs deleted`);
         }
       } catch (error) {
         await ctx.replyWithMarkdown(`Sheet ${error}`);

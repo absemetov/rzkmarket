@@ -1,8 +1,6 @@
 const functions = require("firebase-functions");
-const firebase = require("firebase-admin");
 const {Telegraf, session} = require("telegraf");
-const bucket = firebase.storage().bucket();
-const {startActions, startHandler, parseUrl, isAdmin, uploadPhotoObj} = require("./bot_start_scene");
+const {startActions, startHandler, parseUrl, isAdmin, uploadPhotoObj, photoCheckUrl} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
 const {uploadActions} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
@@ -22,7 +20,7 @@ bot.use(async (ctx, next) => {
   if (ctx.session === undefined) {
     ctx.session = {};
   }
-  // set bot name adn
+  // set bot name user name and project logo
   ctx.state.bot_first_name = bot.botInfo.first_name;
   ctx.state.bot_username = bot.botInfo.username;
   return next();
@@ -77,7 +75,7 @@ bot.start(async (ctx) => {
     }
   }
   if (caption) {
-    const publicImgUrl = bucket.file(botConfig.logo).publicUrl();
+    const publicImgUrl = await photoCheckUrl(botConfig.logo);
     await ctx.replyWithPhoto(publicImgUrl,
         {
           caption,
@@ -100,7 +98,6 @@ bot.command("objects", async (ctx) => {
 });
 // monobank
 bot.command("mono", async (ctx) => {
-  // ctx.scene.enter("monoScene");
   await monoHandler(ctx);
 });
 // check session vars
@@ -123,6 +120,7 @@ bot.on(["text", "contact"], async (ctx) => {
     await cartWizard[sessionFire.cursor](ctx);
     return;
   }
+  await ctx.reply("session scene is null");
 });
 // upload photo
 bot.on("photo", async (ctx) => {
