@@ -170,11 +170,15 @@ const uploadActions = [async (ctx, next) => {
                 tags.push(tagId);
               });
             }
+            // price mutation
+            const purchasePrice = rows[j].PURCHASE_PRICE &&
+              Number(rows[j].PURCHASE_PRICE.replace(",", ".").replace(/\s+/g, ""));
+            const price = rows[j].PRICE && Number(rows[j].PRICE.replace(",", ".").replace(/\s+/g, ""));
             const product = {
               id: rows[j].ID,
               name: rows[j].NAME.trim(),
-              purchasePrice: rows[j].PURCHASE_PRICE ? Number(rows[j].PURCHASE_PRICE.replace(",", ".")) : "",
-              price: rows[j].PRICE ? Number(rows[j].PRICE.replace(",", ".")) : "",
+              purchasePrice,
+              price,
               group: groupArray,
               tags: tags,
               unit: rows[j].UNIT,
