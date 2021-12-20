@@ -39,7 +39,8 @@ async (ctx) => {
   console.log(res.data);
 };
 // upload from googleSheet
-const uploadActions = [async (ctx, next) => {
+const uploadActions = [];
+uploadActions.push(async (ctx, next) => {
   if (ctx.state.routeName === "uploadGoods") {
     const start = new Date();
     // Max upload goods
@@ -338,6 +339,66 @@ const uploadActions = [async (ctx, next) => {
   } else {
     return next();
   }
-}];
+});
+
+const createObject = async (ctx, sheetId, update) => {
+  const doc = new GoogleSpreadsheet(sheetId);
+  try {
+    // start upload
+    await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
+    await doc.loadInfo(); // loads document properties and worksheets
+    const sheet = doc.sheetsByTitle["info"]; // doc.sheetsById[listId];
+    await sheet.loadCells("B1:B5"); // loads a range of cells
+    const id = sheet.getCellByA1("B1").value;
+    const name = sheet.getCellByA1("B2").value;
+    const description = sheet.getCellByA1("B3").value;
+    const phoneNumber = sheet.getCellByA1("B4").value;
+    const address = sheet.getCellByA1("B5").value;
+    const object = {
+      id,
+      name,
+      description,
+      phoneNumber,
+      address,
+    };
+    const rulesObject = {
+      "id": "required|alpha_dash|max:9",
+      "name": "required|string",
+      "description": "required|string",
+      "phoneNumber": "required|string",
+      "address": "required|string",
+    };
+    const validateObject = new Validator(object, rulesObject);
+    if (validateObject.fails()) {
+      let errorRow = "";
+      for (const [key, error] of Object.entries(validateObject.errors.all())) {
+        errorRow += `field *${key}* => *${error}* \n`;
+      }
+      throw new Error(errorRow);
+    }
+    const inlineKeyboardArray = [];
+    inlineKeyboardArray.push([{text: "Обновить данные", callback_data: "createObject"}]);
+    await ctx.replyWithHTML(`Sheet name: <b>${doc.title}</b>\n` +
+      `id: <b>${id}</b>\n` +
+      `name: <b>${name}</b>\n` +
+      `description: <b>${description}</b>\n` +
+      `phoneNumber: <b>${phoneNumber}</b>\n` +
+      `address: <b>${address}</b>\n` +
+      `Подтвердить обновление /updateObject_${sheetId}`);
+    // get object data
+  } catch (error) {
+    await ctx.replyWithMarkdown(`Sheet ${error}`);
+  }
+};
+
+uploadActions.push(async (ctx, next) => {
+  if (ctx.state.routeName === "createObject") {
+    await createObject(ctx);
+    await ctx.answerCbQuery();
+  } else {
+    return next();
+  }
+});
 
 exports.uploadActions = uploadActions;
+exports.createObject = createObject;

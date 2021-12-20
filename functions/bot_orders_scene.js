@@ -99,7 +99,7 @@ const myOrders = async (ctx, next) => {
         }
         inlineKeyboardArray.push(prevNext);
       } else {
-        inlineKeyboardArray.push([{text: "У Вас пока нет заказов", callback_data: `myO/${userId}`}]);
+        inlineKeyboardArray.push([{text: "У Вас пока нет заказов", callback_data: "objects"}]);
       }
       if (ctx.session.pathOrderCurrent) {
         inlineKeyboardArray.push([{text: "🏠 Вернуться к заказу",

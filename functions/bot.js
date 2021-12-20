@@ -2,7 +2,7 @@ const functions = require("firebase-functions");
 const {Telegraf, session} = require("telegraf");
 const {startActions, startHandler, parseUrl, isAdmin, uploadPhotoObj, photoCheckUrl} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
-const {uploadActions} = require("./bot_upload_scene");
+const {uploadActions, createObject} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
 const {uploadPhotoProduct, uploadPhotoCat, catalogsActions, cartWizard} = require("./bot_catalog_scene");
 const {store} = require("./bot_store_cart.js");
@@ -100,6 +100,10 @@ bot.command("objects", async (ctx) => {
 bot.command("mono", async (ctx) => {
   await monoHandler(ctx);
 });
+// update object info
+bot.hears(/updateObject_([a-zA-Z0-9-_]+)/, async (ctx) => {
+  await createObject(ctx, ctx.match[1], true);
+});
 // check session vars
 bot.on(["text", "contact"], async (ctx) => {
   if (ctx.session.scene === "editOrder") {
@@ -118,6 +122,12 @@ bot.on(["text", "contact"], async (ctx) => {
   const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");
   if (sessionFire.scene === "wizardOrder") {
     await cartWizard[sessionFire.cursor](ctx);
+    return;
+  }
+  // create object
+  const sheetUrl = ctx.message.text.match(/d\/(.*)\/edit#gid=([0-9]+)/);
+  if (sheetUrl) {
+    await createObject(ctx, sheetUrl[1]);
     return;
   }
   await ctx.reply("session scene is null");
