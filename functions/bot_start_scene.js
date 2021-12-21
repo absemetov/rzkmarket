@@ -75,7 +75,7 @@ startActions.push(async (ctx, next) => {
       caption = `<b>${ctx.state.bot_first_name} > ${object.name}\n` +
         `Контакты: ${object.phoneNumber}\n` +
         `Адрес: ${object.address}\n` +
-        `Описание: ${object.description}</b>`;
+        `Описание: ${object.description}</b>\n`;
       const cartButtons = await cart.cartButtons(objectId, ctx.from.id);
       inlineKeyboardArray.push([{text: "📁 Каталог", callback_data: `c?o=${object.id}`}]);
       inlineKeyboardArray.push([cartButtons[1]]);
@@ -85,8 +85,8 @@ startActions.push(async (ctx, next) => {
           callback_data: `c?o=${object.id}&u=1`}]);
         inlineKeyboardArray.push([{text: "📸 Загрузить фото объекта",
           callback_data: `uploadPhotoObj/${object.id}`}]);
-        inlineKeyboardArray.push([{text: "➕ Загрузить товары",
-          callback_data: `uploadGoods/${object.id}`}]);
+        caption += `<b>Обновить данные объекта</b> /updateObject_${object.sheetId}\n` +
+        `<b>Загрузить товары</b> /uploadProducts_${object.sheetId}`;
       }
       inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: "objects"}]);
       // set logo obj
