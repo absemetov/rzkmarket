@@ -50,7 +50,6 @@ const uploadProducts = async (ctx, objectId, sheetId) => {
   const productIsSet = new Set();
   // const serverTimestamp = firebase.firestore.FieldValue.serverTimestamp();
   const serverTimestamp = Math.floor(Date.now() / 1000);
-  const perPage = 2;
   // Get sheetId parse url
   // const objectId = ctx.state.param;
   // const object = await store.findRecord(`objects/${objectId}`);
@@ -83,274 +82,288 @@ const uploadProducts = async (ctx, objectId, sheetId) => {
     ctx.session.uploadStartAt = serverTimestamp;
     // load goods
     const doc = new GoogleSpreadsheet(sheetId);
-    try {
-      // start upload
-      await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
-      await doc.loadInfo(); // loads document properties and worksheets
-      const sheet = doc.sheetsByTitle["products"];
-      await ctx.replyWithMarkdown(`Load goods from ...
+    // try {
+    await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
+    await doc.loadInfo(); // loads document properties and worksheets
+    const sheet = doc.sheetsByTitle["products"];
+    await ctx.replyWithMarkdown(`Load goods from ...
 Sheet name: *${doc.title}*
-Count rows: *${sheet.rowCount - 1}*`);
-      // let rowCount = sheet.rowCount;
-      let rowCount = 10;
-      // read rows
-      // batches 500
-      for (let i = 1; i < rowCount; i += perPage) {
-        console.log(i);
-        // get rows data
-        // const rows = await sheet.getRows({limit: perPage, offset: i});
-        // use get cell because this method have numder formats
-        // GridRange object
-        await sheet.loadCells({
-          startRowIndex: i, endRowIndex: i + perPage, startColumnIndex: 0, endColumnIndex: 7,
-        });
-        // Get a new write batch
-        const batchArray = [];
-        const batchGoods = firebase.firestore().batch();
-        // catalog parallel batched writes
-        let batchCatalogs = firebase.firestore().batch();
-        let batchCatalogsCount = 0;
-        // catalog Tags batch
-        const batchCatalogsTags = firebase.firestore().batch();
-        // loop rows from SHEET
-        for (let j = i; j < i + perPage; j++) {
-          console.log("index", j);
-          console.log(sheet.getCell(j, 7).value);
-          // Stop scan if ID = "stop"
-          const row = {
-            ID: sheet.getCell(j, 0).value,
-            NAME: sheet.getCell(j, 1).value,
-            PURCHASE_PRICE: sheet.getCell(j, 2).value,
-            PRICE: sheet.getCell(j, 3).value,
-            CURRENCY: sheet.getCell(j, 4).value,
-            UNIT: sheet.getCell(j, 5).value,
-            GROUP: sheet.getCell(j, 6).value,
-            TAGS: sheet.getCell(j, 7).value,
-          };
-          if (row.ID === "stop") {
-            rowCount = 0;
-            break;
-          }
-          // validate group
-          // generate catalogs array
-          let groupArray = [];
-          if (row.GROUP) {
-            // generate Ids
-            groupArray = row.GROUP.split("#");
-            groupArray = groupArray.map((catalogName, index) => {
-              let id = null;
-              let parentId = null;
-              let name = catalogName.trim();
-              if (index !== 0) {
-                // Parent exist
-                const url = groupArray[index - 1].match(/(.+)\[([[a-zA-Z0-9-_]+)\]$/);
-                if (url) {
-                  parentId = url[2];
-                } else {
-                  parentId = cyrillicToTranslit.transform(groupArray[index - 1].trim(), "-").toLowerCase();
-                }
-              }
-              const url = catalogName.match(/(.+)\[([[a-zA-Z0-9-_]+)\]$/);
+Count rows: *${sheet.rowCount}*`);
+    let rowCount = sheet.rowCount;
+    // per page default 500
+    const perPage = 500;
+    // read rows
+    // batches 500
+    // test load cells
+    // for (let i = 1; i < rowCount; i += perPage) {
+    //   console.log("row", i + 1 );
+    //   // boundaries must be +1
+    //   await sheet.loadCells({
+    //     startRowIndex: i, endRowIndex: i + perPage, startColumnIndex: 0, endColumnIndex: 2,
+    //   });
+    //   for (let j = i; j < i + perPage && j < rowCount; j++) {
+    //     console.log(j + 1, sheet.getCell(j, 0).value, sheet.getCell(j, 1).value);
+    //   }
+    //   // clear chash save memory
+    //   sheet.resetLocalCache(true);
+    // }
+
+    for (let i = 1; i < rowCount; i += perPage) {
+      // get rows data
+      // const rows = await sheet.getRows({limit: perPage, offset: i});
+      // use get cell because this method have numder formats
+      // GridRange object
+      await sheet.loadCells({
+        startRowIndex: i, endRowIndex: i + perPage, startColumnIndex: 0, endColumnIndex: 8,
+      });
+      // Get a new write batch
+      const batchArray = [];
+      const batchGoods = firebase.firestore().batch();
+      // catalog parallel batched writes
+      let batchCatalogs = firebase.firestore().batch();
+      let batchCatalogsCount = 0;
+      // catalog Tags batch
+      const batchCatalogsTags = firebase.firestore().batch();
+      // loop rows from SHEET
+      for (let j = i; j < i + perPage && j < rowCount; j++) {
+        // Stop scan if ID = "stop"
+        const row = {
+          ID: sheet.getCell(j, 0).value ? sheet.getCell(j, 0).value.toString() : sheet.getCell(j, 0).value,
+          NAME: sheet.getCell(j, 1).value ? sheet.getCell(j, 1).value.trim() : sheet.getCell(j, 1).value,
+          PURCHASE_PRICE: sheet.getCell(j, 2).value,
+          PRICE: sheet.getCell(j, 3).value,
+          CURRENCY: sheet.getCell(j, 4).value,
+          UNIT: sheet.getCell(j, 5).value,
+          GROUP: sheet.getCell(j, 6).value,
+          TAGS: sheet.getCell(j, 7).value,
+        };
+        // stop loop
+        if (row.ID === "stop") {
+          rowCount = 0;
+          break;
+        }
+        // validate group
+        // generate catalogs array
+        let groupArray = [];
+        if (row.GROUP) {
+          // generate Ids
+          groupArray = row.GROUP.split("#");
+          groupArray = groupArray.map((catalogName, index) => {
+            let id = null;
+            let parentId = null;
+            let name = catalogName.trim();
+            if (index !== 0) {
+              // Parent exist
+              const url = groupArray[index - 1].match(/(.+)\[([[a-zA-Z0-9-_]+)\]$/);
               if (url) {
-                name = url[1];
-                id = url[2];
+                parentId = url[2];
               } else {
-                id = cyrillicToTranslit.transform(catalogName.trim(), "-").toLowerCase();
+                parentId = cyrillicToTranslit.transform(groupArray[index - 1].trim(), "-").toLowerCase();
               }
-              return {
-                id,
-                name,
-                parentId: parentId,
-              };
-            });
-          }
-          // generate tags array
-          let tagsArray = [];
-          const tags = [];
-          const tagsNames = [];
-          if (row.TAGS) {
-            // generate Ids
-            tagsArray = row.TAGS.split(",");
-            tagsArray.forEach((tagName) => {
-              tagName = tagName.trim();
-              let tagId = cyrillicToTranslit.transform(tagName, "-").toLowerCase();
-              let tagHidden = false;
-              if (tagId.substring(0, 1) === "+") {
-                tagHidden = true;
-                tagName = tagName.substring(1).trim();
-                tagId = cyrillicToTranslit.transform(tagName, "-").toLowerCase();
-              }
-              tagsNames.push({
-                id: tagId,
-                name: tagName,
-                hidden: tagHidden,
-              });
-              tags.push(tagId);
-            });
-          }
-          // price mutation
-          // const purchasePrice = rows[j].PURCHASE_PRICE &&
-          //   Number(rows[j].PURCHASE_PRICE.replace(",", ".").replace(/\s+/g, ""));
-          // const price = rows[j].PRICE && Number(rows[j].PRICE.replace(",", ".").replace(/\s+/g, ""));
-          const product = {
-            id: row.ID,
-            name: row.NAME.trim(),
-            purchasePrice: roundNumber(row.PURCHASE_PRICE),
-            price: roundNumber(row.PRICE),
-            group: groupArray,
-            tags: tags,
-            unit: row.UNIT,
-          };
-          // required for arrays dont work
-          const rulesProductRow = {
-            "id": "required|alpha_dash|max:16",
-            "name": "required|string",
-            "purchasePrice": "numeric",
-            "price": "required|numeric",
-            "group.*.id": "alpha_dash|max:16",
-            "tags.*": "alpha_dash|max:12",
-            "unit": "required|in:м,шт",
-          };
-          const validateProductRow = new Validator(product, rulesProductRow);
-          // validate data if ID and NAME set org Name and PRICE
-          // check fails If product have ID Name Price else this commet etc...
-          if (validateProductRow.fails() && (product.id && product.name && product.price)) {
-            let errorRow = `In row *${j}* \n`;
-            for (const [key, error] of Object.entries(validateProductRow.errors.all())) {
-              errorRow += `Column *${key}* => *${error}* \n`;
             }
-            throw new Error(errorRow);
-          }
-          // group is required!!!
-          if (product.group.length === 0 && (product.id && product.name && product.price)) {
-            throw new Error(`Group required in row ${j}`);
-          }
-          // save data to firestore
-          if (validateProductRow.passes()) {
-            // check limit goods
-            if (productIsSet.size === maxUploadGoods) {
-              throw new Error(`Limit *${maxUploadGoods}* goods!`);
-            }
-            // add products in batch
-            // check id product is unic
-            if (productIsSet.has(product.id)) {
-              throw new Error(`Product ID *${product.id}* in row *${j}* is exist`);
+            const url = catalogName.match(/(.+)\[([[a-zA-Z0-9-_]+)\]$/);
+            if (url) {
+              name = url[1];
+              id = url[2];
             } else {
-              productIsSet.add(product.id);
+              id = cyrillicToTranslit.transform(catalogName.trim(), "-").toLowerCase();
             }
-            const productRef = firebase.firestore().collection("objects").doc(objectId)
-                .collection("products").doc(product.id);
-            batchGoods.set(productRef, {
-              "name": product.name,
-              "purchasePrice": product.purchasePrice,
-              "price": product.price,
-              "unit": product.unit,
-              "orderNumber": productIsSet.size,
-              "catalog": groupArray[groupArray.length - 1],
-              "tags": tags,
-              "tagsNames": tagsNames,
-              "updatedAt": serverTimestamp,
-            }, {merge: true});
-            // save catalogs to batch
-            for (const catalog of groupArray) {
-              // check if catalog added to batch
-              if (!catalogsIsSet.has(catalog.id)) {
-                catalogsIsSet.set(catalog.id, {parentId: catalog.parentId, tags: new Set()});
-                const catalogRef = firebase.firestore().collection("objects").doc(objectId)
-                    .collection("catalogs").doc(catalog.id);
-                batchCatalogs.set(catalogRef, {
-                  "name": catalog.name,
-                  "parentId": catalog.parentId,
-                  "orderNumber": catalogsIsSet.size,
-                  "updatedAt": serverTimestamp,
-                  "tags": firebase.firestore.FieldValue.delete(),
-                }, {merge: true});
-                // check batch limit 500
-                if (++batchCatalogsCount === perPage) {
-                  batchArray.push(batchCatalogs.commit());
-                  batchCatalogs = firebase.firestore().batch();
-                  batchCatalogsCount = 0;
-                }
+            return {
+              id,
+              name,
+              parentId: parentId,
+            };
+          });
+        }
+        // generate tags array
+        let tagsArray = [];
+        const tags = [];
+        const tagsNames = [];
+        if (row.TAGS) {
+          // generate Ids
+          tagsArray = row.TAGS.split(",");
+          tagsArray.forEach((tagName) => {
+            tagName = tagName.trim();
+            let tagId = cyrillicToTranslit.transform(tagName, "-").toLowerCase();
+            let tagHidden = false;
+            if (tagId.substring(0, 1) === "+") {
+              tagHidden = true;
+              tagName = tagName.substring(1).trim();
+              tagId = cyrillicToTranslit.transform(tagName, "-").toLowerCase();
+            }
+            tagsNames.push({
+              id: tagId,
+              name: tagName,
+              hidden: tagHidden,
+            });
+            tags.push(tagId);
+          });
+        }
+        // price mutation
+        // const purchasePrice = rows[j].PURCHASE_PRICE &&
+        //   Number(rows[j].PURCHASE_PRICE.replace(",", ".").replace(/\s+/g, ""));
+        // const price = rows[j].PRICE && Number(rows[j].PRICE.replace(",", ".").replace(/\s+/g, ""));
+        const product = {
+          id: row.ID,
+          name: row.NAME,
+          purchasePrice: roundNumber(row.PURCHASE_PRICE),
+          price: roundNumber(row.PRICE),
+          group: groupArray,
+          tags: tags,
+          unit: row.UNIT,
+        };
+        // required for arrays dont work
+        const rulesProductRow = {
+          "id": "required|alpha_dash|max:16",
+          "name": "required|string",
+          "purchasePrice": "numeric",
+          "price": "required|numeric",
+          "group.*.id": "alpha_dash|max:16",
+          "tags.*": "alpha_dash|max:12",
+          "unit": "required|in:м,шт",
+        };
+        const validateProductRow = new Validator(product, rulesProductRow);
+        // validate data if ID and NAME set org Name and PRICE
+        // check fails If product have ID Name Price else this commet etc...
+        if (validateProductRow.fails() && (product.id && product.name && product.price)) {
+          let errorRow = `In row *${j + 1}* Product ${product.id}\n`;
+          for (const [key, error] of Object.entries(validateProductRow.errors.all())) {
+            errorRow += `Column *${key}* => *${error}* \n`;
+          }
+          throw new Error(errorRow);
+        }
+        // group is required!!!
+        if (product.group.length === 0 && (product.id && product.name && product.price)) {
+          throw new Error(`Group required in row ${j + 1}`);
+        }
+        // save data to firestore
+        if (validateProductRow.passes()) {
+          // check limit goods
+          if (productIsSet.size === maxUploadGoods) {
+            throw new Error(`Limit *${maxUploadGoods}* goods!`);
+          }
+          // add products in batch
+          // check id product is unic
+          if (productIsSet.has(product.id)) {
+            throw new Error(`Product ID *${product.id}* in row *${j + 1}* is exist`);
+          } else {
+            productIsSet.add(product.id);
+          }
+          const productRef = firebase.firestore().collection("objects").doc(objectId)
+              .collection("products").doc(product.id);
+          batchGoods.set(productRef, {
+            "name": product.name,
+            "purchasePrice": product.purchasePrice,
+            "price": product.price,
+            "unit": product.unit,
+            "orderNumber": productIsSet.size,
+            "catalog": groupArray[groupArray.length - 1],
+            "tags": tags,
+            "tagsNames": tagsNames,
+            "updatedAt": serverTimestamp,
+          }, {merge: true});
+          // save catalogs to batch
+          for (const catalog of groupArray) {
+            // check if catalog added to batch
+            if (!catalogsIsSet.has(catalog.id)) {
+              catalogsIsSet.set(catalog.id, {parentId: catalog.parentId, tags: new Set()});
+              const catalogRef = firebase.firestore().collection("objects").doc(objectId)
+                  .collection("catalogs").doc(catalog.id);
+              batchCatalogs.set(catalogRef, {
+                "name": catalog.name,
+                "parentId": catalog.parentId,
+                "orderNumber": catalogsIsSet.size,
+                "updatedAt": serverTimestamp,
+                "tags": firebase.firestore.FieldValue.delete(),
+              }, {merge: true});
+              // check batch limit 500
+              if (++batchCatalogsCount === perPage) {
+                batchArray.push(batchCatalogs.commit());
+                batchCatalogs = firebase.firestore().batch();
+                batchCatalogsCount = 0;
               }
-              // Check if catalog moved
-              if (catalogsIsSet.get(catalog.id).parentId !== catalog.parentId) {
-                throw new Error(`Goods *${product.name}* in row *${j}*,
+            }
+            // Check if catalog moved
+            if (catalogsIsSet.get(catalog.id).parentId !== catalog.parentId) {
+              throw new Error(`Goods *${product.name}* in row *${j + 1}*,
 Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id).parentId}* to  *${catalog.parentId}*, `);
-              }
             }
-            // add tags Catalogs TODO delete TAGS!!!!
-            if (tagsNames.length) {
-              for (const tagsRow of tagsNames) {
-                if (!catalogsIsSet.get(groupArray[groupArray.length - 1].id).tags.has(tagsRow.id)) {
-                  // if hidden tag not save
-                  if (!tagsRow.hidden) {
-                    const catalogRef = firebase.firestore().collection("objects").doc(objectId)
-                        .collection("catalogs").doc(groupArray[groupArray.length - 1].id);
-                    batchCatalogsTags.set(catalogRef, {
-                      "tags": firebase.firestore.FieldValue.arrayUnion({
-                        id: tagsRow.id,
-                        name: tagsRow.name,
-                      }),
-                    }, {merge: true});
-                  }
+          }
+          // add tags Catalogs TODO delete TAGS!!!!
+          if (tagsNames.length) {
+            for (const tagsRow of tagsNames) {
+              if (!catalogsIsSet.get(groupArray[groupArray.length - 1].id).tags.has(tagsRow.id)) {
+                // if hidden tag not save
+                if (!tagsRow.hidden) {
+                  const catalogRef = firebase.firestore().collection("objects").doc(objectId)
+                      .collection("catalogs").doc(groupArray[groupArray.length - 1].id);
+                  batchCatalogsTags.set(catalogRef, {
+                    "tags": firebase.firestore.FieldValue.arrayUnion({
+                      id: tagsRow.id,
+                      name: tagsRow.name,
+                    }),
+                  }, {merge: true});
                 }
-                // Add tags value to tmp Map
-                catalogsIsSet.get(groupArray[groupArray.length - 1].id).tags.add(tagsRow.id);
               }
+              // Add tags value to tmp Map
+              catalogsIsSet.get(groupArray[groupArray.length - 1].id).tags.add(tagsRow.id);
             }
           }
         }
-        // add bath goods to array
-        batchArray.push(batchGoods.commit());
-        // commit last batch catalog
-        if (batchCatalogsCount > 0 && batchCatalogsCount !== perPage) {
-          batchArray.push(batchCatalogs.commit());
-        }
-        // commit all bathes parallel with tags delete option
-        await Promise.all(batchArray);
-        // commit catalogs tags
-        await batchCatalogsTags.commit();
-        await ctx.replyWithMarkdown(`*${i + perPage}* rows scaned from *${sheet.rowCount - 1}*`);
       }
-      // after upload show upload info
-      const ms = new Date() - start;
-      await ctx.replyWithMarkdown(`Data uploaded in *${Math.floor(ms/1000)}*s:
+      // add bath goods to array
+      batchArray.push(batchGoods.commit());
+      // commit last batch catalog
+      if (batchCatalogsCount > 0 && batchCatalogsCount !== perPage) {
+        batchArray.push(batchCatalogs.commit());
+      }
+      // commit all bathes parallel with tags delete option
+      await Promise.all(batchArray);
+      // commit catalogs tags
+      await batchCatalogsTags.commit();
+      await ctx.replyWithMarkdown(`*${i + perPage}* rows scaned from *${sheet.rowCount}*`);
+      // clear cache
+      sheet.resetLocalCache(true);
+    }
+    // after upload show upload info
+    const ms = new Date() - start;
+    await ctx.replyWithMarkdown(`Data uploaded in *${Math.floor(ms/1000)}*s:
 Goods: *${productIsSet.size}*
 Catalogs: *${catalogsIsSet.size}*`);
-      // delete old Products
-      const batchProductsDelete = firebase.firestore().batch();
-      const productsDeleteSnapshot = await firebase.firestore().collection("objects").doc(objectId)
-          .collection("products")
-          .where("updatedAt", "!=", serverTimestamp).limit(perPage).get();
-      productsDeleteSnapshot.forEach((doc) =>{
-        batchProductsDelete.delete(doc.ref);
-      });
-      await batchProductsDelete.commit();
-      if (productsDeleteSnapshot.size) {
-        await ctx.replyWithMarkdown(`*${productsDeleteSnapshot.size}* products deleted`);
-      }
-      // delete old catalogs
-      const batchCatalogsDelete = firebase.firestore().batch();
-      const catalogsDeleteSnapshot = await firebase.firestore().collection("objects").doc(objectId)
-          .collection("catalogs")
-          .where("updatedAt", "!=", serverTimestamp).limit(perPage).get();
-      catalogsDeleteSnapshot.forEach((doc) =>{
-        batchCatalogsDelete.delete(doc.ref);
-      });
-      await batchCatalogsDelete.commit();
-      if (catalogsDeleteSnapshot.size) {
-        await ctx.replyWithMarkdown(`*${catalogsDeleteSnapshot.size}* catalogs deleted`);
-      }
-    } catch (error) {
-      await ctx.replyWithMarkdown(`Sheet ${error}`);
+    // delete old Products
+    const batchProductsDelete = firebase.firestore().batch();
+    const productsDeleteSnapshot = await firebase.firestore().collection("objects").doc(objectId)
+        .collection("products")
+        .where("updatedAt", "!=", serverTimestamp).limit(perPage).get();
+    productsDeleteSnapshot.forEach((doc) =>{
+      batchProductsDelete.delete(doc.ref);
+    });
+    await batchProductsDelete.commit();
+    if (productsDeleteSnapshot.size) {
+      await ctx.replyWithMarkdown(`*${productsDeleteSnapshot.size}* products deleted`);
     }
+    // delete old catalogs
+    const batchCatalogsDelete = firebase.firestore().batch();
+    const catalogsDeleteSnapshot = await firebase.firestore().collection("objects").doc(objectId)
+        .collection("catalogs")
+        .where("updatedAt", "!=", serverTimestamp).limit(perPage).get();
+    catalogsDeleteSnapshot.forEach((doc) =>{
+      batchCatalogsDelete.delete(doc.ref);
+    });
+    await batchCatalogsDelete.commit();
+    if (catalogsDeleteSnapshot.size) {
+      await ctx.replyWithMarkdown(`*${catalogsDeleteSnapshot.size}* catalogs deleted`);
+    }
+    // } catch (error) {
+    //   await ctx.replyWithMarkdown(`Sheet ${error}`);
+    // }
     // set data for check upload process done!
     // await ctx.state.cart.setSessionData({
     //   uploading: false,
     // });
     ctx.session.uploading = false;
   } else {
-    await ctx.replyWithMarkdown("Uploading..., please wait");
+    throw new Error("Uploading..., please wait");
   }
 };
 // create object handler
