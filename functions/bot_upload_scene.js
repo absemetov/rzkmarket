@@ -6,6 +6,7 @@ const {google} = require("googleapis");
 const CyrillicToTranslit = require("cyrillic-to-translit-js");
 const cyrillicToTranslit = new CyrillicToTranslit();
 const {store} = require("./bot_store_cart.js");
+const {roundNumber} = require("./bot_start_scene");
 // merch center
 async (ctx) => {
   const content = google.content("v2.1");
@@ -49,7 +50,7 @@ const uploadProducts = async (ctx, objectId, sheetId) => {
   const productIsSet = new Set();
   // const serverTimestamp = firebase.firestore.FieldValue.serverTimestamp();
   const serverTimestamp = Math.floor(Date.now() / 1000);
-  const perPage = 500;
+  const perPage = 2;
   // Get sheetId parse url
   // const objectId = ctx.state.param;
   // const object = await store.findRecord(`objects/${objectId}`);
@@ -90,12 +91,19 @@ const uploadProducts = async (ctx, objectId, sheetId) => {
       await ctx.replyWithMarkdown(`Load goods from ...
 Sheet name: *${doc.title}*
 Count rows: *${sheet.rowCount - 1}*`);
-      let rowCount = sheet.rowCount;
+      // let rowCount = sheet.rowCount;
+      let rowCount = 10;
       // read rows
       // batches 500
-      for (let i = 0; i < rowCount - 1; i += perPage) {
+      for (let i = 1; i < rowCount; i += perPage) {
+        console.log(i);
         // get rows data
-        const rows = await sheet.getRows({limit: perPage, offset: i});
+        // const rows = await sheet.getRows({limit: perPage, offset: i});
+        // use get cell because this method have numder formats
+        // GridRange object
+        await sheet.loadCells({
+          startRowIndex: i, endRowIndex: i + perPage, startColumnIndex: 0, endColumnIndex: 7,
+        });
         // Get a new write batch
         const batchArray = [];
         const batchGoods = firebase.firestore().batch();
@@ -105,18 +113,30 @@ Count rows: *${sheet.rowCount - 1}*`);
         // catalog Tags batch
         const batchCatalogsTags = firebase.firestore().batch();
         // loop rows from SHEET
-        for (let j = 0; j < rows.length; j++) {
+        for (let j = i; j < i + perPage; j++) {
+          console.log("index", j);
+          console.log(sheet.getCell(j, 7).value);
           // Stop scan if ID = "stop"
-          if (rows[j].ID === "stop") {
+          const row = {
+            ID: sheet.getCell(j, 0).value,
+            NAME: sheet.getCell(j, 1).value,
+            PURCHASE_PRICE: sheet.getCell(j, 2).value,
+            PRICE: sheet.getCell(j, 3).value,
+            CURRENCY: sheet.getCell(j, 4).value,
+            UNIT: sheet.getCell(j, 5).value,
+            GROUP: sheet.getCell(j, 6).value,
+            TAGS: sheet.getCell(j, 7).value,
+          };
+          if (row.ID === "stop") {
             rowCount = 0;
             break;
           }
           // validate group
           // generate catalogs array
           let groupArray = [];
-          if (rows[j].GROUP) {
+          if (row.GROUP) {
             // generate Ids
-            groupArray = rows[j].GROUP.split("#");
+            groupArray = row.GROUP.split("#");
             groupArray = groupArray.map((catalogName, index) => {
               let id = null;
               let parentId = null;
@@ -148,9 +168,9 @@ Count rows: *${sheet.rowCount - 1}*`);
           let tagsArray = [];
           const tags = [];
           const tagsNames = [];
-          if (rows[j].TAGS) {
+          if (row.TAGS) {
             // generate Ids
-            tagsArray = rows[j].TAGS.split(",");
+            tagsArray = row.TAGS.split(",");
             tagsArray.forEach((tagName) => {
               tagName = tagName.trim();
               let tagId = cyrillicToTranslit.transform(tagName, "-").toLowerCase();
@@ -169,17 +189,17 @@ Count rows: *${sheet.rowCount - 1}*`);
             });
           }
           // price mutation
-          const purchasePrice = rows[j].PURCHASE_PRICE &&
-            Number(rows[j].PURCHASE_PRICE.replace(",", ".").replace(/\s+/g, ""));
-          const price = rows[j].PRICE && Number(rows[j].PRICE.replace(",", ".").replace(/\s+/g, ""));
+          // const purchasePrice = rows[j].PURCHASE_PRICE &&
+          //   Number(rows[j].PURCHASE_PRICE.replace(",", ".").replace(/\s+/g, ""));
+          // const price = rows[j].PRICE && Number(rows[j].PRICE.replace(",", ".").replace(/\s+/g, ""));
           const product = {
-            id: rows[j].ID,
-            name: rows[j].NAME.trim(),
-            purchasePrice,
-            price,
+            id: row.ID,
+            name: row.NAME.trim(),
+            purchasePrice: roundNumber(row.PURCHASE_PRICE),
+            price: roundNumber(row.PRICE),
             group: groupArray,
             tags: tags,
-            unit: rows[j].UNIT,
+            unit: row.UNIT,
           };
           // required for arrays dont work
           const rulesProductRow = {
@@ -195,7 +215,7 @@ Count rows: *${sheet.rowCount - 1}*`);
           // validate data if ID and NAME set org Name and PRICE
           // check fails If product have ID Name Price else this commet etc...
           if (validateProductRow.fails() && (product.id && product.name && product.price)) {
-            let errorRow = `In row *${rows[j].rowIndex}* \n`;
+            let errorRow = `In row *${j}* \n`;
             for (const [key, error] of Object.entries(validateProductRow.errors.all())) {
               errorRow += `Column *${key}* => *${error}* \n`;
             }
@@ -203,7 +223,7 @@ Count rows: *${sheet.rowCount - 1}*`);
           }
           // group is required!!!
           if (product.group.length === 0 && (product.id && product.name && product.price)) {
-            throw new Error(`Group required in row ${rows[j].rowIndex}`);
+            throw new Error(`Group required in row ${j}`);
           }
           // save data to firestore
           if (validateProductRow.passes()) {
@@ -214,7 +234,7 @@ Count rows: *${sheet.rowCount - 1}*`);
             // add products in batch
             // check id product is unic
             if (productIsSet.has(product.id)) {
-              throw new Error(`Product ID *${product.id}* in row *${rows[j].rowIndex}* is exist`);
+              throw new Error(`Product ID *${product.id}* in row *${j}* is exist`);
             } else {
               productIsSet.add(product.id);
             }
@@ -254,7 +274,7 @@ Count rows: *${sheet.rowCount - 1}*`);
               }
               // Check if catalog moved
               if (catalogsIsSet.get(catalog.id).parentId !== catalog.parentId) {
-                throw new Error(`Goods *${product.name}* in row *${rows[j].rowIndex}*,
+                throw new Error(`Goods *${product.name}* in row *${j}*,
 Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id).parentId}* to  *${catalog.parentId}*, `);
               }
             }
@@ -341,12 +361,14 @@ const createObject = async (ctx, todo, sheetId) => {
     await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
     await doc.loadInfo(); // loads document properties and worksheets
     const sheet = doc.sheetsByTitle["info"]; // doc.sheetsById[listId];
-    await sheet.loadCells("B1:B5"); // loads a range of cells
+    await sheet.loadCells("B1:B7"); // loads a range of cells
     const id = sheet.getCellByA1("B1").value;
     const name = sheet.getCellByA1("B2").value;
     const description = sheet.getCellByA1("B3").value;
     const phoneNumber = sheet.getCellByA1("B4").value;
     const address = sheet.getCellByA1("B5").value;
+    const USD = roundNumber(sheet.getCellByA1("B6").value);
+    const EUR = roundNumber(sheet.getCellByA1("B7").value);
     let messageTxt = "";
     const object = {
       id,
@@ -354,6 +376,8 @@ const createObject = async (ctx, todo, sheetId) => {
       description,
       phoneNumber,
       address,
+      USD,
+      EUR,
     };
     const rulesObject = {
       "id": "required|alpha_dash|max:9",
@@ -361,6 +385,8 @@ const createObject = async (ctx, todo, sheetId) => {
       "description": "required|string",
       "phoneNumber": "required|string",
       "address": "required|string",
+      "USD": "numeric",
+      "EUR": "numeric",
     };
     const validateObject = new Validator(object, rulesObject);
     if (validateObject.fails()) {
@@ -387,6 +413,14 @@ const createObject = async (ctx, todo, sheetId) => {
       });
       messageTxt = `Данные обновлены ${object.name}\n`;
     }
+    // update currency
+    if (todo === "updateCurrency") {
+      await store.updateRecord(`objects/${id}`, {
+        USD,
+        EUR,
+      });
+      messageTxt = `Курсы валют обновлены ${object.name}\n`;
+    }
     if (todo === "uploadProducts") {
       await uploadProducts(ctx, object.id, sheetId);
       messageTxt = `Товары загружены ${object.name}, удачных продаж!\n`;
@@ -394,7 +428,8 @@ const createObject = async (ctx, todo, sheetId) => {
     // check object
     const objectRzk = await store.findRecord(`objects/${id}`);
     if (objectRzk) {
-      messageTxt += `<b>Объекты</b> /objects\n<b>Обновить данные объекта</b> /updateObject_${sheetId}\n` +
+      messageTxt += `<b>Обновить курсы валют</b> /updateCurrency_${sheetId}\n` +
+      `<b>Объекты</b> /objects\n<b>Обновить данные объекта</b> /updateObject_${sheetId}\n` +
       `<b>Загрузить товары</b> /uploadProducts_${sheetId}`;
     } else {
       messageTxt += `<b>Создать объект</b> /updateObject_${sheetId}`;

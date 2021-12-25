@@ -85,7 +85,8 @@ startActions.push(async (ctx, next) => {
           callback_data: `c?o=${object.id}&u=1`}]);
         inlineKeyboardArray.push([{text: "📸 Загрузить фото объекта",
           callback_data: `uploadPhotoObj/${object.id}`}]);
-        caption += `<b>Обновить данные объекта</b> /updateObject_${object.sheetId}\n` +
+        caption += `<b>Обновить курсы валют</b> /updateCurrency_${object.sheetId}\n` +
+        `<b>Обновить данные объекта</b> /updateObject_${object.sheetId}\n` +
         `<b>Загрузить товары</b> /uploadProducts_${object.sheetId}`;
       }
       inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: "objects"}]);
