@@ -85,14 +85,15 @@ const showCatalog = async (ctx, next) => {
       const cartProductsArray = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`, "products");
       // generate products array
       for (const product of productsSnapshot.docs) {
-        const addButton = {text: `📦 ${product.data().name} (${product.id}) = ${product.data().price}`+
-          ` ${botConfig.currency}`, callback_data: `aC/${product.id}?o=${objectId}`};
+        const addButton = {text: `📦 ${roundNumber(product.data().price * object[product.data().currency])}` +
+        `${botConfig.currency} ${product.data().name} (${product.id})`,
+        callback_data: `aC/${product.id}?o=${objectId}`};
         // get cart products
         const cartProduct = cartProductsArray && cartProductsArray[product.id];
         if (cartProduct) {
-          addButton.text = `🛒 ${product.data().name} (${product.id})` +
-          `=${cartProduct.price} ${botConfig.currency}*${cartProduct.qty}${cartProduct.unit}` +
-          `=${roundNumber(cartProduct.qty * cartProduct.price)}${botConfig.currency}`;
+          addButton.text = `🛒${cartProduct.qty}${cartProduct.unit} ` +
+          `${roundNumber(cartProduct.price * cartProduct.qty)} ` +
+          `${botConfig.currency} ${product.data().name} (${product.id})`;
           addButton.callback_data = `aC/${product.id}?qty=${cartProduct.qty}&a=1&o=${objectId}`;
         }
         inlineKeyboardArray.push([addButton]);
@@ -135,7 +136,7 @@ const showCatalog = async (ctx, next) => {
     await ctx.editMessageMedia({
       type: "photo",
       media: media,
-      caption: `<b>${ctx.state.bot_first_name} > ${object.name} > Каталог</b>\n` +
+      caption: `<b>${object.name} > Каталог</b>\n` +
         `t.me/${ctx.state.bot_username}?start=OBJECT${objectId}CATALOG${catalogId ? catalogId : "c"}`,
       parse_mode: "html",
     }, {reply_markup: {
@@ -153,7 +154,9 @@ const showProduct = async (ctx, next) => {
     // get product data
     const productId = ctx.state.param;
     const objectId = ctx.state.params.get("o");
+    const object = await store.findRecord(`objects/${objectId}`);
     const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
+    product.price = roundNumber(product.price * object[product.currency]);
     const cartButtons = await cart.cartButtons(objectId, ctx.from.id);
     let catalogUrl = `c/${product.catalog.id}?o=${objectId}`;
     if (ctx.session.pathCatalog) {
@@ -183,7 +186,6 @@ const showProduct = async (ctx, next) => {
     }
     // Get main photo url.
     let publicImgUrl = botConfig.logo;
-    const object = await store.findRecord(`objects/${objectId}`);
     if (object.logo) {
       publicImgUrl = `photos/${objectId}/logo/2/${object.logo}.jpg`;
     }
@@ -197,8 +199,9 @@ const showProduct = async (ctx, next) => {
     await ctx.editMessageMedia({
       type: "photo",
       media,
-      caption: `<b>${ctx.state.bot_first_name} > ${object.name}\n` +
-      `${product.name} (${product.id})\nЦена ${product.price} ${botConfig.currency}</b>\n` +
+      caption: `<b>${object.name}\n` +
+      `${product.name} (${product.id})\n` +
+      `Цена ${product.price} ${botConfig.currency}</b>\n` +
       `t.me/${ctx.state.bot_username}?start=OBJECT${objectId}PRODUCT${productId}`,
       parse_mode: "html",
     }, {reply_markup: {
@@ -254,7 +257,9 @@ catalogsActions.push( async (ctx, next) => {
     if (added) {
       paramsUrl += "&a=1";
     }
+    const object = await store.findRecord(`objects/${objectId}`);
     const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
+    product.price = roundNumber(product.price * object[product.currency]);
     if (product) {
       let catalogUrl = `c/${product.catalog.id}?o=${objectId}`;
       if (ctx.session.pathCatalog) {
@@ -294,7 +299,6 @@ catalogsActions.push( async (ctx, next) => {
       addButtonArray.push(addButton);
       // get main photo url.
       let publicImgUrl = botConfig.logo;
-      const object = await store.findRecord(`objects/${objectId}`);
       if (object.logo) {
         publicImgUrl = `photos/${objectId}/logo/2/${object.logo}.jpg`;
       }
@@ -367,17 +371,20 @@ const showCart = async (ctx, next) => {
     }
     const inlineKeyboardArray = [];
     const object = await store.findRecord(`objects/${objectId}`);
-    let msgTxt = `<b> ${ctx.state.bot_first_name} > ${object.name} > Корзина</b>\n`;
+    let msgTxt = `<b>${object.name} > Корзина</b>\n`;
     let totalQty = 0;
     let totalSum = 0;
     const products = await cart.products(objectId, ctx.from.id);
     for (const [index, product] of products.entries()) {
-      const productTxt = `${index + 1}) ${product.name} (${product.id})` +
+      const productTxt = `${index + 1}) <b>${product.name}</b> (${product.id})` +
       `=${product.price} ${botConfig.currency}*${product.qty}${product.unit}` +
       `=${roundNumber(product.price * product.qty)}${botConfig.currency}`;
       msgTxt += `${productTxt}\n`;
       inlineKeyboardArray.push([
-        {text: `${productTxt}`, callback_data: `aC/${product.id}?qty=${product.qty}&r=1&a=1&o=${objectId}`},
+        {text: `${index + 1}) ${product.qty} ${product.unit} ` +
+        `${roundNumber(product.qty * product.price)} ${botConfig.currency} ` +
+        `${product.name} (${product.id})`,
+        callback_data: `aC/${product.id}?qty=${product.qty}&r=1&a=1&o=${objectId}`},
       ]);
       totalQty += product.qty;
       totalSum += product.qty * product.price;
@@ -726,7 +733,7 @@ catalogsActions.push( async (ctx, next) => {
     await ctx.editMessageMedia({
       type: "photo",
       media,
-      caption: `<b>${ctx.state.bot_first_name} > ${object.name} > Фильтр</b>`,
+      caption: `<b>${object.name} > Фильтр</b>`,
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: [...inlineKeyboardArray],

@@ -55,7 +55,7 @@ const startHandler = async (ctx) => {
   const projectImg = await photoCheckUrl(botConfig.logo);
   await ctx.replyWithPhoto(projectImg,
       {
-        caption: `<b>${ctx.state.bot_first_name}</b>`,
+        caption: "<b>Выберите склад</b>",
         parse_mode: "html",
         reply_markup: {
           inline_keyboard: inlineKeyboardArray,
@@ -66,13 +66,13 @@ const startHandler = async (ctx) => {
 startActions.push(async (ctx, next) => {
   if (ctx.state.routeName === "objects") {
     const objectId = ctx.state.param;
-    let caption = `<b>${ctx.state.bot_first_name}</b>`;
+    let caption = "<b>Выберите склад</b>";
     const inlineKeyboardArray = [];
     let imgUrl = botConfig.logo;
     if (objectId) {
       // get data obj
       const object = await store.findRecord(`objects/${objectId}`);
-      caption = `<b>${ctx.state.bot_first_name} > ${object.name}\n` +
+      caption = `<b>${object.name}\n` +
         `Контакты: ${object.phoneNumber}\n` +
         `Адрес: ${object.address}\n` +
         `Описание: ${object.description}</b>\n`;

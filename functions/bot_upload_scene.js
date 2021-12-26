@@ -86,7 +86,7 @@ const uploadProducts = async (ctx, objectId, sheetId) => {
     await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
     await doc.loadInfo(); // loads document properties and worksheets
     const sheet = doc.sheetsByTitle["products"];
-    await ctx.replyWithMarkdown(`Load goods from ...
+    await ctx.replyWithMarkdown(`Loading goods from ...
 Sheet name: *${doc.title}*
 Count rows: *${sheet.rowCount}*`);
     let rowCount = sheet.rowCount;
@@ -210,6 +210,7 @@ Count rows: *${sheet.rowCount}*`);
           price: roundNumber(row.PRICE),
           group: groupArray,
           tags: tags,
+          currency: row.CURRENCY,
           unit: row.UNIT,
         };
         // required for arrays dont work
@@ -220,31 +221,36 @@ Count rows: *${sheet.rowCount}*`);
           "price": "required|numeric",
           "group.*.id": "alpha_dash|max:16",
           "tags.*": "alpha_dash|max:12",
+          "currency": "required|in:USD,EUR,RUB,UAH",
           "unit": "required|in:м,шт",
         };
         const validateProductRow = new Validator(product, rulesProductRow);
         // validate data if ID and NAME set org Name and PRICE
         // check fails If product have ID Name Price else this commet etc...
         if (validateProductRow.fails() && (product.id && product.name && product.price)) {
-          let errorRow = `In row *${j + 1}* Product ${product.id}\n`;
+          let errorRow = `In row *${j + 1}* Product ID *${product.id}*\n`;
           for (const [key, error] of Object.entries(validateProductRow.errors.all())) {
             errorRow += `Column *${key}* => *${error}* \n`;
           }
+          ctx.session.uploading = false;
           throw new Error(errorRow);
         }
         // group is required!!!
         if (product.group.length === 0 && (product.id && product.name && product.price)) {
+          ctx.session.uploading = false;
           throw new Error(`Group required in row ${j + 1}`);
         }
         // save data to firestore
         if (validateProductRow.passes()) {
           // check limit goods
           if (productIsSet.size === maxUploadGoods) {
+            ctx.session.uploading = false;
             throw new Error(`Limit *${maxUploadGoods}* goods!`);
           }
           // add products in batch
           // check id product is unic
           if (productIsSet.has(product.id)) {
+            ctx.session.uploading = false;
             throw new Error(`Product ID *${product.id}* in row *${j + 1}* is exist`);
           } else {
             productIsSet.add(product.id);
@@ -255,6 +261,7 @@ Count rows: *${sheet.rowCount}*`);
             "name": product.name,
             "purchasePrice": product.purchasePrice,
             "price": product.price,
+            "currency": product.currency,
             "unit": product.unit,
             "orderNumber": productIsSet.size,
             "catalog": groupArray[groupArray.length - 1],
@@ -285,6 +292,7 @@ Count rows: *${sheet.rowCount}*`);
             }
             // Check if catalog moved
             if (catalogsIsSet.get(catalog.id).parentId !== catalog.parentId) {
+              ctx.session.uploading = false;
               throw new Error(`Goods *${product.name}* in row *${j + 1}*,
 Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id).parentId}* to  *${catalog.parentId}*, `);
             }
@@ -374,7 +382,7 @@ const createObject = async (ctx, todo, sheetId) => {
     await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
     await doc.loadInfo(); // loads document properties and worksheets
     const sheet = doc.sheetsByTitle["info"]; // doc.sheetsById[listId];
-    await sheet.loadCells("B1:B7"); // loads a range of cells
+    await sheet.loadCells("B1:B9"); // loads a range of cells
     const id = sheet.getCellByA1("B1").value;
     const name = sheet.getCellByA1("B2").value;
     const description = sheet.getCellByA1("B3").value;
@@ -382,6 +390,8 @@ const createObject = async (ctx, todo, sheetId) => {
     const address = sheet.getCellByA1("B5").value;
     const USD = roundNumber(sheet.getCellByA1("B6").value);
     const EUR = roundNumber(sheet.getCellByA1("B7").value);
+    const UAH = roundNumber(sheet.getCellByA1("B8").value);
+    const RUB = roundNumber(sheet.getCellByA1("B9").value);
     let messageTxt = "";
     const object = {
       id,
@@ -391,6 +401,8 @@ const createObject = async (ctx, todo, sheetId) => {
       address,
       USD,
       EUR,
+      UAH,
+      RUB,
     };
     const rulesObject = {
       "id": "required|alpha_dash|max:9",
@@ -398,8 +410,10 @@ const createObject = async (ctx, todo, sheetId) => {
       "description": "required|string",
       "phoneNumber": "required|string",
       "address": "required|string",
-      "USD": "numeric",
-      "EUR": "numeric",
+      "USD": "required|numeric",
+      "EUR": "required|numeric",
+      "UAH": "required|numeric",
+      "RUB": "required|numeric",
     };
     const validateObject = new Validator(object, rulesObject);
     if (validateObject.fails()) {
@@ -431,6 +445,8 @@ const createObject = async (ctx, todo, sheetId) => {
       await store.updateRecord(`objects/${id}`, {
         USD,
         EUR,
+        UAH,
+        RUB,
       });
       messageTxt = `Курсы валют обновлены ${object.name}\n`;
     }
@@ -441,8 +457,9 @@ const createObject = async (ctx, todo, sheetId) => {
     // check object
     const objectRzk = await store.findRecord(`objects/${id}`);
     if (objectRzk) {
-      messageTxt += `<b>Обновить курсы валют</b> /updateCurrency_${sheetId}\n` +
-      `<b>Объекты</b> /objects\n<b>Обновить данные объекта</b> /updateObject_${sheetId}\n` +
+      messageTxt += "<b>Объекты</b> /objects\n" +
+      `<b>Обновить курсы валют</b> /updateCurrency_${sheetId}\n` +
+      `<b>Обновить данные объекта</b> /updateObject_${sheetId}\n` +
       `<b>Загрузить товары</b> /uploadProducts_${sheetId}`;
     } else {
       messageTxt += `<b>Создать объект</b> /updateObject_${sheetId}`;

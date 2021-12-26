@@ -17,7 +17,7 @@ const myOrders = async (ctx, next) => {
     const inlineKeyboardArray = [];
     const orderId = ctx.state.params.get("oId");
     const objectId = ctx.state.params.get("o");
-    let caption = `<b>${ctx.state.bot_first_name} > Мои заказы</b>`;
+    let caption = "<b>Мои заказы</b>";
     if (ctx.session.pathOrderCurrent) {
       caption = `Заказы от ${userId}`;
     }
@@ -40,7 +40,7 @@ const myOrders = async (ctx, next) => {
         let totalQty = 0;
         let totalSum = 0;
         store.sort(order.products).forEach((product, index) => {
-          const productTxt = `${index + 1}) ${product.name} (${product.id})` +
+          const productTxt = `${index + 1})<b>${product.name}</b> (${product.id})` +
         `=${product.price} ${botConfig.currency}*${product.qty}${product.unit}` +
         `=${roundNumber(product.price * product.qty)}${botConfig.currency}`;
           caption += `${productTxt}\n`;
@@ -137,7 +137,7 @@ const showOrders = async (ctx, next) => {
     const orderId = ctx.state.param;
     const limit = 10;
     const object = await store.findRecord(`objects/${objectId}`);
-    let caption = `<b>${ctx.state.bot_first_name} > Заказы ${object.name}</b>`;
+    let caption = `<b>Заказы ${object.name}</b>`;
     if (orderId) {
       // show order
       const order = await store.findRecord(`objects/${objectId}/orders/${orderId}`);
@@ -145,7 +145,7 @@ const showOrders = async (ctx, next) => {
         // show order
         ctx.session.pathOrderCurrent = ctx.callbackQuery.data;
         const date = moment.unix(order.createdAt);
-        caption = `<b>${ctx.state.bot_first_name} > ${order.objectName} >` +
+        caption = `<b>${order.objectName} >` +
         ` Заказ #${store.formatOrderNumber(order.userId, order.orderNumber)}` +
         ` (${date.fromNow()})\n` +
         `${order.recipientName} ${order.phoneNumber}\n` +
@@ -157,8 +157,8 @@ const showOrders = async (ctx, next) => {
         let totalQty = 0;
         let totalSum = 0;
         store.sort(order.products).forEach((product, index) => {
-          const productTxt = `${index + 1})${product.name} (${product.id})` +
-        `=${product.price} ${botConfig.currency}*${product.qty}${product.unit}` +
+          const productTxt = `${index + 1})<b>${product.name}</b> (${product.id})` +
+        `=${product.price}${botConfig.currency}*${product.qty}${product.unit}` +
         `=${roundNumber(product.price * product.qty)}${botConfig.currency}`;
           caption += `${productTxt}\n`;
           totalQty += product.qty;
@@ -372,15 +372,13 @@ ordersActions.push(async (ctx, next) => {
     if (editProducts) {
       // clear cart then export!!!
       const order = await store.findRecord(`objects/${objectId}/orders/${orderId}`);
-      await Promise.all([
-        cart.clear(objectId, ctx.from.id),
-        store.updateRecord(`users/${ctx.from.id}`, {"session.orderData": {
-          id: order.id,
-          orderNumber: order.orderNumber,
-          recipientName: order.recipientName,
-        }}),
-        store.updateRecord(`objects/${objectId}/carts/${ctx.from.id}`, {products: order.products}),
-      ]);
+      await cart.clear(objectId, ctx.from.id);
+      await store.updateRecord(`users/${ctx.from.id}`, {"session.orderData": {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        recipientName: order.recipientName,
+      }});
+      await store.updateRecord(`objects/${objectId}/carts/${ctx.from.id}`, {products: order.products}),
       // set route name
       ctx.state.routeName = "cart";
       await showCart(ctx, next);
