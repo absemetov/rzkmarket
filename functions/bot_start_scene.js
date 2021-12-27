@@ -80,14 +80,16 @@ startActions.push(async (ctx, next) => {
       inlineKeyboardArray.push([{text: "📁 Каталог", callback_data: `c?o=${object.id}`}]);
       inlineKeyboardArray.push([cartButtons[1]]);
       if (ctx.state.isAdmin) {
-        inlineKeyboardArray.push([{text: "🧾 Заказы admin", callback_data: `orders?o=${object.id}`}]);
+        inlineKeyboardArray.push([{text: `🧾 Заказы ${object.name}`, callback_data: `orders?o=${object.id}`}]);
+        inlineKeyboardArray.push([{text: "Обновить данные", callback_data: `upload/${object.id}?todo=updateObject`}]);
+        inlineKeyboardArray.push([{text: "Загрузить товары",
+          callback_data: `upload/${object.id}?todo=uploadProducts`}]);
         inlineKeyboardArray.push([{text: "📸 Загрузить фото каталогов",
           callback_data: `c?o=${object.id}&u=1`}]);
         inlineKeyboardArray.push([{text: "📸 Загрузить фото объекта",
           callback_data: `uploadPhotoObj/${object.id}`}]);
-        caption += `<b>Обновить курсы валют</b> /updateCurrency_${object.sheetId}\n` +
-        `<b>Обновить данные объекта</b> /updateObject_${object.sheetId}\n` +
-        `<b>Загрузить товары</b> /uploadProducts_${object.sheetId}`;
+        caption += `<b>Курсы валют: USD = ${object.USD}${botConfig.currency}, ` +
+        `EUR = ${object.EUR}${botConfig.currency}</b>\n`;
       }
       inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: "objects"}]);
       // set logo obj

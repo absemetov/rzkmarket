@@ -2,7 +2,7 @@ const functions = require("firebase-functions");
 const {Telegraf, session} = require("telegraf");
 const {startActions, startHandler, parseUrl, isAdmin, uploadPhotoObj, photoCheckUrl} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
-const {createObject} = require("./bot_upload_scene");
+const {uploadActions, uploaForm} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
 const {uploadPhotoProduct, uploadPhotoCat, catalogsActions, cartWizard} = require("./bot_catalog_scene");
 const {store} = require("./bot_store_cart.js");
@@ -28,7 +28,7 @@ bot.use(async (ctx, next) => {
 // route actions
 // eslint-disable-next-line no-useless-escape
 bot.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/,
-    parseUrl, ...startActions, ...catalogsActions, ...ordersActions, ...monoActions);
+    parseUrl, ...startActions, ...catalogsActions, ...ordersActions, ...monoActions, ...uploadActions);
 // start bot
 bot.start(async (ctx) => {
   // deep linking parsing
@@ -49,7 +49,7 @@ bot.start(async (ctx) => {
         inlineKeyboardArray.push([{text: "🗂 Перейти в каталоги",
           callback_data: `c?o=${objectId}`}]);
       }
-      caption = `<b>${ctx.state.bot_first_name} > ${object.name}\n` +
+      caption = `<b>${object.name}\n` +
         `Контакты: ${object.phoneNumber}\n` +
         `Адрес: ${object.address}\n` +
         `Описание: ${object.description}</b>`;
@@ -68,7 +68,7 @@ bot.start(async (ctx) => {
         inlineKeyboardArray.push([{text: "🗂 Перейти в каталоги",
           callback_data: `c?o=${objectId}`}]);
       }
-      caption = `<b>${ctx.state.bot_first_name} > ${object.name}\n` +
+      caption = `<b>${object.name}\n` +
         `Контакты: ${object.phoneNumber}\n` +
         `Адрес: ${object.address}\n` +
         `Описание: ${object.description}</b>`;
@@ -100,10 +100,6 @@ bot.command("objects", async (ctx) => {
 bot.command("mono", async (ctx) => {
   await monoHandler(ctx);
 });
-// update object info, upload products
-bot.hears(/([a-zA-Z0-9-_]+)_([a-zA-Z0-9-_]+)/, async (ctx) => {
-  await createObject(ctx, ctx.match[1], ctx.match[2]);
-});
 // check session vars
 bot.on(["text", "contact"], async (ctx) => {
   if (ctx.session.scene === "editOrder") {
@@ -127,7 +123,9 @@ bot.on(["text", "contact"], async (ctx) => {
   // create object
   const sheetUrl = ctx.message.text.match(/d\/(.*)\//);
   if (sheetUrl) {
-    await createObject(ctx, null, sheetUrl[1]);
+    // save sheetId to session
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {"sheetId": sheetUrl[1]}});
+    await uploaForm(ctx, sheetUrl[1]);
     return;
   }
   await ctx.reply("session scene is null");

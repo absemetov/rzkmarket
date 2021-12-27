@@ -375,7 +375,103 @@ Catalogs: *${catalogsIsSet.size}*`);
   }
 };
 // create object handler
-const createObject = async (ctx, todo, sheetId) => {
+const uploadActions = [];
+const createObject = async (ctx, next) => {
+  if (ctx.state.routeName === "upload") {
+    const objectId = ctx.state.param;
+    const todo = ctx.state.params.get("todo");
+    const object = await store.findRecord(`objects/${objectId}`);
+    let sheetId = "";
+    if (todo === "updateObject" || todo === "uploadProducts") {
+      sheetId = object.sheetId;
+    } else {
+      const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");
+      sheetId =sessionFire.sheetId;
+    }
+    // upload goods
+    if (todo === "uploadProducts") {
+      await uploadProducts(ctx, object.id, sheetId);
+      await ctx.replyWithHTML(`Товары загружены ${object.name}, удачных продаж!\n`);
+      return;
+    }
+    const doc = new GoogleSpreadsheet(sheetId);
+    try {
+      // start upload
+      await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
+      await doc.loadInfo(); // loads document properties and worksheets
+      const sheet = doc.sheetsByTitle["info"]; // doc.sheetsById[listId];
+      await sheet.loadCells("B1:B9"); // loads a range of cells
+      const id = sheet.getCellByA1("B1").value;
+      const name = sheet.getCellByA1("B2").value;
+      const description = sheet.getCellByA1("B3").value;
+      const phoneNumber = sheet.getCellByA1("B4").value;
+      const address = sheet.getCellByA1("B5").value;
+      const USD = roundNumber(sheet.getCellByA1("B6").value);
+      const EUR = roundNumber(sheet.getCellByA1("B7").value);
+      const UAH = roundNumber(sheet.getCellByA1("B8").value);
+      const RUB = roundNumber(sheet.getCellByA1("B9").value);
+      let messageTxt = "";
+      const objectCheck = {
+        id,
+        name,
+        description,
+        phoneNumber,
+        address,
+        USD,
+        EUR,
+        UAH,
+        RUB,
+      };
+      const rulesObject = {
+        "id": "required|alpha_dash|max:9",
+        "name": "required|string",
+        "description": "required|string",
+        "phoneNumber": "required|string",
+        "address": "required|string",
+        "USD": "required|numeric",
+        "EUR": "required|numeric",
+        "UAH": "required|numeric",
+        "RUB": "required|numeric",
+      };
+      const validateObject = new Validator(objectCheck, rulesObject);
+      if (validateObject.fails()) {
+        let errorRow = "";
+        for (const [key, error] of Object.entries(validateObject.errors.all())) {
+          errorRow += `field *${key}* => *${error}* \n`;
+        }
+        throw new Error(errorRow);
+      }
+      // actions
+      if (todo === "createObject" || todo === "updateObject") {
+        await store.createRecord(`objects/${objectId}`, {
+          name,
+          description,
+          phoneNumber,
+          address,
+          sheetId,
+          USD,
+          EUR,
+          UAH,
+          RUB,
+        });
+        if (object) {
+          messageTxt = `Данные обновлены ${object.name} /objects`;
+        } else {
+          messageTxt = `Объект ${name} создан! /objects`;
+        }
+      }
+      await ctx.replyWithHTML(messageTxt);
+      // get object data
+    } catch (error) {
+      await ctx.replyWithMarkdown(`Sheet ${error}`);
+    }
+    await ctx.answerCbQuery();
+  } else {
+    return next();
+  }
+};
+// show upload form when send link
+const uploaForm = async (ctx, sheetId) => {
   const doc = new GoogleSpreadsheet(sheetId);
   try {
     // start upload
@@ -430,46 +526,25 @@ const createObject = async (ctx, todo, sheetId) => {
     `description: <b>${description}</b>\n` +
     `phoneNumber: <b>${phoneNumber}</b>\n` +
     `address: <b>${address}</b>\n`;
-    if (todo === "updateObject") {
-      await store.createRecord(`objects/${id}`, {
-        name,
-        description,
-        phoneNumber,
-        address,
-        sheetId,
-      });
-      messageTxt = `Данные обновлены ${object.name}\n`;
-    }
-    // update currency
-    if (todo === "updateCurrency") {
-      await store.updateRecord(`objects/${id}`, {
-        USD,
-        EUR,
-        UAH,
-        RUB,
-      });
-      messageTxt = `Курсы валют обновлены ${object.name}\n`;
-    }
-    if (todo === "uploadProducts") {
-      await uploadProducts(ctx, object.id, sheetId);
-      messageTxt = `Товары загружены ${object.name}, удачных продаж!\n`;
-    }
     // check object
     const objectRzk = await store.findRecord(`objects/${id}`);
+    const inlineKeyboardArray = [];
+    let txtBtn = "";
     if (objectRzk) {
-      messageTxt += "<b>Объекты</b> /objects\n" +
-      `<b>Обновить курсы валют</b> /updateCurrency_${sheetId}\n` +
-      `<b>Обновить данные объекта</b> /updateObject_${sheetId}\n` +
-      `<b>Загрузить товары</b> /uploadProducts_${sheetId}`;
+      txtBtn = "Обновить";
     } else {
-      messageTxt += `<b>Создать объект</b> /updateObject_${sheetId}`;
+      txtBtn = "Создать";
     }
-    await ctx.replyWithHTML(messageTxt);
+    inlineKeyboardArray.push([{text: `${txtBtn} объект ${name}`, callback_data: `upload/${id}?todo=createObject`}]);
+    await ctx.replyWithHTML(messageTxt, {
+      reply_markup: {
+        inline_keyboard: inlineKeyboardArray,
+      }});
     // get object data
   } catch (error) {
     await ctx.replyWithMarkdown(`Sheet ${error}`);
   }
 };
-
-exports.uploadProducts = uploadProducts;
-exports.createObject = createObject;
+uploadActions.push(createObject);
+exports.uploaForm = uploaForm;
+exports.uploadActions = uploadActions;

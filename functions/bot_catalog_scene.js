@@ -381,7 +381,7 @@ const showCart = async (ctx, next) => {
       `=${roundNumber(product.price * product.qty)}${botConfig.currency}`;
       msgTxt += `${productTxt}\n`;
       inlineKeyboardArray.push([
-        {text: `${index + 1}) ${product.qty} ${product.unit} ` +
+        {text: `${index + 1}) ${product.qty}${product.unit}=` +
         `${roundNumber(product.qty * product.price)} ${botConfig.currency} ` +
         `${product.name} (${product.id})`,
         callback_data: `aC/${product.id}?qty=${product.qty}&r=1&a=1&o=${objectId}`},
@@ -635,7 +635,7 @@ const cartWizard = [
     if (ctx.message.text === "Оформить заказ") {
       // save order
       await cart.createOrder(ctx);
-      await ctx.reply("Спасибо за заказ! /objects", {
+      await ctx.reply("Спасибо за заказ! Скоро мы с Вами свяжемся. /objects", {
         reply_markup: {
           remove_keyboard: true,
         }});
