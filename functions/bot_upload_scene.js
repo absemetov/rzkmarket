@@ -3,8 +3,7 @@ const {GoogleSpreadsheet} = require("google-spreadsheet");
 const creds = require("./rzk-com-ua-d1d3248b8410.json");
 const Validator = require("validatorjs");
 const {google} = require("googleapis");
-const CyrillicToTranslit = require("cyrillic-to-translit-js");
-const cyrillicToTranslit = new CyrillicToTranslit();
+const cyrillicToTranslit = require("cyrillic-to-translit-js");
 const {store} = require("./bot_store_cart.js");
 const {roundNumber} = require("./bot_start_scene");
 // merch center
@@ -158,7 +157,8 @@ Count rows: *${sheet.rowCount}*`);
               if (url) {
                 parentId = url[2];
               } else {
-                parentId = cyrillicToTranslit.transform(groupArray[index - 1].trim(), "-").toLowerCase();
+                parentId = cyrillicToTranslit().transform(groupArray[index - 1].trim(), "-").toLowerCase();
+                parentId = cyrillicToTranslit({preset: "uk"}).transform(parentId).toLowerCase();
               }
             }
             const url = catalogName.match(/(.+)\[([[a-zA-Z0-9-_]+)\]$/);
@@ -166,8 +166,10 @@ Count rows: *${sheet.rowCount}*`);
               name = url[1];
               id = url[2];
             } else {
-              id = cyrillicToTranslit.transform(catalogName.trim(), "-").toLowerCase();
+              id = cyrillicToTranslit().transform(catalogName.trim(), "-").toLowerCase();
+              id = cyrillicToTranslit({preset: "uk"}).transform(id).toLowerCase();
             }
+            console.log(id);
             return {
               id,
               name,
@@ -184,12 +186,14 @@ Count rows: *${sheet.rowCount}*`);
           tagsArray = row.TAGS.split(",");
           tagsArray.forEach((tagName) => {
             tagName = tagName.trim();
-            let tagId = cyrillicToTranslit.transform(tagName, "-").toLowerCase();
+            let tagId = cyrillicToTranslit().transform(tagName, "-").toLowerCase();
+            tagId = cyrillicToTranslit({preset: "uk"}).transform(tagId).toLowerCase();
             let tagHidden = false;
             if (tagId.substring(0, 1) === "+") {
               tagHidden = true;
               tagName = tagName.substring(1).trim();
-              tagId = cyrillicToTranslit.transform(tagName, "-").toLowerCase();
+              tagId = cyrillicToTranslit().transform(tagName, "-").toLowerCase();
+              tagId = cyrillicToTranslit({preset: "uk"}).transform(tagId).toLowerCase();
             }
             tagsNames.push({
               id: tagId,
@@ -388,15 +392,15 @@ const createObject = async (ctx, next) => {
       const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");
       sheetId =sessionFire.sheetId;
     }
-    // upload goods
-    if (todo === "uploadProducts") {
-      await uploadProducts(ctx, object.id, sheetId);
-      await ctx.replyWithHTML(`Товары загружены ${object.name}, удачных продаж!\n`);
-      return;
-    }
-    const doc = new GoogleSpreadsheet(sheetId);
     try {
+      // upload goods
+      if (todo === "uploadProducts") {
+        await uploadProducts(ctx, object.id, sheetId);
+        await ctx.replyWithHTML(`Товары загружены ${object.name}, удачных продаж!\n`);
+        return;
+      }
       // start upload
+      const doc = new GoogleSpreadsheet(sheetId);
       await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
       await doc.loadInfo(); // loads document properties and worksheets
       const sheet = doc.sheetsByTitle["info"]; // doc.sheetsById[listId];

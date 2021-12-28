@@ -116,7 +116,7 @@ bot.on(["text", "contact"], async (ctx) => {
     return;
   }
   const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");
-  if (sessionFire.scene === "wizardOrder") {
+  if (sessionFire && sessionFire.scene === "wizardOrder") {
     await cartWizard[sessionFire.cursor](ctx);
     return;
   }
@@ -133,17 +133,17 @@ bot.on(["text", "contact"], async (ctx) => {
 // upload photo
 bot.on("photo", async (ctx) => {
   const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");
-  if (sessionFire.scene === "uploadPhotoProduct") {
+  if (sessionFire && sessionFire.scene === "uploadPhotoProduct") {
     await ctx.reply("uploadPhotoProduct start");
     await uploadPhotoProduct(ctx, sessionFire.objectId, sessionFire.productId);
     return;
   }
-  if (sessionFire.scene === "uploadPhotoCat") {
+  if (sessionFire && sessionFire.scene === "uploadPhotoCat") {
     await ctx.reply("uploadPhotoCat start");
     await uploadPhotoCat(ctx, sessionFire.objectId, sessionFire.catalogId);
     return;
   }
-  if (sessionFire.scene === "uploadPhotoObj") {
+  if (sessionFire && sessionFire.scene === "uploadPhotoObj") {
     await ctx.reply("uploadPhotoObj start");
     await uploadPhotoObj(ctx, sessionFire.objectId);
     return;
