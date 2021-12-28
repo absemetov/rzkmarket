@@ -3,9 +3,11 @@ const {GoogleSpreadsheet} = require("google-spreadsheet");
 const creds = require("./rzk-com-ua-d1d3248b8410.json");
 const Validator = require("validatorjs");
 const {google} = require("googleapis");
-const cyrillicToTranslit = require("cyrillic-to-translit-js");
+const CyrillicToTranslit = require("cyrillic-to-translit-js");
 const {store} = require("./bot_store_cart.js");
 const {roundNumber} = require("./bot_start_scene");
+const cyrillicToTranslit = new CyrillicToTranslit();
+const cyrillicToTranslitUk = new CyrillicToTranslit({preset: "uk"});
 // merch center
 async (ctx) => {
   const content = google.content("v2.1");
@@ -157,8 +159,8 @@ Count rows: *${sheet.rowCount}*`);
               if (url) {
                 parentId = url[2];
               } else {
-                parentId = cyrillicToTranslit().transform(groupArray[index - 1].trim(), "-").toLowerCase();
-                parentId = cyrillicToTranslit({preset: "uk"}).transform(parentId).toLowerCase();
+                parentId = cyrillicToTranslit.transform(groupArray[index - 1].trim(), "-").toLowerCase();
+                parentId = cyrillicToTranslitUk.transform(parentId).toLowerCase();
               }
             }
             const url = catalogName.match(/(.+)\[([[a-zA-Z0-9-_]+)\]$/);
@@ -166,10 +168,9 @@ Count rows: *${sheet.rowCount}*`);
               name = url[1];
               id = url[2];
             } else {
-              id = cyrillicToTranslit().transform(catalogName.trim(), "-").toLowerCase();
-              id = cyrillicToTranslit({preset: "uk"}).transform(id).toLowerCase();
+              id = cyrillicToTranslit.transform(catalogName.trim(), "-").toLowerCase();
+              id = cyrillicToTranslitUk.transform(id).toLowerCase();
             }
-            console.log(id);
             return {
               id,
               name,
@@ -186,14 +187,14 @@ Count rows: *${sheet.rowCount}*`);
           tagsArray = row.TAGS.split(",");
           tagsArray.forEach((tagName) => {
             tagName = tagName.trim();
-            let tagId = cyrillicToTranslit().transform(tagName, "-").toLowerCase();
-            tagId = cyrillicToTranslit({preset: "uk"}).transform(tagId).toLowerCase();
+            let tagId = cyrillicToTranslit.transform(tagName, "-").toLowerCase();
+            tagId = cyrillicToTranslitUk.transform(tagId).toLowerCase();
             let tagHidden = false;
             if (tagId.substring(0, 1) === "+") {
               tagHidden = true;
               tagName = tagName.substring(1).trim();
-              tagId = cyrillicToTranslit().transform(tagName, "-").toLowerCase();
-              tagId = cyrillicToTranslit({preset: "uk"}).transform(tagId).toLowerCase();
+              tagId = cyrillicToTranslit.transform(tagName, "-").toLowerCase();
+              tagId = cyrillicToTranslitUk.transform(tagId).toLowerCase();
             }
             tagsNames.push({
               id: tagId,
