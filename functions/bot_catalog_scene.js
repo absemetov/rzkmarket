@@ -137,10 +137,10 @@ const showCatalog = async (ctx, next) => {
       type: "photo",
       media: media,
       caption: `<b>${object.name} > Каталог</b>\n` +
-        `t.me/${ctx.state.bot_username}?start=OBJECT${objectId}CATALOG${catalogId ? catalogId : "c"}`,
+        `Поделиться 🔗: t.me/${ctx.state.bot_username}?start=OBJECT${objectId}CATALOG${catalogId ? catalogId : "c"}`,
       parse_mode: "html",
     }, {reply_markup: {
-      inline_keyboard: [...inlineKeyboardArray],
+      inline_keyboard: inlineKeyboardArray,
     }});
     await ctx.answerCbQuery();
   } else {
@@ -202,10 +202,10 @@ const showProduct = async (ctx, next) => {
       caption: `<b>${object.name}\n` +
       `${product.name} (${product.id})\n` +
       `Цена ${product.price} ${botConfig.currency}</b>\n` +
-      `t.me/${ctx.state.bot_username}?start=OBJECT${objectId}PRODUCT${productId}`,
+      `Поделиться 🔗: t.me/${ctx.state.bot_username}?start=OBJECT${objectId}PRODUCT${productId}`,
       parse_mode: "html",
     }, {reply_markup: {
-      inline_keyboard: [...inlineKeyboardArray],
+      inline_keyboard: inlineKeyboardArray,
     }});
     await ctx.answerCbQuery();
   } else {
@@ -363,7 +363,9 @@ const showCart = async (ctx, next) => {
     const deleteOrderId = ctx.state.params.get("deleteOrderId");
     const objectId = ctx.state.params.get("o");
     if (deleteOrderId) {
-      await store.deleteRecord(`users/${ctx.from.id}`, "session.orderData");
+      await store.createRecord(`users/${ctx.from.id}`, {"session": {
+        "orderData": null,
+      }});
     }
     // clear cart
     if (clear) {
@@ -374,12 +376,18 @@ const showCart = async (ctx, next) => {
     let msgTxt = `<b>${object.name} > Корзина</b>\n`;
     let totalQty = 0;
     let totalSum = 0;
+    let itemShow = 0;
     const products = await cart.products(objectId, ctx.from.id);
     for (const [index, product] of products.entries()) {
       const productTxt = `${index + 1}) <b>${product.name}</b> (${product.id})` +
       `=${product.price} ${botConfig.currency}*${product.qty}${product.unit}` +
       `=${roundNumber(product.price * product.qty)}${botConfig.currency}`;
-      msgTxt += `${productTxt}\n`;
+      // truncate long string
+      if ((msgTxt + `${productTxt}\n`).length < 1024) {
+        msgTxt += `${productTxt}\n`;
+        itemShow++;
+        // msgTxt = msgTxt.substring(0, 1024);
+      }
       inlineKeyboardArray.push([
         {text: `${index + 1}) ${product.qty}${product.unit}=` +
         `${roundNumber(product.qty * product.price)} ${botConfig.currency} ` +
@@ -388,6 +396,9 @@ const showCart = async (ctx, next) => {
       ]);
       totalQty += product.qty;
       totalSum += product.qty * product.price;
+    }
+    if (itemShow !== inlineKeyboardArray.length) {
+      msgTxt += "...\n";
     }
     if (totalQty) {
       msgTxt += `<b>Количество товара: ${totalQty}\n` +
@@ -419,10 +430,6 @@ const showCart = async (ctx, next) => {
     // Set Main menu
     inlineKeyboardArray.push([{text: `🏪 ${object.name}`,
       callback_data: `objects/${objectId}`}]);
-    // truncate long string
-    if (msgTxt.length > 1024) {
-      msgTxt = msgTxt.substring(0, 1024);
-    }
     // edit message
     let publicImgUrl = botConfig.logo;
     if (object.logo) {
@@ -435,7 +442,7 @@ const showCart = async (ctx, next) => {
       caption: msgTxt,
       parse_mode: "html",
     }, {reply_markup: {
-      inline_keyboard: [...inlineKeyboardArray],
+      inline_keyboard: inlineKeyboardArray,
     }});
     await ctx.answerCbQuery();
   } else {
@@ -452,7 +459,7 @@ const cartWizard = [
         {
           parse_mode: "html",
           reply_markup: {
-            inline_keyboard: [...inlineKeyboardArray],
+            inline_keyboard: inlineKeyboardArray,
           },
         });
   },
@@ -532,7 +539,7 @@ const cartWizard = [
     {
       parse_mode: "html",
       reply_markup: {
-        inline_keyboard: [...inlineKeyboardArray],
+        inline_keyboard: inlineKeyboardArray,
       },
     });
   },
@@ -653,6 +660,7 @@ catalogsActions.push( async (ctx, next) => {
       // save payment and clear old data use updateRecord
       const paymentId = + ctx.state.params.get("payment_id");
       const objectId = ctx.state.params.get("o");
+      // clear and set data use update
       await store.updateRecord(`users/${ctx.from.id}`, {"session.wizardData": {paymentId}});
       const inlineKeyboardArray = [];
       store.carriers().forEach((value, key) => {
@@ -736,7 +744,7 @@ catalogsActions.push( async (ctx, next) => {
       caption: `<b>${object.name} > Фильтр</b>`,
       parse_mode: "html",
     }, {reply_markup: {
-      inline_keyboard: [...inlineKeyboardArray],
+      inline_keyboard: inlineKeyboardArray,
     }});
     await ctx.answerCbQuery();
   } else {
@@ -771,7 +779,7 @@ catalogsActions.push( async (ctx, next) => {
         caption,
         parse_mode: "html",
         reply_markup: {
-          inline_keyboard: [...inlineKeyboardArray],
+          inline_keyboard: inlineKeyboardArray,
         },
       });
     }

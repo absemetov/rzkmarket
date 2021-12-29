@@ -115,17 +115,17 @@ bot.on(["text", "contact"], async (ctx) => {
     ctx.session.scene = null;
     return;
   }
-  const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");
-  if (sessionFire && sessionFire.scene === "wizardOrder") {
-    await cartWizard[sessionFire.cursor](ctx);
-    return;
-  }
   // create object
-  const sheetUrl = ctx.message.text.match(/d\/(.*)\//);
+  const sheetUrl = ctx.state.isAdmin && ctx.message.text && ctx.message.text.match(/d\/(.*)\//);
   if (sheetUrl) {
     // save sheetId to session
     await store.createRecord(`users/${ctx.from.id}`, {"session": {"sheetId": sheetUrl[1]}});
     await uploaForm(ctx, sheetUrl[1]);
+    return;
+  }
+  const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");
+  if (sessionFire && sessionFire.scene === "wizardOrder") {
+    await cartWizard[sessionFire.cursor](ctx);
     return;
   }
   await ctx.reply("session scene is null");

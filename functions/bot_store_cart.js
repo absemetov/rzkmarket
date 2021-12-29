@@ -42,9 +42,9 @@ const store = {
     });
   },
   async deleteRecord(path, field) {
-    await this.getQuery(path).update({
+    await this.getQuery(path).set({
       [field]: firebase.firestore.FieldValue.delete(),
-    });
+    }, {merge: true});
   },
   async findAll(collectionName) {
     const modelSnap = await firebase.firestore().collection(collectionName).get();
@@ -133,7 +133,9 @@ const cart = {
     } else {
       if (typeof product !== "object") {
         await store.deleteRecord(`objects/${objectId}/carts/${userId}`,
-            `products.${typeof product == "object" ? product.id : product}`);
+            {"products": {
+              
+            }.${typeof product == "object" ? product.id : product}`);
       }
     }
   },
@@ -142,7 +144,7 @@ const cart = {
     return store.sort(cartProducts);
   },
   async clear(objectId, userId) {
-    await store.deleteRecord(`objects/${objectId}/carts/${userId}`, "products");
+    await store.createRecord(`objects/${objectId}/carts/${userId}`, {"products": null});
   },
   async createOrder(ctx) {
     const userId = ctx.from.id;

@@ -194,7 +194,7 @@ const showOrders = async (ctx, next) => {
       inlineKeyboardArray.push([{text: "📝 Информация о покупателе",
         callback_data: `eO?userId=${order.userId}&o=${order.objectId}`}]);
       const rnd = Math.random().toFixed(2).substring(2);
-      inlineKeyboardArray.push([{text: `🔄 Обновить заказ#${order.orderNumber}`,
+      inlineKeyboardArray.push([{text: "🔄 Обновить",
         callback_data: `orders/${order.id}?o=${objectId}&${rnd}`}]);
       inlineKeyboardArray.push([{text: "🧾 Заказы",
         callback_data: `${ctx.session.pathOrder ? ctx.session.pathOrder : "orders?o=" + order.objectId}`}]);
@@ -263,7 +263,7 @@ const showOrders = async (ctx, next) => {
         }
         inlineKeyboardArray.push(prevNext);
       } else {
-        inlineKeyboardArray.push([{text: "Заказов нет", callback_data: `orders?o=${objectId}`}]);
+        inlineKeyboardArray.push([{text: "Заказов нет", callback_data: `objects/${objectId}`}]);
       }
       inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: "objects"}]);
     }
@@ -360,8 +360,10 @@ ordersActions.push(async (ctx, next) => {
     if (saveProducts) {
       const products = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`, "products");
       await Promise.all([
-        store.deleteRecord(`users/${ctx.from.id}`, "session.orderData"),
-        store.deleteRecord(`objects/${objectId}/carts/${ctx.from.id}`, "products"),
+        store.createRecord(`users/${ctx.from.id}/`, {"session": {
+          "orderData": null,
+        }}),
+        store.createRecord(`objects/${objectId}/carts/${ctx.from.id}`, {"products": null}),
         store.updateRecord(`objects/${objectId}/orders/${orderId}`, {products}),
       ]);
       // redirect to order
@@ -373,12 +375,14 @@ ordersActions.push(async (ctx, next) => {
       // clear cart then export!!!
       const order = await store.findRecord(`objects/${objectId}/orders/${orderId}`);
       await cart.clear(objectId, ctx.from.id);
-      await store.updateRecord(`users/${ctx.from.id}`, {"session.orderData": {
-        id: order.id,
-        orderNumber: order.orderNumber,
-        recipientName: order.recipientName,
+      await store.createRecord(`users/${ctx.from.id}`, {"session": {
+        "orderData": {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          recipientName: order.recipientName,
+        },
       }});
-      await store.updateRecord(`objects/${objectId}/carts/${ctx.from.id}`, {products: order.products}),
+      await store.createRecord(`objects/${objectId}/carts/${ctx.from.id}`, {products: order.products}),
       // set route name
       ctx.state.routeName = "cart";
       await showCart(ctx, next);
@@ -484,7 +488,7 @@ ordersActions.push(async (ctx, next) => {
         inlineKeyboardArray.push([{text: value, callback_data: `eO/${orderId}?sId=${key}&o=${objectId}`}]);
       });
       inlineKeyboardArray.push([{text: "⬅️ Назад",
-        callback_data: `orders/${orderId}`}]);
+        callback_data: `orders/${orderId}?o=${objectId}`}]);
       await cartWizard[0](ctx, "Статус заказа", inlineKeyboardArray);
     }
     // save status
