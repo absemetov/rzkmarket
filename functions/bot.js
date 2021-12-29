@@ -43,10 +43,10 @@ bot.start(async (ctx) => {
     const object = await store.findRecord(`objects/${objectId}`);
     if (object) {
       if (product) {
-        inlineKeyboardArray.push([{text: `🗂 Перейти в товар ${product.name} (${product.id})`,
+        inlineKeyboardArray.push([{text: `📦 ${product.name} (${product.id})`,
           callback_data: `p/${product.id}?o=${objectId}`}]);
       } else {
-        inlineKeyboardArray.push([{text: "🗂 Перейти в каталоги",
+        inlineKeyboardArray.push([{text: "🗂 Каталог",
           callback_data: `c?o=${objectId}`}]);
       }
       caption = `<b>${object.name}\n` +
@@ -62,10 +62,10 @@ bot.start(async (ctx) => {
     const object = await store.findRecord(`objects/${objectId}`);
     if (object) {
       if (catalog) {
-        inlineKeyboardArray.push([{text: `🗂 Перейти в каталог ${catalog.name}`,
+        inlineKeyboardArray.push([{text: `🗂 ${catalog.name}`,
           callback_data: `c/${catalogId}?o=${objectId}`}]);
       } else {
-        inlineKeyboardArray.push([{text: "🗂 Перейти в каталоги",
+        inlineKeyboardArray.push([{text: "🗂 Каталоги",
           callback_data: `c?o=${objectId}`}]);
       }
       caption = `<b>${object.name}\n` +

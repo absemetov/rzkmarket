@@ -131,11 +131,12 @@ const cart = {
       }
       await store.createRecord(`objects/${objectId}/carts/${userId}`, {products});
     } else {
+      // delete products
       if (typeof product !== "object") {
-        await store.deleteRecord(`objects/${objectId}/carts/${userId}`,
+        await store.createRecord(`objects/${objectId}/carts/${userId}`,
             {"products": {
-              
-            }.${typeof product == "object" ? product.id : product}`);
+              [product]: firebase.firestore.FieldValue.delete(),
+            }});
       }
     }
   },
