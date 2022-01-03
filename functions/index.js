@@ -3,12 +3,14 @@ const admin = require("firebase-admin");
 admin.initializeApp();
 // const app = require("./app");
 const bot = require("./bot");
-const express = require("./express");
+const rzkComRu = require("./sites/rzk.com.ru");
+const rzkComUa = require("./sites/rzk.com.ua");
 
 // exports.app = app.app;
 exports.bot = bot.bot;
 exports.triggers = require("./triggers");
-exports.express = express.express;
+exports.rzkComRu = rzkComRu.express;
+exports.rzkComUa = rzkComUa.express;
 
 // // Create and Deploy Your First Cloud Functions
 // // https://firebase.google.com/docs/functions/write-firebase-functions

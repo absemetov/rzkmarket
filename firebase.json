@@ -11,7 +11,22 @@
       "rewrites": [
         {
           "source": "**",
-          "function": "express"
+          "function": "rzkComRu"
+        }
+      ]
+    },
+    {
+      "target": "rzk.com.ua",
+      "public": "sites/rzk.com.ua",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "function": "rzkComUa"
         }
       ]
     },

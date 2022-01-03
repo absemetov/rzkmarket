@@ -1,0 +1,38 @@
+<h1><a href="/{{object.id}}">{{object.name}}</a></h1>
+<h1>{{object.phoneNumber}}</h1>
+<h1>{{object.address}}</h1>
+<h1>{{object.description}}</h1>
+{{#if currentCatalog}}
+  <h1>
+    <a href="/{{object.id}}/c/{{currentCatalog.parentId}}">..</a> /
+    <a href="/{{object.id}}/c/{{currentCatalog.id}}">{{currentCatalog.name}}</a>
+  </h1>
+{{/if}}
+{{#if catalogs}}
+  <ul>
+  {{#each catalogs as |catalog|}}
+    <li><a href="{{catalog.url}}">{{catalog.name}}</a></li>
+  {{/each}}
+  </ul>
+{{/if}}
+{{#if tags}}
+  <ul>
+  {{#each tags as |tag|}}
+    <li><a href="{{tag.url}}">{{tag.text}}</a></li>
+  {{/each}}
+  </ul>
+{{/if}}
+{{#if products}}
+  <ul>
+  {{#each products as |product|}}
+    <li><a href="{{product.url}}">{{product.name}} {{product.price}} {{product.currencyName}}</a></li>
+  {{/each}}
+  </ul>
+{{/if}}
+{{#if prevNextLinks}}
+  <ul>
+  {{#each prevNextLinks as |prevNextLink|}}
+    <li><a href="{{prevNextLink.url}}">{{prevNextLink.text}}</a></li>
+  {{/each}}
+  </ul>
+{{/if}}
