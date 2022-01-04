@@ -13,6 +13,14 @@
     <meta name="keywords" content="надир, абсеметов, nadir, absemetov, gunsan, viko, rzk market, розетка купить, выключатель купить, кабель, провод">
     <meta name="author" content="Nadir Absemetov">
     <meta name="robots" content="index,follow">
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-168S2V6X79"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-168S2V6X79');
+    </script>
   </head>
   <body>
     <div class="px-4 text-center">
@@ -76,41 +84,11 @@
     crossorigin="anonymous"></script>
     -->
     <!-- The core Firebase JS SDK is always required and must be listed first -->
-    <script type="module">
-      // Import the functions you need from the SDKs you need
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-      import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-analytics.js";
-      // TODO: Add SDKs for Firebase products that you want to use
-      // https://firebase.google.com/docs/web/setup#available-libraries
-      import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-
-      // Your web app's Firebase configuration
-      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-      const firebaseConfig = {
-        apiKey: "AIzaSyChwm2jAkVom7sKPG_GZ0ectxTLuRlTylI",
-        authDomain: "rzk-warsaw-ua.firebaseapp.com",
-        projectId: "rzk-warsaw-ua",
-        storageBucket: "rzk-warsaw-ua.appspot.com",
-        messagingSenderId: "757833574851",
-        appId: "1:757833574851:web:86cbed5aad84feef497576",
-        measurementId: "G-168S2V6X79"
-      };
-
-      // Initialize Firebase
-      const app = initializeApp(firebaseConfig);
-      const analytics = getAnalytics(app);
-      const auth = getAuth();
-      signInAnonymously(auth)
-        .then(() => {
-          // Signed in..
-          console.log("logged")
-        })
-        .catch((error) => {
-          const errorCode = error.code;
-          const errorMessage = error.message;
-          // ...
-        });
-
+    <script async src="https://telegram.org/js/telegram-widget.js?15" data-telegram-login="RzkCrimeaBot" data-size="large" data-onauth="onTelegramAuth(user)" data-request-access="write"></script>
+    <script type="text/javascript">
+      function onTelegramAuth(user) {
+        alert('Logged in as ' + user.first_name + ' ' + user.last_name + ' (' + user.id + (user.username ? ', @' + user.username : '') + ')');
+      }
     </script>
   </body>
 </html>
