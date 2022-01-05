@@ -6,31 +6,11 @@ const {store} = require("../.././bot_store_cart.js");
 const {roundNumber} = require("../.././bot_start_scene");
 const botConfig = functions.config().env.bot;
 const {createHash, createHmac} = require("crypto");
-const expressSession = require("express-session");
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 const app = express();
-/**
- * Session Configuration
- */
-const session = {
-  secret: "rzk market",
-  cookie: {},
-  resave: false,
-  saveUninitialized: false,
-  maxAge: 24 * 60 * 60 * 1000,
-};
-
-// set secure cookie
-if (!process.env.FUNCTIONS_EMULATOR) {
-  session.cookie.secure = true;
-}
-app.set("trust proxy", 1); // trust first proxy
-app.use(expressSession(session));
-
-// const serviceAccount = require("./rzk-warsaw-ru-firebase-adminsdk-nzfp6-0e594387ad.json");
-// Initialize Firebase
-// const rzkWarsawRu = admin.initializeApp({
-//   credential: admin.credential.cert(serviceAccount),
-// }, "warsaw");
+app.set("trust proxy", 1);
+app.use(cookieParser());
 // Configure template Engine and Main Template File
 const hbs = exphbs.create({
   extname: ".hbs",
@@ -42,17 +22,14 @@ app.set("views", "./sites/rzk.com.ru/views");
 
 // show objects
 app.get("/", async (req, res) => {
-  if (req.session.page_views) {
-    req.session.page_views ++;
-    res.send("You visited this page " + req.session.page_views + " times");
-  } else {
-    req.session.page_views = 1;
-    res.send("Welcome to this page for the first time!");
-  }
-  // const objects = await store.findAll("objects");
+  // Cookies that have not been signed
+  console.log("Cookies: ", req.cookies);
+  // Cookies that have been signed
+  console.log("Signed Cookies: ", req.signedCookies);
+  const objects = await store.findAll("objects");
   // Set Cache-Control
-  // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
-  // res.render("index", {objects});
+  res.set("Cache-Control", "public, max-age=300, s-maxage=600");
+  res.render("index", {objects});
 });
 
 // show object
@@ -187,25 +164,54 @@ app.get("/o/:objectId/p/:productId", async (req, res) => {
 
 // login with telegram
 app.get("/login", async (req, res) => {
-  if (!checkSignature(req.query)) {
+  if (checkSignature(req.query)) {
     console.log(req.query.id);
-    // id: '94899148',
-    // first_name: 'Nadir',
-    // last_name: 'Absemetov',
-    // username: 'absemetov',
-    // photo_url: 'https://t.me/i/userpic/320/XwwSUj6w6zhMF0-u3p2gUo2MJhMYvZu7lhdWhsdAXlI.jpg',
-    // auth_date: '1641368285'
-    // data is authenticated
-    // create session, redirect user etc.
-    res.redirect("/");
-  } else {
-    // data is not authenticated
-    // Set Cache-Control
-    res.set("Cache-Control", "public, max-age=300, s-maxage=600");
-    res.render("login");
+    const token = jwt.sign({id: req.query.id}, "YOUR_SECRET_KEY");
+    return res.cookie("access_token", token, {
+      httpOnly: true,
+      secure: !process.env.FUNCTIONS_EMULATOR,
+    }).status(200).json({message: "Logged in successfully 😊 👌"});
   }
+  // id: '94899148',
+  // first_name: 'Nadir',
+  // last_name: 'Absemetov',
+  // username: 'absemetov',
+  // photo_url: 'https://t.me/i/userpic/320/XwwSUj6w6zhMF0-u3p2gUo2MJhMYvZu7lhdWhsdAXlI.jpg',
+  // auth_date: '1641368285'
+  // data is authenticated
+  // create session, redirect user etc.
+  // data is not authenticated
+  // Set Cache-Control
+  res.set("Cache-Control", "public, max-age=300, s-maxage=600");
+  res.render("login");
 });
 
+const authorization = (req, res, next) => {
+  const token = req.cookies.access_token;
+  console.log("token", token);
+  if (!token) {
+    return res.sendStatus(403);
+  }
+  try {
+    const data = jwt.verify(token, "YOUR_SECRET_KEY");
+    req.userId = data.id;
+    console.log("id", data.id);
+    return next();
+  } catch {
+    return res.sendStatus(403);
+  }
+};
+
+app.get("/protected", authorization, (req, res) => {
+  return res.json({user: {id: req.userId}});
+});
+
+app.get("/logout", authorization, (req, res) => {
+  return res
+      .clearCookie("access_token")
+      .status(200)
+      .json({message: "Successfully logged out 😏 🍀"});
+});
 // We'll destructure req.query to make our code clearer
 const checkSignature = ({hash, ...userData}) => {
   // create a hash of a secret that both you and Telegram know. In this case, it is your bot token
