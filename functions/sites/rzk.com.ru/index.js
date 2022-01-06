@@ -9,7 +9,6 @@ const {createHash, createHmac} = require("crypto");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const app = express();
-app.set("trust proxy", 1);
 app.use(cookieParser());
 // Configure template Engine and Main Template File
 const hbs = exphbs.create({
@@ -22,10 +21,6 @@ app.set("views", "./sites/rzk.com.ru/views");
 
 // show objects
 app.get("/", async (req, res) => {
-  // Cookies that have not been signed
-  console.log("Cookies: ", req.cookies);
-  // Cookies that have been signed
-  console.log("Signed Cookies: ", req.signedCookies);
   const objects = await store.findAll("objects");
   // Set Cache-Control
   res.set("Cache-Control", "public, max-age=300, s-maxage=600");
@@ -165,11 +160,11 @@ app.get("/o/:objectId/p/:productId", async (req, res) => {
 // login with telegram
 app.get("/login", async (req, res) => {
   if (checkSignature(req.query)) {
-    console.log(req.query.id);
-    const token = jwt.sign({id: req.query.id}, "YOUR_SECRET_KEY");
-    return res.cookie("access_token", token, {
+    const token = jwt.sign({id: req.query.id}, botConfig.token);
+    return res.cookie("__session", token, {
       httpOnly: true,
-      secure: !process.env.FUNCTIONS_EMULATOR,
+      secure: true,
+      maxAge: 24 * 60 * 60 * 1000,
     }).status(200).json({message: "Logged in successfully 😊 👌"});
   }
   // id: '94899148',
@@ -187,13 +182,13 @@ app.get("/login", async (req, res) => {
 });
 
 const authorization = (req, res, next) => {
-  const token = req.cookies.access_token;
+  const token = req.cookies.__session;
   console.log("token", token);
   if (!token) {
     return res.sendStatus(403);
   }
   try {
-    const data = jwt.verify(token, "YOUR_SECRET_KEY");
+    const data = jwt.verify(token, botConfig.token);
     req.userId = data.id;
     console.log("id", data.id);
     return next();
@@ -208,7 +203,7 @@ app.get("/protected", authorization, (req, res) => {
 
 app.get("/logout", authorization, (req, res) => {
   return res
-      .clearCookie("access_token")
+      .clearCookie("__session")
       .status(200)
       .json({message: "Successfully logged out 😏 🍀"});
 });
