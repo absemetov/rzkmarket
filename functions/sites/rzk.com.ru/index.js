@@ -19,12 +19,26 @@ app.engine("hbs", hbs.engine);
 app.set("view engine", "hbs");
 app.set("views", "./sites/rzk.com.ru/views");
 
+// auth midleware
+botConfig.token = "2048848119:AAG-rQpHskH2iVIWhEoFkZYfslOyZAIPWbg";
+
+const authorization = (req, res, next) => {
+  try {
+    const token = req.cookies.__session;
+    const authData = jwt.verify(token, botConfig.token);
+    req.userId = authData.id;
+  } catch {
+    req.userId = null;
+  }
+  return next();
+};
+
 // show objects
-app.get("/", async (req, res) => {
+app.get("/", authorization, async (req, res) => {
   const objects = await store.findAll("objects");
   // Set Cache-Control
   res.set("Cache-Control", "public, max-age=300, s-maxage=600");
-  res.render("index", {objects});
+  res.render("index", {objects, userId: req.userId});
 });
 
 // show object
@@ -160,12 +174,14 @@ app.get("/o/:objectId/p/:productId", async (req, res) => {
 // login with telegram
 app.get("/login", async (req, res) => {
   if (checkSignature(req.query)) {
+    // create token
     const token = jwt.sign({id: req.query.id}, botConfig.token);
+    // save token to cookie
     return res.cookie("__session", token, {
       httpOnly: true,
       secure: true,
       maxAge: 24 * 60 * 60 * 1000,
-    }).status(200).json({message: "Logged in successfully 😊 👌"});
+    }).redirect("/");
   }
   // id: '94899148',
   // first_name: 'Nadir',
@@ -181,22 +197,6 @@ app.get("/login", async (req, res) => {
   res.render("login");
 });
 
-const authorization = (req, res, next) => {
-  const token = req.cookies.__session;
-  console.log("token", token);
-  if (!token) {
-    return res.sendStatus(403);
-  }
-  try {
-    const data = jwt.verify(token, botConfig.token);
-    req.userId = data.id;
-    console.log("id", data.id);
-    return next();
-  } catch {
-    return res.sendStatus(403);
-  }
-};
-
 app.get("/protected", authorization, (req, res) => {
   return res.json({user: {id: req.userId}});
 });
@@ -204,8 +204,7 @@ app.get("/protected", authorization, (req, res) => {
 app.get("/logout", authorization, (req, res) => {
   return res
       .clearCookie("__session")
-      .status(200)
-      .json({message: "Successfully logged out 😏 🍀"});
+      .redirect("/");
 });
 // We'll destructure req.query to make our code clearer
 const checkSignature = ({hash, ...userData}) => {

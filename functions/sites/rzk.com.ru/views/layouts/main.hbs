@@ -23,6 +23,11 @@
       </script>
     </head>
     <body>
+      {{#if userId}}
+        <a href="/logout">Loged {{userId}}</a>
+      {{else}}
+        <a href="/login">Login with Telegram</a>
+      {{/if}}
       {{{body}}}
       <!-- Optional JavaScript; choose one of the two! -->
 
