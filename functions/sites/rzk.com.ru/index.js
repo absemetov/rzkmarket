@@ -22,7 +22,7 @@ app.set("views", "./sites/rzk.com.ru/views");
 // auth midleware
 botConfig.token = "2048848119:AAG-rQpHskH2iVIWhEoFkZYfslOyZAIPWbg";
 
-const authorization = (req, res, next) => {
+const auth = (req, res, next) => {
   try {
     const token = req.cookies.__session;
     const authData = jwt.verify(token, botConfig.token);
@@ -34,7 +34,7 @@ const authorization = (req, res, next) => {
 };
 
 // show objects
-app.get("/", authorization, async (req, res) => {
+app.get("/", auth, async (req, res) => {
   const objects = await store.findAll("objects");
   // Set Cache-Control
   res.set("Cache-Control", "public, max-age=300, s-maxage=600");
@@ -42,15 +42,15 @@ app.get("/", authorization, async (req, res) => {
 });
 
 // show object
-app.get("/o/:objectId", async (req, res) => {
+app.get("/o/:objectId", auth, async (req, res) => {
   const object = await store.findRecord(`objects/${req.params.objectId}`);
   // Set Cache-Control
   res.set("Cache-Control", "public, max-age=300, s-maxage=600");
-  res.render("object", {title: object.name, object});
+  res.render("object", {title: object.name, object, userId: req.userId});
 });
 
 // show catalogs
-app.get("/o/:objectId/c/:catalogId?", async (req, res) => {
+app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
   const objectId = req.params.objectId;
   const catalogId = req.params.catalogId;
   const selectedTag = req.query.tag;
@@ -151,11 +151,12 @@ app.get("/o/:objectId/c/:catalogId?", async (req, res) => {
     products,
     tags,
     prevNextLinks,
+    userId: req.userId,
   });
 });
 
 // show product
-app.get("/o/:objectId/p/:productId", async (req, res) => {
+app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
   const objectId = req.params.objectId;
   const productId = req.params.productId;
   const object = await store.findRecord(`objects/${objectId}`);
@@ -168,11 +169,12 @@ app.get("/o/:objectId/p/:productId", async (req, res) => {
     title: `${product.name} - ${object.name}`,
     object,
     product,
+    userId: req.userId,
   });
 });
 
 // login with telegram
-app.get("/login", async (req, res) => {
+app.get("/login", auth, async (req, res) => {
   if (checkSignature(req.query)) {
     // create token
     const token = jwt.sign({id: req.query.id}, botConfig.token);
@@ -197,11 +199,7 @@ app.get("/login", async (req, res) => {
   res.render("login");
 });
 
-app.get("/protected", authorization, (req, res) => {
-  return res.json({user: {id: req.userId}});
-});
-
-app.get("/logout", authorization, (req, res) => {
+app.get("/logout", auth, (req, res) => {
   return res
       .clearCookie("__session")
       .redirect("/");
