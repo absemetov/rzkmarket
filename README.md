@@ -17,4 +17,6 @@ $ yarn start
 $ yarn generate
 ```
 
-For detailed explanation on how things work, check out [Nuxt.js docs](https://nuxtjs.org).
+For detailed explanation on how things work, check out [RZK Маркет Україна](https://rzk.com.ua).
+Telegram bot [@RzkMarketBot](https://t.me/RzkMarketBot?start=fromgit)
+Кожну другу розетку в Україні куплять у нас! З усіх питань звертайтеся до @absemetov. +380685494100
