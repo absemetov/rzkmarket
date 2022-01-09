@@ -115,6 +115,7 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
         id: product.id,
         name: product.data().name,
         price: roundNumber(product.data().price * object[product.data().currency]),
+        unit: product.data().unit,
         currencyName: botConfig.currency,
         url: `/o/${object.id}/p/${product.id}`,
       });

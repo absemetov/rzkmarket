@@ -25,9 +25,16 @@
 {{#if products}}
   <ul>
   {{#each products as |product|}}
-    <li><a href="{{product.url}}">{{product.name}} {{product.price}} {{product.currencyName}}</a></li>
+    <li>
+      <a href="{{product.url}}">{{product.name}} {{product.price}} {{product.unit}} {{product.currencyName}}</a>
+      <!-- Button trigger modal -->
+      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" data-bs-name="{{product.name}}">
+        Add to cart
+      </button>
+    </li>
   {{/each}}
   </ul>
+  {{> modalAddToCart}}
 {{/if}}
 {{#if prevNextLinks}}
   <ul>
