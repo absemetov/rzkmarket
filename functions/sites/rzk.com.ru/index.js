@@ -8,6 +8,7 @@ const botConfig = functions.config().env.bot;
 const {createHash, createHmac} = require("crypto");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
+const bodyParser = require("body-parser");
 const app = express();
 app.use(cookieParser());
 // Configure template Engine and Main Template File
@@ -204,6 +205,12 @@ app.get("/logout", auth, (req, res) => {
   return res
       .clearCookie("__session")
       .redirect("/");
+});
+
+// cart add product
+const jsonParser = bodyParser.json();
+app.post("/cart/add", auth, jsonParser, (req, res) => {
+  return res.json({qty: req.body.qty});
 });
 // We'll destructure req.query to make our code clearer
 const checkSignature = ({hash, ...userData}) => {

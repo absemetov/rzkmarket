@@ -1,5 +1,5 @@
 <!-- Modal -->
-<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<div class="modal" id="cartAddModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
@@ -7,30 +7,78 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        ...
+        <div class="input-group mb-3">
+          <input type="number" id="qty" class="form-control" placeholder="Введите количество товара" aria-label="Введите количество товара" aria-describedby="basic-addon2">
+          <span class="input-group-text" id="basic-addon2"></span>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary">Save changes</button>
+        <button type="button" id="addToCart" class="btn btn-primary">Добавить</button>
       </div>
     </div>
   </div>
 </div>
 <script>
-  const exampleModal = document.getElementById('exampleModal')
-  exampleModal.addEventListener("show.bs.modal", function (event) {
+  const cartAddModal = document.getElementById("cartAddModal");
+  const cartAddModalOpt = new bootstrap.Modal(cartAddModal);
+  const qty = document.getElementById("qty");
+  const product = {};
+  cartAddModal.addEventListener("show.bs.modal", function (event) {
     // Button that triggered the modal
     var button = event.relatedTarget;
     // Extract info from data-bs-* attributes
-    var productName = button.getAttribute('data-bs-name');
+    const productId = button.getAttribute('data-bs-id');
+    product.id = productId;
+    const productName = button.getAttribute('data-bs-name');
+    const productPrice = button.getAttribute('data-bs-price');
+    const productUnit = button.getAttribute('data-bs-unit');
     // If necessary, you could initiate an AJAX request here
     // and then do the updating in a callback.
     //
     // Update the modal's content.
-    var modalTitle = exampleModal.querySelector('.modal-title');
-    var modalBodyInput = exampleModal.querySelector('.modal-body input');
-
+    const modalTitle = cartAddModal.querySelector(".modal-title");
+    const modalUnit = cartAddModal.querySelector('#basic-addon2');
     modalTitle.textContent = productName;
-    modalBodyInput.value = recipient;
+    modalUnit.textContent = productUnit;
+  });
+  // focus qty input when modal shown
+  cartAddModal.addEventListener("shown.bs.modal", function (event) {
+    qty.focus();
+  });
+  // add product to cart
+  const addToCartHandler = async () => {
+    console.log(product.id, qty.value);
+    // get request
+    // await
+    const url = "/cart/add";
+    const data = { qty: qty.value };
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json;charset=utf-8",
+        },
+        body: JSON.stringify(data),
+      });
+      const json = await response.json();
+      console.log("Успех: ", JSON.stringify(json));
+    } catch (error) {
+      console.error("Ошибка: ", error);
+    }
+
+    cartAddModalOpt.hide();
+  };
+  // events
+  document.getElementById("addToCart").addEventListener("click", async () => {
+    await addToCartHandler();
+  });
+
+  qty.addEventListener("keydown", async (event) => {
+    if(event.keyCode === 13) {
+      await addToCartHandler();
+      // for hide modal
+      event.preventDefault();
+    }
   });
 </script>
