@@ -28,7 +28,7 @@
     <li>
       <a href="{{product.url}}">{{product.name}} {{product.price}} {{product.unit}} {{product.currencyName}}</a>
       <!-- Button trigger modal -->
-      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#cartAddModal" data-bs-id="{{product.id}}" data-bs-name="{{product.name}}" data-bs-unit="{{product.unit}}">
+      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#cartAddModal" data-bs-objectId="{{../object.id}}" data-bs-id="{{product.id}}" data-bs-name="{{product.name}}" data-bs-price="{{product.price}}" data-bs-unit="{{product.unit}}">
         Add to cart
       </button>
     </li>

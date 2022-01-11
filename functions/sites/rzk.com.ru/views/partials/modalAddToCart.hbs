@@ -8,7 +8,7 @@
       </div>
       <div class="modal-body">
         <div class="input-group mb-3">
-          <input type="number" id="qty" class="form-control" placeholder="Введите количество товара" aria-label="Введите количество товара" aria-describedby="basic-addon2">
+          <input type="text" id="qty" class="form-control" placeholder="Введите количество товара" aria-label="Введите количество товара" aria-describedby="basic-addon2">
           <span class="input-group-text" id="basic-addon2"></span>
         </div>
       </div>
@@ -28,19 +28,19 @@
     // Button that triggered the modal
     var button = event.relatedTarget;
     // Extract info from data-bs-* attributes
-    const productId = button.getAttribute('data-bs-id');
-    product.id = productId;
-    const productName = button.getAttribute('data-bs-name');
-    const productPrice = button.getAttribute('data-bs-price');
-    const productUnit = button.getAttribute('data-bs-unit');
+    product.objectId = button.getAttribute("data-bs-objectId");
+    product.id = button.getAttribute("data-bs-id");
+    product.name = button.getAttribute("data-bs-name");
+    product.price = + button.getAttribute("data-bs-price");
+    product.unit = button.getAttribute("data-bs-unit");
     // If necessary, you could initiate an AJAX request here
     // and then do the updating in a callback.
     //
     // Update the modal's content.
     const modalTitle = cartAddModal.querySelector(".modal-title");
     const modalUnit = cartAddModal.querySelector('#basic-addon2');
-    modalTitle.textContent = productName;
-    modalUnit.textContent = productUnit;
+    modalTitle.textContent = product.name;
+    modalUnit.textContent = product.unit;
   });
   // focus qty input when modal shown
   cartAddModal.addEventListener("shown.bs.modal", function (event) {
@@ -48,25 +48,24 @@
   });
   // add product to cart
   const addToCartHandler = async () => {
-    console.log(product.id, qty.value);
-    // get request
-    // await
-    const url = "/cart/add";
-    const data = { qty: qty.value };
+    product.qty = + qty.value;
     try {
-      const response = await fetch(url, {
+      const response = await fetch("/cart/add", {
         method: "POST",
         headers: {
           "Content-Type": "application/json;charset=utf-8",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(product),
       });
-      const json = await response.json();
-      console.log("Успех: ", JSON.stringify(json));
+      const productRes = await response.json();
+      if (!response.ok) {
+        throw new Error(productRes.error);
+      }
+      console.log(JSON.stringify(productRes));
     } catch (error) {
-      console.error("Ошибка: ", error);
+      alert(error);
     }
-
+    // hide modal
     cartAddModalOpt.hide();
   };
   // events

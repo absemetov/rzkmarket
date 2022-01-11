@@ -9,3 +9,7 @@
 <h1>{{product.name}}</h1>
 <h1>{{product.id}}</h1>
 <h1>{{product.price}} {{product.currencyName}}</h1>
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#cartAddModal" data-bs-objectId="{{object.id}}" data-bs-id="{{product.id}}" data-bs-name="{{product.name}}" data-bs-price="{{product.price}}" data-bs-unit="{{product.unit}}">
+  Add to cart
+</button>
+{{> modalAddToCart}}

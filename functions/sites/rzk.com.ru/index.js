@@ -9,6 +9,7 @@ const {createHash, createHmac} = require("crypto");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
+const Validator = require("validatorjs");
 const app = express();
 app.use(cookieParser());
 // Configure template Engine and Main Template File
@@ -184,7 +185,7 @@ app.get("/login", auth, async (req, res) => {
     return res.cookie("__session", token, {
       httpOnly: true,
       secure: true,
-      maxAge: 24 * 60 * 60 * 1000,
+      maxAge: 18 * 24 * 60 * 60 * 1000,
     }).redirect("/");
   }
   // id: '94899148',
@@ -210,7 +211,21 @@ app.get("/logout", auth, (req, res) => {
 // cart add product
 const jsonParser = bodyParser.json();
 app.post("/cart/add", auth, jsonParser, (req, res) => {
-  return res.json({qty: req.body.qty});
+  // validate data
+  const rulesProductRow = {
+    "qty": "required|numeric|min:0",
+  };
+  const validateProductRow = new Validator(req.body, rulesProductRow);
+  // validate data if ID and NAME set org Name and PRICE
+  // check fails If product have ID Name Price else this commet etc...
+  if (validateProductRow.fails()) {
+    let errorRow = "";
+    for (const [key, error] of Object.entries(validateProductRow.errors.all())) {
+      errorRow += `Key ${key} => ${error} \n`;
+    }
+    return res.status(500).json({error: errorRow});
+  }
+  return res.json(req.body);
 });
 // We'll destructure req.query to make our code clearer
 const checkSignature = ({hash, ...userData}) => {
