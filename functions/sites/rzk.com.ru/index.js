@@ -166,6 +166,12 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
   const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
   product.price = roundNumber(product.price * object[product.currency]);
   product.currencyName = botConfig.currency;
+  // get cart qty
+  const cartProduct = await store.findRecord(`objects/${objectId}/carts/${req.userId}`,
+      `products.${product.id}`);
+  if (cartProduct) {
+    product.qty = cartProduct.qty;
+  }
   // Set Cache-Control
   res.set("Cache-Control", "public, max-age=300, s-maxage=600");
   res.render("product", {
@@ -210,22 +216,46 @@ app.get("/logout", auth, (req, res) => {
 
 // cart add product
 const jsonParser = bodyParser.json();
-app.post("/cart/add", auth, jsonParser, (req, res) => {
+app.post("/cart/add", auth, jsonParser, async (req, res) => {
   // validate data
   const rulesProductRow = {
+    "objectId": "required|alpha_dash|max:9",
+    "id": "required|alpha_dash|max:16",
+    "name": "required|string",
+    "price": "required|numeric",
+    "unit": "required|in:м,шт",
     "qty": "required|numeric|min:0",
   };
   const validateProductRow = new Validator(req.body, rulesProductRow);
-  // validate data if ID and NAME set org Name and PRICE
-  // check fails If product have ID Name Price else this commet etc...
   if (validateProductRow.fails()) {
     let errorRow = "";
     for (const [key, error] of Object.entries(validateProductRow.errors.all())) {
       errorRow += `Key ${key} => ${error} \n`;
     }
-    return res.status(500).json({error: errorRow});
+    return res.status(422).json({error: errorRow});
   }
-  return res.json(req.body);
+  // add to cart
+  let products = {};
+  // edit or create
+  if (req.body.added) {
+    products = {
+      [req.body.id]: {
+        qty: req.body.qty,
+      },
+    };
+  } else {
+    products = {
+      [req.body.id]: {
+        name: req.body.name,
+        price: req.body.price,
+        unit: req.body.unit,
+        qty: req.body.qty,
+        createdAt: Math.floor(Date.now() / 1000),
+      },
+    };
+  }
+  await store.createRecord(`objects/${req.body.objectId}/carts/${req.userId}`, {products});
+  return res.json({userId: req.userId, ...req.body});
 });
 // We'll destructure req.query to make our code clearer
 const checkSignature = ({hash, ...userData}) => {

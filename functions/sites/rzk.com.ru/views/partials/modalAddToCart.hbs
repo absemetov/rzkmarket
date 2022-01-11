@@ -24,15 +24,17 @@
   const cartAddModalOpt = new bootstrap.Modal(cartAddModal);
   const qty = document.getElementById("qty");
   const product = {};
+  let button = {};
   cartAddModal.addEventListener("show.bs.modal", function (event) {
     // Button that triggered the modal
-    var button = event.relatedTarget;
+    button = event.relatedTarget;
     // Extract info from data-bs-* attributes
     product.objectId = button.getAttribute("data-bs-objectId");
     product.id = button.getAttribute("data-bs-id");
     product.name = button.getAttribute("data-bs-name");
     product.price = + button.getAttribute("data-bs-price");
     product.unit = button.getAttribute("data-bs-unit");
+    product.qty = button.getAttribute("data-bs-qty");
     // If necessary, you could initiate an AJAX request here
     // and then do the updating in a callback.
     //
@@ -44,6 +46,10 @@
   });
   // focus qty input when modal shown
   cartAddModal.addEventListener("shown.bs.modal", function (event) {
+    if (product.qty) {
+      product.added = true;
+      qty.value = product.qty;
+    }
     qty.focus();
   });
   // add product to cart
@@ -62,11 +68,18 @@
         throw new Error(productRes.error);
       }
       console.log(JSON.stringify(productRes));
+      if (productRes.qty) {
+        button.innerText = productRes.qty;
+        button.setAttribute("data-bs-qty", productRes.qty);
+      } else {
+        button.innerText = "Добавить товар";
+        button.removeAttribute("data-bs-qty");
+      }
+      // hide modal
+      cartAddModalOpt.hide();
     } catch (error) {
       alert(error);
     }
-    // hide modal
-    cartAddModalOpt.hide();
   };
   // events
   document.getElementById("addToCart").addEventListener("click", async () => {
