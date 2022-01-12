@@ -34,7 +34,9 @@
     product.name = button.getAttribute("data-bs-name");
     product.price = + button.getAttribute("data-bs-price");
     product.unit = button.getAttribute("data-bs-unit");
-    product.qty = button.getAttribute("data-bs-qty");
+    product.qty = + button.getAttribute("data-bs-qty");
+    product.added = false;
+    qty.value = "";
     // If necessary, you could initiate an AJAX request here
     // and then do the updating in a callback.
     //
@@ -69,7 +71,7 @@
       }
       console.log(JSON.stringify(productRes));
       if (productRes.qty) {
-        button.innerText = productRes.qty;
+        button.innerText = `${productRes.qty} ${productRes.unit}`;
         button.setAttribute("data-bs-qty", productRes.qty);
       } else {
         button.innerText = "Добавить товар";

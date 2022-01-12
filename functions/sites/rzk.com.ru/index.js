@@ -236,25 +236,34 @@ app.post("/cart/add", auth, jsonParser, async (req, res) => {
   }
   // add to cart
   let products = {};
-  // edit or create
-  if (req.body.added) {
-    products = {
-      [req.body.id]: {
-        qty: req.body.qty,
-      },
-    };
-  } else {
-    products = {
-      [req.body.id]: {
-        name: req.body.name,
-        price: req.body.price,
-        unit: req.body.unit,
-        qty: req.body.qty,
-        createdAt: Math.floor(Date.now() / 1000),
-      },
-    };
+  // add product
+  if (req.body.qty) {
+    if (req.body.added) {
+      products = {
+        [req.body.id]: {
+          qty: req.body.qty,
+        },
+      };
+    } else {
+      products = {
+        [req.body.id]: {
+          name: req.body.name,
+          price: req.body.price,
+          unit: req.body.unit,
+          qty: req.body.qty,
+          createdAt: Math.floor(Date.now() / 1000),
+        },
+      };
+    }
+    await store.createRecord(`objects/${req.body.objectId}/carts/${req.userId}`, {products});
   }
-  await store.createRecord(`objects/${req.body.objectId}/carts/${req.userId}`, {products});
+  // remove product
+  if (req.body.added && !req.body.qty) {
+    await store.createRecord(`objects/${req.body.objectId}/carts/${req.userId}`,
+        {"products": {
+          [req.body.id]: firebase.firestore.FieldValue.delete(),
+        }});
+  }
   return res.json({userId: req.userId, ...req.body});
 });
 // We'll destructure req.query to make our code clearer
