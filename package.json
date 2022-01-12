@@ -13,7 +13,10 @@
     "export-public": "rm -rf public && mkdir -p public/_nuxt && cp -r .nuxt/dist/client/. public/_nuxt && cp -r static/. public",
     "deploy-fire": "firebase deploy --only hosting:rzk.com.ua,functions:app",
     "deploy": "yarn export-server && yarn export-public && yarn deploy-fire",
-    "pr": "firebase projects:list"
+    "deploy-ua":"firebase deploy --only functions:rzkComUa",
+    "deploy-ru":"firebase deploy --only functions:rzkComRu",
+    "deploy-bot":"firebase deploy --only functions:bot",
+    "pl": "firebase projects:list"
   },
   "dependencies": {},
   "devDependencies": {}

@@ -8,8 +8,10 @@
   </h1>
 <h1>{{product.name}}</h1>
 <h1>{{product.id}}</h1>
-<h1>{{product.price}} {{product.currencyName}}</h1>
-<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#cartAddModal" data-bs-objectId="{{object.id}}" data-bs-id="{{product.id}}" data-bs-name="{{product.name}}" data-bs-price="{{product.price}}" data-bs-unit="{{product.unit}}" data-bs-qty="{{product.qty}}">
-  {{#if product.qty}}{{product.qty}} {{product.unit}}{{else}}Добавить товар{{/if}}
+<h1>{{product.price}} {{currencyName}}</h1>
+
+<button type="button" class="btn {{#if product.qty}}btn-success{{else}}btn-primary{{/if}}" data-bs-toggle="modal" data-bs-target="#cartAddModal" data-bs-objectId="{{object.id}}" data-bs-id="{{product.id}}" data-bs-name="{{product.name}}" data-bs-price="{{product.price}}" data-bs-unit="{{product.unit}}" data-bs-qty="{{product.qty}}">
+  {{#if product.qty}}{{product.qty}} {{product.unit}} {{product.sum}} {{currencyName}}{{else}}Добавить товар{{/if}}
 </button>
+
 {{> modalAddToCart}}

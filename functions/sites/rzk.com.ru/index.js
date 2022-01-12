@@ -113,14 +113,21 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
     const productsSnapshot = await query.get();
     // generate products array
     for (const product of productsSnapshot.docs) {
-      products.push({
+      const productObj = {
         id: product.id,
         name: product.data().name,
         price: roundNumber(product.data().price * object[product.data().currency]),
         unit: product.data().unit,
-        currencyName: botConfig.currency,
-        url: `/o/${object.id}/p/${product.id}`,
-      });
+        url: `/o/${objectId}/p/${product.id}`,
+      };
+      const cartProduct = await store.findRecord(`objects/${objectId}/carts/${req.userId}`,
+          `products.${product.id}`);
+      if (cartProduct) {
+        productObj.qty = cartProduct.qty;
+        productObj.sum = roundNumber(cartProduct.qty * cartProduct.price);
+      }
+      // add to array
+      products.push(productObj);
     }
     // Set load more button
     if (!productsSnapshot.empty) {
@@ -145,7 +152,7 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
     }
   }
   // Set Cache-Control
-  res.set("Cache-Control", "public, max-age=300, s-maxage=600");
+  // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
   res.render("catalog", {
     title,
     object,
@@ -155,6 +162,7 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
     tags,
     prevNextLinks,
     userId: req.userId,
+    currencyName: botConfig.currency,
   });
 });
 
@@ -165,20 +173,21 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
   const object = await store.findRecord(`objects/${objectId}`);
   const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
   product.price = roundNumber(product.price * object[product.currency]);
-  product.currencyName = botConfig.currency;
   // get cart qty
   const cartProduct = await store.findRecord(`objects/${objectId}/carts/${req.userId}`,
       `products.${product.id}`);
   if (cartProduct) {
     product.qty = cartProduct.qty;
+    product.sum = roundNumber(cartProduct.qty * cartProduct.price);
   }
   // Set Cache-Control
-  res.set("Cache-Control", "public, max-age=300, s-maxage=600");
+  // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
   res.render("product", {
     title: `${product.name} - ${object.name}`,
     object,
     product,
     userId: req.userId,
+    currencyName: botConfig.currency,
   });
 });
 
@@ -264,7 +273,7 @@ app.post("/cart/add", auth, jsonParser, async (req, res) => {
           [req.body.id]: firebase.firestore.FieldValue.delete(),
         }});
   }
-  return res.json({userId: req.userId, ...req.body});
+  return res.json({userId: req.userId, currencyName: botConfig.currency, ...req.body});
 });
 // We'll destructure req.query to make our code clearer
 const checkSignature = ({hash, ...userData}) => {
