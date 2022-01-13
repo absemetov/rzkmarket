@@ -23,8 +23,8 @@
       </script>
     </head>
     <body>
-      {{#if userId}}
-        <a href="/user/{{userId}}">UserId {{userId}}</a>
+      {{#if user.auth}}
+        <a href="/user/{{user.uid}}">UserId {{user.uid}}</a>
         <a href="/logout">Logout</a>
       {{else}}
         <a href="/login">Login with Telegram</a>

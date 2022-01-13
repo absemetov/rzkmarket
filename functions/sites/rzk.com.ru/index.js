@@ -9,6 +9,7 @@ const {createHash, createHmac} = require("crypto");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
+const jsonParser = bodyParser.json();
 const Validator = require("validatorjs");
 const app = express();
 app.use(cookieParser());
@@ -25,12 +26,15 @@ app.set("views", "./sites/rzk.com.ru/views");
 botConfig.token = "2048848119:AAG-rQpHskH2iVIWhEoFkZYfslOyZAIPWbg";
 
 const auth = (req, res, next) => {
+  req.user = {};
   try {
     const token = req.cookies.__session;
     const authData = jwt.verify(token, botConfig.token);
-    req.userId = authData.id;
+    req.user.auth = authData.auth;
+    req.user.uid = authData.uid;
   } catch {
-    req.userId = null;
+    req.user.auth = false;
+    req.user.uid = null;
   }
   return next();
 };
@@ -40,7 +44,7 @@ app.get("/", auth, async (req, res) => {
   const objects = await store.findAll("objects");
   // Set Cache-Control
   res.set("Cache-Control", "public, max-age=300, s-maxage=600");
-  res.render("index", {objects, userId: req.userId});
+  res.render("index", {objects, user: req.user});
 });
 
 // show object
@@ -48,7 +52,7 @@ app.get("/o/:objectId", auth, async (req, res) => {
   const object = await store.findRecord(`objects/${req.params.objectId}`);
   // Set Cache-Control
   res.set("Cache-Control", "public, max-age=300, s-maxage=600");
-  res.render("object", {title: object.name, object, userId: req.userId});
+  res.render("object", {title: object.name, object, user: req.user});
 });
 
 // show catalogs
@@ -120,11 +124,13 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
         unit: product.data().unit,
         url: `/o/${objectId}/p/${product.id}`,
       };
-      const cartProduct = await store.findRecord(`objects/${objectId}/carts/${req.userId}`,
-          `products.${product.id}`);
-      if (cartProduct) {
-        productObj.qty = cartProduct.qty;
-        productObj.sum = roundNumber(cartProduct.qty * cartProduct.price);
+      if (req.user.uid) {
+        const cartProduct = await store.findRecord(`objects/${objectId}/carts/${req.user.uid}`,
+            `products.${product.id}`);
+        if (cartProduct) {
+          productObj.qty = cartProduct.qty;
+          productObj.sum = roundNumber(cartProduct.qty * cartProduct.price);
+        }
       }
       // add to array
       products.push(productObj);
@@ -161,7 +167,7 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
     products,
     tags,
     prevNextLinks,
-    userId: req.userId,
+    user: req.user,
     currencyName: botConfig.currency,
   });
 });
@@ -174,11 +180,13 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
   const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
   product.price = roundNumber(product.price * object[product.currency]);
   // get cart qty
-  const cartProduct = await store.findRecord(`objects/${objectId}/carts/${req.userId}`,
-      `products.${product.id}`);
-  if (cartProduct) {
-    product.qty = cartProduct.qty;
-    product.sum = roundNumber(cartProduct.qty * cartProduct.price);
+  if (req.user.uid) {
+    const cartProduct = await store.findRecord(`objects/${objectId}/carts/${req.user.uid}`,
+        `products.${product.id}`);
+    if (cartProduct) {
+      product.qty = cartProduct.qty;
+      product.sum = roundNumber(cartProduct.qty * cartProduct.price);
+    }
   }
   // Set Cache-Control
   // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
@@ -186,22 +194,35 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
     title: `${product.name} - ${object.name}`,
     object,
     product,
-    userId: req.userId,
+    user: req.user,
     currencyName: botConfig.currency,
   });
 });
 
 // login with telegram
 app.get("/login", auth, async (req, res) => {
+  if (req.user.auth) {
+    return res.redirect("/");
+  }
   if (checkSignature(req.query)) {
+    // copy cart if exist for all objects!!!
+    if (req.user.uid) {
+      const objects = await store.findAll("objects");
+      objects.forEach(async (obj) => {
+        const products = await store.findRecord(`objects/${obj.id}/carts/${req.user.uid}`, "products");
+        store.createRecord(`objects/${obj.id}/carts/123`, {products});
+        await store.getQuery(`objects/${obj.id}/carts/${req.user.uid}`).delete();
+        console.log(obj.id, req.user.uid, products);
+      });
+    }
     // create token
-    const token = jwt.sign({id: req.query.id}, botConfig.token);
+    // const token = jwt.sign({uid: req.query.id, auth: true}, botConfig.token);
     // save token to cookie
-    return res.cookie("__session", token, {
-      httpOnly: true,
-      secure: true,
-      maxAge: 18 * 24 * 60 * 60 * 1000,
-    }).redirect("/");
+    // return res.cookie("__session", token, {
+    //   httpOnly: true,
+    //   secure: true,
+    //   maxAge: 18 * 24 * 60 * 60 * 1000,
+    // }).redirect("/");
   }
   // id: '94899148',
   // first_name: 'Nadir',
@@ -224,7 +245,6 @@ app.get("/logout", auth, (req, res) => {
 });
 
 // cart add product
-const jsonParser = bodyParser.json();
 app.post("/cart/add", auth, jsonParser, async (req, res) => {
   // validate data
   const rulesProductRow = {
@@ -243,16 +263,19 @@ app.post("/cart/add", auth, jsonParser, async (req, res) => {
     }
     return res.status(422).json({error: errorRow});
   }
-  // check auth
-  const newCartRef = firebase.firestore().collection("objects").doc(req.body.objectId).collection("carts").doc();
-  console.log("docId", newCartRef.id);
-  const token = jwt.sign({cartId: newCartRef.id}, botConfig.token);
-  // save token to cookie
-  res.cookie("__session", token, {
-    httpOnly: true,
-    secure: true,
-    maxAge: 1 * 24 * 60 * 60 * 1000,
-  });
+  // check uid
+  if (!req.user.uid) {
+    const newCartRef = firebase.firestore().collection("objects").doc(req.body.objectId).collection("carts").doc();
+    const token = jwt.sign({uid: newCartRef.id, auth: false}, botConfig.token);
+    req.user.uid = newCartRef.id;
+    req.user.auth = false;
+    // save token to cookie
+    res.cookie("__session", token, {
+      httpOnly: true,
+      secure: true,
+      maxAge: 15 * 24 * 60 * 60 * 1000,
+    });
+  }
   // add to cart
   let products = {};
   // add product
@@ -274,16 +297,16 @@ app.post("/cart/add", auth, jsonParser, async (req, res) => {
         },
       };
     }
-    await store.createRecord(`objects/${req.body.objectId}/carts/${req.userId}`, {products});
+    await store.createRecord(`objects/${req.body.objectId}/carts/${req.user.uid}`, {products});
   }
   // remove product
   if (req.body.added && !req.body.qty) {
-    await store.createRecord(`objects/${req.body.objectId}/carts/${req.userId}`,
+    await store.createRecord(`objects/${req.body.objectId}/carts/${req.user.uid}`,
         {"products": {
           [req.body.id]: firebase.firestore.FieldValue.delete(),
         }});
   }
-  return res.json({userId: req.userId, currencyName: botConfig.currency, ...req.body});
+  return res.json({user: req.user, currencyName: botConfig.currency, ...req.body});
 });
 // We'll destructure req.query to make our code clearer
 const checkSignature = ({hash, ...userData}) => {
