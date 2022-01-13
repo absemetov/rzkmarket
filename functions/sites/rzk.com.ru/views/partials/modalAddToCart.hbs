@@ -26,6 +26,7 @@
   };
   const cartAddModal = document.getElementById("cartAddModal");
   const cartAddModalOpt = new bootstrap.Modal(cartAddModal);
+  const addButton = document.getElementById("addToCart")
   const delButton = document.getElementById("deleteFromCart");
   const qty = document.getElementById("qty");
   const product = {};
@@ -44,6 +45,8 @@
     product.added = false;
     qty.value = "";
     delButton.classList.add("d-none");
+    addButton.disabled = false;
+    delButton.disabled = false;
     // Update the modal's content.
     const modalTitle = cartAddModal.querySelector(".modal-title");
     const modalUnit = cartAddModal.querySelector('#basic-addon2');
@@ -63,6 +66,8 @@
   const addToCartHandler = async (qtyValue) => {
     product.qty = qtyValue;
     try {
+      addButton.disabled = true;
+      delButton.disabled = true;
       const response = await fetch("/cart/add", {
         method: "POST",
         headers: {
@@ -90,10 +95,12 @@
       cartAddModalOpt.hide();
     } catch (error) {
       alert(error);
+      addButton.disabled = false;
+      delButton.disabled = false;
     }
   };
   // events
-  document.getElementById("addToCart").addEventListener("click", async () => {
+  addButton.addEventListener("click", async () => {
     await addToCartHandler(+ qty.value);
   });
   // delete product

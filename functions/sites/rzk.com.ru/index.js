@@ -213,7 +213,7 @@ app.get("/login", auth, async (req, res) => {
   // create session, redirect user etc.
   // data is not authenticated
   // Set Cache-Control
-  res.set("Cache-Control", "public, max-age=300, s-maxage=600");
+  // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
   res.render("login");
 });
 
@@ -233,7 +233,7 @@ app.post("/cart/add", auth, jsonParser, async (req, res) => {
     "name": "required|string",
     "price": "required|numeric",
     "unit": "required|in:м,шт",
-    "qty": "required|numeric|min:0",
+    "qty": "required|integer|min:0",
   };
   const validateProductRow = new Validator(req.body, rulesProductRow);
   if (validateProductRow.fails()) {
@@ -243,6 +243,16 @@ app.post("/cart/add", auth, jsonParser, async (req, res) => {
     }
     return res.status(422).json({error: errorRow});
   }
+  // check auth
+  const newCartRef = firebase.firestore().collection("objects").doc(req.body.objectId).collection("carts").doc();
+  console.log("docId", newCartRef.id);
+  const token = jwt.sign({cartId: newCartRef.id}, botConfig.token);
+  // save token to cookie
+  res.cookie("__session", token, {
+    httpOnly: true,
+    secure: true,
+    maxAge: 1 * 24 * 60 * 60 * 1000,
+  });
   // add to cart
   let products = {};
   // add product
