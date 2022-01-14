@@ -17,7 +17,7 @@ const store = {
             iteration ++;
           }
         });
-        if (iteration === fields.length) {
+        if (iteration === fields.length && Object.keys(fieldData).length) {
           return {...fieldData};
         } else {
           return null;

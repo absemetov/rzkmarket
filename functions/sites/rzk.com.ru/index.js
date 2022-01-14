@@ -2,7 +2,7 @@ const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
 const express = require("express");
 const exphbs = require("express-handlebars");
-const {store} = require("../.././bot_store_cart.js");
+const {store, cart} = require("../.././bot_store_cart.js");
 const {roundNumber} = require("../.././bot_start_scene");
 const botConfig = functions.config().env.bot;
 const {createHash, createHmac} = require("crypto");
@@ -23,8 +23,6 @@ app.set("view engine", "hbs");
 app.set("views", "./sites/rzk.com.ru/views");
 
 // auth midleware
-botConfig.token = "2048848119:AAG-rQpHskH2iVIWhEoFkZYfslOyZAIPWbg";
-
 const auth = (req, res, next) => {
   req.user = {};
   try {
@@ -205,24 +203,30 @@ app.get("/login", auth, async (req, res) => {
     return res.redirect("/");
   }
   if (checkSignature(req.query)) {
-    // copy cart if exist for all objects!!!
+    // migrate cart if exist from all objects!!!
     if (req.user.uid) {
       const objects = await store.findAll("objects");
       objects.forEach(async (obj) => {
         const products = await store.findRecord(`objects/${obj.id}/carts/${req.user.uid}`, "products");
-        store.createRecord(`objects/${obj.id}/carts/123`, {products});
+        const productsImp = await store.findRecord(`objects/${obj.id}/carts/${req.query.id}`, "products");
+        if (products) {
+          if (productsImp) {
+            await store.updateRecord(`objects/${obj.id}/carts/${req.query.id}`, {products});
+          } else {
+            await store.createRecord(`objects/${obj.id}/carts/${req.query.id}`, {products});
+          }
+        }
         await store.getQuery(`objects/${obj.id}/carts/${req.user.uid}`).delete();
-        console.log(obj.id, req.user.uid, products);
       });
     }
     // create token
-    // const token = jwt.sign({uid: req.query.id, auth: true}, botConfig.token);
+    const token = jwt.sign({uid: req.query.id, auth: true}, botConfig.token);
     // save token to cookie
-    // return res.cookie("__session", token, {
-    //   httpOnly: true,
-    //   secure: true,
-    //   maxAge: 18 * 24 * 60 * 60 * 1000,
-    // }).redirect("/");
+    return res.cookie("__session", token, {
+      httpOnly: true,
+      secure: true,
+      maxAge: 18 * 24 * 60 * 60 * 1000,
+    }).redirect("/");
   }
   // id: '94899148',
   // first_name: 'Nadir',
@@ -244,6 +248,21 @@ app.get("/logout", auth, (req, res) => {
       .redirect("/");
 });
 
+// show cart
+app.get("/o/:objectId/cart", auth, async (req, res) => {
+  const title = "Корзина";
+  const objectId = req.params.objectId;
+  const object = await store.findRecord(`objects/${objectId}`);
+  const products = await cart.products(objectId, req.user.uid);
+  console.log(products);
+  res.render("catalog", {
+    title,
+    object,
+    products,
+    user: req.user,
+    currencyName: botConfig.currency,
+  });
+});
 // cart add product
 app.post("/cart/add", auth, jsonParser, async (req, res) => {
   // validate data
