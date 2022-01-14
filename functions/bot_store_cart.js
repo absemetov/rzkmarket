@@ -180,6 +180,11 @@ const cart = {
         callback_data: `cart?o=${objectId}`},
     ];
   },
+  async cartCount(objectId, userId) {
+    // get cart count
+    const cartProducts = await store.findRecord(`objects/${objectId}/carts/${userId}`, "products");
+    return cartProducts && Object.keys(cartProducts).length || 0;
+  },
 };
 
 exports.store = store;

@@ -40,16 +40,27 @@ const auth = (req, res, next) => {
 // show objects
 app.get("/", auth, async (req, res) => {
   const objects = await store.findAll("objects");
+  // generate cart link
+  for (const obj of objects) {
+    const cartProducts = await store.findRecord(`objects/${obj.id}/carts/${req.user.uid}`, "products");
+    obj.cartCountGoods = cartProducts && Object.keys(cartProducts).length || 0;
+  }
   // Set Cache-Control
-  res.set("Cache-Control", "public, max-age=300, s-maxage=600");
+  // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
   res.render("index", {objects, user: req.user});
 });
 
 // show object
 app.get("/o/:objectId", auth, async (req, res) => {
   const object = await store.findRecord(`objects/${req.params.objectId}`);
+  // count cart items
+  let cartCount = 0;
+  if (req.user.uid) {
+    cartCount = await cart.cartCount(object.id, req.user.uid);
+  }
+  object.cartCount = cartCount;
   // Set Cache-Control
-  res.set("Cache-Control", "public, max-age=300, s-maxage=600");
+  // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
   res.render("object", {title: object.name, object, user: req.user});
 });
 
@@ -155,6 +166,12 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
       }
     }
   }
+  // count cart items
+  let cartCount = 0;
+  if (req.user.uid) {
+    cartCount = await cart.cartCount(object.id, req.user.uid);
+  }
+  object.cartCount = cartCount;
   // Set Cache-Control
   // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
   res.render("catalog", {
@@ -186,10 +203,18 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
       product.sum = roundNumber(cartProduct.qty * cartProduct.price);
     }
   }
+  // count cart items
+  let cartCount = 0;
+  if (req.user.uid) {
+    cartCount = await cart.cartCount(object.id, req.user.uid);
+  }
+  object.cartCount = cartCount;
   // Set Cache-Control
   // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
   res.render("product", {
     title: `${product.name} - ${object.name}`,
+    description: `${product.name} - ${object.name}`,
+    keywords: `${product.name}, ${object.name}`,
     object,
     product,
     user: req.user,
@@ -206,7 +231,8 @@ app.get("/login", auth, async (req, res) => {
     // migrate cart if exist from all objects!!!
     if (req.user.uid) {
       const objects = await store.findAll("objects");
-      objects.forEach(async (obj) => {
+      // use for of for async func
+      for (const obj of objects) {
         const products = await store.findRecord(`objects/${obj.id}/carts/${req.user.uid}`, "products");
         const productsImp = await store.findRecord(`objects/${obj.id}/carts/${req.query.id}`, "products");
         if (products) {
@@ -217,7 +243,7 @@ app.get("/login", auth, async (req, res) => {
           }
         }
         await store.getQuery(`objects/${obj.id}/carts/${req.user.uid}`).delete();
-      });
+      }
     }
     // create token
     const token = jwt.sign({uid: req.query.id, auth: true}, botConfig.token);
@@ -250,12 +276,36 @@ app.get("/logout", auth, (req, res) => {
 
 // show cart
 app.get("/o/:objectId/cart", auth, async (req, res) => {
-  const title = "Корзина";
   const objectId = req.params.objectId;
   const object = await store.findRecord(`objects/${objectId}`);
-  const products = await cart.products(objectId, req.user.uid);
-  console.log(products);
-  res.render("catalog", {
+  const title = `Корзина - ${object.name}`;
+  const products = [];
+  if (req.user.uid) {
+    const cartProducts = await cart.products(objectId, req.user.uid);
+    for (const [index, product] of cartProducts.entries()) {
+      const productObj = {
+        index: index + 1,
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        unit: product.unit,
+        url: `/o/${objectId}/p/${product.id}`,
+      };
+      if (req.user.uid) {
+        const cartProduct = await store.findRecord(`objects/${objectId}/carts/${req.user.uid}`,
+            `products.${product.id}`);
+        if (cartProduct) {
+          productObj.qty = cartProduct.qty;
+          productObj.sum = roundNumber(cartProduct.qty * cartProduct.price);
+        }
+      }
+      // add to array
+      products.push(productObj);
+    }
+    // count cart items
+    object.cartCount = cartProducts && Object.keys(cartProducts).length || 0;
+  }
+  res.render("cart", {
     title,
     object,
     products,

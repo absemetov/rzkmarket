@@ -16,7 +16,8 @@
     "deploy-ua":"firebase deploy --only functions:rzkComUa",
     "deploy-ru":"firebase deploy --only functions:rzkComRu",
     "deploy-bot":"firebase deploy --only functions:bot",
-    "pl": "firebase projects:list"
+    "pl": "firebase projects:list",
+    "s": "firebase serve"
   },
   "dependencies": {},
   "devDependencies": {}

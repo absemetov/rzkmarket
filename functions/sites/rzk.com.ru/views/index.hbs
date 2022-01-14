@@ -1,6 +1,9 @@
 <h1>Торговые склады</h1>
 <ul>
 {{#each objects as |object|}}
-  <li><a href="/o/{{object.id}}">{{object.name}}</a></li>
+  <li>
+    <a href="/o/{{object.id}}">{{object.name}}</a>
+    <a href="/o/{{object.id}}/cart">Корзина ({{object.cartCountGoods}})</a>
+  </li>
 {{/each}}
 </ul>

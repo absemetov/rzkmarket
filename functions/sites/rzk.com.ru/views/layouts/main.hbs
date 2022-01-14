@@ -9,9 +9,9 @@
       rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3"
       crossorigin="anonymous">
       <title>{{#if title}}{{title}} - {{/if}}Интернет-магазин RZK Market Крым: купить элетротовары, кабель, провод, автоматика, лампы в Крыму</title>
-      <meta name="description" content="Интернет-магазин RZK Маркет Крым: кабель, провод, розетки, выключатели,
-      автоматика. ✓ Доставка по всему Крыму $ Выгодные цены и скидки %">
-      <meta name="keywords" content="rzk маркет крым, rzk, надир абсеметов">
+      <meta name="description" content="{{#if description}}{{description}}{{else}}Интернет-магазин RZK Маркет Крым: кабель, провод, розетки, выключатели,
+      автоматика. ✓ Доставка по всему Крыму $ Выгодные цены и скидки %{{/if}}">
+      <meta name="keywords" content="{{#if keywords}}{{keywords}}{{else}}rzk маркет крым, rzk, надир абсеметов{{/if}}">
       <meta name="robots" content="index,follow">
       <!-- Global site tag (gtag.js) - Google Analytics -->
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-9TD3C9HNSL"></script>
@@ -29,7 +29,10 @@
       {{else}}
         <a href="/login">Login with Telegram</a>
       {{/if}}
-      <a href="/carts">Корзины</a>
+      <a href="/">Главная</a>
+      {{#if object.id}}
+        <a href="/o/{{object.id}}/cart">Корзина({{object.cartCount}})</a>
+      {{/if}}
       <br/>
       <!-- Optional JavaScript; choose one of the two! -->
 
