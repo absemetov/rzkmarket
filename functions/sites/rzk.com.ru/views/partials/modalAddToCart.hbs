@@ -13,7 +13,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" id="deleteFromCart" class="btn btn-danger" data-bs-dismiss="modal">Удалить</button>
+        <button type="button" id="deleteFromCart" class="btn btn-danger">Удалить</button>
         <button type="button" id="addToCart" class="btn btn-primary">Добавить</button>
       </div>
     </div>
@@ -61,6 +61,7 @@
       delButton.classList.remove("d-none");
     }
     qty.focus();
+    qty.select();
   });
   // add product to cart
   const addToCartHandler = async (qtyValue) => {
