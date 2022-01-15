@@ -11,6 +11,7 @@ const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 const jsonParser = bodyParser.json();
 const Validator = require("validatorjs");
+const multer = require("multer");
 const app = express();
 app.use(cookieParser());
 // Configure template Engine and Main Template File
@@ -313,6 +314,29 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
     currencyName: botConfig.currency,
   });
 });
+// create order
+app.get("/o/:objectId/cart/purchase", auth, async (req, res) => {
+  const objectId = req.params.objectId;
+  const object = await store.findRecord(`objects/${objectId}`);
+  const title = `Оформление заказа - ${object.name}`;
+  // count cart items
+  let cartCount = 0;
+  if (req.user.uid) {
+    cartCount = await cart.cartCount(object.id, req.user.uid);
+  }
+  object.cartCount = cartCount;
+  res.render("purchase", {
+    title,
+    object,
+    user: req.user,
+    currencyName: botConfig.currency,
+  });
+});
+// save order
+app.post("/cart/purchase", multer().none(), (req, res) => {
+  console.log("test", req.body);
+  return res.json(req.body);
+});
 // cart add product
 app.post("/cart/add", auth, jsonParser, async (req, res) => {
   // validate data
@@ -375,7 +399,11 @@ app.post("/cart/add", auth, jsonParser, async (req, res) => {
           [req.body.id]: firebase.firestore.FieldValue.delete(),
         }});
   }
-  return res.json({user: req.user, currencyName: botConfig.currency, ...req.body});
+  let cartCount = 0;
+  if (req.user.uid) {
+    cartCount = await cart.cartCount(req.body.objectId, req.user.uid);
+  }
+  return res.json({cartCount});
 });
 // We'll destructure req.query to make our code clearer
 const checkSignature = ({hash, ...userData}) => {
