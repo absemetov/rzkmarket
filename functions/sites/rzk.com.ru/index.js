@@ -11,7 +11,7 @@ const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 const jsonParser = bodyParser.json();
 const Validator = require("validatorjs");
-const multer = require("multer");
+const busboy = require("busboy");
 const app = express();
 app.use(cookieParser());
 // Configure template Engine and Main Template File
@@ -329,13 +329,26 @@ app.get("/o/:objectId/cart/purchase", auth, async (req, res) => {
     title,
     object,
     user: req.user,
-    currencyName: botConfig.currency,
+    phoneregexp: botConfig.phoneregexp,
+    phonetemplate: botConfig.phonetemplate,
+    carriers: Array.from(store.carriers(), ([id, name]) => ({id, name})),
+    payments: Array.from(store.payments(), ([id, name]) => ({id, name})),
   });
 });
 // save order
-app.post("/cart/purchase", multer().none(), (req, res) => {
-  console.log("test", req.body);
-  return res.json(req.body);
+app.post("/cart/purchase", auth, (req, res) => {
+  const bb = busboy({headers: req.headers});
+  const fields = {};
+  bb.on("field", (fieldname, val) => {
+    /**
+     *  TODO(developer): Process submitted field values here
+     */
+    fields[fieldname] = val;
+  });
+  bb.on("close", () => {
+    return res.json({...fields, ...req.user});
+  });
+  bb.end(req.rawBody);
 });
 // cart add product
 app.post("/cart/add", auth, jsonParser, async (req, res) => {

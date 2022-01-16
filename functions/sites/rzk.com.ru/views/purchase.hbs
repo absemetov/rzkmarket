@@ -12,14 +12,27 @@
     <label for="firstName" class="form-label">Имя получателя</label>
     <input type="text" class="form-control" name="firstName" id="firstName" aria-describedby="firstName">
   </div>
+  <div class="mb-3">
+    <label for="phoneNumber" class="form-label">Моб. номер телефона</label>
+    <input type="tel" pattern="{{phoneregexp}}" title="{{phonetemplate}}" class="form-control" name="phoneNumber" id="phoneNumber" aria-describedby="phoneNumber">
+  </div>
+  <div class="mb-3">
+    <label for="address" class="form-label">Адрес</label>
+    <input type="text" class="form-control" name="address" id="address" aria-describedby="address">
+  </div>
   <button type="submit" class="btn btn-primary">Submit</button>
 </form>
+{{#each carriers as |carrier|}}
+ {{carrier.id}} {{carrier.name}}
+{{/each}}
+{{#each payments as |payment|}}
+ {{payment.id}} {{payment.name}}
+{{/each}}
 <script>
   const form = document.getElementById("purchase");
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const formData = new FormData(form);
-    alert(formData.get("firstName"));
     try {
       const response = await fetch("/cart/purchase", {
         method: "POST",
