@@ -33,7 +33,7 @@ const myOrders = async (ctx, next) => {
         `Статус: ${store.statuses().get(order.statusId)}\n` +
         `${order.recipientName} ${order.phoneNumber}\n` +
         `Адрес доставки: ${order.address}, ` +
-        `${store.carriers().get(order.carrierId)} ` +
+        `${store.carriers().get(order.carrierId).name} ` +
         `${order.carrierNumber ? "#" + order.carrierNumber : ""}\n` +
         `Оплата: ${store.payments().get(order.paymentId)}\n` +
         `${order.comment ? "Комментарий: " + order.comment + "\n" : ""}</b>`;
@@ -150,7 +150,7 @@ const showOrders = async (ctx, next) => {
         ` (${date.fromNow()})\n` +
         `${order.recipientName} ${order.phoneNumber}\n` +
         `Адрес доставки: ${order.address}, ` +
-        `${store.carriers().get(order.carrierId)} ` +
+        `${store.carriers().get(order.carrierId).name} ` +
         `${order.carrierNumber ? "#" + order.carrierNumber : ""}\n` +
         `Оплата: ${store.payments().get(order.paymentId)}\n` +
         `${order.comment ? "Комментарий: " + order.comment + "\n" : ""}</b>`;
@@ -176,14 +176,13 @@ const showOrders = async (ctx, next) => {
         callback_data: `eO/${order.id}?e=phoneNumber&o=${objectId}`}]);
       inlineKeyboardArray.push([{text: `📝 Оплата: ${store.payments().get(order.paymentId)}`,
         callback_data: `eO/${order.id}?showPay=${order.paymentId}&o=${objectId}`}]);
-      if (order.carrierId === 2) {
-        inlineKeyboardArray.push([{text: `📝 Доставка: ${store.carriers().get(order.carrierId)}` +
-        `${order.carrierNumber ? " #" + order.carrierNumber : ""}`,
+      if (order.carrierNumber) {
+        inlineKeyboardArray.push([{text: `📝 Доставка: ${store.carriers().get(order.carrierId).name} ` +
+        `#${order.carrierNumber}`,
         callback_data: `eO/${order.id}?cId=${order.carrierId}&n=${order.carrierNumber}&o=${objectId}`}]);
       } else {
-        inlineKeyboardArray.push([{text: `📝 Доставка: ${store.carriers().get(order.carrierId)}` +
-        `${order.carrierNumber ? " #" + order.carrierNumber : ""}`,
-        callback_data: `eO/${order.id}?cId=${order.carrierId}&o=${objectId}`}]);
+        inlineKeyboardArray.push([{text: `📝 Доставка: ${store.carriers().get(order.carrierId).name}`,
+          callback_data: `eO/${order.id}?cId=${order.carrierId}&o=${objectId}`}]);
       }
       inlineKeyboardArray.push([{text: `📝 Адрес: ${order.address}`,
         callback_data: `eO/${order.id}?e=address&o=${objectId}`}]);
@@ -432,16 +431,16 @@ ordersActions.push(async (ctx, next) => {
     // show carrier
     if (cId) {
       const inlineKeyboardArray = [];
-      store.carriers().forEach((value, key) => {
+      store.carriers().forEach((obj, key) => {
         if (key === cId) {
-          value = "✅ " + value;
+          obj.name = "✅ " + obj.name;
         }
-        if (key === 1) {
-          inlineKeyboardArray.push([{text: value, callback_data: `eO/${orderId}?sCid=${key}&o=${objectId}`}]);
-        } else {
-          inlineKeyboardArray.push([{text: value,
+        if (obj.reqNumber) {
+          inlineKeyboardArray.push([{text: obj.name,
             callback_data: `cO/cN?cId=${key}&oId=${orderId}&o=${objectId}` +
             `${carrierNumber ? "&q=" + carrierNumber : ""}`}]);
+        } else {
+          inlineKeyboardArray.push([{text: obj.name, callback_data: `eO/${orderId}?sCid=${key}&o=${objectId}`}]);
         }
       });
       inlineKeyboardArray.push([{text: "⬅️ Назад",
@@ -455,7 +454,7 @@ ordersActions.push(async (ctx, next) => {
       // });
       await store.updateRecord(`objects/${objectId}/orders/${orderId}`, {carrierId: sCid});
       // carrierNumber = Number(carrierNumber);
-      if (sCid === 2 && !carrierNumber) {
+      if (store.carriers().get(sCid).reqNumber && !carrierNumber) {
         // return first step error
         ctx.state.params.set("oId", orderId);
         ctx.state.params.set("cId", sCid);

@@ -3,7 +3,7 @@
 <h1>{{object.address}}</h1>
 <h1>{{object.description}}</h1>
 <h1>Оформить заказ</h1>
-<form id="purchase">
+<form id="purchase" action="/o/{{object.id}}/cart/purchase">
   <div class="mb-3">
     <label for="lastName" class="form-label">Фамилия получателя</label>
     <input type="text" class="form-control" name="lastName" id="lastName" aria-describedby="lastName">
@@ -20,29 +20,46 @@
     <label for="address" class="form-label">Адрес</label>
     <input type="text" class="form-control" name="address" id="address" aria-describedby="address">
   </div>
-  <button type="submit" class="btn btn-primary">Submit</button>
+  <div class="mb-3">
+    <label for="carrierId" class="form-label">Способ доставки</label>
+    <select name="carrierId" id="carrierId" class="form-select" aria-label="carrierId">
+      {{#each carriers as |carrier|}}
+        <option value="{{carrier.id}}">{{carrier.name}}</option>
+      {{/each}}
+    </select>
+  </div>
+  <div class="mb-3">
+    <label for="carrierNumber" class="form-label">Номер отделения</label>
+    <input type="number" min="1" class="form-control" name="carrierNumber" id="carrierNumber" aria-describedby="address">
+  </div>
+  <div class="mb-3">
+    <label for="paymentId" class="form-label">Способ доставки</label>
+    <select name="paymentId" id="paymentId" class="form-select" aria-label="paymentId">
+      {{#each payments as |payment|}}
+        <option value="{{payment.id}}">{{payment.name}}</option>
+      {{/each}}
+    </select>
+  </div>
+  <div class="mb-3">
+    <label for="comment" class="form-label">Комментарий</label>
+    <textarea class="form-control" id="comment" name="comment" rows="3"></textarea>
+  </div>
+  <button type="submit" class="btn btn-primary">Оформить заказ</button>
 </form>
-{{#each carriers as |carrier|}}
- {{carrier.id}} {{carrier.name}}
-{{/each}}
-{{#each payments as |payment|}}
- {{payment.id}} {{payment.name}}
-{{/each}}
 <script>
   const form = document.getElementById("purchase");
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const formData = new FormData(form);
     try {
-      const response = await fetch("/cart/purchase", {
+      const response = await fetch(form.action, {
         method: "POST",
-        body: formData,
+        body: new FormData(form),
       });
-      const productRes = await response.json();
+      const order = await response.json();
       if (!response.ok) {
-        throw new Error(productRes.error);
+        throw new Error(order.error);
       }
-      console.log(JSON.stringify(productRes));
+      console.log(JSON.stringify(order));
     } catch (error) {
       alert(error);
     }

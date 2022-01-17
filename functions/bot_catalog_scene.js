@@ -663,11 +663,11 @@ catalogsActions.push( async (ctx, next) => {
       // clear and set data use update
       await store.updateRecord(`users/${ctx.from.id}`, {"session.wizardData": {paymentId}});
       const inlineKeyboardArray = [];
-      store.carriers().forEach((value, key) => {
-        if (key === 1) {
-          inlineKeyboardArray.push([{text: value, callback_data: `cO/wizard?cId=${key}`}]);
+      store.carriers().forEach((obj, key) => {
+        if (obj.reqNumber) {
+          inlineKeyboardArray.push([{text: obj.name, callback_data: `cO/cN?cId=${key}`}]);
         } else {
-          inlineKeyboardArray.push([{text: value, callback_data: `cO/cN?cId=${key}`}]);
+          inlineKeyboardArray.push([{text: obj.name, callback_data: `cO/wizard?cId=${key}`}]);
         }
       });
       inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: `cart?o=${objectId}`}]);

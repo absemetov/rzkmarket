@@ -39,7 +39,7 @@
     product.objectId = button.getAttribute("data-bs-objectId");
     product.id = button.getAttribute("data-bs-id");
     product.name = button.getAttribute("data-bs-name");
-    product.price = + button.getAttribute("data-bs-price");
+    // product.price = + button.getAttribute("data-bs-price");
     product.unit = button.getAttribute("data-bs-unit");
     product.qty = + button.getAttribute("data-bs-qty");
     product.currencyName = addButton.getAttribute("data-bs-currencyName");
@@ -84,7 +84,7 @@
       }
       console.log(JSON.stringify(productRes));
       if (product.qty) {
-        button.innerText = `${product.qty} ${product.unit} ${roundNumber(product.qty * product.price)} ${product.currencyName}`;
+        button.innerText = `${product.qty} ${product.unit} ${roundNumber(product.qty * productRes.price)} ${product.currencyName}`;
         button.setAttribute("data-bs-qty", product.qty);
         button.classList.remove("btn-primary");
         button.classList.add("btn-success");

@@ -72,7 +72,17 @@ const store = {
     const carriersMap = new Map();
     if (carriersTxt) {
       for (const paramsData of carriersTxt.split("&")) {
-        carriersMap.set(+ paramsData.split("=")[0], paramsData.split("=")[1].trim());
+        const carrierName = paramsData.split("=")[1].trim();
+        const reqNumberCurrier = carrierName.match(/^!(.*)/);
+        const currierObj = {};
+        if (reqNumberCurrier) {
+          currierObj.name = reqNumberCurrier[1].trim();
+          currierObj.reqNumber = true;
+        } else {
+          currierObj.name = carrierName;
+          currierObj.reqNumber = false;
+        }
+        carriersMap.set(+ paramsData.split("=")[0], currierObj);
       }
     }
     return carriersMap;

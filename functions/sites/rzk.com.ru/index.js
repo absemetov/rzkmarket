@@ -201,15 +201,13 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
         `products.${product.id}`);
     if (cartProduct) {
       product.qty = cartProduct.qty;
-      product.sum = roundNumber(cartProduct.qty * cartProduct.price);
+      product.sum = roundNumber(cartProduct.qty * product.price);
     }
   }
   // count cart items
-  let cartCount = 0;
   if (req.user.uid) {
-    cartCount = await cart.cartCount(object.id, req.user.uid);
+    object.cartCount = await cart.cartCount(object.id, req.user.uid);
   }
-  object.cartCount = cartCount;
   // Set Cache-Control
   // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
   res.render("product", {
@@ -282,26 +280,33 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
   const title = `Корзина - ${object.name}`;
   const products = [];
   if (req.user.uid) {
+    // get cart products
     const cartProducts = await cart.products(objectId, req.user.uid);
-    for (const [index, product] of cartProducts.entries()) {
-      const productObj = {
-        index: index + 1,
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        unit: product.unit,
-        url: `/o/${objectId}/p/${product.id}`,
-      };
-      if (req.user.uid) {
-        const cartProduct = await store.findRecord(`objects/${objectId}/carts/${req.user.uid}`,
-            `products.${product.id}`);
-        if (cartProduct) {
-          productObj.qty = cartProduct.qty;
-          productObj.sum = roundNumber(cartProduct.qty * cartProduct.price);
+    for (const cartProduct of cartProducts) {
+      // check cart products price exist...
+      const product = await store.findRecord(`objects/${objectId}/products/${cartProduct.id}`);
+      product.price = roundNumber(product.price * object[product.currency]);
+      if (product) {
+        products.push({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          unit: product.unit,
+          qty: cartProduct.qty,
+          sum: roundNumber(cartProduct.qty * product.price),
+          url: `/o/${objectId}/p/${product.id}`,
+        });
+        // update price in cart
+        if (product.price !== cartProduct.price) {
+          // products this is name field!!!
+          const products = {
+            [product.id]: {
+              price: product.price,
+            },
+          };
+          await store.createRecord(`objects/${objectId}/carts/${req.user.uid}`, {products});
         }
       }
-      // add to array
-      products.push(productObj);
     }
     // count cart items
     object.cartCount = cartProducts && Object.keys(cartProducts).length || 0;
@@ -331,12 +336,12 @@ app.get("/o/:objectId/cart/purchase", auth, async (req, res) => {
     user: req.user,
     phoneregexp: botConfig.phoneregexp,
     phonetemplate: botConfig.phonetemplate,
-    carriers: Array.from(store.carriers(), ([id, name]) => ({id, name})),
+    carriers: Array.from(store.carriers(), ([id, obj]) => ({id, name: obj.name})),
     payments: Array.from(store.payments(), ([id, name]) => ({id, name})),
   });
 });
 // save order
-app.post("/cart/purchase", auth, (req, res) => {
+app.post("/o/:objectId/cart/purchase", auth, (req, res) => {
   const bb = busboy({headers: req.headers});
   const fields = {};
   bb.on("field", (fieldname, val) => {
@@ -357,7 +362,6 @@ app.post("/cart/add", auth, jsonParser, async (req, res) => {
     "objectId": "required|alpha_dash|max:9",
     "id": "required|alpha_dash|max:16",
     "name": "required|string",
-    "price": "required|numeric",
     "unit": "required|in:м,шт",
     "qty": "required|integer|min:0",
   };
@@ -382,6 +386,11 @@ app.post("/cart/add", auth, jsonParser, async (req, res) => {
       maxAge: 15 * 24 * 60 * 60 * 1000,
     });
   }
+  // get product data
+  const {id, name, unit, qty, objectId} = req.body;
+  const object = await store.findRecord(`objects/${objectId}`);
+  const product = await store.findRecord(`objects/${objectId}/products/${id}`);
+  const price = roundNumber(product.price * object[product.currency]);
   // add to cart
   let products = {};
   // add product
@@ -393,12 +402,13 @@ app.post("/cart/add", auth, jsonParser, async (req, res) => {
         },
       };
     } else {
+      // get product price
       products = {
         [req.body.id]: {
-          name: req.body.name,
-          price: req.body.price,
-          unit: req.body.unit,
-          qty: req.body.qty,
+          name,
+          price,
+          unit,
+          qty,
           createdAt: Math.floor(Date.now() / 1000),
         },
       };
@@ -416,7 +426,7 @@ app.post("/cart/add", auth, jsonParser, async (req, res) => {
   if (req.user.uid) {
     cartCount = await cart.cartCount(req.body.objectId, req.user.uid);
   }
-  return res.json({cartCount});
+  return res.json({cartCount, price});
 });
 // We'll destructure req.query to make our code clearer
 const checkSignature = ({hash, ...userData}) => {
