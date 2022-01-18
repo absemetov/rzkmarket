@@ -6,19 +6,19 @@
 <form id="purchase" action="/o/{{object.id}}/cart/purchase">
   <div class="mb-3">
     <label for="lastName" class="form-label">Фамилия получателя</label>
-    <input type="text" class="form-control" name="lastName" id="lastName" aria-describedby="lastName">
+    <input type="text" class="form-control" name="lastName" id="lastName" aria-describedby="lastName" required autofocus>
   </div>
   <div class="mb-3">
     <label for="firstName" class="form-label">Имя получателя</label>
-    <input type="text" class="form-control" name="firstName" id="firstName" aria-describedby="firstName">
+    <input type="text" class="form-control" name="firstName" id="firstName" aria-describedby="firstName" required>
   </div>
   <div class="mb-3">
     <label for="phoneNumber" class="form-label">Моб. номер телефона</label>
-    <input type="tel" pattern="{{phoneregexp}}" title="{{phonetemplate}}" class="form-control" name="phoneNumber" id="phoneNumber" aria-describedby="phoneNumber">
+    <input type="tel" pattern="{{phoneregexp}}" title="{{phonetemplate}}" class="form-control" name="phoneNumber" id="phoneNumber" aria-describedby="phoneNumber" required>
   </div>
   <div class="mb-3">
     <label for="address" class="form-label">Адрес</label>
-    <input type="text" class="form-control" name="address" id="address" aria-describedby="address">
+    <input type="text" class="form-control" name="address" id="address" aria-describedby="address" required>
   </div>
   <div class="mb-3">
     <label for="carrierId" class="form-label">Способ доставки</label>

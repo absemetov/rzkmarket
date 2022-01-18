@@ -250,7 +250,7 @@ app.get("/login", auth, async (req, res) => {
     return res.cookie("__session", token, {
       httpOnly: true,
       secure: true,
-      maxAge: 18 * 24 * 60 * 60 * 1000,
+      maxAge: 30 * 24 * 60 * 60 * 1000,
     }).redirect("/");
   }
   // id: '94899148',
@@ -351,6 +351,30 @@ app.post("/o/:objectId/cart/purchase", auth, (req, res) => {
     fields[fieldname] = val;
   });
   bb.on("close", () => {
+    const {lastName, firstName, phoneNumber, address, carrierId, carrierNumber, paymentId, comment} = fields;
+    // validate fields
+    const rulesOrder = {
+      "lastName": "required|string",
+      "firstName": "required|string",
+      "phoneNumber": ["required", `regex:/${botConfig.phoneregexp}`],
+      "address": "required|string",
+      "carrierId": "required|string",
+      "paymentId": "required|string",
+      "comment": "required|string",
+    };
+    if (store.carriers().get(+carrierId).reqNumber) {
+      rulesOrder.carrierNumber = ["required", `regex:/${botConfig.phoneregexp}`];
+    }
+    const validateOrder = new Validator(fields, rulesOrder, {
+      "regex": `The :attribute phone number is not in the format ${botConfig.phonetemplate}`,
+    });
+    if (validateOrder.fails()) {
+      let errorRow = "";
+      for (const [key, error] of Object.entries(validateOrder.errors.all())) {
+        errorRow += `Key ${key} => ${error} \n`;
+      }
+      return res.status(422).json({error: errorRow});
+    }
     return res.json({...fields, ...req.user});
   });
   bb.end(req.rawBody);
@@ -358,7 +382,6 @@ app.post("/o/:objectId/cart/purchase", auth, (req, res) => {
 // cart add product
 app.post("/o/:objectId/cart/add", auth, jsonParser, async (req, res) => {
   const objectId = req.params.objectId;
-  // @qty
   const {productId, qty, added} = req.body;
   // validate data
   const rulesProductRow = {
@@ -382,7 +405,7 @@ app.post("/o/:objectId/cart/add", auth, jsonParser, async (req, res) => {
     res.cookie("__session", token, {
       httpOnly: true,
       secure: true,
-      maxAge: 15 * 24 * 60 * 60 * 1000,
+      maxAge: 30 * 24 * 60 * 60 * 1000,
     });
   }
   // get product data

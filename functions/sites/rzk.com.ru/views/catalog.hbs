@@ -28,7 +28,7 @@
     <li>
       <a href="{{product.url}}">{{product.name}} {{product.price}} {{product.unit}} {{../currencyName}}</a>
       <!-- Button trigger modal -->
-      <button type="button" class="btn {{#if product.qty}}btn-success{{else}}btn-primary{{/if}}" data-bs-toggle="modal" data-bs-target="#cartAddModal" data-bs-objectId="{{../object.id}}" data-bs-id="{{product.id}}" data-bs-name="{{product.name}}" data-bs-unit="{{product.unit}}" data-bs-qty="{{product.qty}}">
+      <button type="button" class="btn {{#if product.qty}}btn-success{{else}}btn-primary{{/if}}" data-bs-toggle="modal" data-bs-target="#cartAddModal" data-bs-id="{{product.id}}" data-bs-name="{{product.name}}" data-bs-unit="{{product.unit}}" data-bs-qty="{{product.qty}}">
         {{#if product.qty}}{{product.qty}} {{product.unit}} {{product.sum}} {{../currencyName}}{{else}}Добавить товар{{/if}}
       </button>
     </li>
