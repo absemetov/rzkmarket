@@ -356,13 +356,12 @@ app.post("/o/:objectId/cart/purchase", auth, (req, res) => {
   bb.end(req.rawBody);
 });
 // cart add product
-app.post("/cart/add", auth, jsonParser, async (req, res) => {
+app.post("/o/:objectId/cart/add", auth, jsonParser, async (req, res) => {
+  const objectId = req.params.objectId;
+  // @qty
+  const {productId, qty, added} = req.body;
   // validate data
   const rulesProductRow = {
-    "objectId": "required|alpha_dash|max:9",
-    "id": "required|alpha_dash|max:16",
-    "name": "required|string",
-    "unit": "required|in:м,шт",
     "qty": "required|integer|min:0",
   };
   const validateProductRow = new Validator(req.body, rulesProductRow);
@@ -373,9 +372,9 @@ app.post("/cart/add", auth, jsonParser, async (req, res) => {
     }
     return res.status(422).json({error: errorRow});
   }
-  // check uid
+  // check uid or create new
   if (!req.user.uid) {
-    const newCartRef = firebase.firestore().collection("objects").doc(req.body.objectId).collection("carts").doc();
+    const newCartRef = firebase.firestore().collection("objects").doc(objectId).collection("carts").doc();
     const token = jwt.sign({uid: newCartRef.id, auth: false}, botConfig.token);
     req.user.uid = newCartRef.id;
     req.user.auth = false;
@@ -387,45 +386,41 @@ app.post("/cart/add", auth, jsonParser, async (req, res) => {
     });
   }
   // get product data
-  const {id, name, unit, qty, objectId} = req.body;
   const object = await store.findRecord(`objects/${objectId}`);
-  const product = await store.findRecord(`objects/${objectId}/products/${id}`);
+  const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
   const price = roundNumber(product.price * object[product.currency]);
   // add to cart
   let products = {};
   // add product
-  if (req.body.qty) {
-    if (req.body.added) {
+  if (qty) {
+    if (added) {
       products = {
-        [req.body.id]: {
-          qty: req.body.qty,
+        [productId]: {
+          qty,
         },
       };
     } else {
       // get product price
       products = {
-        [req.body.id]: {
-          name,
+        [productId]: {
+          name: product.name,
           price,
-          unit,
+          unit: product.unit,
           qty,
           createdAt: Math.floor(Date.now() / 1000),
         },
       };
     }
-    await store.createRecord(`objects/${req.body.objectId}/carts/${req.user.uid}`, {products});
+    await store.createRecord(`objects/${objectId}/carts/${req.user.uid}`, {products});
   }
-  // remove product
-  if (req.body.added && !req.body.qty) {
-    await store.createRecord(`objects/${req.body.objectId}/carts/${req.user.uid}`,
+  // remove product if be exist
+  if (added && !qty) {
+    await store.createRecord(`objects/${objectId}/carts/${req.user.uid}`,
         {"products": {
-          [req.body.id]: firebase.firestore.FieldValue.delete(),
+          [productId]: firebase.firestore.FieldValue.delete(),
         }});
   }
-  let cartCount = 0;
-  if (req.user.uid) {
-    cartCount = await cart.cartCount(req.body.objectId, req.user.uid);
-  }
+  const cartCount = await cart.cartCount(objectId, req.user.uid);
   return res.json({cartCount, price});
 });
 // We'll destructure req.query to make our code clearer

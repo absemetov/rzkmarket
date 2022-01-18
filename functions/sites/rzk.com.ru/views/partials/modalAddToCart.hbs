@@ -6,21 +6,23 @@
         <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
-        <div class="input-group mb-3">
-          <input type="number" id="qty" class="form-control" placeholder="Введите количество товара" aria-label="Введите количество товара" aria-describedby="basic-addon2">
-          <span class="input-group-text" id="basic-addon2"></span>
+      <form id="addToCartForm" action="/o/{{object.id}}/cart/add">
+        <div class="modal-body">
+          <div class="input-group mb-3">
+            <input type="number" min="0" id="qty" name="qty" class="form-control" placeholder="Введите количество товара" aria-label="Введите количество товара" aria-describedby="basic-addon2">
+            <span class="input-group-text" id="basic-addon2"></span>
+          </div>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" id="deleteFromCart" class="btn btn-danger">Удалить</button>
-        <button type="button" id="addToCart" class="btn btn-primary" data-bs-currencyName="{{currencyName}}">Добавить</button>
-      </div>
+        <div class="modal-footer">
+          <button type="button" id="deleteFromCart" class="btn btn-danger">Удалить</button>
+          <button type="submit" id="addToCart" class="btn btn-primary" data-bs-currencyName="{{currencyName}}">Добавить</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
 <script>
-  // round to 2 decimals
+  // helper round to 2 decimals
   const roundNumber = (num) => {
     return Math.round((num + Number.EPSILON) * 100) / 100;
   };
@@ -28,64 +30,64 @@
   const cartAddModalOpt = new bootstrap.Modal(cartAddModal);
   const addButton = document.getElementById("addToCart")
   const delButton = document.getElementById("deleteFromCart");
-  const qty = document.getElementById("qty");
-  const cartCount = document.getElementById("cartCount");
-  const product = {};
+  const qtyInput = document.getElementById("qty");
   let button = {};
   cartAddModal.addEventListener("show.bs.modal", function (event) {
     // Button that triggered the modal
     button = event.relatedTarget;
     // Extract info from data-bs-* attributes
-    product.objectId = button.getAttribute("data-bs-objectId");
-    product.id = button.getAttribute("data-bs-id");
-    product.name = button.getAttribute("data-bs-name");
-    // product.price = + button.getAttribute("data-bs-price");
-    product.unit = button.getAttribute("data-bs-unit");
-    product.qty = + button.getAttribute("data-bs-qty");
-    product.currencyName = addButton.getAttribute("data-bs-currencyName");
     // set default values
-    product.added = false;
-    qty.value = "";
+    qtyInput.value = "";
     delButton.classList.add("d-none");
     addButton.disabled = false;
     delButton.disabled = false;
     // Update the modal's content.
     const modalTitle = cartAddModal.querySelector(".modal-title");
     const modalUnit = cartAddModal.querySelector('#basic-addon2');
-    modalTitle.textContent = product.name;
-    modalUnit.textContent = product.unit;
+    modalTitle.textContent = button.getAttribute("data-bs-name");
+    modalUnit.textContent = button.getAttribute("data-bs-unit");
   });
   // focus qty input when modal shown
   cartAddModal.addEventListener("shown.bs.modal", function (event) {
-    if (product.qty) {
-      product.added = true;
-      qty.value = product.qty;
+    const productCartQty = + button.getAttribute("data-bs-qty");
+    if (productCartQty) {
+      qtyInput.value = productCartQty;
       delButton.classList.remove("d-none");
     }
     qty.focus();
     qty.select();
   });
   // add product to cart
-  const addToCartHandler = async (qtyValue) => {
-    product.qty = qtyValue;
+
+  const form = document.getElementById("addToCartForm");
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
     try {
       addButton.disabled = true;
       delButton.disabled = true;
-      const response = await fetch("/cart/add", {
+      const qty = + qtyInput.value;
+      const productId = button.getAttribute("data-bs-id");
+      const added = + button.getAttribute("data-bs-qty");
+      const response = await fetch(form.action, {
         method: "POST",
         headers: {
           "Content-Type": "application/json;charset=utf-8",
         },
-        body: JSON.stringify(product),
+        body: JSON.stringify({
+          productId,
+          qty,
+          added,
+        }),
       });
-      const productRes = await response.json();
+      const resJson = await response.json();
       if (!response.ok) {
-        throw new Error(productRes.error);
+        throw new Error(resJson.error);
       }
-      console.log(JSON.stringify(productRes));
-      if (product.qty) {
-        button.innerText = `${product.qty} ${product.unit} ${roundNumber(product.qty * productRes.price)} ${product.currencyName}`;
-        button.setAttribute("data-bs-qty", product.qty);
+      console.log(JSON.stringify(resJson));
+      if (qty) {
+        const currencyName = addButton.getAttribute("data-bs-currencyName");
+        button.innerText = `${qty} ${button.getAttribute("data-bs-unit")} ${roundNumber(qty * resJson.price)} ${currencyName}`;
+        button.setAttribute("data-bs-qty", qty);
         button.classList.remove("btn-primary");
         button.classList.add("btn-success");
       } else {
@@ -94,7 +96,8 @@
         button.classList.add("btn-primary");
         button.removeAttribute("data-bs-qty");
       }
-      cartCount.innerText = productRes.cartCount;
+      const cartCountNav = document.getElementById("cartCount");
+      cartCountNav.innerText = resJson.cartCount;
       // hide modal
       cartAddModalOpt.hide();
     } catch (error) {
@@ -102,21 +105,10 @@
       addButton.disabled = false;
       delButton.disabled = false;
     }
-  };
-  // events
-  addButton.addEventListener("click", async () => {
-    await addToCartHandler(+ qty.value);
   });
   // delete product
   delButton.addEventListener("click", async () => {
-    await addToCartHandler(0);
-  });
-  // enter
-  qty.addEventListener("keydown", async (event) => {
-    if(event.keyCode === 13) {
-      await addToCartHandler(+ event.target.value);
-      // for hide modal
-      event.preventDefault();
-    }
+    qty.value = "";
+    addButton.click();
   });
 </script>
