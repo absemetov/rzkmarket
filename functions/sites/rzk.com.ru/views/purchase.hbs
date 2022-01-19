@@ -30,7 +30,10 @@
   </div>
   <div class="mb-3">
     <label for="carrierNumber" class="form-label">Номер отделения</label>
-    <input type="number" min="1" class="form-control" name="carrierNumber" id="carrierNumber" aria-describedby="address">
+    <input type="number" min="1" class="form-control is-valid" name="carrierNumber" id="carrierNumber" aria-describedby="validationServer05Feedback">
+    <div id="validationServer05Feedback" class="invalid-feedback">
+      Looks good!
+    </div>
   </div>
   <div class="mb-3">
     <label for="paymentId" class="form-label">Способ доставки</label>
@@ -57,11 +60,14 @@
       });
       const order = await response.json();
       if (!response.ok) {
-        throw new Error(order.error);
+        throw new Error(order);
       }
       console.log(JSON.stringify(order));
-    } catch (error) {
-      alert(error);
+    } catch (errors) {
+      console.log(JSON.stringify(errors));
+      for (const [key, error] of Object.entries(errors.message)) {
+        console.log(key, error);
+      }
     }
   });
 </script>

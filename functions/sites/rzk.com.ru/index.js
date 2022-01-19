@@ -358,22 +358,18 @@ app.post("/o/:objectId/cart/purchase", auth, (req, res) => {
       "firstName": "required|string",
       "phoneNumber": ["required", `regex:/${botConfig.phoneregexp}`],
       "address": "required|string",
-      "carrierId": "required|string",
-      "paymentId": "required|string",
-      "comment": "required|string",
+      "carrierId": "required|integer|min:0",
+      "paymentId": "required|integer|min:0",
+      "comment": "string",
     };
     if (store.carriers().get(+carrierId).reqNumber) {
-      rulesOrder.carrierNumber = ["required", `regex:/${botConfig.phoneregexp}`];
+      rulesOrder.carrierNumber = "required|integer|min:0";
     }
     const validateOrder = new Validator(fields, rulesOrder, {
       "regex": `The :attribute phone number is not in the format ${botConfig.phonetemplate}`,
     });
     if (validateOrder.fails()) {
-      let errorRow = "";
-      for (const [key, error] of Object.entries(validateOrder.errors.all())) {
-        errorRow += `Key ${key} => ${error} \n`;
-      }
-      return res.status(422).json({error: errorRow});
+      return res.status(422).json({...validateOrder.errors.all()});
     }
     return res.json({...fields, ...req.user});
   });
