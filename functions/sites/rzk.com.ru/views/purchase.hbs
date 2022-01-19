@@ -24,19 +24,17 @@
     <label for="carrierId" class="form-label">Способ доставки</label>
     <select name="carrierId" id="carrierId" class="form-select" aria-label="carrierId">
       {{#each carriers as |carrier|}}
-        <option value="{{carrier.id}}">{{carrier.name}}</option>
+        <option value="{{carrier.id}}" data-bs-reqnumber="{{carrier.reqNumber}}">{{carrier.name}}</option>
       {{/each}}
     </select>
   </div>
-  <div class="mb-3">
+  <div class="mb-3" id="carrierNumberDiv">
     <label for="carrierNumber" class="form-label">Номер отделения</label>
-    <input type="number" min="1" class="form-control is-valid" name="carrierNumber" id="carrierNumber" aria-describedby="validationServer05Feedback">
-    <div id="validationServer05Feedback" class="invalid-feedback">
-      Looks good!
-    </div>
+    <input type="number" min="1" class="form-control" name="carrierNumber" id="carrierNumber" aria-describedby="carrierNumberFeedback">
+    <div id="carrierNumberFeedback" class="invalid-feedback"></div>
   </div>
   <div class="mb-3">
-    <label for="paymentId" class="form-label">Способ доставки</label>
+    <label for="paymentId" class="form-label">Способ оплаты</label>
     <select name="paymentId" id="paymentId" class="form-select" aria-label="paymentId">
       {{#each payments as |payment|}}
         <option value="{{payment.id}}">{{payment.name}}</option>
@@ -60,14 +58,38 @@
       });
       const order = await response.json();
       if (!response.ok) {
-        throw new Error(order);
+        alert(order.error);
+        for (const [key, error] of Object.entries(order.error)) {
+          if (key === "carrierNumber") {
+            document.getElementById(key).classList.add("is-invalid");
+            document.getElementById(`${key}Feedback`).textContent = error[0];
+            document.getElementById(key).addEventListener("focus", (event) => {
+              event.target.classList.remove("is-invalid");
+            });
+          }
+        }
       }
       console.log(JSON.stringify(order));
-    } catch (errors) {
-      console.log(JSON.stringify(errors));
-      for (const [key, error] of Object.entries(errors.message)) {
-        console.log(key, error);
-      }
+    } catch (error) {
+      alert(error);
+    }
+  });
+  const option = document.getElementById("carrierId");
+  if (+option.options[option.selectedIndex].getAttribute("data-bs-reqnumber")) {
+    document.getElementById("carrierNumberDiv").classList.remove("d-none");
+    document.getElementById("carrierNumber").required = true;
+  } else {
+    document.getElementById("carrierNumberDiv").classList.add("d-none");
+    document.getElementById("carrierNumber").required = false;
+  }
+  document.getElementById("carrierId").addEventListener("change", (event) => {
+    const option = event.target;
+    if (+option.options[option.selectedIndex].getAttribute("data-bs-reqnumber")) {
+      document.getElementById("carrierNumberDiv").classList.remove("d-none");
+      document.getElementById("carrierNumber").required = true;
+    } else {
+      document.getElementById("carrierNumberDiv").classList.add("d-none");
+      document.getElementById("carrierNumber").required = false;
     }
   });
 </script>

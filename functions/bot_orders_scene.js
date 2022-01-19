@@ -31,7 +31,7 @@ const myOrders = async (ctx, next) => {
         `Заказ #${store.formatOrderNumber(order.userId, order.orderNumber)} (${date.fromNow()})\n` +
         `Склад: ${order.objectName}\n` +
         `Статус: ${store.statuses().get(order.statusId)}\n` +
-        `${order.recipientName} ${order.phoneNumber}\n` +
+        `${order.lastName} ${order.firstName} ${order.phoneNumber}\n` +
         `Адрес доставки: ${order.address}, ` +
         `${store.carriers().get(order.carrierId).name} ` +
         `${order.carrierNumber ? "#" + order.carrierNumber : ""}\n` +
@@ -148,7 +148,7 @@ const showOrders = async (ctx, next) => {
         caption = `<b>${order.objectName} >` +
         ` Заказ #${store.formatOrderNumber(order.userId, order.orderNumber)}` +
         ` (${date.fromNow()})\n` +
-        `${order.recipientName} ${order.phoneNumber}\n` +
+        `${order.lastName} ${order.firstName} ${order.phoneNumber}\n` +
         `Адрес доставки: ${order.address}, ` +
         `${store.carriers().get(order.carrierId).name} ` +
         `${order.carrierNumber ? "#" + order.carrierNumber : ""}\n` +
@@ -170,8 +170,10 @@ const showOrders = async (ctx, next) => {
       // edit entries
       inlineKeyboardArray.push([{text: `📝 Статус: ${store.statuses().get(order.statusId)}`,
         callback_data: `eO/${order.id}?sSI=${order.statusId}&o=${objectId}`}]);
-      inlineKeyboardArray.push([{text: `📝 Получатель: ${order.recipientName}`,
-        callback_data: `eO/${order.id}?e=recipientName&o=${objectId}`}]);
+      inlineKeyboardArray.push([{text: `📝 Фамилия получателя: ${order.lastName}`,
+        callback_data: `eO/${order.id}?e=lastName&o=${objectId}`}]);
+      inlineKeyboardArray.push([{text: `📝 Имя получателя: ${order.firstName}`,
+        callback_data: `eO/${order.id}?e=firstName&o=${objectId}`}]);
       inlineKeyboardArray.push([{text: `📝 Номер тел.: ${order.phoneNumber}`,
         callback_data: `eO/${order.id}?e=phoneNumber&o=${objectId}`}]);
       inlineKeyboardArray.push([{text: `📝 Оплата: ${store.payments().get(order.paymentId)}`,
@@ -306,7 +308,7 @@ const orderWizard = [
   },
   async (ctx) => {
     // save order field
-    if (ctx.session.fieldName === "recipientName" && ctx.message.text.length < 2) {
+    if (ctx.session.fieldName === "lastName" && ctx.message.text.length < 2) {
       await ctx.reply("Имя слишком короткое");
       return;
     }
@@ -378,7 +380,8 @@ ordersActions.push(async (ctx, next) => {
         "orderData": {
           id: order.id,
           orderNumber: order.orderNumber,
-          recipientName: order.recipientName,
+          lastName: order.lastName,
+          firstName: order.firstName,
         },
       }});
       await store.createRecord(`objects/${objectId}/carts/${ctx.from.id}`, {products: order.products}),

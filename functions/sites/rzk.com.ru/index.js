@@ -336,7 +336,7 @@ app.get("/o/:objectId/cart/purchase", auth, async (req, res) => {
     user: req.user,
     phoneregexp: botConfig.phoneregexp,
     phonetemplate: botConfig.phonetemplate,
-    carriers: Array.from(store.carriers(), ([id, obj]) => ({id, name: obj.name})),
+    carriers: Array.from(store.carriers(), ([id, obj]) => ({id, name: obj.name, reqNumber: obj.reqNumber ? 1 : 0})),
     payments: Array.from(store.payments(), ([id, name]) => ({id, name})),
   });
 });
@@ -348,10 +348,14 @@ app.post("/o/:objectId/cart/purchase", auth, (req, res) => {
     /**
      *  TODO(developer): Process submitted field values here
      */
-    fields[fieldname] = val;
+    if (fieldname === "carrierId" || fieldname === "carrierNumber" || fieldname === "paymentId") {
+      val = + val;
+    }
+    if (val) {
+      fields[fieldname] = val;
+    }
   });
-  bb.on("close", () => {
-    const {lastName, firstName, phoneNumber, address, carrierId, carrierNumber, paymentId, comment} = fields;
+  bb.on("close", async () => {
     // validate fields
     const rulesOrder = {
       "lastName": "required|string",
@@ -362,16 +366,42 @@ app.post("/o/:objectId/cart/purchase", auth, (req, res) => {
       "paymentId": "required|integer|min:0",
       "comment": "string",
     };
-    if (store.carriers().get(+carrierId).reqNumber) {
+    // add carrier number
+    if (store.carriers().get(+ fields.carrierId).reqNumber) {
       rulesOrder.carrierNumber = "required|integer|min:0";
     }
     const validateOrder = new Validator(fields, rulesOrder, {
       "regex": `The :attribute phone number is not in the format ${botConfig.phonetemplate}`,
     });
     if (validateOrder.fails()) {
-      return res.status(422).json({...validateOrder.errors.all()});
+      return res.status(422).json({error: {...validateOrder.errors.all()}});
     }
-    return res.json({...fields, ...req.user});
+    const objectId = req.params.objectId;
+    const cartProducts = await store.findRecord(`objects/${objectId}/carts/${req.user.uid}`, "products");
+    if (cartProducts) {
+      const objectId = req.params.objectId;
+      const object = await store.findRecord(`objects/${objectId}`);
+      const newOrderRef = firebase.firestore().collection("objects").doc(objectId).collection("orders").doc();
+      // if useer auth
+      const userId = req.user.auth ? + req.user.uid : 94899148;
+      await store.createRecord(`users/${userId}`, {orderCount: firebase.firestore.FieldValue.increment(1)});
+      const userData = await store.findRecord(`users/${userId}`);
+      await newOrderRef.set({
+        userId,
+        objectId,
+        objectName: object.name,
+        orderNumber: userData.orderCount,
+        statusId: 1,
+        fromBot: false,
+        products: cartProducts,
+        createdAt: Math.floor(Date.now() / 1000),
+        ...fields,
+      });
+      await cart.clear(objectId, req.user.uid);
+      return res.json({orderId: newOrderRef.id, ...req.user});
+    } else {
+      return res.status(422).json({error: "Cart empty!"});
+    }
   });
   bb.end(req.rawBody);
 });

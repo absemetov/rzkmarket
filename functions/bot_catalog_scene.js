@@ -378,24 +378,39 @@ const showCart = async (ctx, next) => {
     let totalSum = 0;
     let itemShow = 0;
     const products = await cart.products(objectId, ctx.from.id);
-    for (const [index, product] of products.entries()) {
-      const productTxt = `${index + 1}) <b>${product.name}</b> (${product.id})` +
-      `=${product.price} ${botConfig.currency}*${product.qty}${product.unit}` +
-      `=${roundNumber(product.price * product.qty)}${botConfig.currency}`;
-      // truncate long string
-      if ((msgTxt + `${productTxt}\n`).length < 1024) {
-        msgTxt += `${productTxt}\n`;
-        itemShow++;
-        // msgTxt = msgTxt.substring(0, 1024);
+    for (const [index, cartProduct] of products.entries()) {
+      // check cart products price exist...
+      const product = await store.findRecord(`objects/${objectId}/products/${cartProduct.id}`);
+      product.price = roundNumber(product.price * object[product.currency]);
+      if (product) {
+        const productTxt = `${index + 1}) <b>${product.name}</b> (${product.id})` +
+        `=${product.price} ${botConfig.currency}*${cartProduct.qty}${product.unit}` +
+        `=${roundNumber(product.price * cartProduct.qty)}${botConfig.currency}`;
+        // truncate long string
+        if ((msgTxt + `${productTxt}\n`).length < 1024) {
+          msgTxt += `${productTxt}\n`;
+          itemShow++;
+          // msgTxt = msgTxt.substring(0, 1024);
+        }
+        inlineKeyboardArray.push([
+          {text: `${index + 1}) ${cartProduct.qty}${product.unit}=` +
+          `${roundNumber(cartProduct.qty * product.price)} ${botConfig.currency} ` +
+          `${product.name} (${product.id})`,
+          callback_data: `aC/${product.id}?qty=${cartProduct.qty}&r=1&a=1&o=${objectId}`},
+        ]);
+        // update price in cart
+        if (product.price !== cartProduct.price) {
+          // products this is name field!!!
+          const products = {
+            [product.id]: {
+              price: product.price,
+            },
+          };
+          await store.createRecord(`objects/${objectId}/carts/${ctx.from.id}`, {products});
+        }
+        totalQty += cartProduct.qty;
+        totalSum += cartProduct.qty * product.price;
       }
-      inlineKeyboardArray.push([
-        {text: `${index + 1}) ${product.qty}${product.unit}=` +
-        `${roundNumber(product.qty * product.price)} ${botConfig.currency} ` +
-        `${product.name} (${product.id})`,
-        callback_data: `aC/${product.id}?qty=${product.qty}&r=1&a=1&o=${objectId}`},
-      ]);
-      totalQty += product.qty;
-      totalSum += product.qty * product.price;
     }
     if (itemShow !== inlineKeyboardArray.length) {
       msgTxt += "...\n";
@@ -414,11 +429,11 @@ const showCart = async (ctx, next) => {
       const orderData = await store.findRecord(`users/${ctx.from.id}`, "session.orderData");
       if (orderData) {
         const orderId = orderData.orderNumber;
-        inlineKeyboardArray.push([{text: `✅ Сохранить Заказ #${orderId} от ${orderData.recipientName}`,
-          callback_data: `eO/${orderData.id}?sP=1&o=${objectId}`}]);
+        inlineKeyboardArray.push([{text: `✅ Сохранить Заказ #${orderId} от ${orderData.lastName} ` +
+        `${orderData.firstName}`, callback_data: `eO/${orderData.id}?sP=1&o=${objectId}`}]);
         // delete order from cart
-        inlineKeyboardArray.push([{text: `❎ Убрать Заказ #${orderId} от ${orderData.recipientName}`,
-          callback_data: `cart?deleteOrderId=${orderData.id}&o=${objectId}`}]);
+        inlineKeyboardArray.push([{text: `❎ Убрать Заказ #${orderId} от ${orderData.lastName} ` +
+        `${orderData.firstName}`, callback_data: `cart?deleteOrderId=${orderData.id}&o=${objectId}`}]);
       }
       // create order
       inlineKeyboardArray.push([{text: "✅ Оформить заказ",
@@ -558,27 +573,40 @@ const cartWizard = [
     }
     const address = ctx.message.text;
     await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {address}}});
-    let userName = "";
-    if (ctx.from.last_name) {
-      userName += ctx.from.last_name;
-    }
-    if (ctx.from.first_name) {
-      userName += " " + ctx.from.first_name;
-    }
-    await ctx.reply("Введите фамилию и имя получателя, или выберите себя", {
+    // reply last name alert
+    const lastName = ctx.from.last_name ? ctx.from.last_name : null;
+    const keyboard = lastName ? [[lastName], ["Отмена"]] : [["Отмена"]];
+    await ctx.reply(`Введите фамилию получателя ${lastName ? "или выберите свою" : ""}`, {
       reply_markup: {
-        keyboard: [[userName], ["Отмена"]],
+        keyboard,
         resize_keyboard: true,
       }});
     await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 4}});
   },
   async (ctx) => {
     if (ctx.message.text.length < 2) {
+      await ctx.reply("Фамилия слишком короткая");
+      return;
+    }
+    const lastName = ctx.message.text;
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {lastName}}});
+    // reply first name
+    const firstName = ctx.from.first_name;
+    const keyboard = [[firstName], ["Отмена"]];
+    await ctx.reply("Введите имя получателя или выберите свое", {
+      reply_markup: {
+        keyboard,
+        resize_keyboard: true,
+      }});
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 5}});
+  },
+  async (ctx) => {
+    if (ctx.message.text.length < 2) {
       await ctx.reply("Имя слишком короткое");
       return;
     }
-    const recipientName = ctx.message.text;
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {recipientName}}});
+    const firstName = ctx.message.text;
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {firstName}}});
     await ctx.reply("Введите номер телефона", {
       reply_markup: {
         keyboard: [
@@ -591,7 +619,7 @@ const cartWizard = [
         resize_keyboard: true,
       },
     });
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 5}});
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 6}});
   },
   async (ctx) => {
     const phoneNumberText = (ctx.message.contact && ctx.message.contact.phone_number) || ctx.message.text;
@@ -612,7 +640,7 @@ const cartWizard = [
             ],
             resize_keyboard: true,
           }});
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 6}});
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 7}});
   },
   async (ctx) => {
     if (ctx.message.text && ctx.message.text !== "Без комментариев") {
@@ -622,9 +650,9 @@ const cartWizard = [
     // get preorder data
     const preOrderData = await store.findRecord(`users/${ctx.from.id}`, "session.wizardData");
     await ctx.replyWithHTML("<b>Проверьте даные получателя:\n" +
-        `${preOrderData.recipientName} ${preOrderData.phoneNumber}\n` +
+        `${preOrderData.lastName} ${preOrderData.firstName} ${preOrderData.phoneNumber}\n` +
         `Адрес доставки: ${preOrderData.address}, ` +
-        `${store.carriers().get(preOrderData.carrierId)} ` +
+        `${store.carriers().get(preOrderData.carrierId).name} ` +
         `${preOrderData.carrierNumber ? "#" + preOrderData.carrierNumber : ""}\n` +
         `Оплата: ${store.payments().get(preOrderData.paymentId)}\n` +
         `${preOrderData.comment ? "Комментарий: " + preOrderData.comment : ""}</b>`,
@@ -636,7 +664,7 @@ const cartWizard = [
         ],
         resize_keyboard: true,
       }});
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 7}});
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 8}});
   },
   async (ctx, next) => {
     if (ctx.message.text === "Оформить заказ") {
