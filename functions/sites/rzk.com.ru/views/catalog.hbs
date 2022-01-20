@@ -1,5 +1,9 @@
 <h1><a href="/o/{{object.id}}">{{object.name}}</a></h1>
-<h1>{{object.phoneNumber}}</h1>
+{{#each object.phoneArray as |phone|}}
+  <li>
+    <a href="tel:{{phone}}">{{phone}}</a>
+  </li>
+{{/each}}
 <h1>{{object.address}}</h1>
 <h1>{{object.description}}</h1>
 {{#if currentCatalog}}

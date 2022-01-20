@@ -54,6 +54,9 @@ app.get("/", auth, async (req, res) => {
 // show object
 app.get("/o/:objectId", auth, async (req, res) => {
   const object = await store.findRecord(`objects/${req.params.objectId}`);
+  // parse phones
+  const phones = object.phoneArray;
+  console.log(phones);
   // count cart items
   let cartCount = 0;
   if (req.user.uid) {

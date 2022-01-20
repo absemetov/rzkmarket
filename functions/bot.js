@@ -2,7 +2,7 @@ const functions = require("firebase-functions");
 const {Telegraf, session} = require("telegraf");
 const {startActions, startHandler, parseUrl, isAdmin, uploadPhotoObj, photoCheckUrl} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
-const {uploadActions, uploaForm} = require("./bot_upload_scene");
+const {uploadActions, uploadForm} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
 const {uploadPhotoProduct, uploadPhotoCat, catalogsActions, cartWizard} = require("./bot_catalog_scene");
 const {store} = require("./bot_store_cart.js");
@@ -50,7 +50,7 @@ bot.start(async (ctx) => {
           callback_data: `c?o=${objectId}`}]);
       }
       caption = `<b>${object.name}\n` +
-        `Контакты: ${object.phoneNumber}\n` +
+        `Контакты: ${object.phoneArray.join()}\n` +
         `Адрес: ${object.address}\n` +
         `Описание: ${object.description}</b>`;
     }
@@ -69,7 +69,7 @@ bot.start(async (ctx) => {
           callback_data: `c?o=${objectId}`}]);
       }
       caption = `<b>${object.name}\n` +
-        `Контакты: ${object.phoneNumber}\n` +
+        `Контакты: ${object.phoneArray.join()}\n` +
         `Адрес: ${object.address}\n` +
         `Описание: ${object.description}</b>`;
     }
@@ -120,7 +120,7 @@ bot.on(["text", "contact"], async (ctx) => {
   if (sheetUrl) {
     // save sheetId to session
     await store.createRecord(`users/${ctx.from.id}`, {"session": {"sheetId": sheetUrl[1]}});
-    await uploaForm(ctx, sheetUrl[1]);
+    await uploadForm(ctx, sheetUrl[1]);
     return;
   }
   const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");

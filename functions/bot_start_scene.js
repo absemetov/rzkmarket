@@ -51,6 +51,10 @@ const startHandler = async (ctx) => {
     inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
   });
   inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
+  inlineKeyboardArray.push([{text: `Войти на сайт ${botConfig.site}`, login_url: {
+    url: `https://${botConfig.site}/login`,
+    request_write_access: true,
+  }}]);
   // add main photo
   const projectImg = await photoCheckUrl(botConfig.logo);
   await ctx.replyWithPhoto(projectImg,
@@ -73,7 +77,7 @@ startActions.push(async (ctx, next) => {
       // get data obj
       const object = await store.findRecord(`objects/${objectId}`);
       caption = `<b>${object.name}\n` +
-        `Контакты: ${object.phoneNumber}\n` +
+        `Контакты: ${object.phoneArray.join()}\n` +
         `Адрес: ${object.address}\n` +
         `Описание: ${object.description}</b>\n`;
       const cartButtons = await cart.cartButtons(objectId, ctx.from.id);
@@ -103,6 +107,10 @@ startActions.push(async (ctx, next) => {
         inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
       });
       inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
+      inlineKeyboardArray.push([{text: `Войти на сайт ${botConfig.site}`, login_url: {
+        url: `https://${botConfig.site}/login`,
+        request_write_access: true,
+      }}]);
     }
     // render data
     const media = await photoCheckUrl(imgUrl);

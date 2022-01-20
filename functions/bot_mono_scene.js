@@ -15,10 +15,6 @@ const monoHandler = async (ctx) => {
         ],
         [
           {text: "Monobank.com.ua", url: "https://monobank.com.ua"},
-          {text: "Войти на сайт", login_url: {
-            url: "https://rzk.com.ru/login",
-            request_write_access: true,
-          }},
         ],
       ],
     }});

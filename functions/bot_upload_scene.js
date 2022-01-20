@@ -1,3 +1,4 @@
+const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
 const {GoogleSpreadsheet} = require("google-spreadsheet");
 const creds = require("./rzk-com-ua-d1d3248b8410.json");
@@ -8,6 +9,7 @@ const {store} = require("./bot_store_cart.js");
 const {roundNumber} = require("./bot_start_scene");
 const cyrillicToTranslit = new CyrillicToTranslit();
 const cyrillicToTranslitUk = new CyrillicToTranslit({preset: "uk"});
+const botConfig = functions.config().env.bot;
 // merch center
 async (ctx) => {
   const content = google.content("v2.1");
@@ -409,7 +411,10 @@ const createObject = async (ctx, next) => {
       const id = sheet.getCellByA1("B1").value;
       const name = sheet.getCellByA1("B2").value;
       const description = sheet.getCellByA1("B3").value;
-      const phoneNumber = sheet.getCellByA1("B4").value;
+      const phoneNumbers = sheet.getCellByA1("B4").value;
+      const phoneArray = phoneNumbers && phoneNumbers.toString().split("#").map((phone) => {
+        return `${botConfig.phonecode}${phone.trim()}`;
+      });
       const address = sheet.getCellByA1("B5").value;
       const USD = roundNumber(sheet.getCellByA1("B6").value);
       const EUR = roundNumber(sheet.getCellByA1("B7").value);
@@ -420,7 +425,7 @@ const createObject = async (ctx, next) => {
         id,
         name,
         description,
-        phoneNumber,
+        phoneArray,
         address,
         USD,
         EUR,
@@ -431,14 +436,17 @@ const createObject = async (ctx, next) => {
         "id": "required|alpha_dash|max:9",
         "name": "required|string",
         "description": "required|string",
-        "phoneNumber": "required|string",
+        "phoneArray": "required",
+        "phoneArray.*": ["required", `regex:/${botConfig.phoneregexp}`],
         "address": "required|string",
         "USD": "required|numeric",
         "EUR": "required|numeric",
         "UAH": "required|numeric",
         "RUB": "required|numeric",
       };
-      const validateObject = new Validator(objectCheck, rulesObject);
+      const validateObject = new Validator(objectCheck, rulesObject, {
+        "regex": `The :attribute phone number is not in the format ${botConfig.phonetemplate}`,
+      });
       if (validateObject.fails()) {
         let errorRow = "";
         for (const [key, error] of Object.entries(validateObject.errors.all())) {
@@ -451,7 +459,7 @@ const createObject = async (ctx, next) => {
         await store.createRecord(`objects/${objectId}`, {
           name,
           description,
-          phoneNumber,
+          phoneArray,
           address,
           sheetId,
           USD,
@@ -476,7 +484,7 @@ const createObject = async (ctx, next) => {
   }
 };
 // show upload form when send link
-const uploaForm = async (ctx, sheetId) => {
+const uploadForm = async (ctx, sheetId) => {
   const doc = new GoogleSpreadsheet(sheetId);
   try {
     // start upload
@@ -487,7 +495,10 @@ const uploaForm = async (ctx, sheetId) => {
     const id = sheet.getCellByA1("B1").value;
     const name = sheet.getCellByA1("B2").value;
     const description = sheet.getCellByA1("B3").value;
-    const phoneNumber = sheet.getCellByA1("B4").value;
+    const phoneNumbers = sheet.getCellByA1("B4").value;
+    const phoneArray = phoneNumbers && phoneNumbers.toString().split("#").map((phone) => {
+      return `${botConfig.phonecode}${phone.trim()}`;
+    });
     const address = sheet.getCellByA1("B5").value;
     const USD = roundNumber(sheet.getCellByA1("B6").value);
     const EUR = roundNumber(sheet.getCellByA1("B7").value);
@@ -498,7 +509,7 @@ const uploaForm = async (ctx, sheetId) => {
       id,
       name,
       description,
-      phoneNumber,
+      phoneArray,
       address,
       USD,
       EUR,
@@ -509,14 +520,17 @@ const uploaForm = async (ctx, sheetId) => {
       "id": "required|alpha_dash|max:9",
       "name": "required|string",
       "description": "required|string",
-      "phoneNumber": "required|string",
+      "phoneArray": "required",
+      "phoneArray.*": ["required", `regex:/${botConfig.phoneregexp}`],
       "address": "required|string",
       "USD": "required|numeric",
       "EUR": "required|numeric",
       "UAH": "required|numeric",
       "RUB": "required|numeric",
     };
-    const validateObject = new Validator(object, rulesObject);
+    const validateObject = new Validator(object, rulesObject, {
+      "regex": `The :attribute phone number is not in the format ${botConfig.phonetemplate}`,
+    });
     if (validateObject.fails()) {
       let errorRow = "";
       for (const [key, error] of Object.entries(validateObject.errors.all())) {
@@ -529,7 +543,7 @@ const uploaForm = async (ctx, sheetId) => {
     `id: <b>${id}</b>\n` +
     `name: <b>${name}</b>\n` +
     `description: <b>${description}</b>\n` +
-    `phoneNumber: <b>${phoneNumber}</b>\n` +
+    `phoneArray: <b>${phoneArray.join()}</b>\n` +
     `address: <b>${address}</b>\n`;
     // check object
     const objectRzk = await store.findRecord(`objects/${id}`);
@@ -551,5 +565,5 @@ const uploaForm = async (ctx, sheetId) => {
   }
 };
 uploadActions.push(createObject);
-exports.uploaForm = uploaForm;
+exports.uploadForm = uploadForm;
 exports.uploadActions = uploadActions;
