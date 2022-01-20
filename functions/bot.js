@@ -87,6 +87,14 @@ bot.start(async (ctx) => {
   } else {
     await startHandler(ctx);
   }
+  // save user data
+  const userData = await store.findRecord(`users/${ctx.from.id}`);
+  if (!userData) {
+    await store.createRecord(`users/${ctx.from.id}`, {
+      firstName: ctx.from.first_name,
+      fromSite: false,
+    });
+  }
   // admin notify
   await ctx.telegram.sendMessage(94899148, `<b>New subsc! <a href="tg://user?id=${ctx.from.id}">${ctx.from.id}</a>\n`+
   `Message: ${ctx.message.text}</b>`,

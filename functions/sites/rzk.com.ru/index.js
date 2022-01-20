@@ -247,6 +247,14 @@ app.get("/login", auth, async (req, res) => {
         await store.getQuery(`objects/${obj.id}/carts/${req.user.uid}`).delete();
       }
     }
+    // save user data
+    const userData = await store.findRecord(`users/${req.query.id}`);
+    if (!userData) {
+      await store.createRecord(`users/${req.query.id}`, {
+        firstName: req.query.first_name,
+        fromSite: true,
+      });
+    }
     // create token
     const token = jwt.sign({uid: req.query.id, auth: true}, botConfig.token);
     // save token to cookie
