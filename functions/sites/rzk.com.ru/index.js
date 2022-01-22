@@ -31,6 +31,7 @@ const auth = (req, res, next) => {
     const authData = jwt.verify(token, botConfig.token);
     req.user.auth = authData.auth;
     req.user.uid = authData.uid;
+    req.user.firstName = authData.firstName;
   } catch {
     req.user.auth = false;
     req.user.uid = null;
@@ -226,10 +227,7 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
 
 // login with telegram
 app.get("/login", auth, async (req, res) => {
-  if (req.user.auth) {
-    return res.redirect("/");
-  }
-  if (checkSignature(req.query)) {
+  if (req.query && checkSignature(req.query)) {
     // migrate cart if exist from all objects!!!
     if (req.user.uid) {
       const objects = await store.findAll("objects");
@@ -256,7 +254,7 @@ app.get("/login", auth, async (req, res) => {
       });
     }
     // create token
-    const token = jwt.sign({uid: req.query.id, auth: true}, botConfig.token);
+    const token = jwt.sign({uid: req.query.id, auth: true, firstName: req.query.first_name}, botConfig.token);
     // save token to cookie
     return res.cookie("__session", token, {
       httpOnly: true,
@@ -275,7 +273,7 @@ app.get("/login", auth, async (req, res) => {
   // data is not authenticated
   // Set Cache-Control
   // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
-  res.render("login");
+  res.render("login", {login: true, user: req.user});
 });
 
 app.get("/logout", auth, (req, res) => {
@@ -290,6 +288,7 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
   const object = await store.findRecord(`objects/${objectId}`);
   const title = `Корзина - ${object.name}`;
   const products = [];
+  object.cartCount = 0;
   if (req.user.uid) {
     // get cart products
     const cartProducts = await cart.products(objectId, req.user.uid);
@@ -320,9 +319,10 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
       }
     }
     // count cart items
-    object.cartCount = cartProducts && Object.keys(cartProducts).length || 0;
+    object.cartCount = cartProducts && Object.keys(cartProducts).length;
   }
   res.render("cart", {
+    cart: true,
     title,
     object,
     products,
