@@ -1,5 +1,6 @@
 const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
+const bucket = firebase.storage().bucket();
 const express = require("express");
 const exphbs = require("express-handlebars");
 const {store, cart} = require("../.././bot_store_cart.js");
@@ -46,6 +47,7 @@ app.get("/", auth, async (req, res) => {
   for (const obj of objects) {
     const cartProducts = await store.findRecord(`objects/${obj.id}/carts/${req.user.uid}`, "products");
     obj.cartCountGoods = cartProducts && Object.keys(cartProducts).length || 0;
+    obj.imgUrl = bucket.file(botConfig.logo).publicUrl();
   }
   // Set Cache-Control
   // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
