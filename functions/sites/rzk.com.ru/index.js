@@ -46,8 +46,12 @@ app.get("/", auth, async (req, res) => {
   // generate cart link
   for (const obj of objects) {
     const cartProducts = await store.findRecord(`objects/${obj.id}/carts/${req.user.uid}`, "products");
-    obj.cartCountGoods = cartProducts && Object.keys(cartProducts).length || 0;
-    obj.imgUrl = bucket.file(botConfig.logo).publicUrl();
+    obj.cartCount = cartProducts && Object.keys(cartProducts).length || 0;
+    if (obj.logo) {
+      obj.imgUrl = bucket.file(`photos/${obj.id}/logo/2/${obj.logo}.jpg`).publicUrl();
+    } else {
+      obj.imgUrl = bucket.file(botConfig.logo).publicUrl();
+    }
   }
   // Set Cache-Control
   // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
@@ -66,6 +70,11 @@ app.get("/o/:objectId", auth, async (req, res) => {
     cartCount = await cart.cartCount(object.id, req.user.uid);
   }
   object.cartCount = cartCount;
+  if (object.logo) {
+    object.imgUrl = bucket.file(`photos/${object.id}/logo/2/${object.logo}.jpg`).publicUrl();
+  } else {
+    object.imgUrl = bucket.file(botConfig.logo).publicUrl();
+  }
   // Set Cache-Control
   // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
   res.render("object", {title: object.name, object, user: req.user});
@@ -106,13 +115,15 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
       tagUrl = `&tag=${selectedTag}`;
     }
     for (const tag of currentCatalog.tags || []) {
-      tags.push({
-        text: `${tag.id === selectedTag ? "✅ " : ""} ${tag.name}`,
+      const tagObj = {
+        text: `${tag.name}`,
         url: `/o/${object.id}/c/${currentCatalog.id}?tag=${tag.id}`,
-      });
+      };
       if (tag.id === selectedTag) {
         title = `${currentCatalog.name} - ${tag.name} - ${object.name}`;
+        tagObj.active = true;
       }
+      tags.push(tagObj);
     }
     // paginate goods, copy main query
     let query = mainQuery;
@@ -125,9 +136,9 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
     if (endBefore) {
       const endBeforeProduct = await firebase.firestore().collection("objects").doc(objectId)
           .collection("products").doc(endBefore).get();
-      query = query.endBefore(endBeforeProduct).limitToLast(10);
+      query = query.endBefore(endBeforeProduct).limitToLast(24);
     } else {
-      query = query.limit(10);
+      query = query.limit(24);
     }
     // get products
     const productsSnapshot = await query.get();
@@ -139,6 +150,7 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
         price: roundNumber(product.data().price * object[product.data().currency]),
         unit: product.data().unit,
         url: `/o/${objectId}/p/${product.id}`,
+        imgUrl: "/icons/cart3.svg",
       };
       if (req.user.uid) {
         const cartProduct = await store.findRecord(`objects/${objectId}/carts/${req.user.uid}`,
@@ -147,6 +159,10 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
           productObj.qty = cartProduct.qty;
           productObj.sum = roundNumber(cartProduct.qty * cartProduct.price);
         }
+      }
+      if (product.data().mainPhoto) {
+        productObj.imgUrl = bucket.file(`photos/${objectId}/products/${product.id}/2/` +
+        `${product.data().mainPhoto}.jpg`).publicUrl();
       }
       // add to array
       products.push(productObj);
@@ -201,6 +217,7 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
   const object = await store.findRecord(`objects/${objectId}`);
   const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
   product.price = roundNumber(product.price * object[product.currency]);
+  product.imgUrl = "/icons/cart3.svg";
   // get cart qty
   if (req.user.uid) {
     const cartProduct = await store.findRecord(`objects/${objectId}/carts/${req.user.uid}`,
@@ -209,6 +226,10 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
       product.qty = cartProduct.qty;
       product.sum = roundNumber(cartProduct.qty * product.price);
     }
+  }
+  if (product.mainPhoto) {
+    product.imgUrl = bucket.file(`photos/${objectId}/products/${product.id}/2/` +
+    `${product.mainPhoto}.jpg`).publicUrl();
   }
   // count cart items
   if (req.user.uid) {
@@ -281,7 +302,7 @@ app.get("/login", auth, async (req, res) => {
 app.get("/logout", auth, (req, res) => {
   return res
       .clearCookie("__session")
-      .redirect("/");
+      .redirect("/login");
 });
 
 // show cart
@@ -299,6 +320,11 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
       const product = await store.findRecord(`objects/${objectId}/products/${cartProduct.id}`);
       product.price = roundNumber(product.price * object[product.currency]);
       if (product) {
+        product.imgUrl = "/icons/cart3.svg";
+        if (product.mainPhoto) {
+          product.imgUrl = bucket.file(`photos/${objectId}/products/${product.id}/2/` +
+          `${product.mainPhoto}.jpg`).publicUrl();
+        }
         products.push({
           id: product.id,
           name: product.name,
@@ -307,6 +333,7 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
           qty: cartProduct.qty,
           sum: roundNumber(cartProduct.qty * product.price),
           url: `/o/${objectId}/p/${product.id}`,
+          imgUrl: product.imgUrl,
         });
         // update price in cart
         if (product.price !== cartProduct.price) {
@@ -411,7 +438,7 @@ app.post("/o/:objectId/cart/purchase", auth, (req, res) => {
         ...fields,
       });
       await cart.clear(objectId, req.user.uid);
-      return res.json({orderId: newOrderRef.id, ...req.user});
+      return res.json({orderId: newOrderRef.id, auth: req.user.auth});
     } else {
       return res.status(422).json({error: "Cart empty!"});
     }

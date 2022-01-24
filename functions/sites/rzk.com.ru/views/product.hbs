@@ -1,21 +1,36 @@
-<h1><a href="/o/{{object.id}}">{{object.name}}</a></h1>
-{{#each object.phoneArray as |phone|}}
-  <li>
-    <a href="tel:{{phone}}">{{phone}}</a>
-  </li>
-{{/each}}
-<h1>{{object.address}}</h1>
-<h1>{{object.description}}</h1>
-<h1>
-    <a href="/o/{{object.id}}/c/{{product.catalog.parentId}}">..</a> /
-    <a href="/o/{{object.id}}/c/{{product.catalog.id}}">{{product.catalog.name}}</a>
-  </h1>
-<h1>{{product.name}}</h1>
-<h1>{{product.id}}</h1>
-<h1>{{product.price}} {{currencyName}}</h1>
-
-<button type="button" class="btn {{#if product.qty}}btn-success{{else}}btn-primary{{/if}}" data-bs-toggle="modal" data-bs-target="#cartAddModal" data-bs-id="{{product.id}}" data-bs-name="{{product.name}}" data-bs-unit="{{product.unit}}" data-bs-qty="{{product.qty}}">
-  {{#if product.qty}}{{product.qty}} {{product.unit}} {{product.sum}} {{currencyName}}{{else}}Добавить товар{{/if}}
-</button>
-
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Торговые объекты</a></li>
+    <li class="breadcrumb-item"><a href="/o/{{object.id}}">{{object.name}}</a></li>
+    <li class="breadcrumb-item"><a href="/o/{{object.id}}/c">Каталог товаров</a></li>
+    <li class="breadcrumb-item">
+      <a href="/o/{{object.id}}/c/{{product.catalog.parentId}}">⬅️ Назад</a>
+    </li>
+    <li class="breadcrumb-item" aria-current="page">
+      <a href="/o/{{object.id}}/c/{{product.catalog.id}}">{{product.catalog.name}}</a>
+    </li>
+  </ol>
+</nav>
+<div class="row row-cols-1 row-cols-sm-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 row-cols-xxl-5 g-3 mb-3">
+  <div class="col">
+    <div class="card text-center h-100">
+      <a href="{{product.url}}">
+        <img src="{{product.imgUrl}}" class="card-img-top" alt="{{product.name}}">
+      </a>
+      <div class="card-body">
+        <h5><a href="{{product.url}}">{{product.name}}</a> <small class="text-muted">({{product.id}})</small></h5>
+      </div>
+      <div class="card-footer">
+        <h3>
+          {{product.price}} <small class="text-muted">{{currencyName}}</small>
+        </h3>
+        <div class="d-grid gap-2">
+          <button type="button" class="btn {{#if product.qty}}btn-success{{else}}btn-primary{{/if}}" data-bs-toggle="modal" data-bs-target="#cartAddModal" data-bs-id="{{product.id}}" data-bs-name="{{product.name}}" data-bs-unit="{{product.unit}}" data-bs-qty="{{product.qty}}">
+            {{#if product.qty}}{{product.qty}} {{product.unit}} {{product.sum}} {{../currencyName}}{{else}}Добавить товар{{/if}}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {{> modalAddToCart}}

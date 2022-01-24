@@ -1,10 +1,33 @@
-<a href="/">Торговые склады</a>
-<h1>{{object.name}}</h1>
-{{#each object.phoneArray as |phone|}}
-  <li>
-    <a href="tel:{{phone}}">{{phone}}</a>
-  </li>
-{{/each}}
-<h1>{{object.address}}</h1>
-<h1>{{object.description}}</h1>
-<a href="/o/{{object.id}}/c">Каталог товаров</a>
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Торговые объекты</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{object.name}}</li>
+  </ol>
+</nav>
+<div class="row row-cols-1 row-cols-sm-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 row-cols-xxl-5 g-3 mb-3">
+  <div class="col">
+    <div class="card text-center">
+      <img src="/icons/shop.svg" height="200" class="card-img-top" alt="{{object.name}}">
+      <div class="card-body">
+        <h5 class="card-title">{{object.name}}</h5>
+        <p class="card-text">
+          {{object.description}}
+        </p>
+      </div>
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item">{{object.address}}</li>
+        <li class="list-group-item">
+          {{#each object.phoneArray as |phone|}}
+            <a href="tel:{{phone}}">{{phone}}</a>
+          {{/each}}
+        </li>
+        <li class="list-group-item">
+          <a href="/o/{{object.id}}/c" class="btn btn-primary">Каталог товаров</a>
+        </li>
+      </ul>
+      <div class="card-footer">
+        <a href="/o/{{object.id}}/cart" class="btn btn-primary">Корзина ({{object.cartCount}})</a>
+      </div>
+    </div>
+  </div>
+</div>

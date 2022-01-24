@@ -1,67 +1,79 @@
-<h1><a href="/o/{{object.id}}">{{object.name}}</a></h1>
-{{#each object.phoneArray as |phone|}}
-  <li>
-    <a href="tel:{{phone}}">{{phone}}</a>
-  </li>
-{{/each}}
-<h1>{{object.address}}</h1>
-<h1>{{object.description}}</h1>
-<h1>Оформить заказ</h1>
-<form id="purchase" action="/o/{{object.id}}/cart/purchase">
-  <div class="mb-3">
-    <label for="lastName" class="form-label">Фамилия получателя</label>
-    <input type="text" class="form-control" name="lastName" id="lastName" aria-describedby="lastName" required autofocus>
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Торговые объекты</a></li>
+    <li class="breadcrumb-item"><a href="/o/{{object.id}}">{{object.name}}</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Оформить заказ</li>
+  </ol>
+</nav>
+<div class="row">
+  <div class="col-lg-4">
+    <div id="successAlert" class="alert alert-success d-none" role="alert">
+      <h4 class="alert-heading">Well done!</h4>
+      <p>Aww yeah, you successfully read this important alert message. This example text is going to run a bit longer so that you can see how spacing within an alert works with this kind of content.</p>
+      <hr>
+      <p class="mb-0">Whenever you need to, be sure to use margin utilities to keep things nice and tidy.</p>
+    </div>
+    <form id="purchase" action="/o/{{object.id}}/cart/purchase">
+      <div class="mb-3">
+        <label for="lastName" class="form-label">Фамилия получателя</label>
+        <input type="text" class="form-control" name="lastName" id="lastName" aria-describedby="lastName" required autofocus>
+      </div>
+      <div class="mb-3">
+        <label for="firstName" class="form-label">Имя получателя</label>
+        <input type="text" class="form-control" name="firstName" id="firstName" aria-describedby="firstName" required>
+      </div>
+      <div class="mb-3">
+        <label for="phoneNumber" class="form-label">Моб. номер телефона</label>
+        <input type="tel" pattern="{{phoneregexp}}" title="{{phonetemplate}}" class="form-control" name="phoneNumber" id="phoneNumber" aria-describedby="phoneNumber" required>
+      </div>
+      <div class="mb-3">
+        <label for="address" class="form-label">Адрес</label>
+        <input type="text" class="form-control" name="address" id="address" aria-describedby="address" required>
+      </div>
+      <div class="mb-3">
+        <label for="carrierId" class="form-label">Способ доставки</label>
+        <select name="carrierId" id="carrierId" class="form-select" aria-label="carrierId">
+          {{#each carriers as |carrier|}}
+            <option value="{{carrier.id}}" data-bs-reqnumber="{{carrier.reqNumber}}">{{carrier.name}}</option>
+          {{/each}}
+        </select>
+      </div>
+      <div class="mb-3" id="carrierNumberDiv">
+        <label for="carrierNumber" class="form-label">Номер отделения</label>
+        <input type="number" min="1" class="form-control" name="carrierNumber" id="carrierNumber" aria-describedby="carrierNumberFeedback">
+        <div id="carrierNumberFeedback" class="invalid-feedback"></div>
+      </div>
+      <div class="mb-3">
+        <label for="paymentId" class="form-label">Способ оплаты</label>
+        <select name="paymentId" id="paymentId" class="form-select" aria-label="paymentId">
+          {{#each payments as |payment|}}
+            <option value="{{payment.id}}">{{payment.name}}</option>
+          {{/each}}
+        </select>
+      </div>
+      <div class="mb-3">
+        <label for="comment" class="form-label">Комментарий</label>
+        <textarea class="form-control" id="comment" name="comment" rows="3"></textarea>
+      </div>
+      <button type="submit" id="createOrderButton" class="btn btn-primary">Оформить заказ</button>
+    </form>
   </div>
-  <div class="mb-3">
-    <label for="firstName" class="form-label">Имя получателя</label>
-    <input type="text" class="form-control" name="firstName" id="firstName" aria-describedby="firstName" required>
-  </div>
-  <div class="mb-3">
-    <label for="phoneNumber" class="form-label">Моб. номер телефона</label>
-    <input type="tel" pattern="{{phoneregexp}}" title="{{phonetemplate}}" class="form-control" name="phoneNumber" id="phoneNumber" aria-describedby="phoneNumber" required>
-  </div>
-  <div class="mb-3">
-    <label for="address" class="form-label">Адрес</label>
-    <input type="text" class="form-control" name="address" id="address" aria-describedby="address" required>
-  </div>
-  <div class="mb-3">
-    <label for="carrierId" class="form-label">Способ доставки</label>
-    <select name="carrierId" id="carrierId" class="form-select" aria-label="carrierId">
-      {{#each carriers as |carrier|}}
-        <option value="{{carrier.id}}" data-bs-reqnumber="{{carrier.reqNumber}}">{{carrier.name}}</option>
-      {{/each}}
-    </select>
-  </div>
-  <div class="mb-3" id="carrierNumberDiv">
-    <label for="carrierNumber" class="form-label">Номер отделения</label>
-    <input type="number" min="1" class="form-control" name="carrierNumber" id="carrierNumber" aria-describedby="carrierNumberFeedback">
-    <div id="carrierNumberFeedback" class="invalid-feedback"></div>
-  </div>
-  <div class="mb-3">
-    <label for="paymentId" class="form-label">Способ оплаты</label>
-    <select name="paymentId" id="paymentId" class="form-select" aria-label="paymentId">
-      {{#each payments as |payment|}}
-        <option value="{{payment.id}}">{{payment.name}}</option>
-      {{/each}}
-    </select>
-  </div>
-  <div class="mb-3">
-    <label for="comment" class="form-label">Комментарий</label>
-    <textarea class="form-control" id="comment" name="comment" rows="3"></textarea>
-  </div>
-  <button type="submit" class="btn btn-primary">Оформить заказ</button>
-</form>
+</div>
 <script>
   const form = document.getElementById("purchase");
+  const createOrderButton = document.getElementById("createOrderButton");
+  const successAlert = document.getElementById("successAlert");
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     try {
+      createOrderButton.disabled = true;
       const response = await fetch(form.action, {
         method: "POST",
         body: new FormData(form),
       });
       const order = await response.json();
       if (!response.ok) {
+        createOrderButton.disabled = false;
         alert(order.error);
         for (const [key, error] of Object.entries(order.error)) {
           if (key === "carrierNumber") {
@@ -72,8 +84,17 @@
             });
           }
         }
+      } else {
+        // hide form show alert
+        form.classList.add("d-none");
+        successAlert.classList.remove("d-none");
+        // clear cart count
+        const cartCountNav = document.getElementById("cartCount");
+        cartCountNav.innerText = 0;
+        // show alert
+        alert(order.orderId);
+        console.log(JSON.stringify(order));
       }
-      console.log(JSON.stringify(order));
     } catch (error) {
       alert(error);
     }

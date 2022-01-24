@@ -6,6 +6,8 @@
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <!-- Bootstrap CSS -->
       <link href="/css/bootstrap.min.css" rel="stylesheet">
+      <!-- Custom styles for this template -->
+      <link href="/css/navbar-top-fixed.css" rel="stylesheet">
       <title>{{#if title}}{{title}} - {{/if}}Маркетплейс RZK Маркет Крым: купить элетротовары, кабель, провод, автоматика, лампы в Крыму</title>
       <link rel="icon" href="/logo.svg">
       <meta name="description" content="{{#if description}}{{description}}{{else}}Маркетплейс RZK Маркет Крым: кабель, провод, розетки, выключатели,
@@ -23,21 +25,23 @@
       </script>
     </head>
     <body>
-      <nav class="navbar navbar-expand navbar-light bg-light mb-3">
+      <nav class="navbar fixed-top navbar-expand navbar-light bg-light mb-3">
         <div class="container-fluid">
           <button class="navbar-toggler d-inline" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
             <span class="navbar-toggler-icon"></span>
           </button>
-          <a class="navbar-brand w-100 ps-2" href="/">
-            <img src="/logo.svg" alt="" class="d-inline-block align-text-top" width="24" height="24">
-            <span class="d-none d-sm-inline">RZK Маркет Крым</span>
+          <a class="d-none d-sm-inline ps-3 me-auto" href="/">
+            <img src="/logo-long.svg" alt="" width="" height="40">
+          </a>
+          <a class="d-inline d-sm-none ps-3 me-auto" href="/">
+            <img src="/logo.svg" alt="" width="" height="40">
           </a>
           <ul class="navbar-nav">
-            <li class="nav-item">
-              {{#if object.id}}
-                <a class="nav-link{{#if cart}} active{{/if}}" href="/o/{{object.id}}/cart">Корзина(<span id="cartCount">{{object.cartCount}}</span>)</a>
-              {{/if}}
+            {{#if object.id}}
+            <li class="nav-item"></li>
+              <a class="nav-link{{#if cart}} active{{/if}}" href="/o/{{object.id}}/cart">Корзина(<span id="cartCount">{{object.cartCount}}</span>)</a>
             </li>
+            {{/if}}
             <li class="nav-item">
               {{#if user.auth}}
                 <a class="nav-link{{#if login}} active{{/if}}" href="/login">{{user.firstName}}</a>
@@ -57,7 +61,7 @@
           <nav class="nav flex-column">
             <a class="nav-link" href="tel:+79788986431">+7 978 89 86 431</a>
             <a class="nav-link" href="//t.me/RzkCrimeaBot?start=fromsite">@RzkCrimeaBot</a>
-            <a class="nav-link disabled">RZK-Warsaw-ru v.2.0.0 © 2022</a>
+            <a class="nav-link disabled">rzk-warsaw-ru v.2.0.0 © 2022</a>
             <a class="nav-link" href="//absemetov.org.ua/">Nadir Absemetov</a>
           </nav>
         </div>

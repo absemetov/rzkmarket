@@ -44,7 +44,7 @@
     // Update the modal's content.
     const modalTitle = cartAddModal.querySelector(".modal-title");
     const modalUnit = cartAddModal.querySelector('#basic-addon2');
-    modalTitle.textContent = button.getAttribute("data-bs-name");
+    modalTitle.textContent = `${button.getAttribute("data-bs-name")} (${button.getAttribute("data-bs-id")})`;
     modalUnit.textContent = button.getAttribute("data-bs-unit");
   });
   // focus qty input when modal shown

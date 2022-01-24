@@ -1,49 +1,88 @@
-<h1><a href="/o/{{object.id}}">{{object.name}}</a></h1>
-{{#each object.phoneArray as |phone|}}
-  <li>
-    <a href="tel:{{phone}}">{{phone}}</a>
-  </li>
-{{/each}}
-<h1>{{object.address}}</h1>
-<h1>{{object.description}}</h1>
-{{#if currentCatalog}}
-  <h1>
-    <a href="/o/{{object.id}}/c/{{currentCatalog.parentId}}">..</a> /
-    <a href="/o/{{object.id}}/c/{{currentCatalog.id}}">{{currentCatalog.name}}</a>
-  </h1>
-{{/if}}
-{{#if catalogs}}
-  <ul>
-  {{#each catalogs as |catalog|}}
-    <li><a href="{{catalog.url}}">{{catalog.name}}</a></li>
-  {{/each}}
-  </ul>
-{{/if}}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Торговые объекты</a></li>
+    <li class="breadcrumb-item"><a href="/o/{{object.id}}">{{object.name}}</a></li>
+    <li class="breadcrumb-item"><a href="/o/{{object.id}}/c">Каталог товаров</a></li>
+    {{#if currentCatalog}}
+      {{#if currentCatalog.parentId}}
+        <li class="breadcrumb-item">
+          <a href="/o/{{object.id}}/c/{{currentCatalog.parentId}}">⬅️ Назад</a>
+        </li>
+      {{/if}}
+      <li class="breadcrumb-item" aria-current="page">
+        <a href="/o/{{object.id}}/c/{{currentCatalog.id}}">{{currentCatalog.name}}</a>
+      </li>
+    {{/if}}
+  </ol>
+</nav>
 {{#if tags}}
-  <ul>
-  {{#each tags as |tag|}}
-    <li><a href="{{tag.url}}">{{tag.text}}</a></li>
-  {{/each}}
-  </ul>
+  <div class="dropdown mb-3">
+    <button class="btn btn-success dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+      Фильтр
+      {{#each tags as |tag|}}
+        {{#if tag.active}}[{{tag.text}}]{{/if}}
+      {{/each}}
+    </button>
+    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+      {{#each tags as |tag|}}
+        <li><a class="dropdown-item{{#if tag.active}} active{{/if}}" href="{{tag.url}}">{{tag.text}}</a></li>
+      {{/each}}
+      {{#each tags as |tag|}}
+        {{#if tag.active}}
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/o/{{../object.id}}/c/{{../currentCatalog.id}}">Все товары</a></li>
+        {{/if}}
+      {{/each}}
+    </ul>
+  </div>
 {{/if}}
-{{#if products}}
-  <ul>
-  {{#each products as |product|}}
-    <li>
-      <a href="{{product.url}}">{{product.name}} {{product.price}} {{product.unit}} {{../currencyName}}</a>
-      <!-- Button trigger modal -->
-      <button type="button" class="btn {{#if product.qty}}btn-success{{else}}btn-primary{{/if}}" data-bs-toggle="modal" data-bs-target="#cartAddModal" data-bs-id="{{product.id}}" data-bs-name="{{product.name}}" data-bs-unit="{{product.unit}}" data-bs-qty="{{product.qty}}">
-        {{#if product.qty}}{{product.qty}} {{product.unit}} {{product.sum}} {{../currencyName}}{{else}}Добавить товар{{/if}}
-      </button>
-    </li>
-  {{/each}}
-  </ul>
-  {{> modalAddToCart}}
-{{/if}}
+<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 row-cols-xxl-6 g-3 mb-3">
+  {{#if catalogs}}
+    {{#each catalogs as |catalog|}}
+      <div class="col">
+        <div class="card text-center h-100">
+          <a href="{{catalog.url}}">
+            <img src="/icons/folder.svg" height="200" class="card-img-top" alt="{{catalog.name}}">
+          </a>
+          <div class="card-body">
+            <h5><i class="bi bi-folder"></i><a href="{{catalog.url}}">{{catalog.name}}</a></h5>
+          </div>
+        </div>
+      </div>
+    {{/each}}
+  {{/if}}
+  {{#if products}}
+    {{#each products as |product|}}
+      <div class="col">
+        <div class="card text-center h-100">
+          <a href="{{product.url}}">
+            <img src="{{product.imgUrl}}" class="card-img-top" alt="{{product.name}}">
+          </a>
+          <div class="card-body">
+            <h5><a href="{{product.url}}">{{product.name}}</a> <small class="text-muted">({{product.id}})</small></h5>
+          </div>
+          <div class="card-footer">
+            <h3>
+              {{product.price}} <small class="text-muted">{{../currencyName}}</small>
+            </h3>
+            <div class="d-grid gap-2">
+              <button type="button" class="btn {{#if product.qty}}btn-success{{else}}btn-primary{{/if}}" data-bs-toggle="modal" data-bs-target="#cartAddModal" data-bs-id="{{product.id}}" data-bs-name="{{product.name}}" data-bs-unit="{{product.unit}}" data-bs-qty="{{product.qty}}">
+                {{#if product.qty}}{{product.qty}} {{product.unit}} {{product.sum}} {{../currencyName}}{{else}}Добавить товар{{/if}}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    {{/each}}
+    {{> modalAddToCart}}
+  {{/if}}
+</div>
 {{#if prevNextLinks}}
-  <ul>
-  {{#each prevNextLinks as |prevNextLink|}}
-    <li><a href="{{prevNextLink.url}}">{{prevNextLink.text}}</a></li>
-  {{/each}}
-  </ul>
+  <nav aria-label="Page navigation example">
+    <ul class="pagination">
+      {{#each prevNextLinks as |prevNextLink|}}
+        <li class="page-item"><a class="page-link" href="{{prevNextLink.url}}">{{prevNextLink.text}}</a></li>
+      {{/each}}
+    </ul>
+  </nav>
 {{/if}}
