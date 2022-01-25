@@ -75,7 +75,7 @@ bot.start(async (ctx) => {
     }
   }
   if (caption) {
-    const publicImgUrl = await photoCheckUrl(botConfig.logo);
+    const publicImgUrl = await photoCheckUrl();
     await ctx.replyWithPhoto(publicImgUrl,
         {
           caption,
@@ -92,13 +92,9 @@ bot.start(async (ctx) => {
   if (!userData) {
     await store.createRecord(`users/${ctx.from.id}`, {
       firstName: ctx.from.first_name,
-      fromSite: false,
+      message: ctx.message.text,
     });
   }
-  // admin notify
-  await ctx.telegram.sendMessage(94899148, `<b>New subsc! <a href="tg://user?id=${ctx.from.id}">${ctx.from.id}</a>\n`+
-  `Message: ${ctx.message.text}</b>`,
-  {parse_mode: "html"});
 });
 // rzk shop
 bot.command("objects", async (ctx) => {

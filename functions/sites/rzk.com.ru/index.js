@@ -13,6 +13,9 @@ const bodyParser = require("body-parser");
 const jsonParser = bodyParser.json();
 const Validator = require("validatorjs");
 const busboy = require("busboy");
+const moment = require("moment");
+require("moment/locale/ru");
+moment.locale("ru");
 const app = express();
 app.use(cookieParser());
 // Configure template Engine and Main Template File
@@ -248,6 +251,50 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
   });
 });
 
+// share order
+app.get("/o/:objectId/s/:orderId", auth, async (req, res) => {
+  const objectId = req.params.objectId;
+  const orderId = req.params.orderId;
+  const object = await store.findRecord(`objects/${objectId}`);
+  const order = await store.findRecord(`objects/${objectId}/orders/${orderId}`);
+  if (order) {
+    const shareOrder = {
+      orderNumber: store.formatOrderNumber(order.userId, order.orderNumber),
+      lastName: order.lastName,
+      firstName: order.firstName,
+      createdAt: moment.unix(order.createdAt).fromNow(),
+      status: store.statuses().get(order.statusId),
+    };
+    // products
+    let totalQty = 0;
+    let totalSum = 0;
+    const products = [];
+    store.sort(order.products).forEach((product, index) => {
+      products.push({
+        index: index + 1,
+        name: product.name,
+        id: product.id,
+        price: product.price,
+        qty: product.qty,
+        unit: product.unit,
+        sum: roundNumber(product.price * product.qty),
+        url: `/o/${objectId}/p/${product.id}`,
+      });
+      totalQty += product.qty;
+      totalSum += product.qty * product.price;
+    });
+    return res.render("share-order", {
+      title: `Заказ #${shareOrder.orderNumber} - ${object.name}`,
+      object,
+      shareOrder,
+      products,
+      totalQty,
+      totalSum: roundNumber(totalSum),
+      currencyName: botConfig.currency,
+    });
+  }
+  res.send("Order not found");
+});
 // login with telegram
 app.get("/login", auth, async (req, res) => {
   if (req.query && checkSignature(req.query)) {
@@ -273,7 +320,7 @@ app.get("/login", auth, async (req, res) => {
     if (!userData) {
       await store.createRecord(`users/${req.query.id}`, {
         firstName: req.query.first_name,
-        fromSite: true,
+        message: "Telegram Widget login",
       });
     }
     // create token
@@ -438,7 +485,7 @@ app.post("/o/:objectId/cart/purchase", auth, (req, res) => {
         ...fields,
       });
       await cart.clear(objectId, req.user.uid);
-      return res.json({orderId: newOrderRef.id, auth: req.user.auth});
+      return res.json({orderId: newOrderRef.id, objectId});
     } else {
       return res.status(422).json({error: "Cart empty!"});
     }
@@ -512,6 +559,17 @@ app.post("/o/:objectId/cart/add", auth, jsonParser, async (req, res) => {
   const cartCount = await cart.cartCount(objectId, req.user.uid);
   return res.json({cartCount, price});
 });
+
+// payments-and-deliveries
+app.get("/delivery-info", (req, res) => {
+  res.render("delivery");
+});
+
+// exchange-and-refund
+app.get("/return-policy", (req, res) => {
+  res.render("return");
+});
+
 // We'll destructure req.query to make our code clearer
 const checkSignature = ({hash, ...userData}) => {
   // create a hash of a secret that both you and Telegram know. In this case, it is your bot token

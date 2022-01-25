@@ -111,7 +111,7 @@ const myOrders = async (ctx, next) => {
     if (caption.length > 1024) {
       caption = caption.substring(0, 1024);
     }
-    const media = await photoCheckUrl(botConfig.logo);
+    const media = await photoCheckUrl();
     await ctx.editMessageMedia({
       type: "photo",
       media,
@@ -272,7 +272,7 @@ const showOrders = async (ctx, next) => {
     if (caption.length > 1024) {
       caption = caption.substring(0, 1024);
     }
-    let publicImgUrl = botConfig.logo;
+    let publicImgUrl = null;
     if (object.logo) {
       publicImgUrl = `photos/${objectId}/logo/2/${object.logo}.jpg`;
     }

@@ -25,7 +25,7 @@
       </script>
     </head>
     <body>
-      <nav class="navbar fixed-top navbar-expand navbar-light bg-light mb-3">
+      <nav class="navbar fixed-top navbar-expand navbar-light bg-light">
         <div class="container-fluid">
           <button class="navbar-toggler d-inline" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
             <span class="navbar-toggler-icon"></span>
@@ -39,7 +39,7 @@
           <ul class="navbar-nav">
             {{#if object.id}}
             <li class="nav-item"></li>
-              <a class="nav-link{{#if cart}} active{{/if}}" href="/o/{{object.id}}/cart">Корзина(<span id="cartCount">{{object.cartCount}}</span>)</a>
+              <a class="text-nowrap nav-link{{#if cart}} active{{/if}}" href="/o/{{object.id}}/cart">Корзина (<span id="cartCount">{{object.cartCount}}</span>)</a>
             </li>
             {{/if}}
             <li class="nav-item">
@@ -58,7 +58,14 @@
           <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body">
+          <p class="lead">RZK Маркет Крым - это маркетплейс, здесь можно купить товары по выгодным ценам напрямую со склада.
+            Мы полностью контролируем процесс обработки заказа.
+            С нами легко, быстро и удобно!
+          </p>
           <nav class="nav flex-column">
+            <a class="nav-link" href="/delivery-info">Доставка и оплата</a>
+            <a class="nav-link" href="/return-policy">Обмен и возврат</a>
+            <a class="nav-link" href="//maps.app.goo.gl/F46h38LnK3Dq3jC7A">Оставить отзыв</a>
             <a class="nav-link" href="tel:+79788986431">+7 978 89 86 431</a>
             <a class="nav-link" href="//t.me/RzkCrimeaBot?start=fromsite">@RzkCrimeaBot</a>
             <a class="nav-link disabled">rzk-warsaw-ru v.2.0.0 © 2022</a>

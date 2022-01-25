@@ -18,7 +18,7 @@ const showCatalog = async (ctx, next) => {
     const startAfter = ctx.state.params.get("s");
     const endBefore = ctx.state.params.get("e");
     const uploadPhotoCat = ctx.state.params.get("u");
-    let publicImgUrl = botConfig.logo;
+    let publicImgUrl = null;
     const object = await store.findRecord(`objects/${objectId}`);
     if (object.logo) {
       publicImgUrl = `photos/${objectId}/logo/2/${object.logo}.jpg`;
@@ -185,7 +185,7 @@ const showProduct = async (ctx, next) => {
         callback_data: `showPhotos/${product.id}?o=${objectId}`}]);
     }
     // Get main photo url.
-    let publicImgUrl = botConfig.logo;
+    let publicImgUrl = null;
     if (object.logo) {
       publicImgUrl = `photos/${objectId}/logo/2/${object.logo}.jpg`;
     }
@@ -298,7 +298,7 @@ catalogsActions.push( async (ctx, next) => {
       }
       addButtonArray.push(addButton);
       // get main photo url.
-      let publicImgUrl = botConfig.logo;
+      let publicImgUrl = null;
       if (object.logo) {
         publicImgUrl = `photos/${objectId}/logo/2/${object.logo}.jpg`;
       }
@@ -446,7 +446,7 @@ const showCart = async (ctx, next) => {
     inlineKeyboardArray.push([{text: `🏪 ${object.name}`,
       callback_data: `objects/${objectId}`}]);
     // edit message
-    let publicImgUrl = botConfig.logo;
+    let publicImgUrl = null;
     if (object.logo) {
       publicImgUrl = `photos/${objectId}/logo/2/${object.logo}.jpg`;
     }
@@ -761,7 +761,7 @@ catalogsActions.push( async (ctx, next) => {
       }
     }
     const object = await store.findRecord(`objects/${objectId}`);
-    let publicImgUrl = botConfig.logo;
+    let publicImgUrl = null;
     if (object.logo) {
       publicImgUrl = `photos/${objectId}/logo/2/${object.logo}.jpg`;
     }

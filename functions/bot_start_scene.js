@@ -17,13 +17,13 @@ const isAdmin = (ctx, next) => {
 };
 // check photo
 const photoCheckUrl = async (url) => {
-  const photoProjectExists = await bucket.file(url).exists();
-  if (photoProjectExists[0]) {
-    return bucket.file(url).publicUrl();
-  } else {
-    // default photo
-    return bucket.file(botConfig.logo).publicUrl();
+  if (url) {
+    const photoProjectExists = await bucket.file(url).exists();
+    if (photoProjectExists[0]) {
+      return bucket.file(url).publicUrl();
+    }
   }
+  return bucket.file(botConfig.logo).publicUrl();
 };
 // parse callback data, add Cart instance
 const parseUrl = (ctx, next) => {
@@ -56,7 +56,7 @@ const startHandler = async (ctx) => {
     request_write_access: true,
   }}]);
   // add main photo
-  const projectImg = await photoCheckUrl(botConfig.logo);
+  const projectImg = await photoCheckUrl();
   await ctx.replyWithPhoto(projectImg,
       {
         caption: "<b>Выберите склад</b>",
@@ -72,7 +72,7 @@ startActions.push(async (ctx, next) => {
     const objectId = ctx.state.param;
     let caption = "<b>Выберите склад</b>";
     const inlineKeyboardArray = [];
-    let imgUrl = botConfig.logo;
+    let imgUrl = null;
     if (objectId) {
       // get data obj
       const object = await store.findRecord(`objects/${objectId}`);

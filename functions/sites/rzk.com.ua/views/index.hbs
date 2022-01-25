@@ -1,6 +1,31 @@
-<h1>Торговые склады</h1>
-<ul>
-{{#each objects as |object|}}
-  <li><a href="/{{object.id}}">{{object.name}}</a></li>
-{{/each}}
-</ul>
+<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 row-cols-xxl-6 g-3">
+  {{#each objects as |object|}}
+    <div class="col">
+      <div class="card text-center h-100">
+        <a href="/o/{{object.id}}">
+          <img src="/icons/shop.svg" height="200" class="card-img-top" alt="{{object.name}}">
+        </a>
+        <div class="card-body">
+          <h5><a href="/o/{{object.id}}">{{object.name}}</a></h5>
+          <p class="card-text">
+            {{object.description}}
+          </p>
+        </div>
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item">{{object.address}}</li>
+          <li class="list-group-item">
+            {{#each object.phoneArray as |phone|}}
+              <a href="tel:{{phone}}">{{phone}}</a>
+            {{/each}}
+          </li>
+          <li class="list-group-item">
+            <a href="/o/{{object.id}}/c" class="btn btn-primary">Каталог товаров</a>
+          </li>
+        </ul>
+        <div class="card-footer">
+          <a href="/o/{{object.id}}/cart" class="btn btn-primary">Корзина ({{object.cartCount}})</a>
+        </div>
+      </div>
+    </div>
+  {{/each}}
+</div>
