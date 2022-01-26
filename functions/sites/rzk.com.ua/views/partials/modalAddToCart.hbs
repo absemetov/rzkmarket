@@ -9,13 +9,13 @@
       <form id="addToCartForm" action="/o/{{object.id}}/cart/add">
         <div class="modal-body">
           <div class="input-group mb-3">
-            <input type="number" min="0" id="qty" name="qty" class="form-control" placeholder="Введите количество товара" aria-label="Введите количество товара" aria-describedby="basic-addon2">
+            <input type="number" min="0" id="qty" name="qty" class="form-control" placeholder="Введіть кількість товару" aria-label="Введіть кількість товару" aria-describedby="basic-addon2">
             <span class="input-group-text" id="basic-addon2"></span>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" id="deleteFromCart" class="btn btn-danger">Удалить</button>
-          <button type="submit" id="addToCart" class="btn btn-primary" data-bs-currencyName="{{currencyName}}">Добавить</button>
+          <button type="button" id="deleteFromCart" class="btn btn-danger">Видалити</button>
+          <button type="submit" id="addToCart" class="btn btn-primary" data-bs-currencyName="{{currencyName}}">Купити</button>
         </div>
       </form>
     </div>
@@ -91,7 +91,7 @@
         button.classList.remove("btn-primary");
         button.classList.add("btn-success");
       } else {
-        button.innerText = "Добавить товар";
+        button.innerText = "Купити";
         button.classList.remove("btn-success");
         button.classList.add("btn-primary");
         button.removeAttribute("data-bs-qty");

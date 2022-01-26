@@ -1,43 +1,43 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="/">Торговые объекты</a></li>
+    <li class="breadcrumb-item"><a href="/">Торговельні об'єкти</a></li>
     <li class="breadcrumb-item"><a href="/o/{{object.id}}">{{object.name}}</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Оформить заказ</li>
+    <li class="breadcrumb-item active" aria-current="page">Оформити замовлення</li>
   </ol>
 </nav>
 <div class="row">
   <div class="col-lg-4">
     {{#unless user.auth}}
       <div id="infoAlert" class="alert alert-warning alert-dismissible fade show" role="alert">
-        <strong>У вас есть Telegram?</strong> <a href="/login">Войдите через Telegram</a>
+        <strong>У вас є Telegram?</strong> <a href="/login">Вхід через Telegram</a>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
     {{/unless}}
     <div id="successAlert" class="alert alert-success d-none" role="alert">
-      <h4 class="alert-heading">Ваш заказ оформлен</h4>
-      <p><a id="linkOrder" href="#">Ccылка на ваш заказ</a> для просмотра статуса заказа</p>
+      <h4 class="alert-heading">Ваше замовлення оформлене</h4>
+      <p><a id="linkOrder" href="#">Посилання на ваше замовлення</a> для перегляду статусу замовлення</p>
       <hr>
-      <p class="mb-0">В ближайшее время мы с Вами свяжемся</p>
+      <p class="mb-0">Найближчим часом ми з Вами зв'яжемося</p>
     </div>
     <form id="purchase" action="/o/{{object.id}}/cart/purchase">
       <div class="mb-3">
-        <label for="lastName" class="form-label">Фамилия получателя</label>
+        <label for="lastName" class="form-label">Прізвище отримувача</label>
         <input type="text" class="form-control" name="lastName" id="lastName" aria-describedby="lastName" required autofocus>
       </div>
       <div class="mb-3">
-        <label for="firstName" class="form-label">Имя получателя</label>
+        <label for="firstName" class="form-label">Ім'я отримувача</label>
         <input type="text" class="form-control" name="firstName" id="firstName" aria-describedby="firstName" required>
       </div>
       <div class="mb-3">
-        <label for="phoneNumber" class="form-label">Моб. номер телефона</label>
+        <label for="phoneNumber" class="form-label">Мобільний телефон</label>
         <input type="tel" pattern="{{phoneregexp}}" title="{{phonetemplate}}" class="form-control" name="phoneNumber" id="phoneNumber" aria-describedby="phoneNumber" required>
       </div>
       <div class="mb-3">
-        <label for="address" class="form-label">Адрес</label>
+        <label for="address" class="form-label">Адреса</label>
         <input type="text" class="form-control" name="address" id="address" aria-describedby="address" required>
       </div>
       <div class="mb-3">
-        <label for="carrierId" class="form-label">Способ доставки</label>
+        <label for="carrierId" class="form-label">Спосіб доставки</label>
         <select name="carrierId" id="carrierId" class="form-select" aria-label="carrierId">
           {{#each carriers as |carrier|}}
             <option value="{{carrier.id}}" data-bs-reqnumber="{{carrier.reqNumber}}">{{carrier.name}}</option>
@@ -45,12 +45,12 @@
         </select>
       </div>
       <div class="mb-3" id="carrierNumberDiv">
-        <label for="carrierNumber" class="form-label">Номер отделения</label>
+        <label for="carrierNumber" class="form-label">Номер відділення</label>
         <input type="number" min="1" class="form-control" name="carrierNumber" id="carrierNumber" aria-describedby="carrierNumberFeedback">
         <div id="carrierNumberFeedback" class="invalid-feedback"></div>
       </div>
       <div class="mb-3">
-        <label for="paymentId" class="form-label">Способ оплаты</label>
+        <label for="paymentId" class="form-label">Спосіб оплати</label>
         <select name="paymentId" id="paymentId" class="form-select" aria-label="paymentId">
           {{#each payments as |payment|}}
             <option value="{{payment.id}}">{{payment.name}}</option>
@@ -58,10 +58,10 @@
         </select>
       </div>
       <div class="mb-3">
-        <label for="comment" class="form-label">Комментарий</label>
+        <label for="comment" class="form-label">Коментар</label>
         <textarea class="form-control" id="comment" name="comment" rows="3"></textarea>
       </div>
-      <button type="submit" id="createOrderButton" class="btn btn-primary">Оформить заказ</button>
+      <button type="submit" id="createOrderButton" class="btn btn-primary">Оформити замовлення</button>
     </form>
   </div>
 </div>

@@ -15,7 +15,7 @@ const Validator = require("validatorjs");
 const busboy = require("busboy");
 const moment = require("moment");
 require("moment/locale/uk");
-moment.locale("ru");
+moment.locale("uk");
 const app = express();
 app.use(cookieParser());
 // Configure template Engine and Main Template File

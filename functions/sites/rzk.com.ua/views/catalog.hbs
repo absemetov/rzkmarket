@@ -1,8 +1,8 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="/">Торговые объекты</a></li>
+    <li class="breadcrumb-item"><a href="/">Торговельні об'єкти</a></li>
     <li class="breadcrumb-item"><a href="/o/{{object.id}}">{{object.name}}</a></li>
-    <li class="breadcrumb-item"><a href="/o/{{object.id}}/c">Каталог товаров</a></li>
+    <li class="breadcrumb-item"><a href="/o/{{object.id}}/c">Каталог товарів</a></li>
     {{#if currentCatalog}}
       {{#if currentCatalog.parentId}}
         <li class="breadcrumb-item">
@@ -30,7 +30,7 @@
       {{#each tags as |tag|}}
         {{#if tag.active}}
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/o/{{../object.id}}/c/{{../currentCatalog.id}}">Все товары</a></li>
+          <li><a class="dropdown-item" href="/o/{{../object.id}}/c/{{../currentCatalog.id}}">Усі товари</a></li>
         {{/if}}
       {{/each}}
     </ul>
@@ -67,7 +67,7 @@
             </h3>
             <div class="d-grid gap-2">
               <button type="button" class="btn {{#if product.qty}}btn-success{{else}}btn-primary{{/if}}" data-bs-toggle="modal" data-bs-target="#cartAddModal" data-bs-id="{{product.id}}" data-bs-name="{{product.name}}" data-bs-unit="{{product.unit}}" data-bs-qty="{{product.qty}}">
-                {{#if product.qty}}{{product.qty}} {{product.unit}} {{product.sum}} {{../currencyName}}{{else}}Добавить товар{{/if}}
+                {{#if product.qty}}{{product.qty}} {{product.unit}} {{product.sum}} {{../currencyName}}{{else}}Купити{{/if}}
               </button>
             </div>
           </div>

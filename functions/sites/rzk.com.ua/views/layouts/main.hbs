@@ -8,11 +8,11 @@
       <link href="/css/bootstrap.min.css" rel="stylesheet">
       <!-- Custom styles for this template -->
       <link href="/css/navbar-top-fixed.css" rel="stylesheet">
-      <title>{{#if title}}{{title}} - {{/if}}Маркетплейс RZK Маркет Крым: купить элетротовары, кабель, провод, автоматика, лампы в Крыму</title>
+      <title>{{#if title}}{{title}} - {{/if}}Маркетплейс RZK Маркет Україна: якісна електрика, електротовари в Києві купити, кабель, провід, вимикачі та розетки</title>
       <link rel="icon" href="/logo.svg">
-      <meta name="description" content="{{#if description}}{{description}}{{else}}Маркетплейс RZK Маркет Крым: кабель, провод, розетки, выключатели,
-      автоматика. ✓ Доставка по всему Крыму $ Выгодные цены и скидки %{{/if}}">
-      <meta name="keywords" content="{{keywords}}, rzk маркет крым, rzk, надир абсеметов">
+      <meta name="description" content="{{#if description}}{{description}}{{else}}Маркетплейс RZK Маркет Україна: кабель, провід, розетки, вимикачі,
+      автоматика, електротовари в Києві ✓ Доставка по всій Україні $ Выгідні ціни та знижки %{{/if}}">
+      <meta name="keywords" content="{{keywords}}, rzk маркет україна, rzk, розетка, вимикач надир абсеметов, онлайн-гіпермаркет">
       <meta name="robots" content="index,follow">
       <meta name="author" content="Nadir Absemetov">
       <!-- Global site tag (gtag.js) - Google Analytics -->
@@ -39,14 +39,14 @@
           <ul class="navbar-nav">
             {{#if object.id}}
             <li class="nav-item"></li>
-              <a class="text-nowrap nav-link{{#if cart}} active{{/if}}" href="/o/{{object.id}}/cart">Корзина (<span id="cartCount">{{object.cartCount}}</span>)</a>
+              <a class="text-nowrap nav-link{{#if cart}} active{{/if}}" href="/o/{{object.id}}/cart">Кошик (<span id="cartCount">{{object.cartCount}}</span>)</a>
             </li>
             {{/if}}
             <li class="nav-item">
               {{#if user.auth}}
                 <a class="nav-link{{#if login}} active{{/if}}" href="/login">{{user.firstName}}</a>
               {{else}}
-                <a class="nav-link{{#if login}} active{{/if}}" href="/login">Войти</a>
+                <a class="nav-link{{#if login}} active{{/if}}" href="/login">Вхід</a>
               {{/if}}
             </li>
           </ul>
@@ -54,21 +54,21 @@
       </nav>
       <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
         <div class="offcanvas-header">
-          <h5 class="offcanvas-title" id="offcanvasNavbarLabel">RZK Маркет Крым</h5>
+          <h5 class="offcanvas-title" id="offcanvasNavbarLabel">RZK Маркет Україна</h5>
           <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body">
-          <p class="lead">RZK Маркет Крым - это маркетплейс, здесь можно купить товары по выгодным ценам напрямую со склада.
-            Мы полностью контролируем процесс обработки заказа.
-            С нами легко, быстро и удобно!
+          <p class="lead">"RZK Маркет Україна - це маркетплейс, тут можна купити товари за вигідними цінами безпосередньо зі складу.
+            Ми повністю контролюємо процес обробки замовлення. З нами легко, швидко та зручно!
           </p>
           <nav class="nav flex-column">
-            <a class="nav-link" href="/delivery-info">Доставка и оплата</a>
-            <a class="nav-link" href="/return-policy">Обмен и возврат</a>
-            <a class="nav-link" href="//maps.app.goo.gl/F46h38LnK3Dq3jC7A">Оставить отзыв</a>
-            <a class="nav-link" href="tel:+79788986431">+7 978 89 86 431</a>
-            <a class="nav-link" href="//t.me/RzkCrimeaBot?start=fromsite">@RzkCrimeaBot</a>
-            <a class="nav-link disabled">rzk-warsaw-ru v.2.0.0 © 2022</a>
+            <a class="nav-link" href="/delivery-info">Доставка та оплата</a>
+            <a class="nav-link" href="/return-policy">Повернення товару</a>
+            <a class="nav-link" href="//g.page/rzk-com-ua/review?gm">Написати відгук</a>
+            <a class="nav-link" href="tel:+380685494100">+380 68 54 94 100</a>
+            <a class="nav-link" href="tel:+380735494100">+380 73 54 94 100</a>
+            <a class="nav-link" href="//t.me/RzkMarketBot?start=fromsite">@RzkMarketBot Telegram Bot</a>
+            <a class="nav-link disabled">rzk-warsaw-ua v.2.0.0 © 2022</a>
             <a class="nav-link" href="//absemetov.org.ua/">Nadir Absemetov</a>
           </nav>
         </div>
