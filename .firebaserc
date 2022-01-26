@@ -19,6 +19,16 @@
           "absemetovorgua"
         ]
       }
+    },
+    "rzk-warsaw-dev": {
+      "hosting": {
+        "dev.rzk.com.ru": [
+          "rzk-warsaw-dev"
+        ],
+        "dev.rzk.com.ua": [
+          "rzk-com-ua-dev"
+        ]
+      }
     }
   }
 }

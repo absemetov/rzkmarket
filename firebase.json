@@ -31,6 +31,36 @@
       ]
     },
     {
+      "target": "dev.rzk.com.ru",
+      "public": "sites/rzk.com.ru",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "function": "rzkComRu"
+        }
+      ]
+    },
+    {
+      "target": "dev.rzk.com.ua",
+      "public": "sites/rzk.com.ua",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "function": "rzkComUa"
+        }
+      ]
+    },
+    {
       "target": "absemetov.org.ua",
       "public": "sites/absemetov.org.ua",
       "ignore": [
