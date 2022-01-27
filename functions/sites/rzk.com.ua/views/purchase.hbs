@@ -114,20 +114,25 @@
   });
   const option = document.getElementById("carrierId");
   if (+option.options[option.selectedIndex].getAttribute("data-bs-reqnumber")) {
+    // show input
     document.getElementById("carrierNumberDiv").classList.remove("d-none");
     document.getElementById("carrierNumber").required = true;
+    document.getElementById("carrierNumber").setAttribute("name", "carrierNumber");
   } else {
     document.getElementById("carrierNumberDiv").classList.add("d-none");
     document.getElementById("carrierNumber").required = false;
+    document.getElementById("carrierNumber").removeAttribute("name");  
   }
   document.getElementById("carrierId").addEventListener("change", (event) => {
     const option = event.target;
     if (+option.options[option.selectedIndex].getAttribute("data-bs-reqnumber")) {
       document.getElementById("carrierNumberDiv").classList.remove("d-none");
       document.getElementById("carrierNumber").required = true;
+      document.getElementById("carrierNumber").setAttribute("name", "carrierNumber");
     } else {
       document.getElementById("carrierNumberDiv").classList.add("d-none");
       document.getElementById("carrierNumber").required = false;
+      document.getElementById("carrierNumber").removeAttribute("name");
     }
   });
 </script>

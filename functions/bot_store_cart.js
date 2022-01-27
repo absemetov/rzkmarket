@@ -192,8 +192,11 @@ const cart = {
   },
   async cartCount(objectId, userId) {
     // get cart count
-    const cartProducts = await store.findRecord(`objects/${objectId}/carts/${userId}`, "products");
-    return cartProducts && Object.keys(cartProducts).length || 0;
+    if (userId) {
+      const cartProducts = await store.findRecord(`objects/${objectId}/carts/${userId}`, "products");
+      return cartProducts && Object.keys(cartProducts).length || 0;
+    }
+    return 0;
   },
 };
 

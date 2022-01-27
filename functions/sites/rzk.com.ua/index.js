@@ -48,8 +48,7 @@ app.get("/", auth, async (req, res) => {
   const objects = await store.findAll("objects");
   // generate cart link
   for (const obj of objects) {
-    const cartProducts = await store.findRecord(`objects/${obj.id}/carts/${req.user.uid}`, "products");
-    obj.cartCount = cartProducts && Object.keys(cartProducts).length || 0;
+    obj.cartCount = await cart.cartCount(obj.id, req.user.uid);
     if (obj.logo) {
       obj.imgUrl = bucket.file(`photos/${obj.id}/logo/2/${obj.logo}.jpg`).publicUrl();
     } else {
@@ -62,15 +61,8 @@ app.get("/", auth, async (req, res) => {
 // show object
 app.get("/o/:objectId", auth, async (req, res) => {
   const object = await store.findRecord(`objects/${req.params.objectId}`);
-  // parse phones
-  const phones = object.phoneArray;
-  console.log(phones);
   // count cart items
-  let cartCount = 0;
-  if (req.user.uid) {
-    cartCount = await cart.cartCount(object.id, req.user.uid);
-  }
-  object.cartCount = cartCount;
+  object.cartCount = await cart.cartCount(object.id, req.user.uid);
   if (object.logo) {
     object.imgUrl = bucket.file(`photos/${object.id}/logo/2/${object.logo}.jpg`).publicUrl();
   } else {
@@ -189,11 +181,7 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
     }
   }
   // count cart items
-  let cartCount = 0;
-  if (req.user.uid) {
-    cartCount = await cart.cartCount(object.id, req.user.uid);
-  }
-  object.cartCount = cartCount;
+  object.cartCount = await cart.cartCount(object.id, req.user.uid);
   res.render("catalog", {
     title,
     object,
@@ -229,11 +217,7 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
     `${product.mainPhoto}.jpg`).publicUrl();
   }
   // count cart items
-  if (req.user.uid) {
-    object.cartCount = await cart.cartCount(object.id, req.user.uid);
-  }
-  // Set Cache-Control
-  // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
+  object.cartCount = await cart.cartCount(object.id, req.user.uid);
   res.render("product", {
     title: `${product.name} - ${object.name}`,
     description: `${product.name} - ${object.name}`,
@@ -395,11 +379,7 @@ app.get("/o/:objectId/cart/purchase", auth, async (req, res) => {
   const object = await store.findRecord(`objects/${objectId}`);
   const title = `Оформление заказа - ${object.name}`;
   // count cart items
-  let cartCount = 0;
-  if (req.user.uid) {
-    cartCount = await cart.cartCount(object.id, req.user.uid);
-  }
-  object.cartCount = cartCount;
+  object.cartCount = await cart.cartCount(object.id, req.user.uid);
   res.render("purchase", {
     title,
     object,
