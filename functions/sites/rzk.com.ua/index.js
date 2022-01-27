@@ -14,8 +14,8 @@ const jsonParser = bodyParser.json();
 const Validator = require("validatorjs");
 const busboy = require("busboy");
 const moment = require("moment");
-require("moment/locale/uk");
-moment.locale("uk");
+// require("moment/locale/uk");
+// moment.locale("uk");
 const app = express();
 app.use(cookieParser());
 // Configure template Engine and Main Template File
@@ -240,7 +240,7 @@ app.get("/o/:objectId/s/:orderId", auth, async (req, res) => {
       orderNumber: store.formatOrderNumber(order.userId, order.orderNumber),
       lastName: order.lastName,
       firstName: order.firstName,
-      createdAt: moment.unix(order.createdAt).fromNow(),
+      createdAt: moment.unix(order.createdAt).locale("uk").fromNow(),
       status: store.statuses().get(order.statusId),
     };
     // products

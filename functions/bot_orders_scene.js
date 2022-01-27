@@ -5,8 +5,8 @@ const {showCart, cartWizard} = require("./bot_catalog_scene");
 const {store, cart} = require("./bot_store_cart.js");
 const botConfig = functions.config().env.bot;
 const moment = require("moment");
-require("moment/locale/ru");
-moment.locale("ru");
+// require("moment/locale/ru");
+// moment.locale("ru");
 const ordersActions = [];
 // user orders
 const myOrders = async (ctx, next) => {
@@ -26,7 +26,7 @@ const myOrders = async (ctx, next) => {
       const order = await store.findRecord(`objects/${objectId}/orders/${orderId}`);
       if (order) {
         // show order
-        const date = moment.unix(order.createdAt);
+        const date = moment.unix(order.createdAt).locale("ru");
         caption += " <b>> " +
         `Заказ #${store.formatOrderNumber(order.userId, order.orderNumber)} (${date.fromNow()})\n` +
         `Склад: ${order.objectName}\n` +
@@ -50,6 +50,10 @@ const myOrders = async (ctx, next) => {
         caption += `<b>Количество товара: ${totalQty}\n` +
           `Сумма: ${roundNumber(totalSum)} ${botConfig.currency}</b>`;
       }
+      // share link
+      inlineKeyboardArray.push([
+        {text: "Ссылка на заказ", url: `https://${botConfig.site}/o/${objectId}/s/${order.id}`},
+      ]);
       inlineKeyboardArray.push([{text: "🧾 Мои заказы",
         callback_data: `${ctx.session.myPathOrder ? ctx.session.myPathOrder : "myO/" + userId}`}]);
     } else {
@@ -76,7 +80,7 @@ const myOrders = async (ctx, next) => {
       // render orders
       ordersSnapshot.docs.forEach((doc) => {
         const order = {id: doc.id, ...doc.data()};
-        const date = moment.unix(order.createdAt);
+        const date = moment.unix(order.createdAt).locale("ru");
         inlineKeyboardArray.push([{text: `🧾 Заказ #${store.formatOrderNumber(order.userId, order.orderNumber)},` +
           `${store.statuses().get(order.statusId)}, ${date.fromNow()}`,
         callback_data: `myO/${userId}?oId=${order.id}&o=${order.objectId}`}]);
@@ -144,7 +148,7 @@ const showOrders = async (ctx, next) => {
       if (order) {
         // show order
         ctx.session.pathOrderCurrent = ctx.callbackQuery.data;
-        const date = moment.unix(order.createdAt);
+        const date = moment.unix(order.createdAt).locale("ru");
         caption = `<b>${order.objectName} >` +
         ` Заказ #${store.formatOrderNumber(order.userId, order.orderNumber)}` +
         ` (${date.fromNow()})\n` +
@@ -167,6 +171,10 @@ const showOrders = async (ctx, next) => {
         caption += `<b>Количество товара: ${totalQty}\n` +
           `Сумма: ${roundNumber(totalSum)} ${botConfig.currency}</b>`;
       }
+      // share link
+      inlineKeyboardArray.push([
+        {text: "Ссылка на заказ", url: `https://${botConfig.site}/o/${objectId}/s/${order.id}`},
+      ]);
       // edit entries
       inlineKeyboardArray.push([{text: `📝 Статус: ${store.statuses().get(order.statusId)}`,
         callback_data: `eO/${order.id}?sSI=${order.statusId}&o=${objectId}`}]);
@@ -240,7 +248,7 @@ const showOrders = async (ctx, next) => {
       // render orders
       ordersSnapshot.docs.forEach((doc) => {
         const order = {id: doc.id, ...doc.data()};
-        const date = moment.unix(order.createdAt);
+        const date = moment.unix(order.createdAt).locale("ru");
         inlineKeyboardArray.push([{text: `🧾 Заказ #${store.formatOrderNumber(order.userId, order.orderNumber)},` +
           `${store.statuses().get(order.statusId)}, ${date.fromNow()}`,
         callback_data: `orders/${order.id}?o=${objectId}`}]);
