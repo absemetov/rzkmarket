@@ -10,43 +10,11 @@ const {roundNumber} = require("./bot_start_scene");
 const cyrillicToTranslit = new CyrillicToTranslit();
 const cyrillicToTranslitUk = new CyrillicToTranslit({preset: "uk"});
 const botConfig = functions.config().env.bot;
-// merch center
-async (ctx) => {
-  const content = google.content("v2.1");
-  // add scope content in admin.google!!!
-  const auth = new google.auth.JWT({
-    keyFile: "./rzk-com-ua-d1d3248b8410.json",
-    scopes: ["https://www.googleapis.com/auth/content"],
-    subject: "nadir@absemetov.org.ua",
-  });
-  google.options({auth: auth});
-  // Do the magic
-  const res = await content.products.insert({
-    merchantId: "120890507",
-    resource: {
-      "channel": "online",
-      "contentLanguage": "ru",
-      "offerId": "01-29-12-00-152-117",
-      "targetCountry": "UA",
-      "title": "Gunsan Moderna Крем Розетка с заземлением и крышкой (Склад: Днепр)",
-      "description": "Rzk.com.ua - Каждая вторая розетка в Украине будет куплена у нас!",
-      "link": "https://rzk.com.ua/p/01-29-12-00-152-117",
-      "imageLink": "https://www.gunsanelectric.com/i/content/1517_1_visagekremkapaklitopraklipriz.png",
-      "availability": "in stock",
-      "condition": "new",
-      "price": {
-        "value": 51,
-        "currency": "UAH",
-      },
-    },
-  });
-  console.log(res.data);
-};
 // upload from googleSheet
 const uploadProducts = async (ctx, objectId, sheetId) => {
   const start = new Date();
   // Max upload goods
-  const maxUploadGoods = 100;
+  const maxUploadGoods = 2000;
   // Catalogs set array
   const catalogsIsSet = new Map();
   // Products set array
@@ -565,5 +533,46 @@ const uploadForm = async (ctx, sheetId) => {
   }
 };
 uploadActions.push(createObject);
+// upload Merch Centere
+// merch center
+const uploadMerch = async (ctx, next) => {
+  if (ctx.state.routeName === "uploadMerch") {
+    const productId = ctx.state.param;
+    const todo = ctx.state.params.get("o");
+    const content = google.content("v2.1");
+    // add scope content in admin.google!!!
+    const auth = new google.auth.JWT({
+      keyFile: "./rzk-com-ua-d1d3248b8410.json",
+      scopes: ["https://www.googleapis.com/auth/content"],
+      subject: "nadir@absemetov.org.ua",
+    });
+    google.options({auth: auth});
+    // Do the magic
+    const res = await content.products.insert({
+      merchantId: "120890507",
+      resource: {
+        "channel": "online",
+        "contentLanguage": "ru",
+        "offerId": "01-29-12-00-152-117",
+        "targetCountry": "UA",
+        "title": "Gunsan Moderna Крем Розетка с заземлением и крышкой (Склад: Днепр)",
+        "description": "Rzk.com.ua - Каждая вторая розетка в Украине будет куплена у нас!",
+        "link": "https://rzk.com.ua/p/01-29-12-00-152-117",
+        "imageLink": "https://www.gunsanelectric.com/i/content/1517_1_visagekremkapaklitopraklipriz.png",
+        "availability": "in stock",
+        "condition": "new",
+        "price": {
+          "value": 51,
+          "currency": "UAH",
+        },
+      },
+    });
+    console.log(res.data);
+    await ctx.answerCbQuery();
+  } else {
+    return next();
+  }
+};
+uploadActions.push(uploadMerch);
 exports.uploadForm = uploadForm;
 exports.uploadActions = uploadActions;

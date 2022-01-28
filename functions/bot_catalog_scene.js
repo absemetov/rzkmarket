@@ -309,6 +309,8 @@ catalogsActions.push( async (ctx, next) => {
       if (ctx.state.isAdmin) {
         uploadPhotoButton.push({text: "📸 Загрузить фото",
           callback_data: `uploadPhotoProduct/${product.id}?o=${objectId}`});
+        uploadPhotoButton.push({text: "Загрузить в Merch",
+          callback_data: `uploadMerch/${product.id}?o=${objectId}`});
       }
       const media = await photoCheckUrl(publicImgUrl);
       await ctx.editMessageMedia({
