@@ -946,63 +946,48 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
         return;
       }
       // get telegram file_id photos data
-      const origin = ctx.message.photo[3];
-      const big = ctx.message.photo[2];
-      const thumbnail = ctx.message.photo[1];
-      // If 720*1280 photo[3] empty
-      if (!origin) {
+      const telegramPhotos = ctx.message.photo;
+      if (telegramPhotos.length < 3) {
         await ctx.reply("Choose large photo!");
         return;
       }
-      // get photos url
-      const resultsUrl = await Promise.all([
-        ctx.telegram.getFileLink(origin.file_id),
-        ctx.telegram.getFileLink(big.file_id),
-        ctx.telegram.getFileLink(thumbnail.file_id),
-      ]);
-      const originUrl = resultsUrl[0];
-      const bigUrl = resultsUrl[1];
-      const thumbnailUrl = resultsUrl[2];
-      try {
-        // download photos from telegram server
-        const results = await Promise.all([
-          download(originUrl.href),
-          download(bigUrl.href),
-          download(thumbnailUrl.href),
-        ]);
-        const originFilePath = results[0];
-        const bigFilePath = results[1];
-        const thumbnailFilePath = results[2];
-        // upload photo files
-        await Promise.all([
-          bucket.upload(originFilePath, {
-            destination: `photos/${objectId}/products/${product.id}/3/${origin.file_unique_id}.jpg`,
-          }),
-          bucket.upload(bigFilePath, {
-            destination: `photos/${objectId}/products/${product.id}/2/${origin.file_unique_id}.jpg`,
-          }),
-          bucket.upload(thumbnailFilePath, {
-            destination: `photos/${objectId}/products/${product.id}/1/${origin.file_unique_id}.jpg`,
-          }),
-        ]);
-        // delete download file
-        fs.unlinkSync(originFilePath);
-        fs.unlinkSync(bigFilePath);
-        fs.unlinkSync(thumbnailFilePath);
-      } catch (e) {
-        console.log("Download failed");
-        console.log(e.message);
-        await ctx.reply(`Error upload photos ${e.message}`);
+      const fileUniqueId = telegramPhotos[2].file_unique_id;
+      // loop photos
+      for (const [index, photo] of telegramPhotos.entries()) {
+        // without small photo
+        if (index) {
+          console.log(index, photo);
+          const photoUrl = await ctx.telegram.getFileLink(photo.file_id);
+          try {
+            // download photos from telegram server
+            const photoPath = await download(photoUrl.href);
+            await bucket.upload(photoPath, {
+              destination: `photos/${objectId}/products/${product.id}/${index}/${fileUniqueId}.jpg`,
+            });
+            // save same file for 3 level zoom
+            if (telegramPhotos.length === 3 && index === 2) {
+              await bucket.upload(photoPath, {
+                destination: `photos/${objectId}/products/${product.id}/3/${fileUniqueId}.jpg`,
+              });
+            }
+            // delete download file
+            fs.unlinkSync(photoPath);
+          } catch (e) {
+            console.log("Download failed");
+            console.log(e.message);
+            await ctx.reply(`Error upload photos ${e.message}`);
+          }
+        }
       }
-      // save fileID to Firestore
+      // save file id
       if (!product.mainPhoto) {
         await store.updateRecord(`objects/${objectId}/products/${productId}`, {
-          mainPhoto: origin.file_unique_id,
-          photos: firebase.firestore.FieldValue.arrayUnion(origin.file_unique_id),
+          mainPhoto: fileUniqueId,
+          photos: firebase.firestore.FieldValue.arrayUnion(fileUniqueId),
         });
       } else {
         await store.updateRecord(`objects/${objectId}/products/${productId}`, {
-          photos: firebase.firestore.FieldValue.arrayUnion(origin.file_unique_id),
+          photos: firebase.firestore.FieldValue.arrayUnion(fileUniqueId),
         });
       }
       // get catalog url (path)
@@ -1010,7 +995,7 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
       if (ctx.session.pathCatalog) {
         catalogUrl = ctx.session.pathCatalog;
       }
-      const media = await photoCheckUrl(`photos/${objectId}/products/${product.id}/2/${origin.file_unique_id}.jpg`);
+      const media = await photoCheckUrl(`photos/${objectId}/products/${product.id}/2/${fileUniqueId}.jpg`);
       await ctx.replyWithPhoto(media,
           {
             caption: `${product.name} (${product.id}) photo uploaded`,

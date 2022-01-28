@@ -6,7 +6,7 @@ const Validator = require("validatorjs");
 const {google} = require("googleapis");
 const CyrillicToTranslit = require("cyrillic-to-translit-js");
 const {store} = require("./bot_store_cart.js");
-const {roundNumber} = require("./bot_start_scene");
+const {roundNumber, photoCheckUrl} = require("./bot_start_scene");
 const cyrillicToTranslit = new CyrillicToTranslit();
 const cyrillicToTranslitUk = new CyrillicToTranslit({preset: "uk"});
 const botConfig = functions.config().env.bot;
@@ -538,7 +538,14 @@ uploadActions.push(createObject);
 const uploadMerch = async (ctx, next) => {
   if (ctx.state.routeName === "uploadMerch") {
     const productId = ctx.state.param;
-    const todo = ctx.state.params.get("o");
+    const objectId = ctx.state.params.get("o");
+    const object = await store.findRecord(`objects/${objectId}`);
+    const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
+    let publicImgUrl = null;
+    if (product.mainPhoto) {
+      publicImgUrl = `photos/${objectId}/products/${product.id}/2/${product.mainPhoto}.jpg`;
+    }
+    const photoUrl = await photoCheckUrl(publicImgUrl);
     const content = google.content("v2.1");
     // add scope content in admin.google!!!
     const auth = new google.auth.JWT({
@@ -552,17 +559,17 @@ const uploadMerch = async (ctx, next) => {
       merchantId: "120890507",
       resource: {
         "channel": "online",
-        "contentLanguage": "ru",
-        "offerId": "01-29-12-00-152-117",
+        "contentLanguage": "uk",
+        "offerId": product.id,
         "targetCountry": "UA",
-        "title": "Gunsan Moderna Крем Розетка с заземлением и крышкой (Склад: Днепр)",
+        "title": product.name,
         "description": "Rzk.com.ua - Каждая вторая розетка в Украине будет куплена у нас!",
-        "link": "https://rzk.com.ua/p/01-29-12-00-152-117",
-        "imageLink": "https://www.gunsanelectric.com/i/content/1517_1_visagekremkapaklitopraklipriz.png",
+        "link": `https://next.rzk.com.ua/p/${product.id}`,
+        "imageLink": photoUrl,
         "availability": "in stock",
         "condition": "new",
         "price": {
-          "value": 51,
+          "value": roundNumber(product.price * object[product.currency]),
           "currency": "UAH",
         },
       },
