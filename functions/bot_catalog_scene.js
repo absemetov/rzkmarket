@@ -790,17 +790,18 @@ catalogsActions.push( async (ctx, next) => {
         .collection("products").doc(productId);
     const productSnapshot = await productRef.get();
     const product = {id: productSnapshot.id, ...productSnapshot.data()};
-    for (const [index, photoId] of product.photos.entries()) {
+    let index = 0;
+    for (const photoId of Object.keys(product.photos)) {
       const inlineKeyboardArray = [];
       // if admin
       if (ctx.state.isAdmin) {
         inlineKeyboardArray.push([{text: "🏷 Set main",
-          callback_data: `setMainPhoto/${product.id}?photoId=${photoId}&o=${objectId}`}]);
+          callback_data: `sMPh/${product.id}?pId=${photoId}&o=${objectId}`}]);
         inlineKeyboardArray.push([{text: "🗑 Delete",
-          callback_data: `deletePhoto/${product.id}?photoId=${photoId}&o=${objectId}`}]);
+          callback_data: `dPh/${product.id}?pId=${photoId}&o=${objectId}`}]);
       }
       inlineKeyboardArray.push([{text: "❎ Закрыть", callback_data: "closePhoto"}]);
-      let caption = `<b>Фото #${index + 1}</b> ${product.name} (${product.id})`;
+      let caption = `<b>Фото #${++index}</b> ${product.name} (${product.id})`;
       if (product.mainPhoto === photoId) {
         caption = "✅ " + caption;
       }
@@ -820,9 +821,9 @@ catalogsActions.push( async (ctx, next) => {
 });
 // set product main photo
 catalogsActions.push( async (ctx, next) => {
-  if (ctx.state.routeName === "setMainPhoto") {
+  if (ctx.state.routeName === "sMPh") {
     const productId = ctx.state.param;
-    const mainPhoto = ctx.state.params.get("photoId");
+    const mainPhoto = ctx.state.params.get("pId");
     const objectId = ctx.state.params.get("o");
     await store.updateRecord(`objects/${objectId}/products/${productId}`, {
       mainPhoto,
@@ -831,7 +832,7 @@ catalogsActions.push( async (ctx, next) => {
         {
           reply_markup: {
             inline_keyboard: [
-              [{text: "🗑 Delete", callback_data: `deletePhoto/${productId}?photoId=${mainPhoto}&o=${objectId}`}],
+              [{text: "🗑 Delete", callback_data: `dPh/${productId}?pId=${mainPhoto}&o=${objectId}`}],
               [{text: "❎ Close", callback_data: "closePhoto"}],
             ],
           },
@@ -850,24 +851,26 @@ catalogsActions.push( async (ctx, next) => {
     return next();
   }
 });
-// delete Photo
+// delete photo
 catalogsActions.push( async (ctx, next) => {
-  if (ctx.state.routeName === "deletePhoto") {
+  if (ctx.state.routeName === "dPh") {
     const productId = ctx.state.param;
-    const deleteFileId = ctx.state.params.get("photoId");
+    const deleteFileId = ctx.state.params.get("pId");
     const objectId = ctx.state.params.get("o");
     const productRef = firebase.firestore().collection("objects").doc(objectId)
         .collection("products").doc(productId);
     const productSnapshot = await productRef.get();
     // if delete main Photo
+    const photoField = `photos.${deleteFileId}`;
     if (productSnapshot.data().mainPhoto === deleteFileId) {
       // set new main photo inddex 1 or delete
-      if (productSnapshot.data().photos && productSnapshot.data().photos.length > 1) {
-        for (const photoId of productSnapshot.data().photos) {
+      const photoArray = productSnapshot.data().photos && Object.keys(productSnapshot.data().photos);
+      if (photoArray && photoArray.length > 1) {
+        for (const photoId of photoArray) {
           if (photoId !== deleteFileId) {
             await productRef.update({
               mainPhoto: photoId,
-              photos: firebase.firestore.FieldValue.arrayRemove(deleteFileId),
+              [photoField]: firebase.firestore.FieldValue.delete(),
             });
             break;
           }
@@ -875,21 +878,27 @@ catalogsActions.push( async (ctx, next) => {
       } else {
         await productRef.update({
           mainPhoto: firebase.firestore.FieldValue.delete(),
-          photos: firebase.firestore.FieldValue.arrayRemove(deleteFileId),
+          [photoField]: firebase.firestore.FieldValue.delete(),
         });
       }
     } else {
       await productRef.update({
-        photos: firebase.firestore.FieldValue.arrayRemove(deleteFileId),
+        [photoField]: firebase.firestore.FieldValue.delete(),
       });
     }
     const photoExists = await bucket.file(`photos/${objectId}/products/${productId}/1/${deleteFileId}.jpg`).exists();
     if (photoExists[0]) {
-      await Promise.all([
-        bucket.file(`photos/${objectId}/products/${productId}/3/${deleteFileId}.jpg`).delete(),
-        bucket.file(`photos/${objectId}/products/${productId}/2/${deleteFileId}.jpg`).delete(),
-        bucket.file(`photos/${objectId}/products/${productId}/1/${deleteFileId}.jpg`).delete(),
-      ]);
+      // delete photos from bucket
+      for (const zoomLevel of Array(productSnapshot.data().photos[deleteFileId] + 1).keys()) {
+        if (zoomLevel) {
+          await bucket.file(`photos/${objectId}/products/${productId}/${zoomLevel}/${deleteFileId}.jpg`).delete();
+        }
+      }
+      // await Promise.all([
+      //   bucket.file(`photos/${objectId}/products/${productId}/3/${deleteFileId}.jpg`).delete(),
+      //   bucket.file(`photos/${objectId}/products/${productId}/2/${deleteFileId}.jpg`).delete(),
+      //   bucket.file(`photos/${objectId}/products/${productId}/1/${deleteFileId}.jpg`).delete(),
+      // ]);
     }
     await ctx.deleteMessage();
     await ctx.answerCbQuery();
@@ -937,7 +946,8 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
   if (productId && objectId) {
     const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
     // get count photos to check limits 5 photos
-    if (product.photos && product.photos.length > 4) {
+    const photoArray = product.photos && Object.keys(product.photos);
+    if (photoArray && photoArray.length > 4) {
       await ctx.reply("Limit 5 photos");
     } else {
       // upload only one photo!!!
@@ -956,7 +966,6 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
       for (const [index, photo] of telegramPhotos.entries()) {
         // without small photo
         if (index) {
-          console.log(index, photo);
           const photoUrl = await ctx.telegram.getFileLink(photo.file_id);
           try {
             // download photos from telegram server
@@ -965,11 +974,11 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
               destination: `photos/${objectId}/products/${product.id}/${index}/${fileUniqueId}.jpg`,
             });
             // save same file for 3 level zoom
-            if (telegramPhotos.length === 3 && index === 2) {
-              await bucket.upload(photoPath, {
-                destination: `photos/${objectId}/products/${product.id}/3/${fileUniqueId}.jpg`,
-              });
-            }
+            // if (telegramPhotos.length === 3 && index === 2) {
+            //   await bucket.upload(photoPath, {
+            //     destination: `photos/${objectId}/products/${product.id}/3/${fileUniqueId}.jpg`,
+            //   });
+            // }
             // delete download file
             fs.unlinkSync(photoPath);
           } catch (e) {
@@ -980,16 +989,27 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
         }
       }
       // save file id
+      const photosField = `photos.${fileUniqueId}`;
       if (!product.mainPhoto) {
         await store.updateRecord(`objects/${objectId}/products/${productId}`, {
           mainPhoto: fileUniqueId,
-          photos: firebase.firestore.FieldValue.arrayUnion(fileUniqueId),
+          [photosField]: 2,
         });
       } else {
         await store.updateRecord(`objects/${objectId}/products/${productId}`, {
-          photos: firebase.firestore.FieldValue.arrayUnion(fileUniqueId),
+          [photosField]: 2,
         });
       }
+      // if (!product.mainPhoto) {
+      //   await store.updateRecord(`objects/${objectId}/products/${productId}`, {
+      //     mainPhoto: fileUniqueId,
+      //     photos: firebase.firestore.FieldValue.arrayUnion(fileUniqueId),
+      //   });
+      // } else {
+      //   await store.updateRecord(`objects/${objectId}/products/${productId}`, {
+      //     photos: firebase.firestore.FieldValue.arrayUnion(fileUniqueId),
+      //   });
+      // }
       // get catalog url (path)
       let catalogUrl = `c/${product.catalog.id}?o=${objectId}&u=1`;
       if (ctx.session.pathCatalog) {
@@ -1002,7 +1022,7 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
             reply_markup: {
               inline_keyboard: [
                 [{text: "📸 Upload photo", callback_data: `uploadPhotoProduct/${product.id}?o=${objectId}`}],
-                [{text: `🖼 Show photos (${product.photos ? product.photos.length + 1 : 1})`,
+                [{text: `🖼 Show photos (${product.photos ? Object.keys(product.photos).length + 1 : 1})`,
                   callback_data: `showPhotos/${product.id}?o=${objectId}`}],
                 [{text: "⤴️ Goto catalog",
                   callback_data: catalogUrl}],
