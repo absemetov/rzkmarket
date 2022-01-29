@@ -2,7 +2,7 @@
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="/">Торговельні об'єкти</a></li>
     <li class="breadcrumb-item"><a href="/o/{{object.id}}">{{object.name}}</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Оформити замовлення</li>
+    <li class="breadcrumb-item active" aria-current="page">Оформлення замовлення</li>
   </ol>
 </nav>
 <div class="row">
@@ -61,7 +61,7 @@
         <label for="comment" class="form-label">Коментар</label>
         <textarea class="form-control" id="comment" name="comment" rows="3"></textarea>
       </div>
-      <button type="submit" id="createOrderButton" class="btn btn-primary">Оформити замовлення</button>
+      <button type="submit" id="createOrderButton" class="btn btn-primary">Замовлення підтверджую</button>
     </form>
   </div>
 </div>
@@ -121,7 +121,7 @@
   } else {
     document.getElementById("carrierNumberDiv").classList.add("d-none");
     document.getElementById("carrierNumber").required = false;
-    document.getElementById("carrierNumber").removeAttribute("name");  
+    document.getElementById("carrierNumber").removeAttribute("name");
   }
   document.getElementById("carrierId").addEventListener("change", (event) => {
     const option = event.target;

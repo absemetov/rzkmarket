@@ -965,7 +965,7 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
       // loop photos
       for (const [index, photo] of telegramPhotos.entries()) {
         // without small photo
-        if (index) {
+        if (index >= 2) {
           const photoUrl = await ctx.telegram.getFileLink(photo.file_id);
           try {
             // download photos from telegram server
@@ -1046,8 +1046,8 @@ const uploadPhotoCat = async (ctx, objectId, catalogId) => {
     const fileUniqueId = telegramPhotos[2].file_unique_id;
     // loop photos
     for (const [index, photo] of telegramPhotos.entries()) {
-      // without small photo
-      if (index) {
+      // 2 zoom level
+      if (index === 2) {
         const photoUrl = await ctx.telegram.getFileLink(photo.file_id);
         try {
           // download photos from telegram server

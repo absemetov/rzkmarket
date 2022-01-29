@@ -47,12 +47,12 @@ const auth = (req, res, next) => {
 app.get("/", auth, async (req, res) => {
   const objects = await store.findAll("objects");
   // generate cart link
-  for (const obj of objects) {
-    obj.cartCount = await cart.cartCount(obj.id, req.user.uid);
-    if (obj.logo) {
-      obj.imgUrl = bucket.file(`photos/${obj.id}/logo/2/${obj.logo}.jpg`).publicUrl();
+  for (const object of objects) {
+    object.cartCount = await cart.cartCount(object.id, req.user.uid);
+    if (object.logo) {
+      object.imgUrl = bucket.file(`photos/${object.id}/logo/2/${object.logo}.jpg`).publicUrl();
     } else {
-      obj.imgUrl = bucket.file(botConfig.logo).publicUrl();
+      object.imgUrl = "/icons/shop.svg";
     }
   }
   // Set Cache-Control
@@ -68,7 +68,7 @@ app.get("/o/:objectId", auth, async (req, res) => {
   if (object.logo) {
     object.imgUrl = bucket.file(`photos/${object.id}/logo/2/${object.logo}.jpg`).publicUrl();
   } else {
-    object.imgUrl = bucket.file(botConfig.logo).publicUrl();
+    object.imgUrl = "/icons/shop.svg";
   }
   // Set Cache-Control
   // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
@@ -89,11 +89,17 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
       .collection("catalogs").where("parentId", "==", catalogId ? catalogId : null).orderBy("orderNumber").get();
   const catalogs = [];
   catalogsSiblingsSnapshot.docs.forEach((doc) => {
-    catalogs.push({
+    const catalogSibl = {
       id: doc.id,
       name: doc.data().name,
       url: `/o/${object.id}/c/${doc.id}`,
-    });
+    };
+    if (doc.data().photo) {
+      catalogSibl.imgUrl = bucket.file(`photos/${object.id}/catalogs/${doc.id}/2/${doc.data().photo}.jpg`).publicUrl();
+    } else {
+      catalogSibl.imgUrl = "/icons/folder.svg";
+    }
+    catalogs.push(catalogSibl);
   });
   // products query
   const products = [];

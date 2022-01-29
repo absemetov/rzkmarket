@@ -166,8 +166,8 @@ const uploadPhotoObj = async (ctx, objectId) => {
     const fileUniqueId = telegramPhotos[2].file_unique_id;
     // loop photos
     for (const [index, photo] of telegramPhotos.entries()) {
-      // without small photo
-      if (index) {
+      // use only 2 zoom level
+      if (index === 2) {
         const photoUrl = await ctx.telegram.getFileLink(photo.file_id);
         try {
           // download photos from telegram server
@@ -190,7 +190,7 @@ const uploadPhotoObj = async (ctx, objectId) => {
     });
     // get catalog url (path)
     const catalogUrl = `objects/${objectId}`;
-    const url = await photoCheckUrl(`photos/${objectId}/logo/2/${fileUniqueId}.jpg`);
+    const url = await photoCheckUrl(`photos/${objectId}/logo/1/${fileUniqueId}.jpg`);
     await ctx.replyWithPhoto({url},
         {
           caption: `${object.name} (${object.id}) photo uploaded`,
