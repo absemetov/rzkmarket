@@ -133,9 +133,9 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
     if (endBefore) {
       const endBeforeProduct = await firebase.firestore().collection("objects").doc(objectId)
           .collection("products").doc(endBefore).get();
-      query = query.endBefore(endBeforeProduct).limitToLast(24);
+      query = query.endBefore(endBeforeProduct).limitToLast(12);
     } else {
-      query = query.limit(24);
+      query = query.limit(12);
     }
     // get products
     const productsSnapshot = await query.get();

@@ -564,7 +564,7 @@ const uploadMerch = async (ctx, next) => {
         "targetCountry": "UA",
         "title": product.name,
         "description": "Rzk.com.ua - Каждая вторая розетка в Украине будет куплена у нас!",
-        "link": `https://next.rzk.com.ua/o/${objectId}p/${product.id}`,
+        "link": `https://next.rzk.com.ua/o/${objectId}/p/${product.id}`,
         "imageLink": photoUrl,
         "availability": "in stock",
         "condition": "new",
