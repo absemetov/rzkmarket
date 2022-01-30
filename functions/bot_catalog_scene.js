@@ -137,7 +137,7 @@ const showCatalog = async (ctx, next) => {
       type: "photo",
       media: media,
       caption: `<b>${object.name} > Каталог</b>\n` +
-        `Поделиться 🔗: t.me/${ctx.state.bot_username}?start=OBJECT${objectId}CATALOG${catalogId ? catalogId : "c"}`,
+        `https://${botConfig.site}/o/${objectId}/c/${catalogId ? catalogId : ""}`,
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: inlineKeyboardArray,
@@ -202,7 +202,7 @@ const showProduct = async (ctx, next) => {
       caption: `<b>${object.name}\n` +
       `${product.name} (${product.id})\n` +
       `Цена ${product.price} ${botConfig.currency}</b>\n` +
-      `Поделиться 🔗: t.me/${ctx.state.bot_username}?start=OBJECT${objectId}PRODUCT${productId}`,
+      `https://${botConfig.site}/o/${objectId}/p/${productId}`,
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: inlineKeyboardArray,
@@ -319,7 +319,8 @@ catalogsActions.push( async (ctx, next) => {
         caption: `${product.name} (${product.id})` +
         `\nЦена ${product.price} ${botConfig.currency}` +
         `\nСумма ${roundNumber(qty * product.price)} ${botConfig.currency}` +
-        `\n<b>Количетво: ${qty} ${product.unit}</b>`,
+        `\n<b>Количетво: ${qty} ${product.unit}</b>` +
+        `\nhttps://${botConfig.site}/o/${objectId}/p/${productId}`,
         parse_mode: "html",
       }, {reply_markup: {
         inline_keyboard: [

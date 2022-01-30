@@ -22,7 +22,7 @@ bot.use(async (ctx, next) => {
   }
   // set bot name user name and project logo
   // ctx.state.bot_first_name = bot.botInfo.first_name;
-  ctx.state.bot_username = bot.botInfo.username;
+  // ctx.state.bot_username = bot.botInfo.username;
   return next();
 });
 // route actions
@@ -32,8 +32,8 @@ bot.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/,
 // start bot
 bot.start(async (ctx) => {
   // deep linking parsing
-  const pathProduct = ctx.message.text.match(/OBJECT([a-zA-Z0-9-_]+)PRODUCT([a-zA-Z0-9-_]+)/);
-  const pathCatalog = ctx.message.text.match(/OBJECT([a-zA-Z0-9-_]+)CATALOG([a-zA-Z0-9-_]+)/);
+  const pathProduct = ctx.message.text.match(/o_([a-zA-Z0-9-_]+)_p_([a-zA-Z0-9-_]+)/);
+  const pathCatalog = ctx.message.text.match(/o_([a-zA-Z0-9-_]+)_c_([a-zA-Z0-9-_]+)/);
   const inlineKeyboardArray = [];
   let caption = "";
   if (pathProduct) {
@@ -46,7 +46,7 @@ bot.start(async (ctx) => {
         inlineKeyboardArray.push([{text: `📦 ${product.name} (${product.id})`,
           callback_data: `p/${product.id}?o=${objectId}`}]);
       } else {
-        inlineKeyboardArray.push([{text: "🗂 Каталог",
+        inlineKeyboardArray.push([{text: "🗂 Каталог товаров",
           callback_data: `c?o=${objectId}`}]);
       }
       caption = `<b>${object.name}\n` +
@@ -65,7 +65,7 @@ bot.start(async (ctx) => {
         inlineKeyboardArray.push([{text: `🗂 ${catalog.name}`,
           callback_data: `c/${catalogId}?o=${objectId}`}]);
       } else {
-        inlineKeyboardArray.push([{text: "🗂 Каталоги",
+        inlineKeyboardArray.push([{text: "🗂 Каталог товаров",
           callback_data: `c?o=${objectId}`}]);
       }
       caption = `<b>${object.name}\n` +
