@@ -127,7 +127,7 @@ Count rows: *${sheet.rowCount}*`);
               // Parent exist
               const url = groupArray[index - 1].match(/(.+)\[([[a-zA-Z0-9-_]+)\]$/);
               if (url) {
-                parentId = url[2];
+                parentId = url[2].trim();
               } else {
                 parentId = cyrillicToTranslit.transform(groupArray[index - 1].trim(), "-").toLowerCase();
                 parentId = cyrillicToTranslitUk.transform(parentId).toLowerCase();
@@ -135,8 +135,8 @@ Count rows: *${sheet.rowCount}*`);
             }
             const url = catalogName.match(/(.+)\[([[a-zA-Z0-9-_]+)\]$/);
             if (url) {
-              name = url[1];
-              id = url[2];
+              name = url[1].trim();
+              id = url[2].trim();
             } else {
               id = cyrillicToTranslit.transform(catalogName.trim(), "-").toLowerCase();
               id = cyrillicToTranslitUk.transform(id).toLowerCase();

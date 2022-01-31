@@ -27,7 +27,7 @@ const myOrders = async (ctx, next) => {
       if (order) {
         // show order
         const date = moment.unix(order.createdAt).locale("ru");
-        caption += " <b>> " +
+        caption += "<b> > " +
         `Заказ #${store.formatOrderNumber(order.userId, order.orderNumber)} (${date.fromNow()})\n` +
         `Склад: ${order.objectName}\n` +
         `Статус: ${store.statuses().get(order.statusId)}\n` +
@@ -39,14 +39,23 @@ const myOrders = async (ctx, next) => {
         `${order.comment ? "Комментарий: " + order.comment + "\n" : ""}</b>`;
         let totalQty = 0;
         let totalSum = 0;
+        let itemShow = 0;
         store.sort(order.products).forEach((product, index) => {
           const productTxt = `${index + 1})<b>${product.name}</b> (${product.id})` +
         `=${product.price} ${botConfig.currency}*${product.qty}${product.unit}` +
         `=${roundNumber(product.price * product.qty)}${botConfig.currency}`;
-          caption += `${productTxt}\n`;
+          // truncate long string
+          if ((caption + `${productTxt}\n`).length < 1000) {
+            caption += `${productTxt}\n`;
+            itemShow++;
+          }
+          // caption += `${productTxt}\n`;
           totalQty += product.qty;
           totalSum += product.qty * product.price;
         });
+        if (itemShow !== order.products.length) {
+          caption += "⬇️Весь список нажмите на ссылку ⬇️\n";
+        }
         caption += `<b>Количество товара: ${totalQty}\n` +
           `Сумма: ${roundNumber(totalSum)} ${botConfig.currency}</b>`;
       }
@@ -112,9 +121,9 @@ const myOrders = async (ctx, next) => {
       inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: "objects"}]);
     }
     // truncate long string
-    if (caption.length > 1024) {
-      caption = caption.substring(0, 1024);
-    }
+    // if (caption.length > 1024) {
+    //   caption = caption.substring(0, 1024);
+    // }
     const media = await photoCheckUrl();
     await ctx.editMessageMedia({
       type: "photo",
@@ -160,14 +169,23 @@ const showOrders = async (ctx, next) => {
         `${order.comment ? "Комментарий: " + order.comment + "\n" : ""}</b>`;
         let totalQty = 0;
         let totalSum = 0;
+        let itemShow = 0;
         store.sort(order.products).forEach((product, index) => {
           const productTxt = `${index + 1})<b>${product.name}</b> (${product.id})` +
         `=${product.price}${botConfig.currency}*${product.qty}${product.unit}` +
         `=${roundNumber(product.price * product.qty)}${botConfig.currency}`;
-          caption += `${productTxt}\n`;
+          // truncate long string
+          if ((caption + `${productTxt}\n`).length < 950) {
+            caption += `${productTxt}\n`;
+            itemShow++;
+          }
+          // caption += `${productTxt}\n`;
           totalQty += product.qty;
           totalSum += product.qty * product.price;
         });
+        if (itemShow !== order.products.length) {
+          caption += "⬇️Весь список нажмите на ссылку ⬇️\n";
+        }
         caption += `<b>Количество товара: ${totalQty}\n` +
           `Сумма: ${roundNumber(totalSum)} ${botConfig.currency}</b>`;
       }
@@ -277,9 +295,9 @@ const showOrders = async (ctx, next) => {
       inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: "objects"}]);
     }
     // truncate long string
-    if (caption.length > 1024) {
-      caption = caption.substring(0, 1024);
-    }
+    // if (caption.length > 1024) {
+    //   caption = caption.substring(0, 1024);
+    // }
     let publicImgUrl = null;
     if (object.logo) {
       publicImgUrl = `photos/${objectId}/logo/2/${object.logo}.jpg`;

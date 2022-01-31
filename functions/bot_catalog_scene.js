@@ -390,7 +390,7 @@ const showCart = async (ctx, next) => {
         `=${product.price} ${botConfig.currency}*${cartProduct.qty}${product.unit}` +
         `=${roundNumber(product.price * cartProduct.qty)}${botConfig.currency}`;
         // truncate long string
-        if ((msgTxt + `${productTxt}\n`).length < 1024) {
+        if ((msgTxt + `${productTxt}\n`).length < 1000) {
           msgTxt += `${productTxt}\n`;
           itemShow++;
           // msgTxt = msgTxt.substring(0, 1024);
@@ -416,7 +416,7 @@ const showCart = async (ctx, next) => {
       }
     }
     if (itemShow !== inlineKeyboardArray.length) {
-      msgTxt += "...\n";
+      msgTxt += "⬇️Весь список нажмите на ссылку корзины⬇️\n";
     }
     if (totalQty) {
       msgTxt += `<b>Количество товара: ${totalQty}\n` +
@@ -444,6 +444,10 @@ const showCart = async (ctx, next) => {
       // clear cart
       inlineKeyboardArray.push([{text: "🗑 Очистить корзину",
         callback_data: `cart?clear=1&o=${objectId}`}]);
+      // share cart
+      inlineKeyboardArray.push([
+        {text: "Ссылка на корзину", url: `https://${botConfig.site}/o/${objectId}/cart/${ctx.from.id}`},
+      ]);
     }
     // Set Main menu
     inlineKeyboardArray.push([{text: `🏪 ${object.name}`,

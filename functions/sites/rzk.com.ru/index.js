@@ -242,7 +242,7 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
 });
 
 // share order
-app.get("/o/:objectId/s/:orderId", auth, async (req, res) => {
+app.get("/o/:objectId/s/:orderId", async (req, res) => {
   const objectId = req.params.objectId;
   const orderId = req.params.orderId;
   const object = await store.findRecord(`objects/${objectId}`);
@@ -285,6 +285,45 @@ app.get("/o/:objectId/s/:orderId", auth, async (req, res) => {
   }
   res.send("Order not found");
 });
+
+// share cart
+app.get("/o/:objectId/cart/:orderId", async (req, res) => {
+  const objectId = req.params.objectId;
+  const cartId = req.params.orderId;
+  const object = await store.findRecord(`objects/${objectId}`);
+  const cartProducts = await cart.products(objectId, cartId);
+  if (cartProducts.length) {
+    const products = [];
+    let totalQty = 0;
+    let totalSum = 0;
+    cartProducts.forEach((product, index) => {
+      products.push({
+        index: index + 1,
+        name: product.name,
+        id: product.id,
+        price: product.price,
+        qty: product.qty,
+        unit: product.unit,
+        sum: roundNumber(product.price * product.qty),
+        url: `/o/${objectId}/p/${product.id}`,
+      });
+      totalQty += product.qty;
+      totalSum += product.qty * product.price;
+    });
+    // render
+    return res.render("share-cart", {
+      title: `Корзина #${cartId} - ${object.name}`,
+      object,
+      cartId,
+      products,
+      totalQty,
+      totalSum: roundNumber(totalSum),
+      currencyName: botConfig.currency,
+    });
+  }
+  res.send("Cart not found");
+});
+
 // login with telegram
 app.get("/login", auth, async (req, res) => {
   if (req.query && checkSignature(req.query)) {
