@@ -137,7 +137,7 @@ const showCatalog = async (ctx, next) => {
       type: "photo",
       media: media,
       caption: `<b>${object.name} > Каталог</b>\n` +
-        `https://${botConfig.site}/o/${objectId}/c/${catalogId ? catalogId : ""}`,
+        `https://${botConfig.site}/o/${objectId}/c${catalogId ? "/" + catalogId : ""}`,
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: inlineKeyboardArray,

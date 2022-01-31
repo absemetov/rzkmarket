@@ -74,6 +74,51 @@
           "destination": "/index.html"
         }
       ]
+    },
+    {
+      "target": "nilson.com.ua",
+      "public": "sites/nilson.com.ua",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
+    },
+    {
+      "target": "gunsan.com.ua",
+      "public": "sites/gunsan.com.ua",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
+    },
+    {
+      "target": "viko.org.ua",
+      "public": "sites/viko.org.ua",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
     }
   ],
   "functions": {
