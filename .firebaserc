@@ -7,6 +7,12 @@
       "hosting": {
         "rzk.com.ru": [
           "rzk-warsaw-ru"
+        ],
+        "absemetov.org.ua": [
+          "absemetov-page"
+        ],
+        "nilson.com.ua": [
+          "nilson-page"
         ]
       }
     },
@@ -14,12 +20,6 @@
       "hosting": {
         "rzk.com.ua": [
           "rzk-warsaw-ua"
-        ],
-        "absemetov.org.ua": [
-          "absemetovorgua"
-        ],
-        "nilson.com.ua": [
-          "nilson-com-ua"
         ],
         "gunsan.com.ua": [
           "gunsan-com-ua"
