@@ -446,7 +446,7 @@ const showCart = async (ctx, next) => {
         callback_data: `cart?clear=1&o=${objectId}`}]);
       // share cart
       inlineKeyboardArray.push([
-        {text: "Ссылка на корзину", url: `https://${botConfig.site}/o/${objectId}/cart/${ctx.from.id}`},
+        {text: "Ссылка на корзину", url: `https://${botConfig.site}/o/${objectId}/share-cart/${ctx.from.id}`},
       ]);
     }
     // Set Main menu

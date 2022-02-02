@@ -287,7 +287,7 @@ app.get("/o/:objectId/s/:orderId", async (req, res) => {
 });
 
 // share cart
-app.get("/o/:objectId/cart/:orderId", async (req, res) => {
+app.get("/o/:objectId/share-cart/:orderId", async (req, res) => {
   const objectId = req.params.objectId;
   const cartId = req.params.orderId;
   const object = await store.findRecord(`objects/${objectId}`);
