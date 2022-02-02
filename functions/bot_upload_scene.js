@@ -181,8 +181,8 @@ Count rows: *${sheet.rowCount}*`);
         const product = {
           id: row.ID,
           name: row.NAME,
-          purchasePrice: roundNumber(row.PURCHASE_PRICE),
-          price: roundNumber(row.PRICE),
+          purchasePrice: row.PURCHASE_PRICE ? roundNumber(row.PURCHASE_PRICE) : null,
+          price: row.PRICE ? roundNumber(row.PRICE) : null,
           group: groupArray,
           tags: tags,
           currency: row.CURRENCY,
@@ -201,8 +201,8 @@ Count rows: *${sheet.rowCount}*`);
         };
         const validateProductRow = new Validator(product, rulesProductRow);
         // validate data if ID and NAME set org Name and PRICE
-        // check fails If product have ID Name Price else this commet etc...
-        if (validateProductRow.fails() && (product.id && product.name && product.price)) {
+        // check fails If product have ID Name else this commet etc...
+        if (validateProductRow.fails() && (product.id && product.name)) {
           let errorRow = `In row *${j + 1}* Product ID *${product.id}*\n`;
           for (const [key, error] of Object.entries(validateProductRow.errors.all())) {
             errorRow += `Column *${key}* => *${error}* \n`;
