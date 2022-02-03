@@ -1,8 +1,7 @@
 const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
-const {roundNumber, photoCheckUrl} = require("./bot_start_scene");
 const {showCart, cartWizard} = require("./bot_catalog_scene");
-const {store, cart} = require("./bot_store_cart.js");
+const {store, cart, roundNumber, photoCheckUrl} = require("./bot_store_cart");
 const botConfig = functions.config().env.bot;
 const moment = require("moment");
 // require("moment/locale/ru");

@@ -3,8 +3,7 @@ const firebase = require("firebase-admin");
 const bucket = firebase.storage().bucket();
 const express = require("express");
 const exphbs = require("express-handlebars");
-const {store, cart} = require("../.././bot_store_cart.js");
-const {roundNumber} = require("../.././bot_start_scene");
+const {store, cart, roundNumber} = require("../.././bot_store_cart.js");
 const botConfig = functions.config().env.bot;
 const {createHash, createHmac} = require("crypto");
 const jwt = require("jsonwebtoken");
@@ -48,27 +47,27 @@ app.get("/", auth, async (req, res) => {
   const objects = await store.findAll("objects");
   // generate cart link
   for (const object of objects) {
-    object.cartCount = await cart.cartCount(object.id, req.user.uid);
+    object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
     if (object.logo) {
       object.imgUrl = bucket.file(`photos/${object.id}/logo/2/${object.logo}.jpg`).publicUrl();
     } else {
       object.imgUrl = "/icons/shop.svg";
     }
   }
-  res.render("index", {objects, user: req.user});
+  res.render("index", {objects, user: req.user, currencyName: botConfig.currency});
 });
 
 // show object
 app.get("/o/:objectId", auth, async (req, res) => {
   const object = await store.findRecord(`objects/${req.params.objectId}`);
   // count cart items
-  object.cartCount = await cart.cartCount(object.id, req.user.uid);
+  object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
   if (object.logo) {
     object.imgUrl = bucket.file(`photos/${object.id}/logo/2/${object.logo}.jpg`).publicUrl();
   } else {
     object.imgUrl = "/icons/shop.svg";
   }
-  res.render("object", {title: object.name, object, user: req.user});
+  res.render("object", {title: object.name, object, user: req.user, currencyName: botConfig.currency});
 });
 
 // show catalogs
@@ -187,7 +186,7 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
     }
   }
   // count cart items
-  object.cartCount = await cart.cartCount(object.id, req.user.uid);
+  object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
   res.render("catalog", {
     title,
     object,
@@ -223,7 +222,7 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
     `${product.mainPhoto}.jpg`).publicUrl();
   }
   // count cart items
-  object.cartCount = await cart.cartCount(object.id, req.user.uid);
+  object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
   res.render("product", {
     title: `${product.name} - ${object.name}`,
     description: `${product.name} - ${object.name}`,
@@ -236,10 +235,11 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
 });
 
 // share order
-app.get("/o/:objectId/s/:orderId", async (req, res) => {
+app.get("/o/:objectId/s/:orderId", auth, async (req, res) => {
   const objectId = req.params.objectId;
   const orderId = req.params.orderId;
   const object = await store.findRecord(`objects/${objectId}`);
+  object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
   const order = await store.findRecord(`objects/${objectId}/orders/${orderId}`);
   if (order) {
     const shareOrder = {
@@ -281,10 +281,11 @@ app.get("/o/:objectId/s/:orderId", async (req, res) => {
 });
 
 // share cart
-app.get("/o/:objectId/share-cart/:orderId", async (req, res) => {
+app.get("/o/:objectId/share-cart/:orderId", auth, async (req, res) => {
   const objectId = req.params.objectId;
   const cartId = req.params.orderId;
   const object = await store.findRecord(`objects/${objectId}`);
+  object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
   const cartProducts = await cart.products(objectId, cartId);
   if (cartProducts.length) {
     const products = [];
@@ -355,7 +356,7 @@ app.get("/login", auth, async (req, res) => {
       maxAge: 30 * 24 * 60 * 60 * 1000,
     }).redirect("/");
   }
-  res.render("login", {login: true, user: req.user});
+  res.render("login", {user: req.user});
 });
 
 app.get("/logout", auth, (req, res) => {
@@ -370,9 +371,7 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
   const object = await store.findRecord(`objects/${objectId}`);
   const title = `Корзина - ${object.name}`;
   const products = [];
-  object.cartCount = 0;
-  let totalQty = 0;
-  let totalSum = 0;
+  object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
   if (req.user.uid) {
     // get cart products
     const cartProducts = await cart.products(objectId, req.user.uid);
@@ -406,31 +405,26 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
           };
           await store.createRecord(`objects/${objectId}/carts/${req.user.uid}`, {products});
         }
-        totalQty += cartProduct.qty;
-        totalSum += cartProduct.qty * product.price;
       }
     }
-    // count cart items
-    object.cartCount = cartProducts && Object.keys(cartProducts).length;
   }
   res.render("cart", {
     cart: true,
     title,
     object,
     products,
-    totalQty,
-    totalSum,
     user: req.user,
     currencyName: botConfig.currency,
   });
 });
+
 // create order
 app.get("/o/:objectId/cart/purchase", auth, async (req, res) => {
   const objectId = req.params.objectId;
   const object = await store.findRecord(`objects/${objectId}`);
   const title = `Оформление заказа - ${object.name}`;
   // count cart items
-  object.cartCount = await cart.cartCount(object.id, req.user.uid);
+  object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
   res.render("purchase", {
     title,
     object,
@@ -439,8 +433,10 @@ app.get("/o/:objectId/cart/purchase", auth, async (req, res) => {
     phonetemplate: botConfig.phonetemplate,
     carriers: Array.from(store.carriers(), ([id, obj]) => ({id, name: obj.name, reqNumber: obj.reqNumber ? 1 : 0})),
     payments: Array.from(store.payments(), ([id, name]) => ({id, name})),
+    currencyName: botConfig.currency,
   });
 });
+
 // save order
 app.post("/o/:objectId/cart/purchase", auth, (req, res) => {
   const bb = busboy({headers: req.headers});
@@ -571,8 +567,8 @@ app.post("/o/:objectId/cart/add", auth, jsonParser, async (req, res) => {
           [productId]: firebase.firestore.FieldValue.delete(),
         }});
   }
-  const cartCount = await cart.cartCount(objectId, req.user.uid);
-  return res.json({cartCount, price});
+  const cartInfo = await cart.cartInfo(objectId, req.user.uid);
+  return res.json({cartInfo, price});
 });
 
 // payments-and-deliveries

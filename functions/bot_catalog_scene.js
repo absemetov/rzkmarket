@@ -1,10 +1,9 @@
 const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
-const {download} = require("./download.js");
+const {download} = require("./download");
 const fs = require("fs");
-const {roundNumber, photoCheckUrl} = require("./bot_start_scene");
 const bucket = firebase.storage().bucket();
-const {cart, store} = require("./bot_store_cart.js");
+const {cart, store, roundNumber, photoCheckUrl} = require("./bot_store_cart");
 const botConfig = functions.config().env.bot;
 // catalogs actions array
 const catalogsActions = [];

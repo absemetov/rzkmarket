@@ -30,7 +30,13 @@
           </li>
         </ul>
         <div class="card-footer">
-          <a href="/o/{{object.id}}/cart"  class="btn btn-primary">Корзина ({{object.cartCount}})</a>
+          <a href="/o/{{object.id}}/cart"  class="btn btn-primary position-relative">
+            Корзина {{object.cartInfo.totalSum}} {{../currencyName}}
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+              {{object.cartInfo.cartCount}}
+              <span class="visually-hidden">count goods</span>
+            </span>
+          </a>
         </div>
       </div>
     </div>

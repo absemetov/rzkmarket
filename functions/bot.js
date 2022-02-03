@@ -1,11 +1,11 @@
 const functions = require("firebase-functions");
 const {Telegraf, session} = require("telegraf");
-const {startActions, startHandler, parseUrl, isAdmin, uploadPhotoObj, photoCheckUrl} = require("./bot_start_scene");
+const {startActions, startHandler, parseUrl, isAdmin, uploadPhotoObj} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
 const {uploadActions, uploadForm} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
 const {uploadPhotoProduct, uploadPhotoCat, catalogsActions, cartWizard} = require("./bot_catalog_scene");
-const {store} = require("./bot_store_cart.js");
+const {store, photoCheckUrl} = require("./bot_store_cart");
 const botConfig = functions.config().env.bot;
 const bot = new Telegraf(botConfig.token, {
   handlerTimeout: 540000,

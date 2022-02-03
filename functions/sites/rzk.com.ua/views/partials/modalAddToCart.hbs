@@ -83,9 +83,9 @@
       if (!response.ok) {
         throw new Error(resJson.error);
       }
-      console.log(JSON.stringify(resJson));
+      // console.log(JSON.stringify(resJson));
+      const currencyName = addButton.getAttribute("data-bs-currencyName");
       if (qty) {
-        const currencyName = addButton.getAttribute("data-bs-currencyName");
         button.innerText = `${qty} ${button.getAttribute("data-bs-unit")} ${roundNumber(qty * resJson.price)} ${currencyName}`;
         button.setAttribute("data-bs-qty", qty);
         button.classList.remove("btn-primary");
@@ -96,8 +96,18 @@
         button.classList.add("btn-primary");
         button.removeAttribute("data-bs-qty");
       }
-      const cartCountNav = document.getElementById("cartCount");
-      cartCountNav.innerText = resJson.cartCount;
+      const cartCountNav = document.getElementById("cartCountNav");
+      const totalSumNav = document.getElementById("totalSumNav");
+      const totalQty = document.getElementById("totalQty");
+      const totalSum = document.getElementById("totalSum");
+      if (totalQty) {
+        totalQty.innerText = resJson.cartInfo.totalQty;
+      }
+      if (totalSum) {
+        totalSum.innerText = `${resJson.cartInfo.totalSum} ${currencyName}`;
+      }
+      cartCountNav.innerText = resJson.cartInfo.cartCount;
+      totalSumNav.innerText = `${resJson.cartInfo.totalSum} ${currencyName}`;
       // hide modal
       cartAddModalOpt.hide();
     } catch (error) {

@@ -36,19 +36,18 @@
           <a class="d-inline d-sm-none ps-3 me-auto" href="/">
             <img src="/logo.svg" alt="" width="" height="40">
           </a>
-          <ul class="navbar-nav">
+          <ul class="navbar-nav me-2">
             {{#if object.id}}
             <li class="nav-item"></li>
-              <a class="text-nowrap nav-link{{#if cart}} active{{/if}}" href="/o/{{object.id}}/cart">Корзина (<span id="cartCount">{{object.cartCount}}</span>)</a>
+              <a class="text-nowrap nav-link{{#if cart}} active{{/if}} position-relative" href="/o/{{object.id}}/cart">
+                Корзина <strong id="totalSumNav">{{object.cartInfo.totalSum}} {{currencyName}}</strong>
+                <span id="cartCountNav" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger mt-1">
+                  {{object.cartInfo.cartCount}}
+                  <span class="visually-hidden">count goods</span>
+                </span>
+              </a>
             </li>
             {{/if}}
-            <li class="nav-item">
-              {{#if user.auth}}
-                <a class="nav-link{{#if login}} active{{/if}}" href="/login">{{user.firstName}}</a>
-              {{else}}
-                <a class="nav-link{{#if login}} active{{/if}}" href="/login">Войти</a>
-              {{/if}}
-            </li>
           </ul>
         </div>
       </nav>
@@ -63,6 +62,11 @@
             С нами легко, быстро и удобно!
           </p>
           <nav class="nav flex-column">
+            {{#if user.auth}}
+              <a class="nav-link" href="/login">{{user.firstName}}</a>
+            {{else}}
+              <a class="nav-link" href="/login">Войти</a>
+            {{/if}}
             <a class="nav-link" href="/delivery-info">Доставка и оплата</a>
             <a class="nav-link" href="/return-policy">Обмен и возврат</a>
             <a class="nav-link" href="//maps.app.goo.gl/F46h38LnK3Dq3jC7A">Оставить отзыв</a>

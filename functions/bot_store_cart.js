@@ -1,6 +1,21 @@
 const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
+const bucket = firebase.storage().bucket();
 const botConfig = functions.config().env.bot;
+// round to 2 decimals
+const roundNumber = (num) => {
+  return Math.round((num + Number.EPSILON) * 100) / 100;
+};
+// check photo
+const photoCheckUrl = async (url) => {
+  if (url) {
+    const photoProjectExists = await bucket.file(url).exists();
+    if (photoProjectExists[0]) {
+      return bucket.file(url).publicUrl();
+    }
+  }
+  return bucket.file(botConfig.logo).publicUrl();
+};
 // store inst
 const store = {
   async findRecord(path, field) {
@@ -190,15 +205,26 @@ const cart = {
         callback_data: `cart?o=${objectId}`},
     ];
   },
-  async cartCount(objectId, userId) {
+  async cartInfo(objectId, userId) {
     // get cart count
+    let cartCount = 0;
+    let totalQty = 0;
+    let totalSum = 0;
     if (userId) {
-      const cartProducts = await store.findRecord(`objects/${objectId}/carts/${userId}`, "products");
-      return cartProducts && Object.keys(cartProducts).length || 0;
+      const cartProducts = await cart.products(objectId, userId);
+      for (const cartProduct of cartProducts) {
+        cartCount ++;
+        totalQty += cartProduct.qty;
+        totalSum += cartProduct.qty * cartProduct.price;
+      }
+      // return cartProducts && Object.keys(cartProducts).length || 0;
     }
-    return 0;
+
+    return {cartCount, totalQty, totalSum: roundNumber(totalSum)};
   },
 };
 
 exports.store = store;
 exports.cart = cart;
+exports.roundNumber = roundNumber;
+exports.photoCheckUrl = photoCheckUrl;

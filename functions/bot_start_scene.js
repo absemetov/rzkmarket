@@ -1,30 +1,18 @@
 const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
 const bucket = firebase.storage().bucket();
-const {store, cart} = require("./bot_store_cart.js");
-const {download} = require("./download.js");
+const {store, cart, photoCheckUrl} = require("./bot_store_cart");
+const {download} = require("./download");
 const fs = require("fs");
 const botConfig = functions.config().env.bot;
 const startActions = [];
-// round to 2 decimals
-const roundNumber = (num) => {
-  return Math.round((num + Number.EPSILON) * 100) / 100;
-};
+
 // admin midleware
 const isAdmin = (ctx, next) => {
   ctx.state.isAdmin = ctx.from.id === 94899148;
   return next();
 };
-// check photo
-const photoCheckUrl = async (url) => {
-  if (url) {
-    const photoProjectExists = await bucket.file(url).exists();
-    if (photoProjectExists[0]) {
-      return bucket.file(url).publicUrl();
-    }
-  }
-  return bucket.file(botConfig.logo).publicUrl();
-};
+
 // parse callback data, add Cart instance
 const parseUrl = (ctx, next) => {
   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
@@ -214,6 +202,4 @@ exports.startActions = startActions;
 exports.startHandler = startHandler;
 exports.isAdmin = isAdmin;
 exports.parseUrl = parseUrl;
-exports.roundNumber = roundNumber;
 exports.uploadPhotoObj = uploadPhotoObj;
-exports.photoCheckUrl = photoCheckUrl;
