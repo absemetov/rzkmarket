@@ -371,6 +371,8 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
   const title = `Корзина - ${object.name}`;
   const products = [];
   object.cartCount = 0;
+  let totalQty = 0;
+  let totalSum = 0;
   if (req.user.uid) {
     // get cart products
     const cartProducts = await cart.products(objectId, req.user.uid);
@@ -404,6 +406,8 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
           };
           await store.createRecord(`objects/${objectId}/carts/${req.user.uid}`, {products});
         }
+        totalQty += cartProduct.qty;
+        totalSum += cartProduct.qty * product.price;
       }
     }
     // count cart items
@@ -414,6 +418,8 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
     title,
     object,
     products,
+    totalQty,
+    totalSum,
     user: req.user,
     currencyName: botConfig.currency,
   });
@@ -577,6 +583,12 @@ app.get("/delivery-info", (req, res) => {
 // exchange-and-refund
 app.get("/return-policy", (req, res) => {
   res.render("return");
+});
+
+// not found route
+app.use(function(req, res, next) {
+  console.log("** HTTP Error - 404 for request: " + req.url);
+  res.redirect("/");
 });
 
 // We'll destructure req.query to make our code clearer
