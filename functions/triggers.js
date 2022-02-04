@@ -29,6 +29,20 @@ exports.notifyNewOrder = functions.region("europe-central2").firestore
       `<a href="https://${botConfig.site}/o/${order.objectId}/s/${orderId}">` +
       `Order ${order.userId}-${order.orderNumber}</a></b>`, {parse_mode: "html"});
     });
+
+// notify admin when create cart
+exports.notifyNewCart = functions.region("europe-central2").firestore
+    .document("objects/{objectId}/carts/{cartId}")
+    .onCreate(async (snap, context) => {
+      const objectId = context.params.objectId;
+      const cartId = context.params.cartId;
+      // admin notify
+      await bot.telegram.sendMessage(94899148, "<b>New cart! " +
+      `<a href="https://${botConfig.site}/o/${objectId}/share-cart/${cartId}">` +
+      `${botConfig.site}/${objectId}/${cartId}</a></b>`,
+      {parse_mode: "html"});
+    });
+
 // add createdAt field to Products
 exports.productSetCreatedAt = functions.region("europe-central2").firestore
     .document("objects/{objectId}/products/{docId}")

@@ -37,7 +37,12 @@
   </div>
   <div class="row">
     <div class="col">
-      <h4>Количество: <strong id="totalQty">{{object.cartInfo.totalQty}}</strong>, Cумма: <strong class="text-nowrap" id="totalSum">{{object.cartInfo.totalSum}} {{currencyName}}</strong></h4>
+      <h5>Количество: <strong id="totalQty">{{object.cartInfo.totalQty}}</strong></h5>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <h5>Cумма: <strong class="text-nowrap" id="totalSum">{{object.cartInfo.totalSum}} {{currencyName}}</strong></h5>
     </div>
   </div>
   <a class="btn btn-primary my-4" href="/o/{{object.id}}/cart/purchase">Оформить заказ</a>
