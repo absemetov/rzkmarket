@@ -24,7 +24,8 @@ exports.notifyNewOrder = functions.region("europe-central2").firestore
       const order = snap.data();
       const orderId = context.params.orderId;
       // admin notify
-      await bot.telegram.sendMessage(94899148, `<b>New order from ${order.lastName} ${order.firstName}! ` +
+      await bot.telegram.sendMessage(94899148, "<b>New order from " +
+      `<a href="tg://user?id=${order.userId}">${order.lastName} ${order.firstName}</a> ` +
       `Object ${order.objectName} Channel ${order.fromBot ? "bot" : "site"} ` +
       `<a href="https://${botConfig.site}/o/${order.objectId}/s/${orderId}">` +
       `Order ${order.userId}-${order.orderNumber}</a></b>`, {parse_mode: "html"});

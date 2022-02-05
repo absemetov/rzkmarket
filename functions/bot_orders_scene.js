@@ -39,7 +39,8 @@ const myOrders = async (ctx, next) => {
         let totalQty = 0;
         let totalSum = 0;
         let itemShow = 0;
-        store.sort(order.products).forEach((product, index) => {
+        const orderProductsSorted = store.sort(order.products);
+        orderProductsSorted.forEach((product, index) => {
           const productTxt = `${index + 1})<b>${product.name}</b> (${product.id})` +
         `=${product.price} ${botConfig.currency}*${product.qty}${product.unit}` +
         `=${roundNumber(product.price * product.qty)}${botConfig.currency}`;
@@ -52,7 +53,7 @@ const myOrders = async (ctx, next) => {
           totalQty += product.qty;
           totalSum += product.qty * product.price;
         });
-        if (itemShow !== order.products.length) {
+        if (itemShow !== orderProductsSorted.length) {
           caption += "⬇️Весь список нажмите на ссылку ⬇️\n";
         }
         caption += `<b>Количество товара: ${totalQty}\n` +
@@ -169,7 +170,8 @@ const showOrders = async (ctx, next) => {
         let totalQty = 0;
         let totalSum = 0;
         let itemShow = 0;
-        store.sort(order.products).forEach((product, index) => {
+        const orderProductsSorted = store.sort(order.products);
+        orderProductsSorted.forEach((product, index) => {
           const productTxt = `${index + 1})<b>${product.name}</b> (${product.id})` +
         `=${product.price}${botConfig.currency}*${product.qty}${product.unit}` +
         `=${roundNumber(product.price * product.qty)}${botConfig.currency}`;
@@ -182,7 +184,7 @@ const showOrders = async (ctx, next) => {
           totalQty += product.qty;
           totalSum += product.qty * product.price;
         });
-        if (itemShow !== order.products.length) {
+        if (itemShow !== orderProductsSorted.length) {
           caption += "⬇️Весь список нажмите на ссылку ⬇️\n";
         }
         caption += `<b>Количество товара: ${totalQty}\n` +

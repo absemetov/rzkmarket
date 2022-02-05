@@ -192,9 +192,9 @@ const cart = {
       ...userData.session.wizardData,
     });
     await this.clear(objectId, userId);
-    // notify admin
-    await ctx.telegram.sendMessage(94899148, `<b>New order from bot! Object ${object.name} ` +
-    `<a href="tg://user?id=${ctx.from.id}">User ${ctx.from.id}</a></b>`, {parse_mode: "html"});
+    // notify admin now use triggers
+    // await ctx.telegram.sendMessage(94899148, `<b>New order from bot! Object ${object.name} ` +
+    // `<a href="tg://user?id=${ctx.from.id}">User ${ctx.from.id}</a></b>`, {parse_mode: "html"});
   },
   async cartButtons(objectId, userId) {
     // get cart count
