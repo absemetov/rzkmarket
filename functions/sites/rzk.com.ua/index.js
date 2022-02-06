@@ -268,7 +268,7 @@ app.get("/o/:objectId/s/:orderId", auth, async (req, res) => {
       totalSum += product.qty * product.price;
     });
     return res.render("share-order", {
-      title: `Заказ #${shareOrder.orderNumber} - ${object.name}`,
+      title: `Замовлення #${shareOrder.orderNumber} - ${object.name}`,
       object,
       shareOrder,
       products,
@@ -307,7 +307,7 @@ app.get("/o/:objectId/share-cart/:orderId", auth, async (req, res) => {
     });
     // render
     return res.render("share-cart", {
-      title: `Корзина #${cartId} - ${object.name}`,
+      title: `Кошик #${cartId} - ${object.name}`,
       object,
       cartId,
       products,
