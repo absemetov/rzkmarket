@@ -890,20 +890,23 @@ catalogsActions.push( async (ctx, next) => {
         [photoField]: firebase.firestore.FieldValue.delete(),
       });
     }
-    const photoExists = await bucket.file(`photos/${objectId}/products/${productId}/1/${deleteFileId}.jpg`).exists();
-    if (photoExists[0]) {
-      // delete photos from bucket
+    // delete photos from bucket
+    if (productSnapshot.data().photos[deleteFileId]) {
       for (const zoomLevel of Array(productSnapshot.data().photos[deleteFileId] + 1).keys()) {
-        if (zoomLevel) {
-          await bucket.file(`photos/${objectId}/products/${productId}/${zoomLevel}/${deleteFileId}.jpg`).delete();
+        if (zoomLevel >=2) {
+          const photoEx = await bucket.file(`photos/${objectId}/products/${productId}/${zoomLevel}/${deleteFileId}.jpg`)
+              .exists();
+          if (photoEx[0]) {
+            await bucket.file(`photos/${objectId}/products/${productId}/${zoomLevel}/${deleteFileId}.jpg`).delete();
+          }
         }
       }
-      // await Promise.all([
-      //   bucket.file(`photos/${objectId}/products/${productId}/3/${deleteFileId}.jpg`).delete(),
-      //   bucket.file(`photos/${objectId}/products/${productId}/2/${deleteFileId}.jpg`).delete(),
-      //   bucket.file(`photos/${objectId}/products/${productId}/1/${deleteFileId}.jpg`).delete(),
-      // ]);
     }
+    // await Promise.all([
+    //   bucket.file(`photos/${objectId}/products/${productId}/3/${deleteFileId}.jpg`).delete(),
+    //   bucket.file(`photos/${objectId}/products/${productId}/2/${deleteFileId}.jpg`).delete(),
+    //   bucket.file(`photos/${objectId}/products/${productId}/1/${deleteFileId}.jpg`).delete(),
+    // ]);
     await ctx.deleteMessage();
     await ctx.answerCbQuery();
   } else {
@@ -986,16 +989,16 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
           }
         }
       }
-      // save file id
+      // save file id with zoom level 2 or 3
       const photosField = `photos.${fileUniqueId}`;
       if (!product.mainPhoto) {
         await store.updateRecord(`objects/${objectId}/products/${productId}`, {
           mainPhoto: fileUniqueId,
-          [photosField]: 2,
+          [photosField]: telegramPhotos.length - 1,
         });
       } else {
         await store.updateRecord(`objects/${objectId}/products/${productId}`, {
-          [photosField]: 2,
+          [photosField]: telegramPhotos.length - 1,
         });
       }
       // get catalog url (path)
