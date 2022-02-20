@@ -224,6 +224,12 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
   if (product.mainPhoto) {
     product.imgUrl = bucket.file(`photos/${objectId}/products/${product.id}/2/` +
     `${product.mainPhoto}.jpg`).publicUrl();
+    product.imgUrlOrigin = bucket.file(`photos/${objectId}/products/${product.id}/` +
+    `${product.photos[product.mainPhoto]}/${product.mainPhoto}.jpg`).publicUrl();
+    console.log("zoom main photo", product.photos[product.mainPhoto]);
+    for (const [zoom, imageId] of Object.entries(product.photos)) {
+      console.log(zoom, imageId);
+    }
   }
   // count cart items
   object.cartInfo = await cart.cartInfo(object.id, req.user.uid);

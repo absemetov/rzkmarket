@@ -14,7 +14,9 @@
 <div class="row row-cols-1 row-cols-sm-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 row-cols-xxl-5 g-2 mb-3">
   <div class="col">
     <div class="card text-center h-100">
-      <img src="{{product.imgUrl}}" onerror="this.src = '/icons/cart3.svg';" class="card-img-top" alt="{{product.name}}">
+      <a href="{{product.imgUrlOrigin}}" class="test-popup-link">
+        <img src="{{product.imgUrl}}" onerror="this.src = '/icons/cart3.svg';" class="card-img-top" alt="{{product.name}}">
+      </a>
       <div class="card-body">
         <h5>{{product.name}} <small class="text-muted">({{product.id}})</small>
           <a href="//t.me/RzkCrimeaBot?start=o_{{object.id}}_p_{{product.id}}" target="_blank" class="ps-1 text-decoration-none">
@@ -38,3 +40,13 @@
   </div>
 </div>
 {{> modalAddToCart}}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/magnific-popup.js/1.1.0/magnific-popup.min.css" integrity="sha512-+EoPw+Fiwh6eSeRK7zwIKG2MA8i3rV/DGa3tdttQGgWyatG/SkncT53KHQaS5Jh9MNOT3dmFL0FjTY08And/Cw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<!-- jQuery 1.7.2+ or Zepto.js 1.0+ -->
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/magnific-popup.js/1.1.0/jquery.magnific-popup.min.js" integrity="sha512-IsNh5E3eYy3tr/JiX2Yx4vsCujtkhwl7SLqgnwLNgf04Hrt9BT9SXlLlZlWx+OK4ndzAoALhsMNcCmkggjZB1w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+  $(".test-popup-link").magnificPopup({
+    type: "image"
+    // other options
+  });
+</script>
