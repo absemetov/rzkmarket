@@ -20,7 +20,7 @@ const showCatalog = async (ctx, next) => {
     let publicImgUrl = null;
     const object = await store.findRecord(`objects/${objectId}`);
     if (object.logo) {
-      publicImgUrl = `photos/${objectId}/logo/2/${object.logo}.jpg`;
+      publicImgUrl = `photos/o/${objectId}/logo/${object.logo}.jpg`;
     }
     // and show upload catalog photo
     let uUrl = "";
@@ -118,7 +118,7 @@ const showCatalog = async (ctx, next) => {
       }
       // get photo catalog
       if (currentCatalog.photo) {
-        publicImgUrl = `photos/${objectId}/catalogs/${currentCatalog.id}/2/${currentCatalog.photo}.jpg`;
+        publicImgUrl = `photos/o/${objectId}/c/${currentCatalog.id}/${currentCatalog.photo}.jpg`;
       }
     }
     // show catalog siblings, get catalogs snap index or siblings
@@ -186,10 +186,10 @@ const showProduct = async (ctx, next) => {
     // Get main photo url.
     let publicImgUrl = null;
     if (object.logo) {
-      publicImgUrl = `photos/${objectId}/logo/2/${object.logo}.jpg`;
+      publicImgUrl = `photos/o/${objectId}/logo/${object.logo}.jpg`;
     }
     if (product.mainPhoto) {
-      publicImgUrl = `photos/${objectId}/products/${product.id}/2/${product.mainPhoto}.jpg`;
+      publicImgUrl = `photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/2.jpg`;
     }
     // footer buttons
     cartButtons[0].text = `🏪 ${object.name}`;
@@ -299,10 +299,10 @@ catalogsActions.push( async (ctx, next) => {
       // get main photo url.
       let publicImgUrl = null;
       if (object.logo) {
-        publicImgUrl = `photos/${objectId}/logo/2/${object.logo}.jpg`;
+        publicImgUrl = `photos/o/${objectId}/logo/${object.logo}.jpg`;
       }
       if (product.mainPhoto) {
-        publicImgUrl = `photos/${objectId}/products/${product.id}/2/${product.mainPhoto}.jpg`;
+        publicImgUrl = `photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/2.jpg`;
       }
       const uploadPhotoButton =[];
       if (ctx.state.isAdmin) {
@@ -454,7 +454,7 @@ const showCart = async (ctx, next) => {
     // edit message
     let publicImgUrl = null;
     if (object.logo) {
-      publicImgUrl = `photos/${objectId}/logo/2/${object.logo}.jpg`;
+      publicImgUrl = `photos/o/${objectId}/logo/${object.logo}.jpg`;
     }
     const media = await photoCheckUrl(publicImgUrl);
     await ctx.editMessageMedia({
@@ -769,7 +769,7 @@ catalogsActions.push( async (ctx, next) => {
     const object = await store.findRecord(`objects/${objectId}`);
     let publicImgUrl = null;
     if (object.logo) {
-      publicImgUrl = `photos/${objectId}/logo/2/${object.logo}.jpg`;
+      publicImgUrl = `photos/o/${objectId}/logo/${object.logo}.jpg`;
     }
     const media = await photoCheckUrl(publicImgUrl);
     await ctx.editMessageMedia({
@@ -794,8 +794,7 @@ catalogsActions.push( async (ctx, next) => {
         .collection("products").doc(productId);
     const productSnapshot = await productRef.get();
     const product = {id: productSnapshot.id, ...productSnapshot.data()};
-    let index = 0;
-    for (const photoId of Object.keys(product.photos)) {
+    for (const [index, photoId] of product.photos.entries()) {
       const inlineKeyboardArray = [];
       // if admin
       if (ctx.state.isAdmin) {
@@ -805,11 +804,11 @@ catalogsActions.push( async (ctx, next) => {
           callback_data: `dPh/${product.id}?pId=${photoId}&o=${objectId}`}]);
       }
       inlineKeyboardArray.push([{text: "❎ Закрыть", callback_data: "closePhoto"}]);
-      let caption = `<b>Фото #${++index}</b> ${product.name} (${product.id})`;
+      let caption = `<b>Фото #${index + 1}</b> ${product.name} (${product.id})`;
       if (product.mainPhoto === photoId) {
         caption = "✅ " + caption;
       }
-      const media = await photoCheckUrl(`photos/${objectId}/products/${product.id}/2/${photoId}.jpg`);
+      const media = await photoCheckUrl(`photos/o/${objectId}/p/${product.id}/${photoId}/2.jpg`);
       await ctx.replyWithPhoto(media, {
         caption,
         parse_mode: "html",
@@ -865,16 +864,14 @@ catalogsActions.push( async (ctx, next) => {
         .collection("products").doc(productId);
     const productSnapshot = await productRef.get();
     // if delete main Photo
-    const photoField = `photos.${deleteFileId}`;
     if (productSnapshot.data().mainPhoto === deleteFileId) {
-      // set new main photo inddex 1 or delete
-      const photoArray = productSnapshot.data().photos && Object.keys(productSnapshot.data().photos);
-      if (photoArray && photoArray.length > 1) {
-        for (const photoId of photoArray) {
+      // set new main photo index 1 or delete
+      if (productSnapshot.data().photos && productSnapshot.data().photos.length > 1) {
+        for (const photoId of productSnapshot.data().photos) {
           if (photoId !== deleteFileId) {
             await productRef.update({
               mainPhoto: photoId,
-              [photoField]: firebase.firestore.FieldValue.delete(),
+              photos: firebase.firestore.FieldValue.arrayRemove(deleteFileId),
             });
             break;
           }
@@ -882,31 +879,18 @@ catalogsActions.push( async (ctx, next) => {
       } else {
         await productRef.update({
           mainPhoto: firebase.firestore.FieldValue.delete(),
-          [photoField]: firebase.firestore.FieldValue.delete(),
+          photos: firebase.firestore.FieldValue.arrayRemove(deleteFileId),
         });
       }
     } else {
       await productRef.update({
-        [photoField]: firebase.firestore.FieldValue.delete(),
+        photos: firebase.firestore.FieldValue.arrayRemove(deleteFileId),
       });
     }
     // delete photos from bucket
-    if (productSnapshot.data().photos[deleteFileId]) {
-      for (const zoomLevel of Array(productSnapshot.data().photos[deleteFileId] + 1).keys()) {
-        if (zoomLevel >=2) {
-          const photoEx = await bucket.file(`photos/${objectId}/products/${productId}/${zoomLevel}/${deleteFileId}.jpg`)
-              .exists();
-          if (photoEx[0]) {
-            await bucket.file(`photos/${objectId}/products/${productId}/${zoomLevel}/${deleteFileId}.jpg`).delete();
-          }
-        }
-      }
-    }
-    // await Promise.all([
-    //   bucket.file(`photos/${objectId}/products/${productId}/3/${deleteFileId}.jpg`).delete(),
-    //   bucket.file(`photos/${objectId}/products/${productId}/2/${deleteFileId}.jpg`).delete(),
-    //   bucket.file(`photos/${objectId}/products/${productId}/1/${deleteFileId}.jpg`).delete(),
-    // ]);
+    await bucket.deleteFiles({
+      prefix: `photos/o/${objectId}/p/${productId}/${deleteFileId}`,
+    });
     await ctx.deleteMessage();
     await ctx.answerCbQuery();
   } else {
@@ -948,13 +932,12 @@ catalogsActions.push( async (ctx, next) => {
     return next();
   }
 });
-// upload product photos
+// upload product photos new
 const uploadPhotoProduct = async (ctx, objectId, productId) => {
   if (productId && objectId) {
     const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
     // get count photos to check limits 5 photos
-    const photoArray = product.photos && Object.keys(product.photos);
-    if (photoArray && photoArray.length > 4) {
+    if (product.photos && product.photos.length > 4) {
       await ctx.reply("Limit 5 photos");
     } else {
       // upload only one photo!!!
@@ -968,7 +951,8 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
         await ctx.reply("Choose large photo!");
         return;
       }
-      const fileUniqueId = telegramPhotos[2].file_unique_id;
+      // photo id with zoom level
+      const photoId = `${telegramPhotos[2].file_unique_id}-${telegramPhotos.length - 1}`;
       // loop photos
       for (const [index, photo] of telegramPhotos.entries()) {
         // without small photo
@@ -978,7 +962,7 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
             // download photos from telegram server
             const photoPath = await download(photoUrl.href);
             await bucket.upload(photoPath, {
-              destination: `photos/${objectId}/products/${product.id}/${index}/${fileUniqueId}.jpg`,
+              destination: `photos/o/${objectId}/p/${product.id}/${photoId}/${index}.jpg`,
             });
             // delete download file
             fs.unlinkSync(photoPath);
@@ -990,15 +974,15 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
         }
       }
       // save file id with zoom level 2 or 3
-      const photosField = `photos.${fileUniqueId}`;
       if (!product.mainPhoto) {
+        // set main photo
         await store.updateRecord(`objects/${objectId}/products/${productId}`, {
-          mainPhoto: fileUniqueId,
-          [photosField]: telegramPhotos.length - 1,
+          mainPhoto: photoId,
+          photos: firebase.firestore.FieldValue.arrayUnion(photoId),
         });
       } else {
         await store.updateRecord(`objects/${objectId}/products/${productId}`, {
-          [photosField]: telegramPhotos.length - 1,
+          photos: firebase.firestore.FieldValue.arrayUnion(photoId),
         });
       }
       // get catalog url (path)
@@ -1006,14 +990,14 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
       if (ctx.session.pathCatalog) {
         catalogUrl = ctx.session.pathCatalog;
       }
-      const media = await photoCheckUrl(`photos/${objectId}/products/${product.id}/2/${fileUniqueId}.jpg`);
+      const media = await photoCheckUrl(`photos/o/${objectId}/p/${product.id}/${photoId}/2.jpg`);
       await ctx.replyWithPhoto(media,
           {
             caption: `${product.name} (${product.id}) photo uploaded`,
             reply_markup: {
               inline_keyboard: [
                 [{text: "📸 Upload photo", callback_data: `uploadPhotoProduct/${product.id}?o=${objectId}`}],
-                [{text: `🖼 Show photos (${product.photos ? Object.keys(product.photos).length + 1 : 1})`,
+                [{text: `🖼 Show photos (${product.photos ? product.photos.length + 1 : 1})`,
                   callback_data: `showPhotos/${product.id}?o=${objectId}`}],
                 [{text: "⤴️ Goto catalog",
                   callback_data: catalogUrl}],
@@ -1030,7 +1014,7 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
     await ctx.reply("Please select a product to upload Photo");
   }
 };
-// upload catalog photo
+// upload catalog photo new
 const uploadPhotoCat = async (ctx, objectId, catalogId) => {
   if (catalogId && objectId) {
     const catalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
@@ -1047,36 +1031,50 @@ const uploadPhotoCat = async (ctx, objectId, catalogId) => {
     // first delete old photos
     if (catalog.photo) {
       await bucket.deleteFiles({
-        prefix: `photos/${objectId}/catalogs/${catalogId}`,
+        prefix: `photos/o/${objectId}/c/${catalogId}`,
       });
     }
     const fileUniqueId = telegramPhotos[2].file_unique_id;
-    // loop photos
-    for (const [index, photo] of telegramPhotos.entries()) {
-      // 2 zoom level
-      if (index === 2) {
-        const photoUrl = await ctx.telegram.getFileLink(photo.file_id);
-        try {
-          // download photos from telegram server
-          const photoPath = await download(photoUrl.href);
-          await bucket.upload(photoPath, {
-            destination: `photos/${objectId}/catalogs/${catalog.id}/${index}/${fileUniqueId}.jpg`,
-          });
-          // delete download file
-          fs.unlinkSync(photoPath);
-        } catch (e) {
-          console.log("Download failed");
-          console.log(e.message);
-          await ctx.reply(`Error upload photos ${e.message}`);
-        }
-      }
+    const photoUrl = await ctx.telegram.getFileLink(telegramPhotos[2].file_id);
+    try {
+      // download photos from telegram server
+      const photoPath = await download(photoUrl.href);
+      await bucket.upload(photoPath, {
+        destination: `photos/o/${objectId}/c/${catalog.id}/${fileUniqueId}.jpg`,
+      });
+      // delete download file
+      fs.unlinkSync(photoPath);
+    } catch (e) {
+      console.log("Download failed");
+      console.log(e.message);
+      await ctx.reply(`Error upload photos ${e.message}`);
     }
+    // loop photos
+    // for (const [index, photo] of telegramPhotos.entries()) {
+    //   // 2 zoom level
+    //   if (index === 2) {
+    //     const photoUrl = await ctx.telegram.getFileLink(photo.file_id);
+    //     try {
+    //       // download photos from telegram server
+    //       const photoPath = await download(photoUrl.href);
+    //       await bucket.upload(photoPath, {
+    //         destination: `photos/${objectId}/catalogs/${catalog.id}/${index}/${fileUniqueId}.jpg`,
+    //       });
+    //       // delete download file
+    //       fs.unlinkSync(photoPath);
+    //     } catch (e) {
+    //       console.log("Download failed");
+    //       console.log(e.message);
+    //       await ctx.reply(`Error upload photos ${e.message}`);
+    //     }
+    //   }
+    // }
     await store.updateRecord(`objects/${objectId}/catalogs/${catalog.id}`, {
       photo: fileUniqueId,
     });
     // get catalog url (path)
     const catalogUrl = `c/${catalog.id}?o=${objectId}`;
-    const media = await photoCheckUrl(`photos/${objectId}/catalogs/${catalog.id}/2/${fileUniqueId}.jpg`);
+    const media = await photoCheckUrl(`photos/o/${objectId}/c/${catalog.id}/${fileUniqueId}.jpg`);
     await ctx.replyWithPhoto(media,
         {
           caption: `${catalog.name} (${catalog.id}) photo uploaded`,

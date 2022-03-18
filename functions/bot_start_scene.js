@@ -86,7 +86,7 @@ startActions.push(async (ctx, next) => {
       inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: "objects"}]);
       // set logo obj
       if (object.logo) {
-        imgUrl = `photos/${objectId}/logo/2/${object.logo}.jpg`;
+        imgUrl = `photos/o/${objectId}/logo/${object.logo}.jpg`;
       }
     } else {
       // show all objects
@@ -132,7 +132,7 @@ startActions.push( async (ctx, next) => {
     return next();
   }
 });
-
+// upload photo obj new
 const uploadPhotoObj = async (ctx, objectId) => {
   if (objectId) {
     const object = await store.findRecord(`objects/${objectId}`);
@@ -148,37 +148,51 @@ const uploadPhotoObj = async (ctx, objectId) => {
     // first delete old photos
     if (object.logo) {
       await bucket.deleteFiles({
-        prefix: `photos/${objectId}/logo`,
+        prefix: `photos/o/${objectId}/logo`,
       });
     }
     const fileUniqueId = telegramPhotos[2].file_unique_id;
-    // loop photos
-    for (const [index, photo] of telegramPhotos.entries()) {
-      // use only 2 zoom level
-      if (index === 2) {
-        const photoUrl = await ctx.telegram.getFileLink(photo.file_id);
-        try {
-          // download photos from telegram server
-          const photoPath = await download(photoUrl.href);
-          await bucket.upload(photoPath, {
-            destination: `photos/${objectId}/logo/${index}/${fileUniqueId}.jpg`,
-          });
-          // delete download file
-          fs.unlinkSync(photoPath);
-        } catch (e) {
-          console.log("Download failed");
-          console.log(e.message);
-          await ctx.reply(`Error upload photos ${e.message}`);
-        }
-      }
+    const photoUrl = await ctx.telegram.getFileLink(telegramPhotos[2].file_id);
+    try {
+      // download photos from telegram server
+      const photoPath = await download(photoUrl.href);
+      await bucket.upload(photoPath, {
+        destination: `photos/o/${objectId}/logo/${fileUniqueId}.jpg`,
+      });
+      // delete download file
+      fs.unlinkSync(photoPath);
+    } catch (e) {
+      console.log("Download failed");
+      console.log(e.message);
+      await ctx.reply(`Error upload photos ${e.message}`);
     }
+    // loop photos
+    // for (const [index, photo] of telegramPhotos.entries()) {
+    //   // use only 2 zoom level
+    //   if (index === 2) {
+    //     const photoUrl = await ctx.telegram.getFileLink(photo.file_id);
+    //     try {
+    //       // download photos from telegram server
+    //       const photoPath = await download(photoUrl.href);
+    //       await bucket.upload(photoPath, {
+    //         destination: `photos/${objectId}/logo/${index}/${fileUniqueId}.jpg`,
+    //       });
+    //       // delete download file
+    //       fs.unlinkSync(photoPath);
+    //     } catch (e) {
+    //       console.log("Download failed");
+    //       console.log(e.message);
+    //       await ctx.reply(`Error upload photos ${e.message}`);
+    //     }
+    //   }
+    // }
     // save fileID to Firestore
     await store.updateRecord(`objects/${objectId}`, {
       logo: fileUniqueId,
     });
     // get catalog url (path)
     const catalogUrl = `objects/${objectId}`;
-    const url = await photoCheckUrl(`photos/${objectId}/logo/1/${fileUniqueId}.jpg`);
+    const url = await photoCheckUrl(`photos/o/${objectId}/logo/${fileUniqueId}.jpg`);
     await ctx.replyWithPhoto({url},
         {
           caption: `${object.name} (${object.id}) photo uploaded`,

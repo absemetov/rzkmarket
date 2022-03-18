@@ -25,10 +25,11 @@ exports.notifyNewOrder = functions.region("europe-central2").firestore
       const orderId = context.params.orderId;
       // admin notify
       await bot.telegram.sendMessage(94899148, "<b>New order from " +
-      `<a href="tg://user?id=${order.userId}">${order.lastName} ${order.firstName}</a> ` +
-      `Object ${order.objectName} Channel ${order.fromBot ? "bot" : "site"} ` +
+      `<a href="tg://user?id=${order.userId}">${order.lastName} ${order.firstName}</a>\n` +
+      `Object ${order.objectName} from ${order.fromBot ? "BOT" : "SITE"}\n` +
+      `Order ${order.userId}-${order.orderNumber}\n` +
       `<a href="https://${botConfig.site}/o/${order.objectId}/s/${orderId}">` +
-      `Order ${order.userId}-${order.orderNumber}</a></b>`, {parse_mode: "html"});
+      `https://${botConfig.site}/o/${order.objectId}/s/${orderId}</a></b>`, {parse_mode: "html"});
     });
 
 // notify admin when create cart
@@ -40,7 +41,7 @@ exports.notifyNewCart = functions.region("europe-central2").firestore
       // admin notify
       await bot.telegram.sendMessage(94899148, "<b>New cart! " +
       `<a href="https://${botConfig.site}/o/${objectId}/share-cart/${cartId}">` +
-      `${botConfig.site}/${objectId}/${cartId}</a></b>`,
+      `https://${botConfig.site}/o/${objectId}/share-cart/${cartId}</a></b>`,
       {parse_mode: "html"});
     });
 
@@ -70,7 +71,7 @@ exports.productPhotoDelete = functions.region("europe-central2").firestore
       const objectId = context.params.objectId;
       const productId = context.params.productId;
       await bucket.deleteFiles({
-        prefix: `photos/${objectId}/products/${productId}`,
+        prefix: `photos/o/${objectId}/p/${productId}`,
       });
       return null;
     });
@@ -82,7 +83,7 @@ exports.catalogPhotoDelete = functions.region("europe-central2").firestore
       const objectId = context.params.objectId;
       const catalogId = context.params.catalogId;
       await bucket.deleteFiles({
-        prefix: `photos/${objectId}/catalogs/${catalogId}`,
+        prefix: `photos/o/${objectId}/c/${catalogId}`,
       });
       return null;
     });

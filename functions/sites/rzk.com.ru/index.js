@@ -49,7 +49,7 @@ app.get("/", auth, async (req, res) => {
   for (const object of objects) {
     object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
     if (object.logo) {
-      object.imgUrl = bucket.file(`photos/${object.id}/logo/2/${object.logo}.jpg`).publicUrl();
+      object.imgUrl = bucket.file(`photos/o/${object.id}/logo/${object.logo}.jpg`).publicUrl();
     } else {
       object.imgUrl = "/icons/shop.svg";
     }
@@ -63,7 +63,7 @@ app.get("/o/:objectId", auth, async (req, res) => {
   // count cart items
   object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
   if (object.logo) {
-    object.imgUrl = bucket.file(`photos/${object.id}/logo/2/${object.logo}.jpg`).publicUrl();
+    object.imgUrl = bucket.file(`photos/o/${object.id}/logo/${object.logo}.jpg`).publicUrl();
   } else {
     object.imgUrl = "/icons/shop.svg";
   }
@@ -92,7 +92,7 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
       url: `/o/${object.id}/c/${doc.id}`,
     };
     if (doc.data().photo) {
-      catalogSibl.imgUrl = bucket.file(`photos/${object.id}/catalogs/${doc.id}/2/${doc.data().photo}.jpg`).publicUrl();
+      catalogSibl.imgUrl = bucket.file(`photos/o/${object.id}/c/${doc.id}/${doc.data().photo}.jpg`).publicUrl();
     } else {
       catalogSibl.imgUrl = "/icons/folder.svg";
     }
@@ -159,8 +159,8 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
         }
       }
       if (product.data().mainPhoto) {
-        productObj.imgUrl = bucket.file(`photos/${objectId}/products/${product.id}/2/` +
-        `${product.data().mainPhoto}.jpg`).publicUrl();
+        productObj.imgUrl = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.data().mainPhoto}/2.jpg`)
+            .publicUrl();
       }
       // add to array
       products.push(productObj);
@@ -212,6 +212,7 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
   const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
   product.price = roundNumber(product.price * object[product.currency]);
   product.imgUrl = "/icons/cart3.svg";
+  const photos = [];
   // get cart qty
   if (req.user.uid) {
     const cartProduct = await store.findRecord(`objects/${objectId}/carts/${req.user.uid}`,
@@ -222,13 +223,19 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
     }
   }
   if (product.mainPhoto) {
-    product.imgUrl = bucket.file(`photos/${objectId}/products/${product.id}/2/` +
-    `${product.mainPhoto}.jpg`).publicUrl();
-    product.imgUrlOrigin = bucket.file(`photos/${objectId}/products/${product.id}/` +
-    `${product.photos[product.mainPhoto]}/${product.mainPhoto}.jpg`).publicUrl();
-    console.log("zoom main photo", product.photos[product.mainPhoto]);
-    for (const [zoom, imageId] of Object.entries(product.photos)) {
-      console.log(zoom, imageId);
+    product.imgUrl = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/2.jpg`).publicUrl();
+    product.imgUrlOrigin = bucket.file(`photos/o/${objectId}/p/${product.id}/` +
+    `${product.mainPhoto}/${product.mainPhoto.slice(-1)}.jpg`).publicUrl();
+    for (const imageId of product.photos) {
+      if (product.mainPhoto !== imageId) {
+        const imgUrl = bucket.file(`photos/o/${objectId}/p/${product.id}/${imageId}/2.jpg`).publicUrl();
+        const imgUrlOrigin = bucket.file(`photos/o/${objectId}/p/${product.id}/` +
+        `${imageId}/${imageId.slice(-1)}.jpg`).publicUrl();
+        photos.push({
+          imgUrl,
+          imgUrlOrigin,
+        });
+      }
     }
   }
   // count cart items
@@ -239,6 +246,7 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
     keywords: `${product.name}, ${object.name}`,
     object,
     product,
+    photos,
     user: req.user,
     currencyName: botConfig.currency,
   });

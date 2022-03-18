@@ -3,7 +3,7 @@
     <div class="col">
       <div class="card text-center h-100">
         <a href="/o/{{object.id}}">
-          <img src="{{object.imgUrl}}" class="card-img-top" alt="{{object.name}}">
+          <img src="{{object.imgUrl}}" class="card-img-top" onerror="this.src = '/icons/photo_error.svg';" alt="{{object.name}}">
         </a>
         <div class="card-body">
           <h5><a href="/o/{{object.id}}">{{object.name}}</a></h5>
