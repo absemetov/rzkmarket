@@ -970,6 +970,7 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
             console.log("Download failed");
             console.log(e.message);
             await ctx.reply(`Error upload photos ${e.message}`);
+            return;
           }
         }
       }
@@ -1048,27 +1049,9 @@ const uploadPhotoCat = async (ctx, objectId, catalogId) => {
       console.log("Download failed");
       console.log(e.message);
       await ctx.reply(`Error upload photos ${e.message}`);
+      return;
     }
-    // loop photos
-    // for (const [index, photo] of telegramPhotos.entries()) {
-    //   // 2 zoom level
-    //   if (index === 2) {
-    //     const photoUrl = await ctx.telegram.getFileLink(photo.file_id);
-    //     try {
-    //       // download photos from telegram server
-    //       const photoPath = await download(photoUrl.href);
-    //       await bucket.upload(photoPath, {
-    //         destination: `photos/${objectId}/catalogs/${catalog.id}/${index}/${fileUniqueId}.jpg`,
-    //       });
-    //       // delete download file
-    //       fs.unlinkSync(photoPath);
-    //     } catch (e) {
-    //       console.log("Download failed");
-    //       console.log(e.message);
-    //       await ctx.reply(`Error upload photos ${e.message}`);
-    //     }
-    //   }
-    // }
+
     await store.updateRecord(`objects/${objectId}/catalogs/${catalog.id}`, {
       photo: fileUniqueId,
     });

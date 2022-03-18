@@ -39,6 +39,26 @@
     </div>
   </div>
 </div>
+{{#if product.tagsNames}}
+  <h3>Tags</h3>
+  <div class="row row-cols-1 row-cols-sm-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 row-cols-xxl-5 g-2 mb-3">
+    {{#each product.tagsNames as |tag|}}
+      <div class="col">
+        <div class="card text-center h-100">
+          <div class="card-body">
+            <h5 class="card-title">
+              <a href="/o/{{../object.id}}/c/{{../product.catalog.id}}?tag={{tag.id}}">#{{tag.name}}</a>
+            </h5>
+            <p class="card-text">
+              {{tag.id}}
+              {{tag.hidden}}
+            </p>
+          </div>
+        </div>
+      </div>
+    {{/each}}
+  </div>
+{{/if}}
 {{#if photos}}
   <h3>Фото</h3>
   <div class="row row-cols-1 row-cols-sm-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 row-cols-xxl-5 g-2 mb-3">
