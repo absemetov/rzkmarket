@@ -82,46 +82,53 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
   const object = await store.findRecord(`objects/${objectId}`);
   const currentCatalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
   let title = `Каталог - ${object.name}`;
-  const catalogsSiblingsSnapshot = await firebase.firestore().collection("objects").doc(objectId)
-      .collection("catalogs").where("parentId", "==", catalogId ? catalogId : null).orderBy("orderNumber").get();
   const catalogs = [];
-  catalogsSiblingsSnapshot.docs.forEach((doc) => {
-    const catalogSibl = {
-      id: doc.id,
-      name: doc.data().name,
-      url: `/o/${object.id}/c/${doc.id}`,
-    };
-    if (doc.data().photo) {
-      catalogSibl.imgUrl = bucket.file(`photos/o/${object.id}/c/${doc.id}/${doc.data().photo}.jpg`).publicUrl();
-    } else {
-      catalogSibl.imgUrl = "/icons/folder.svg";
-    }
-    catalogs.push(catalogSibl);
-  });
+  const tags = [];
+  if (!selectedTag) {
+    const catalogsSiblingsSnapshot = await firebase.firestore().collection("objects").doc(objectId)
+        .collection("catalogs").where("parentId", "==", catalogId ? catalogId : null).orderBy("orderNumber").get();
+    catalogsSiblingsSnapshot.docs.forEach((doc) => {
+      const catalogSibl = {
+        id: doc.id,
+        name: doc.data().name,
+        url: `/o/${object.id}/c/${doc.id}`,
+      };
+      if (doc.data().photo) {
+        catalogSibl.imgUrl = bucket.file(`photos/o/${object.id}/c/${doc.id}/${doc.data().photo}.jpg`).publicUrl();
+      } else {
+        catalogSibl.imgUrl = "/icons/folder.svg";
+      }
+      catalogs.push(catalogSibl);
+    });
+  }
   // products query
   const products = [];
   const prevNextLinks = [];
-  const tags = [];
-  if (currentCatalog) {
-    title = `${currentCatalog.name} - ${object.name}`;
-    let mainQuery = firebase.firestore().collection("objects").doc(objectId)
-        .collection("products").where("catalog.id", "==", currentCatalog.id).orderBy("orderNumber");
+  if (currentCatalog || selectedTag) {
+    let mainQuery = firebase.firestore().collection("objects").doc(objectId).collection("products");
+    // query catalog
+    if (currentCatalog) {
+      title = `${currentCatalog.name} - ${object.name}`;
+      mainQuery = mainQuery.where("catalog.id", "==", currentCatalog.id);
+      for (const tag of currentCatalog.tags || []) {
+        const tagObj = {
+          text: `${tag.name}`,
+          url: `/o/${object.id}/c/${currentCatalog.id}?tag=${tag.id}`,
+        };
+        if (tag.id === selectedTag) {
+          title = `${currentCatalog.name} - ${tag.name} - ${object.name}`;
+          tagObj.active = true;
+        }
+        tags.push(tagObj);
+      }
+    }
+    // order products
+    mainQuery = mainQuery.orderBy("orderNumber");
     // Filter by tag
     let tagUrl = "";
     if (selectedTag) {
       mainQuery = mainQuery.where("tags", "array-contains", selectedTag);
       tagUrl = `&tag=${selectedTag}`;
-    }
-    for (const tag of currentCatalog.tags || []) {
-      const tagObj = {
-        text: `${tag.name}`,
-        url: `/o/${object.id}/c/${currentCatalog.id}?tag=${tag.id}`,
-      };
-      if (tag.id === selectedTag) {
-        title = `${currentCatalog.name} - ${tag.name} - ${object.name}`;
-        tagObj.active = true;
-      }
-      tags.push(tagObj);
     }
     // paginate goods, copy main query
     let query = mainQuery;
@@ -164,6 +171,17 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
       }
       // add to array
       products.push(productObj);
+      // get tag name for global search
+      if (!tags.length && selectedTag) {
+        const tagObj = {
+          text: `Global ${product.data().tagsNames.find((tag) => tag.id === selectedTag).name}`,
+          url: `/o/${object.id}/c?tag=${selectedTag}`,
+          global: true,
+        };
+        title = `Каталог - ${product.data().tagsNames.find((tag) => tag.id === selectedTag).name} - ${object.name}`;
+        tagObj.active = true;
+        tags.push(tagObj);
+      }
     }
     // Set load more button
     if (!productsSnapshot.empty) {
@@ -171,19 +189,33 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
       const endBeforeSnap = productsSnapshot.docs[0];
       const ifBeforeProducts = await mainQuery.endBefore(endBeforeSnap).limitToLast(1).get();
       if (!ifBeforeProducts.empty) {
-        prevNextLinks.push({
-          text: "⬅️ Назад",
-          url: `/o/${object.id}/c/${currentCatalog.id}?endBefore=${endBeforeSnap.id}${tagUrl}`,
-        });
+        if (currentCatalog) {
+          prevNextLinks.push({
+            text: "⬅️ Назад",
+            url: `/o/${object.id}/c/${currentCatalog.id}?endBefore=${endBeforeSnap.id}${tagUrl}`,
+          });
+        } else {
+          prevNextLinks.push({
+            text: "⬅️ Назад",
+            url: `/o/${object.id}/c?endBefore=${endBeforeSnap.id}${tagUrl}`,
+          });
+        }
       }
       // startAfter
       const startAfterSnap = productsSnapshot.docs[productsSnapshot.docs.length - 1];
       const ifAfterProducts = await mainQuery.startAfter(startAfterSnap).limit(1).get();
       if (!ifAfterProducts.empty) {
-        prevNextLinks.push({
-          text: "➡️ Вперед",
-          url: `/o/${object.id}/c/${currentCatalog.id}?startAfter=${startAfterSnap.id}${tagUrl}`,
-        });
+        if (currentCatalog) {
+          prevNextLinks.push({
+            text: "➡️ Вперед",
+            url: `/o/${object.id}/c/${currentCatalog.id}?startAfter=${startAfterSnap.id}${tagUrl}`,
+          });
+        } else {
+          prevNextLinks.push({
+            text: "➡️ Вперед",
+            url: `/o/${object.id}/c?startAfter=${startAfterSnap.id}${tagUrl}`,
+          });
+        }
       }
     }
   }

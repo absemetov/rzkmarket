@@ -14,9 +14,13 @@
 <div class="row row-cols-1 row-cols-sm-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 row-cols-xxl-5 g-2 mb-3">
   <div class="col">
     <div class="card text-center h-100">
-      <a href="{{product.imgUrlOrigin}}" class="js-smartphoto">
+      {{#if product.imgUrlOrigin}}
+        <a href="{{product.imgUrlOrigin}}" class="js-smartphoto">
+          <img src="{{product.imgUrl}}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="{{product.name}}">
+        </a>
+      {{else}}
         <img src="{{product.imgUrl}}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="{{product.name}}">
-      </a>
+      {{/if}}
       <div class="card-body">
         <h5>{{product.name}} <small class="text-muted">({{product.id}})</small>
           <a href="//t.me/RzkMarketBot?start=o_{{object.id}}_p_{{product.id}}" target="_blank" class="ps-1 text-decoration-none">
@@ -39,6 +43,25 @@
     </div>
   </div>
 </div>
+{{#if product.tagsNames}}
+  <h3>Tags</h3>
+  <div class="row row-cols-1 row-cols-sm-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 row-cols-xxl-5 g-2 mb-3">
+    {{#each product.tagsNames as |tag|}}
+      <div class="col">
+        <div class="card text-center h-100">
+          <ul class="list-group list-group-flush">
+            {{#if tag.hidden}}
+              <li class="list-group-item"><a href="/o/{{../object.id}}/c?tag={{tag.id}}">{{tag.name}} Global</a></li>
+            {{else}}
+              <li class="list-group-item"><a href="/o/{{../object.id}}/c/{{../product.catalog.id}}?tag={{tag.id}}">{{tag.name}}</a></li>
+              <li class="list-group-item"><a href="/o/{{../object.id}}/c?tag={{tag.id}}">{{tag.name}} Global</a></li>
+            {{/if}}
+          </ul>
+        </div>
+      </div>
+    {{/each}}
+  </div>
+{{/if}}
 {{#if photos}}
   <h3>Фото</h3>
   <div class="row row-cols-1 row-cols-sm-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 row-cols-xxl-5 g-2 mb-3">

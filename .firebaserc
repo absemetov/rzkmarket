@@ -1,6 +1,8 @@
 {
   "projects": {
-    "default": "rzk-market-ua"
+    "ua": "rzk-warsaw-ua",
+    "ru": "rzk-warsaw-ru",
+    "dev": "rzk-warsaw-dev"
   },
   "targets": {
     "rzk-warsaw-ru": {
