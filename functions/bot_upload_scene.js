@@ -1,4 +1,3 @@
-const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
 const {GoogleSpreadsheet} = require("google-spreadsheet");
 const creds = require("./rzk-com-ua-d1d3248b8410.json");
@@ -8,7 +7,6 @@ const CyrillicToTranslit = require("cyrillic-to-translit-js");
 const {store, roundNumber, photoCheckUrl} = require("./bot_store_cart");
 const cyrillicToTranslit = new CyrillicToTranslit();
 const cyrillicToTranslitUk = new CyrillicToTranslit({preset: "uk"});
-const botConfig = functions.config().env.bot;
 // upload from googleSheet
 const uploadProducts = async (ctx, objectId, sheetId) => {
   const start = new Date();
@@ -380,7 +378,7 @@ const createObject = async (ctx, next) => {
       const description = sheet.getCellByA1("B3").value;
       const phoneNumbers = sheet.getCellByA1("B4").value;
       const phoneArray = phoneNumbers && phoneNumbers.toString().split("#").map((phone) => {
-        return `${botConfig.phonecode}${phone.trim()}`;
+        return `${process.env.BOT_PHONECODE}${phone.trim()}`;
       });
       const address = sheet.getCellByA1("B5").value;
       const USD = roundNumber(sheet.getCellByA1("B6").value);
@@ -404,7 +402,7 @@ const createObject = async (ctx, next) => {
         "name": "required|string",
         "description": "required|string",
         "phoneArray": "required",
-        "phoneArray.*": ["required", `regex:/${botConfig.phoneregexp}`],
+        "phoneArray.*": ["required", `regex:/${process.env.BOT_PHONEREGEXP}`],
         "address": "required|string",
         "USD": "required|numeric",
         "EUR": "required|numeric",
@@ -412,7 +410,7 @@ const createObject = async (ctx, next) => {
         "RUB": "required|numeric",
       };
       const validateObject = new Validator(objectCheck, rulesObject, {
-        "regex": `The :attribute phone number is not in the format ${botConfig.phonetemplate}`,
+        "regex": `The :attribute phone number is not in the format ${process.env.BOT_PHONETEMPLATE}`,
       });
       if (validateObject.fails()) {
         let errorRow = "";
@@ -464,7 +462,7 @@ const uploadForm = async (ctx, sheetId) => {
     const description = sheet.getCellByA1("B3").value;
     const phoneNumbers = sheet.getCellByA1("B4").value;
     const phoneArray = phoneNumbers && phoneNumbers.toString().split("#").map((phone) => {
-      return `${botConfig.phonecode}${phone.trim()}`;
+      return `${process.env.BOT_PHONECODE}${phone.trim()}`;
     });
     const address = sheet.getCellByA1("B5").value;
     const USD = roundNumber(sheet.getCellByA1("B6").value);
@@ -488,7 +486,7 @@ const uploadForm = async (ctx, sheetId) => {
       "name": "required|string",
       "description": "required|string",
       "phoneArray": "required",
-      "phoneArray.*": ["required", `regex:/${botConfig.phoneregexp}`],
+      "phoneArray.*": ["required", `regex:/${process.env.BOT_PHONEREGEXP}`],
       "address": "required|string",
       "USD": "required|numeric",
       "EUR": "required|numeric",
@@ -496,7 +494,7 @@ const uploadForm = async (ctx, sheetId) => {
       "RUB": "required|numeric",
     };
     const validateObject = new Validator(object, rulesObject, {
-      "regex": `The :attribute phone number is not in the format ${botConfig.phonetemplate}`,
+      "regex": `The :attribute phone number is not in the format ${process.env.BOT_PHONETEMPLATE}`,
     });
     if (validateObject.fails()) {
       let errorRow = "";

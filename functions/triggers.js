@@ -1,8 +1,7 @@
 const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
 const {Telegraf} = require("telegraf");
-const botConfig = functions.config().env.bot;
-const bot = new Telegraf(botConfig.token, {
+const bot = new Telegraf(process.env.BOT_TOKEN, {
   handlerTimeout: 540000,
 });
 // notify admin when new user
@@ -28,8 +27,8 @@ exports.notifyNewOrder = functions.region("europe-central2").firestore
       `<a href="tg://user?id=${order.userId}">${order.lastName} ${order.firstName}</a>\n` +
       `Object ${order.objectName} from ${order.fromBot ? "BOT" : "SITE"}\n` +
       `Order ${order.userId}-${order.orderNumber}\n` +
-      `<a href="https://${botConfig.site}/o/${order.objectId}/s/${orderId}">` +
-      `https://${botConfig.site}/o/${order.objectId}/s/${orderId}</a></b>`, {parse_mode: "html"});
+      `<a href="https://${process.env.BOT_SITE}/o/${order.objectId}/s/${orderId}">` +
+      `https://${process.env.BOT_SITE}/o/${order.objectId}/s/${orderId}</a></b>`, {parse_mode: "html"});
     });
 
 // notify admin when create cart
@@ -40,8 +39,8 @@ exports.notifyNewCart = functions.region("europe-central2").firestore
       const cartId = context.params.cartId;
       // admin notify
       await bot.telegram.sendMessage(94899148, "<b>New cart! " +
-      `<a href="https://${botConfig.site}/o/${objectId}/share-cart/${cartId}">` +
-      `https://${botConfig.site}/o/${objectId}/share-cart/${cartId}</a></b>`,
+      `<a href="https://${process.env.BOT_SITE}/o/${objectId}/share-cart/${cartId}">` +
+      `https://${process.env.BOT_SITE}/o/${objectId}/share-cart/${cartId}</a></b>`,
       {parse_mode: "html"});
     });
 

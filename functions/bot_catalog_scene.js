@@ -1,10 +1,8 @@
-const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
 const {download} = require("./download");
 const fs = require("fs");
 const bucket = firebase.storage().bucket();
 const {cart, store, roundNumber, photoCheckUrl} = require("./bot_store_cart");
-const botConfig = functions.config().env.bot;
 // catalogs actions array
 const catalogsActions = [];
 // show catalogs and goods
@@ -85,14 +83,14 @@ const showCatalog = async (ctx, next) => {
       // generate products array
       for (const product of productsSnapshot.docs) {
         const addButton = {text: `📦 ${roundNumber(product.data().price * object[product.data().currency])}` +
-        `${botConfig.currency} ${product.data().name} (${product.id})`,
+        `${process.env.BOT_CURRENCY} ${product.data().name} (${product.id})`,
         callback_data: `aC/${product.id}?o=${objectId}`};
         // get cart products
         const cartProduct = cartProductsArray && cartProductsArray[product.id];
         if (cartProduct) {
           addButton.text = `🛒${cartProduct.qty}${cartProduct.unit} ` +
           `${roundNumber(cartProduct.price * cartProduct.qty)} ` +
-          `${botConfig.currency} ${product.data().name} (${product.id})`;
+          `${process.env.BOT_CURRENCY} ${product.data().name} (${product.id})`;
           addButton.callback_data = `aC/${product.id}?qty=${cartProduct.qty}&a=1&o=${objectId}`;
         }
         inlineKeyboardArray.push([addButton]);
@@ -136,7 +134,7 @@ const showCatalog = async (ctx, next) => {
       type: "photo",
       media: media,
       caption: `<b>${object.name} > Каталог</b>\n` +
-        `https://${botConfig.site}/o/${objectId}/c${catalogId ? "/" + catalogId : ""}`,
+        `https://${process.env.BOT_SITE}/o/${objectId}/c${catalogId ? "/" + catalogId : ""}`,
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: inlineKeyboardArray,
@@ -170,7 +168,7 @@ const showProduct = async (ctx, next) => {
         `products.${productId}`);
     if (cartProduct) {
       addButton.text = `🛒 ${cartProduct.qty} ${cartProduct.unit} ` +
-      ` ${roundNumber(cartProduct.qty * cartProduct.price)} ${botConfig.currency}`;
+      ` ${roundNumber(cartProduct.qty * cartProduct.price)} ${process.env.BOT_CURRENCY}`;
       addButton.callback_data = `aC/${product.id}?qty=${cartProduct.qty}&a=1&o=${objectId}`;
     }
     inlineKeyboardArray.push([addButton]);
@@ -200,8 +198,8 @@ const showProduct = async (ctx, next) => {
       media,
       caption: `<b>${object.name}\n` +
       `${product.name} (${product.id})\n` +
-      `Цена ${product.price} ${botConfig.currency}</b>\n` +
-      `https://${botConfig.site}/o/${objectId}/p/${productId}`,
+      `Цена ${product.price} ${process.env.BOT_CURRENCY}</b>\n` +
+      `https://${process.env.BOT_SITE}/o/${objectId}/p/${productId}`,
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: inlineKeyboardArray,
@@ -316,10 +314,10 @@ catalogsActions.push( async (ctx, next) => {
         type: "photo",
         media,
         caption: `${product.name} (${product.id})` +
-        `\nЦена ${product.price} ${botConfig.currency}` +
-        `\nСумма ${roundNumber(qty * product.price)} ${botConfig.currency}` +
+        `\nЦена ${product.price} ${process.env.BOT_CURRENCY}` +
+        `\nСумма ${roundNumber(qty * product.price)} ${process.env.BOT_CURRENCY}` +
         `\n<b>Количетво: ${qty} ${product.unit}</b>` +
-        `\nhttps://${botConfig.site}/o/${objectId}/p/${productId}`,
+        `\nhttps://${process.env.BOT_SITE}/o/${objectId}/p/${productId}`,
         parse_mode: "html",
       }, {reply_markup: {
         inline_keyboard: [
@@ -386,8 +384,8 @@ const showCart = async (ctx, next) => {
       product.price = roundNumber(product.price * object[product.currency]);
       if (product) {
         const productTxt = `${index + 1}) <b>${product.name}</b> (${product.id})` +
-        `=${product.price} ${botConfig.currency}*${cartProduct.qty}${product.unit}` +
-        `=${roundNumber(product.price * cartProduct.qty)}${botConfig.currency}`;
+        `=${product.price} ${process.env.BOT_CURRENCY}*${cartProduct.qty}${product.unit}` +
+        `=${roundNumber(product.price * cartProduct.qty)}${process.env.BOT_CURRENCY}`;
         // truncate long string
         if ((msgTxt + `${productTxt}\n`).length < 1000) {
           msgTxt += `${productTxt}\n`;
@@ -396,7 +394,7 @@ const showCart = async (ctx, next) => {
         }
         inlineKeyboardArray.push([
           {text: `${index + 1}) ${cartProduct.qty}${product.unit}=` +
-          `${roundNumber(cartProduct.qty * product.price)} ${botConfig.currency} ` +
+          `${roundNumber(cartProduct.qty * product.price)} ${process.env.BOT_CURRENCY} ` +
           `${product.name} (${product.id})`,
           callback_data: `aC/${product.id}?qty=${cartProduct.qty}&r=1&a=1&o=${objectId}`},
         ]);
@@ -419,7 +417,7 @@ const showCart = async (ctx, next) => {
     }
     if (totalQty) {
       msgTxt += `<b>Количество товара: ${totalQty}\n` +
-      `Сумма: ${roundNumber(totalSum)} ${botConfig.currency}</b>`;
+      `Сумма: ${roundNumber(totalSum)} ${process.env.BOT_CURRENCY}</b>`;
     }
 
     if (inlineKeyboardArray.length < 1) {
@@ -445,7 +443,7 @@ const showCart = async (ctx, next) => {
         callback_data: `cart?clear=1&o=${objectId}`}]);
       // share cart
       inlineKeyboardArray.push([
-        {text: "Ссылка на корзину", url: `https://${botConfig.site}/o/${objectId}/share-cart/${ctx.from.id}`},
+        {text: "Ссылка на корзину", url: `https://${process.env.BOT_SITE}/o/${objectId}/share-cart/${ctx.from.id}`},
       ]);
     }
     // Set Main menu
@@ -629,13 +627,13 @@ const cartWizard = [
   },
   async (ctx) => {
     const phoneNumberText = (ctx.message.contact && ctx.message.contact.phone_number) || ctx.message.text;
-    const regexpPhoneRu = new RegExp(botConfig.phoneregexp);
+    const regexpPhoneRu = new RegExp(process.env.BOT_PHONEREGEXP);
     const checkPhone = phoneNumberText.match(regexpPhoneRu);
     if (!checkPhone) {
-      await ctx.reply(`Введите номер телефона в формате ${botConfig.phonetemplate}`);
+      await ctx.reply(`Введите номер телефона в формате ${process.env.BOT_PHONETEMPLATE}`);
       return;
     }
-    const phoneNumber = `${botConfig.phonecode}${checkPhone[2]}`;
+    const phoneNumber = `${process.env.BOT_PHONECODE}${checkPhone[2]}`;
     await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {phoneNumber}}});
     await ctx.replyWithHTML("Комментарий к заказу:",
         {

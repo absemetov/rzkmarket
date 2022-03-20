@@ -1,7 +1,5 @@
-const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
 const bucket = firebase.storage().bucket();
-const botConfig = functions.config().env.bot;
 // round to 2 decimals
 const roundNumber = (num) => {
   return Math.round((num + Number.EPSILON) * 100) / 100;
@@ -14,7 +12,7 @@ const photoCheckUrl = async (url) => {
       return bucket.file(url).publicUrl();
     }
   }
-  return bucket.file(botConfig.logo).publicUrl();
+  return bucket.file(process.env.BOT_LOGO).publicUrl();
 };
 // store inst
 const store = {
@@ -73,7 +71,7 @@ const store = {
     return firebase.firestore().doc(path);
   },
   payments() {
-    const paymentsTxt = botConfig.payment;
+    const paymentsTxt = process.env.BOT_PAYMENT;
     const paymentsMap = new Map();
     if (paymentsTxt) {
       for (const paramsData of paymentsTxt.split("&")) {
@@ -83,7 +81,7 @@ const store = {
     return paymentsMap;
   },
   carriers() {
-    const carriersTxt = botConfig.carrier;
+    const carriersTxt = process.env.BOT_CARRIER;
     const carriersMap = new Map();
     if (carriersTxt) {
       for (const paramsData of carriersTxt.split("&")) {
@@ -103,7 +101,7 @@ const store = {
     return carriersMap;
   },
   statuses() {
-    const statusesTxt = botConfig.status;
+    const statusesTxt = process.env.BOT_STATUS;
     const statusesMap = new Map();
     if (statusesTxt) {
       for (const paramsData of statusesTxt.split("&")) {

@@ -6,8 +6,7 @@ const {uploadActions, uploadForm} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
 const {uploadPhotoProduct, uploadPhotoCat, catalogsActions, cartWizard} = require("./bot_catalog_scene");
 const {store, photoCheckUrl} = require("./bot_store_cart");
-const botConfig = functions.config().env.bot;
-const bot = new Telegraf(botConfig.token, {
+const bot = new Telegraf(process.env.BOT_TOKEN, {
   handlerTimeout: 540000,
 });
 bot.use(session());

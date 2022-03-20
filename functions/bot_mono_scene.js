@@ -11,7 +11,6 @@ const monoHandler = async (ctx) => {
         [
           {text: "🇱🇷 USD", callback_data: "mono/USD"},
           {text: "🇪🇺 EUR", callback_data: "mono/EUR"},
-          {text: "🇷🇺 RUB", callback_data: "mono/RUB"},
         ],
         [
           {text: "Monobank.com.ua", url: "https://monobank.com.ua"},
@@ -32,7 +31,6 @@ monoActions.push(async (ctx, next) => {
           [
             {text: "🇱🇷 USD", callback_data: `mono/USD?${dateTimestamp}`},
             {text: "🇪🇺 EUR", callback_data: "mono/EUR"},
-            {text: "🇷🇺 RUB", callback_data: "mono/RUB"},
           ],
           [
             {text: "Monobank.com.ua", url: "https://monobank.com.ua"},

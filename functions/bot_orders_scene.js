@@ -1,8 +1,6 @@
-const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
 const {showCart, cartWizard} = require("./bot_catalog_scene");
 const {store, cart, roundNumber, photoCheckUrl} = require("./bot_store_cart");
-const botConfig = functions.config().env.bot;
 const moment = require("moment");
 // require("moment/locale/ru");
 // moment.locale("ru");
@@ -42,8 +40,8 @@ const myOrders = async (ctx, next) => {
         const orderProductsSorted = store.sort(order.products);
         orderProductsSorted.forEach((product, index) => {
           const productTxt = `${index + 1})<b>${product.name}</b> (${product.id})` +
-        `=${product.price} ${botConfig.currency}*${product.qty}${product.unit}` +
-        `=${roundNumber(product.price * product.qty)}${botConfig.currency}`;
+        `=${product.price} ${process.env.BOT_CURRENCY}*${product.qty}${product.unit}` +
+        `=${roundNumber(product.price * product.qty)}${process.env.BOT_CURRENCY}`;
           // truncate long string
           if ((caption + `${productTxt}\n`).length < 1000) {
             caption += `${productTxt}\n`;
@@ -57,11 +55,11 @@ const myOrders = async (ctx, next) => {
           caption += "⬇️Весь список нажмите на ссылку ⬇️\n";
         }
         caption += `<b>Количество товара: ${totalQty}\n` +
-          `Сумма: ${roundNumber(totalSum)} ${botConfig.currency}</b>`;
+          `Сумма: ${roundNumber(totalSum)} ${process.env.BOT_CURRENCY}</b>`;
       }
       // share link
       inlineKeyboardArray.push([
-        {text: "Ссылка на заказ", url: `https://${botConfig.site}/o/${objectId}/s/${order.id}`},
+        {text: "Ссылка на заказ", url: `https://${process.env.BOT_SITE}/o/${objectId}/s/${order.id}`},
       ]);
       inlineKeyboardArray.push([{text: "🧾 Мои заказы",
         callback_data: `${ctx.session.myPathOrder ? ctx.session.myPathOrder : "myO/" + userId}`}]);
@@ -173,8 +171,8 @@ const showOrders = async (ctx, next) => {
         const orderProductsSorted = store.sort(order.products);
         orderProductsSorted.forEach((product, index) => {
           const productTxt = `${index + 1})<b>${product.name}</b> (${product.id})` +
-        `=${product.price}${botConfig.currency}*${product.qty}${product.unit}` +
-        `=${roundNumber(product.price * product.qty)}${botConfig.currency}`;
+        `=${product.price}${process.env.BOT_CURRENCY}*${product.qty}${product.unit}` +
+        `=${roundNumber(product.price * product.qty)}${process.env.BOT_CURRENCY}`;
           // truncate long string
           if ((caption + `${productTxt}\n`).length < 950) {
             caption += `${productTxt}\n`;
@@ -188,11 +186,11 @@ const showOrders = async (ctx, next) => {
           caption += "⬇️Весь список нажмите на ссылку ⬇️\n";
         }
         caption += `<b>Количество товара: ${totalQty}\n` +
-          `Сумма: ${roundNumber(totalSum)} ${botConfig.currency}</b>`;
+          `Сумма: ${roundNumber(totalSum)} ${process.env.BOT_CURRENCY}</b>`;
       }
       // share link
       inlineKeyboardArray.push([
-        {text: "Ссылка на заказ", url: `https://${botConfig.site}/o/${objectId}/s/${order.id}`},
+        {text: "Ссылка на заказ", url: `https://${process.env.BOT_SITE}/o/${objectId}/s/${order.id}`},
       ]);
       // edit entries
       inlineKeyboardArray.push([{text: `📝 Статус: ${store.statuses().get(order.statusId)}`,
@@ -340,13 +338,13 @@ const orderWizard = [
       return;
     }
     if (ctx.session.fieldName === "phoneNumber") {
-      const regexpPhone = new RegExp(botConfig.phoneregexp);
+      const regexpPhone = new RegExp(process.env.BOT_PHONEREGEXP);
       const checkPhone = ctx.message.text.match(regexpPhone);
       if (!checkPhone) {
-        await ctx.reply(`Введите номер телефона в формате ${botConfig.phonetemplate}`);
+        await ctx.reply(`Введите номер телефона в формате ${process.env.BOT_PHONETEMPLATE}`);
         return;
       }
-      ctx.message.text = `${botConfig.phonecode}${checkPhone[2]}`;
+      ctx.message.text = `${process.env.BOT_PHONECODE}${checkPhone[2]}`;
     }
     await store.updateRecord(`objects/${ctx.session.objectId}/orders/${ctx.session.orderId}`,
         {[ctx.session.fieldName]: ctx.message.text});

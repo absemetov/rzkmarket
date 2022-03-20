@@ -1,3 +1,4 @@
+.env*
 .runtimeconfig.json
 rzk-market-ru-config.json
 rzk-market-ua-config.json

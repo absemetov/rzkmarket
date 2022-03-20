@@ -1,10 +1,8 @@
-const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
 const bucket = firebase.storage().bucket();
 const {store, cart, photoCheckUrl} = require("./bot_store_cart");
 const {download} = require("./download");
 const fs = require("fs");
-const botConfig = functions.config().env.bot;
 const startActions = [];
 
 // admin midleware
@@ -39,8 +37,8 @@ const startHandler = async (ctx) => {
     inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
   });
   inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
-  inlineKeyboardArray.push([{text: `Войти на сайт ${botConfig.site}`, login_url: {
-    url: `https://${botConfig.site}/login`,
+  inlineKeyboardArray.push([{text: `Войти на сайт ${process.env.BOT_SITE}`, login_url: {
+    url: `https://${process.env.BOT_SITE}/login`,
     request_write_access: true,
   }}]);
   // add main photo
@@ -80,8 +78,8 @@ startActions.push(async (ctx, next) => {
           callback_data: `c?o=${object.id}&u=1`}]);
         inlineKeyboardArray.push([{text: "📸 Загрузить фото объекта",
           callback_data: `uploadPhotoObj/${object.id}`}]);
-        caption += `<b>Курсы валют: USD = ${object.USD}${botConfig.currency}, ` +
-        `EUR = ${object.EUR}${botConfig.currency}</b>\n`;
+        caption += `<b>Курсы валют: USD = ${object.USD}${process.env.BOT_CURRENCY}, ` +
+        `EUR = ${object.EUR}${process.env.BOT_CURRENCY}</b>\n`;
       }
       inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: "objects"}]);
       // set logo obj
@@ -95,8 +93,8 @@ startActions.push(async (ctx, next) => {
         inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
       });
       inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
-      inlineKeyboardArray.push([{text: `Войти на сайт ${botConfig.site}`, login_url: {
-        url: `https://${botConfig.site}/login`,
+      inlineKeyboardArray.push([{text: `Войти на сайт ${process.env.BOT_SITE}`, login_url: {
+        url: `https://${process.env.BOT_SITE}/login`,
         request_write_access: true,
       }}]);
     }
