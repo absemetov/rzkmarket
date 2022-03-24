@@ -59,16 +59,20 @@ app.get("/", auth, async (req, res) => {
 // show object
 app.get("/o/:objectId", auth, async (req, res) => {
   const object = await store.findRecord(`objects/${req.params.objectId}`);
-  // count cart items
-  object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
-  if (object.logo) {
-    object.imgUrl = bucket.file(`photos/o/${object.id}/logo/${object.logo}.jpg`).publicUrl();
+  if (object) {
+    // count cart items
+    object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
+    if (object.logo) {
+      object.imgUrl = bucket.file(`photos/o/${object.id}/logo/${object.logo}.jpg`).publicUrl();
+    } else {
+      object.imgUrl = "/icons/shop.svg";
+    }
+    // Set Cache-Control
+    // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
+    res.render("object", {title: object.name, object, user: req.user, currencyName: process.env.BOT_CURRENCY});
   } else {
-    object.imgUrl = "/icons/shop.svg";
+    return res.redirect("/");
   }
-  // Set Cache-Control
-  // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
-  res.render("object", {title: object.name, object, user: req.user, currencyName: process.env.BOT_CURRENCY});
 });
 
 // show catalogs
@@ -369,7 +373,10 @@ app.get("/o/:objectId/share-cart/:orderId", auth, async (req, res) => {
 });
 
 // login with telegram
-app.get("/login", auth, async (req, res) => {
+app.get("/login/:objectId?", auth, async (req, res) => {
+  const objectId = req.params.objectId;
+  // redirect params
+  const redirectPage = req.query.r;
   if (req.query && checkSignature(req.query)) {
     // migrate cart if exist from all objects!!!
     if (req.user.uid) {
@@ -403,7 +410,7 @@ app.get("/login", auth, async (req, res) => {
       httpOnly: true,
       secure: true,
       maxAge: 30 * 24 * 60 * 60 * 1000,
-    }).redirect("/");
+    }).redirect(objectId ? `/o/${objectId}/cart/purchase` : "/");
   }
   // id: '94899148',
   // first_name: 'Nadir',
@@ -416,7 +423,7 @@ app.get("/login", auth, async (req, res) => {
   // data is not authenticated
   // Set Cache-Control
   // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
-  res.render("login", {user: req.user});
+  res.render("login", {user: req.user, redirectPage});
 });
 
 app.get("/logout", auth, (req, res) => {
@@ -442,8 +449,8 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
       if (product) {
         product.imgUrl = "/icons/cart3.svg";
         if (product.mainPhoto) {
-          product.imgUrl = bucket.file(`photos/${objectId}/products/${product.id}/2/` +
-          `${product.mainPhoto}.jpg`).publicUrl();
+          product.imgUrl = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/2.jpg`)
+              .publicUrl();
         }
         products.push({
           id: product.id,

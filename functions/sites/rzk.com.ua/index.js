@@ -4,7 +4,6 @@ const bucket = firebase.storage().bucket();
 const express = require("express");
 const exphbs = require("express-handlebars");
 const {store, cart, roundNumber} = require("../.././bot_store_cart.js");
-const botConfig = functions.config().env.bot;
 const {createHash, createHmac} = require("crypto");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
@@ -31,7 +30,7 @@ const auth = (req, res, next) => {
   req.user = {};
   try {
     const token = req.cookies.__session;
-    const authData = jwt.verify(token, botConfig.token);
+    const authData = jwt.verify(token, process.env.BOT_TOKEN);
     req.user.auth = authData.auth;
     req.user.uid = authData.uid;
     req.user.firstName = authData.firstName;
@@ -54,20 +53,26 @@ app.get("/", auth, async (req, res) => {
       object.imgUrl = "/icons/shop.svg";
     }
   }
-  res.render("index", {objects, user: req.user, currencyName: botConfig.currency});
+  res.render("index", {objects, user: req.user, currencyName: process.env.BOT_CURRENCY});
 });
 
 // show object
 app.get("/o/:objectId", auth, async (req, res) => {
   const object = await store.findRecord(`objects/${req.params.objectId}`);
-  // count cart items
-  object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
-  if (object.logo) {
-    object.imgUrl = bucket.file(`photos/o/${object.id}/logo/${object.logo}.jpg`).publicUrl();
+  if (object) {
+    // count cart items
+    object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
+    if (object.logo) {
+      object.imgUrl = bucket.file(`photos/o/${object.id}/logo/${object.logo}.jpg`).publicUrl();
+    } else {
+      object.imgUrl = "/icons/shop.svg";
+    }
+    // Set Cache-Control
+    // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
+    res.render("object", {title: object.name, object, user: req.user, currencyName: process.env.BOT_CURRENCY});
   } else {
-    object.imgUrl = "/icons/shop.svg";
+    return res.redirect("/");
   }
-  res.render("object", {title: object.name, object, user: req.user, currencyName: botConfig.currency});
 });
 
 // show catalogs
@@ -228,7 +233,7 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
     tags,
     prevNextLinks,
     user: req.user,
-    currencyName: botConfig.currency,
+    currencyName: process.env.BOT_CURRENCY,
   });
 });
 
@@ -276,7 +281,7 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
     product,
     photos,
     user: req.user,
-    currencyName: botConfig.currency,
+    currencyName: process.env.BOT_CURRENCY,
   });
 });
 
@@ -320,7 +325,7 @@ app.get("/o/:objectId/s/:orderId", auth, async (req, res) => {
       products,
       totalQty,
       totalSum: roundNumber(totalSum),
-      currencyName: botConfig.currency,
+      currencyName: process.env.BOT_CURRENCY,
     });
   }
   res.send("Order not found");
@@ -359,14 +364,17 @@ app.get("/o/:objectId/share-cart/:orderId", auth, async (req, res) => {
       products,
       totalQty,
       totalSum: roundNumber(totalSum),
-      currencyName: botConfig.currency,
+      currencyName: process.env.BOT_CURRENCY,
     });
   }
   res.send("Cart not found");
 });
 
 // login with telegram
-app.get("/login", auth, async (req, res) => {
+app.get("/login/:objectId?", auth, async (req, res) => {
+  const objectId = req.params.objectId;
+  // redirect params
+  const redirectPage = req.query.r;
   if (req.query && checkSignature(req.query)) {
     // migrate cart if exist from all objects!!!
     if (req.user.uid) {
@@ -394,15 +402,15 @@ app.get("/login", auth, async (req, res) => {
       });
     }
     // create token
-    const token = jwt.sign({uid: req.query.id, auth: true, firstName: req.query.first_name}, botConfig.token);
+    const token = jwt.sign({uid: req.query.id, auth: true, firstName: req.query.first_name}, process.env.BOT_TOKEN);
     // save token to cookie
     return res.cookie("__session", token, {
       httpOnly: true,
       secure: true,
       maxAge: 30 * 24 * 60 * 60 * 1000,
-    }).redirect("/");
+    }).redirect(objectId ? `/o/${objectId}/cart/purchase` : "/");
   }
-  res.render("login", {user: req.user});
+  res.render("login", {user: req.user, redirectPage});
 });
 
 app.get("/logout", auth, (req, res) => {
@@ -459,7 +467,7 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
     object,
     products,
     user: req.user,
-    currencyName: botConfig.currency,
+    currencyName: process.env.BOT_CURRENCY,
   });
 });
 
@@ -474,11 +482,11 @@ app.get("/o/:objectId/cart/purchase", auth, async (req, res) => {
     title,
     object,
     user: req.user,
-    phoneregexp: botConfig.phoneregexp,
-    phonetemplate: botConfig.phonetemplate,
+    phoneregexp: process.env.BOT_PHONEREGEXP,
+    phonetemplate: process.env.BOT_PHONETEMPLATE,
     carriers: Array.from(store.carriers(), ([id, obj]) => ({id, name: obj.name, reqNumber: obj.reqNumber ? 1 : 0})),
     payments: Array.from(store.payments(), ([id, name]) => ({id, name})),
-    currencyName: botConfig.currency,
+    currencyName: process.env.BOT_CURRENCY,
   });
 });
 
@@ -502,7 +510,7 @@ app.post("/o/:objectId/cart/purchase", auth, (req, res) => {
     const rulesOrder = {
       "lastName": "required|string",
       "firstName": "required|string",
-      "phoneNumber": ["required", `regex:/${botConfig.phoneregexp}`],
+      "phoneNumber": ["required", `regex:/${process.env.BOT_PHONEREGEXP}`],
       "address": "required|string",
       "carrierId": "required|integer|min:0",
       "paymentId": "required|integer|min:0",
@@ -513,7 +521,7 @@ app.post("/o/:objectId/cart/purchase", auth, (req, res) => {
       rulesOrder.carrierNumber = "required|integer|min:0";
     }
     const validateOrder = new Validator(fields, rulesOrder, {
-      "regex": `The :attribute phone number is not in the format ${botConfig.phonetemplate}`,
+      "regex": `The :attribute phone number is not in the format ${process.env.BOT_PHONETEMPLATE}`,
     });
     if (validateOrder.fails()) {
       return res.status(422).json({error: {...validateOrder.errors.all()}});
@@ -567,7 +575,7 @@ app.post("/o/:objectId/cart/add", auth, jsonParser, async (req, res) => {
   // check uid or create new
   if (!req.user.uid) {
     const newCartRef = firebase.firestore().collection("objects").doc(objectId).collection("carts").doc();
-    const token = jwt.sign({uid: newCartRef.id, auth: false}, botConfig.token);
+    const token = jwt.sign({uid: newCartRef.id, auth: false}, process.env.BOT_TOKEN);
     req.user.uid = newCartRef.id;
     req.user.auth = false;
     // save token to cookie
@@ -636,7 +644,7 @@ app.use(function(req, res, next) {
 const checkSignature = ({hash, ...userData}) => {
   // create a hash of a secret that both you and Telegram know. In this case, it is your bot token
   const secretKey = createHash("sha256")
-      .update(botConfig.token)
+      .update(process.env.BOT_TOKEN)
       .digest();
   // this is the data to be authenticated i.e. telegram user id, first_name, last_name etc.
   const dataCheckString = Object.keys(userData)

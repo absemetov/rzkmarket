@@ -10,9 +10,11 @@
     "lint:js": "eslint --ext \".js,.vue\" --ignore-path .gitignore .",
     "lint": "yarn lint:js",
     "deploy-site-ua":"firebase deploy --project=ua --only functions:rzkComUa &&  firebase deploy --project=ua --only hosting:rzk.com.ua",
-    "deploy-site-ru":"firebase deploy --project=ru --only functions:rzkComRu &&  firebase deploy --project=ru --only hosting:rzk.com.ru",
     "deploy-bot-ua":"firebase deploy --project=ua --only functions:bot",
+    "deploy-triggers-ua":"firebase deploy --project=ua --only functions:triggers",
+    "deploy-site-ru":"firebase deploy --project=ru --only functions:rzkComRu &&  firebase deploy --project=ru --only hosting:rzk.com.ru",
     "deploy-bot-ru":"firebase deploy --project=ru --only functions:bot",
+    "deploy-triggers-ru":"firebase deploy --project=ru --only functions:triggers",
     "pl": "firebase use",
     "s": "firebase serve"
   },

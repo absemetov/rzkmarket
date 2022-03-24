@@ -9,7 +9,7 @@
   <div class="col-lg-4">
     {{#unless user.auth}}
       <div id="infoAlert" class="alert alert-warning alert-dismissible fade show" role="alert">
-        <strong>У вас есть Telegram?</strong> <a href="/login">Войдите через Telegram</a>
+        <strong>У вас есть Telegram?</strong> <a href="/login?r={{object.id}}">Войдите через Telegram</a>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
     {{/unless}}
