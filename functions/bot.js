@@ -6,6 +6,7 @@ const {uploadActions, uploadForm} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
 const {uploadPhotoProduct, uploadPhotoCat, catalogsActions, cartWizard} = require("./bot_catalog_scene");
 const {store, photoCheckUrl} = require("./bot_store_cart");
+const algoliasearch = require("algoliasearch");
 const bot = new Telegraf(process.env.BOT_TOKEN, {
   handlerTimeout: 540000,
 });
@@ -105,6 +106,15 @@ bot.command("mono", async (ctx) => {
 });
 // check session vars
 bot.on(["text", "contact"], async (ctx) => {
+  // algolia search test
+  const client = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
+  const index = client.initIndex("products");
+  index.search("Fo").then(({hits}) => {
+    console.log(hits);
+  }).catch((err) => {
+    console.log(err);
+  });
+
   if (ctx.session.scene === "editOrder") {
     await orderWizard[ctx.session.cursor](ctx);
     return;

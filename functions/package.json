@@ -15,6 +15,7 @@
   "main": "index.js",
   "dependencies": {
     "@googleapis/content": "^1.2.0",
+    "algoliasearch": "^4.13.0",
     "axios": "^0.24.0",
     "body-parser": "^1.19.1",
     "busboy": "^1.4.0",
