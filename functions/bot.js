@@ -109,11 +109,24 @@ bot.on(["text", "contact"], async (ctx) => {
   // algolia search test
   const client = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
   const index = client.initIndex("products");
-  index.search("Fo").then(({hits}) => {
-    console.log(hits);
-  }).catch((err) => {
-    console.log(err);
-  });
+  const inlineKeyboard = [];
+  try {
+    const resalt = await index.search(ctx.message.text);
+    console.log(resalt);
+    for (const product of resalt.hits) {
+      const addButton = {text: `${product.objectID} ${product.name} ${product.price} ${product.currency}`,
+        callback_data: `p/${product.id}?o=absemetov`};
+      inlineKeyboard.push([addButton]);
+    }
+    await ctx.reply(`Search resalts: ${resalt.nbHits}`, {
+      reply_markup: {
+        inline_keyboard: inlineKeyboard,
+      },
+    });
+    return;
+  } catch (error) {
+    await ctx.reply(`Algolia error: ${error}`);
+  }
 
   if (ctx.session.scene === "editOrder") {
     await orderWizard[ctx.session.cursor](ctx);
