@@ -7,7 +7,7 @@ const startActions = [];
 
 // admin midleware
 const isAdmin = (ctx, next) => {
-  ctx.state.isAdmin = ctx.from.id === 94899148;
+  ctx.state.isAdmin = ctx.message.from.id === 94899148;
   return next();
 };
 
