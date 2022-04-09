@@ -12,6 +12,7 @@ const jsonParser = bodyParser.json();
 const Validator = require("validatorjs");
 const busboy = require("busboy");
 const moment = require("moment");
+const algoliasearch = require("algoliasearch");
 // require("moment/locale/ru");
 // moment.locale("ru");
 const app = express();
@@ -54,6 +55,22 @@ app.get("/", auth, async (req, res) => {
     }
   }
   res.render("index", {objects, user: req.user, currencyName: process.env.BOT_CURRENCY});
+});
+
+// search products
+app.get("/search", auth, async (req, res) => {
+  const client = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
+  const index = client.initIndex("products");
+  const query = req.query.q;
+  const products = [];
+  // get search resalts
+  const resalt = await index.search(query);
+  for (const product of resalt.hits) {
+    products.push({
+      name: product.name,
+    });
+  }
+  res.render("search", {resalt, user: req.user, currencyName: process.env.BOT_CURRENCY});
 });
 
 // show object

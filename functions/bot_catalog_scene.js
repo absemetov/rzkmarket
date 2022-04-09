@@ -27,6 +27,13 @@ const showCatalog = async (ctx, next) => {
     }
     const inlineKeyboardArray =[];
     ctx.session.pathCatalog = ctx.callbackQuery.data;
+    // show catalog siblings, get catalogs snap index or siblings
+    const catalogsSnapshot = await firebase.firestore().collection("objects").doc(objectId)
+        .collection("catalogs")
+        .where("parentId", "==", catalogId ? catalogId : null).orderBy("orderNumber").get();
+    catalogsSnapshot.docs.forEach((doc) => {
+      inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}?o=${objectId}${uUrl}`}]);
+    });
     if (catalogId) {
       const currentCatalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
       // back button
@@ -119,13 +126,7 @@ const showCatalog = async (ctx, next) => {
         publicImgUrl = `photos/o/${objectId}/c/${currentCatalog.id}/${currentCatalog.photo}.jpg`;
       }
     }
-    // show catalog siblings, get catalogs snap index or siblings
-    const catalogsSnapshot = await firebase.firestore().collection("objects").doc(objectId)
-        .collection("catalogs")
-        .where("parentId", "==", catalogId ? catalogId : null).orderBy("orderNumber").get();
-    catalogsSnapshot.docs.forEach((doc) => {
-      inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}?o=${objectId}${uUrl}`}]);
-    });
+    // cart buttons
     cartButtons[0].text = `🏪 ${object.name}`;
     inlineKeyboardArray.push(cartButtons);
     // render

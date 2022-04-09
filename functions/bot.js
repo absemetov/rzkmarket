@@ -118,7 +118,7 @@ bot.on(["text", "contact"], async (ctx) => {
         callback_data: `p/${product.id}?o=absemetov`};
       inlineKeyboard.push([addButton]);
     }
-    await ctx.reply(`Search resalts: ${resalt.nbHits}`, {
+    await ctx.reply(`Search resalts1111: ${resalt.nbHits}`, {
       reply_markup: {
         inline_keyboard: inlineKeyboard,
       },
@@ -185,10 +185,7 @@ bot.catch((error) => {
   // throw error;
   console.log("Telegraf error", error);
 });
-// launch local env
-if (process.env.FUNCTIONS_EMULATOR) {
-  bot.launch();
-}
+
 // memory value 128MB 256MB 512MB 1GB 2GB 4GB 8GB
 const runtimeOpts = {
   timeoutSeconds: 540,
@@ -201,7 +198,12 @@ const runtimeOpts = {
 exports.bot = functions.region("europe-central2").
     runWith(runtimeOpts).https.onRequest(async (req, res) => {
       try {
-        await bot.handleUpdate(req.body);
+        // launch local env
+        if (process.env.FUNCTIONS_EMULATOR) {
+          await bot.launch();
+        } else {
+          await bot.handleUpdate(req.body);
+        }
       } finally {
         res.status(200).end();
       }
