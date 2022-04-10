@@ -62,14 +62,12 @@ app.get("/search", auth, async (req, res) => {
   const client = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
   const index = client.initIndex("products");
   const query = req.query.q;
-  const products = [];
+  const page = req.query.p;
   // get search resalts
-  const resalt = await index.search(query);
-  for (const product of resalt.hits) {
-    products.push({
-      name: product.name,
-    });
-  }
+  const resalt = await index.search(query, {
+    page,
+    hitsPerPage: 40,
+  });
   res.render("search", {resalt, user: req.user, currencyName: process.env.BOT_CURRENCY});
 });
 
