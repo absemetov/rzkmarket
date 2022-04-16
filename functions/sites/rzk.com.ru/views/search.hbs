@@ -1,19 +1,144 @@
-<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 row-cols-xxl-6 g-2 mb-3">
-  {{#each resalt.hits as |product|}}
-    <div class="col">
-      <div class="card text-center h-100">
-        <div class="card-body">
-          <h6>{{product.name}}</h6>
-        </div>
-      </div>
-    </div>
-  {{/each}}
-</div>
+<h1>InstantSearch.js</h1>
+<div id="searchbox" class="row"></div>
+<div id="hits" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 row-cols-xxl-6 g-2 mb-3"></div>
 <div class="row">
-  <div class="col">
-    <h5>Page: <strong>{{resalt.page}}</strong></h5>
-    <h5>nbHits: <strong>{{resalt.nbHits}}</strong></h5>
-    <h5>nbPages: <strong>{{resalt.nbPages}}</strong></h5>
-    <h5>hitsPerPage: <strong>{{resalt.hitsPerPage}}</strong></h5>
-  </div>
+  <nav id="pagination" aria-label="Page navigation example"></nav>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/algoliasearch@4.5.1/dist/algoliasearch-lite.umd.js" integrity="sha256-EXPXz4W6pQgfYY3yTpnDa3OH8/EPn16ciVsPQ/ypsjk=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/instantsearch.js@4.8.3/dist/instantsearch.production.min.js" integrity="sha256-LAGhRRdtVoD6RLo2qDQsU2mp+XVSciKRC8XPOBWmofM=" crossorigin="anonymous"></script>
+<script>
+  const searchClient = algoliasearch('YZIFWJVE7R', 'a56bd432142fc9813846fa737167eeef');
+
+  const search = instantsearch({
+    indexName: 'products',
+    searchClient,
+  });
+
+  // Create the render function
+  const renderHits = (renderOptions, isFirstRender) => {
+    const { hits, widgetParams } = renderOptions;
+
+    widgetParams.container.innerHTML = `
+      ${hits
+          .map(
+            item =>
+              `<div class="col">
+                <div class="card text-center h-100">
+                  <div class="card-body">
+                    <h6>${instantsearch.highlight({ attribute: 'name', hit: item })}</h6>
+                  </div>
+                </div>
+              </div>
+              `
+          )
+          .join('')}
+    `;
+  };
+
+  // Create the custom widget
+  const customHits = instantsearch.connectors.connectHits(renderHits);
+
+  const renderPagination = (renderOptions, isFirstRender) => {
+    const {
+      pages,
+      currentRefinement,
+      nbPages,
+      isFirstPage,
+      isLastPage,
+      refine,
+      createURL,
+    } = renderOptions;
+
+    const container = document.querySelector('#pagination');
+
+    container.innerHTML = `
+      <ul class="pagination">
+        ${
+          !isFirstPage
+            ? `
+              <li class="page-item">
+                <a class="page-link"
+                  href="${createURL(0)}"
+                  data-value="${0}"
+                >
+                  First
+                </a>
+              </li>
+              <li class="page-item">
+                <a class="page-link"
+                  href="${createURL(currentRefinement - 1)}"
+                  data-value="${currentRefinement - 1}"
+                >
+                  Previous
+                </a>
+              </li>
+              `
+            : ''
+        }
+        ${pages
+          .map(
+            page => `
+              <li class="page-item ${currentRefinement === page ? 'active' : ''}">
+                <a class="page-link"
+                  href="${createURL(page)}"
+                  data-value="${page}"
+                >
+                  ${page + 1}
+                </a>
+              </li>
+            `
+          )
+          .join('')}
+          ${
+            !isLastPage
+              ? `
+                <li class="page-item">
+                  <a class="page-link"
+                    href="${createURL(currentRefinement + 1)}"
+                    data-value="${currentRefinement + 1}"
+                  >
+                    Next
+                  </a>
+                </li>
+                <li class="page-item">
+                  <a class="page-link"
+                    href="${createURL(nbPages - 1)}"
+                    data-value="${nbPages - 1}"
+                  >
+                    Last
+                  </a>
+                </li>
+                `
+              : ''
+          }
+      </ul>
+    `;
+
+    [...container.querySelectorAll('a')].forEach(element => {
+      element.addEventListener('click', event => {
+        event.preventDefault();
+        refine(event.currentTarget.dataset.value);
+      });
+    });
+  };
+
+  // Create the custom widget
+  const customPagination = instantsearch.connectors.connectPagination(
+    renderPagination
+  );
+
+  search.addWidgets([
+    instantsearch.widgets.searchBox({
+      container: '#searchbox',
+    }),
+    customHits({
+      container: document.querySelector('#hits'),
+    }),
+    customPagination({
+      container: document.querySelector('#pagination'),
+    }),
+  ]);
+
+  search.start();
+
+</script>
