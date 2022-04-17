@@ -12,6 +12,9 @@
   const search = instantsearch({
     indexName: 'products',
     searchClient,
+    routing: {
+      stateMapping: instantsearch.stateMappings.simple(),
+    },
   });
 
   // Create the render function
@@ -127,6 +130,16 @@
     renderPagination
   );
 
+  // autocomplite
+  const renderAutocomplete = (renderOptions, isFirstRender) => {
+    // Rendering logic
+  };
+
+  // Create the custom widget
+  const customAutocomplete = instantsearch.connectors.connectAutocomplete(
+    renderAutocomplete
+  );
+
   search.addWidgets([
     instantsearch.widgets.searchBox({
       container: '#searchbox',
@@ -136,6 +149,9 @@
     }),
     customPagination({
       container: document.querySelector('#pagination'),
+    }),
+    customAutocomplete({
+      // instance params
     }),
   ]);
 
