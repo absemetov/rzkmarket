@@ -1,8 +1,5 @@
 .env*
-.runtimeconfig.json
-rzk-market-ru-config.json
-rzk-market-ua-config.json
-rzk-market-dev-config.json
+.parcel-cache
 rzk-com-ua-d1d3248b8410.json
 rzk-warsaw-ru-firebase-adminsdk-nzfp6-0e594387ad.json
 node_modules/
