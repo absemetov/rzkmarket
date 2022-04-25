@@ -3,7 +3,7 @@
   "description": "Cloud Functions for Firebase",
   "scripts": {
     "start-parcel-ru": "parcel sites/rzk.com.ru/src/index.html --dist-dir sites/rzk.com.ru/dist",
-    "build-parcel-ru": "parcel build sites/rzk.com.ru/src/app.js --dist-dir ../sites/rzk.com.ru/js/app.js",
+    "build-parcel-ru": "parcel build sites/rzk.com.ru/src/app.js --target server --dist-dir ../sites/rzk.com.ru/js/dist",
     "lint": "eslint .",
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",
@@ -15,6 +15,18 @@
     "node": "16"
   },
   "main": "index.js",
+  "targets": {
+    "main": false,
+    "modern": {
+      "engines": {
+        "browsers": "Chrome 80"
+      }
+    },
+    "server": {
+      "context": "node",
+      "outputFormat": "esmodule"
+    }
+  },
   "dependencies": {
     "@googleapis/content": "^1.2.0",
     "algoliasearch": "^4.13.0",
@@ -31,6 +43,7 @@
     "firebase-functions": "^3.20.1",
     "google-spreadsheet": "^3.2.0",
     "googleapis": "^76.0.0",
+    "instantsearch.js": "^4.40.4",
     "jsonwebtoken": "^8.5.1",
     "moment": "^2.29.1",
     "telegraf": "^4.7.0",
