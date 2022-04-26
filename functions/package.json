@@ -2,8 +2,8 @@
   "name": "functions",
   "description": "Cloud Functions for Firebase",
   "scripts": {
-    "start-parcel-ru": "parcel sites/rzk.com.ru/src/index.html --dist-dir sites/rzk.com.ru/dist",
-    "build-parcel-ru": "parcel build sites/rzk.com.ru/src/app.js --target server --dist-dir ../sites/rzk.com.ru/js/dist",
+    "start-parcel-ru": "parcel sites/rzk.com.ru/src/index.html",
+    "build-parcel-ru": "parcel build src/index.html",
     "lint": "eslint .",
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",
@@ -16,22 +16,24 @@
   },
   "main": "index.js",
   "targets": {
-    "main": false,
-    "modern": {
-      "engines": {
-        "browsers": "Chrome 80"
-      }
+    "web": {
+      "context": "browser",
+      "source": "sites/rzk.com.ru/src/index.html"
     },
-    "server": {
-      "context": "node",
-      "outputFormat": "esmodule"
+    "bundler": {
+      "context": "browser",
+      "source": "sites/rzk.com.ru/src/app.js",
+      "distDir": "../sites/rzk.com.ru/js/dist",
+      "sourceMap": false
     }
   },
   "dependencies": {
     "@googleapis/content": "^1.2.0",
+    "@popperjs/core": "^2.11.5",
     "algoliasearch": "^4.13.0",
     "axios": "^0.24.0",
     "body-parser": "^1.19.1",
+    "bootstrap": "^5.1.3",
     "busboy": "^1.4.0",
     "cookie-parser": "^1.4.6",
     "currency-codes": "^2.1.0",
@@ -50,6 +52,7 @@
     "validatorjs": "^3.22.1"
   },
   "devDependencies": {
+    "@parcel/transformer-sass": "2.5.0",
     "eslint": "^8.14.0",
     "eslint-config-google": "^0.14.0",
     "firebase-functions-test": "^0.2.0",
