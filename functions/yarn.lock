@@ -2,6 +2,41 @@
 # yarn lockfile v1
 
 
+"@algolia/autocomplete-core@1.6.2":
+  version "1.6.2"
+  resolved "https://registry.yarnpkg.com/@algolia/autocomplete-core/-/autocomplete-core-1.6.2.tgz#54324a558efc2438559bb3e79fd2f2ae4acef0dd"
+  integrity sha512-YntEdEOck6f7LtCcrT2TjUl2AI+G/HcY7gQWMgM4kuruu9vSxyF05W48IFWANt2gTI7oj0Q5zAZgyVppkQM9LA==
+  dependencies:
+    "@algolia/autocomplete-shared" "1.6.2"
+
+"@algolia/autocomplete-js@^1.6.2":
+  version "1.6.2"
+  resolved "https://registry.yarnpkg.com/@algolia/autocomplete-js/-/autocomplete-js-1.6.2.tgz#b7a3ef38513f24f732b896bc0e75b70a9be388bb"
+  integrity sha512-/0lFGUZ6c5HGOidb06NlvApLR19nGviFEQI6A2wtEds0ME+L9Xp3LzJWCi/675a5rekOfSR6RE4fN14ujXrVug==
+  dependencies:
+    "@algolia/autocomplete-core" "1.6.2"
+    "@algolia/autocomplete-preset-algolia" "1.6.2"
+    "@algolia/autocomplete-shared" "1.6.2"
+    htm "^3.0.0"
+    preact "^10.0.0"
+
+"@algolia/autocomplete-preset-algolia@1.6.2":
+  version "1.6.2"
+  resolved "https://registry.yarnpkg.com/@algolia/autocomplete-preset-algolia/-/autocomplete-preset-algolia-1.6.2.tgz#22ce3979c13b912d293d4f23fd1b2008a304096a"
+  integrity sha512-1g2Fr4XcGFf0+bSPVcxPhiOP6cwWpu3d8TMcinU6On68+IJ8YeMzLTX72uWYLd+kK32SLepdxUpY+Gx9gN3C2g==
+  dependencies:
+    "@algolia/autocomplete-shared" "1.6.2"
+
+"@algolia/autocomplete-shared@1.6.2":
+  version "1.6.2"
+  resolved "https://registry.yarnpkg.com/@algolia/autocomplete-shared/-/autocomplete-shared-1.6.2.tgz#27ad6d8fa7825c6146933e11eebc5936ca12f569"
+  integrity sha512-Js7N8EgKsRgaclDde70rF07VOdC+Zb6VLXTIWkJnO6+EI9zbXm/mT2StGVcpNuQ+UN8ZF/bVZLjuVBypOk8bUQ==
+
+"@algolia/autocomplete-theme-classic@^1.6.2":
+  version "1.6.2"
+  resolved "https://registry.yarnpkg.com/@algolia/autocomplete-theme-classic/-/autocomplete-theme-classic-1.6.2.tgz#44ffcc869f7e9976037e3b661bcf28dd8640b209"
+  integrity sha512-RUMAbqGEEQwj/l1y4pqY5yJ/8m7JHtDX+G9q+MTzhkMTO5zoKQ3n2FtbhPuiSdp0bULVJ0pRsTb5PTAe/rSdzg==
+
 "@algolia/cache-browser-local-storage@4.13.0":
   version "4.13.0"
   resolved "https://registry.npmjs.org/@algolia/cache-browser-local-storage/-/cache-browser-local-storage-4.13.0.tgz"
@@ -3173,6 +3208,11 @@ hogan.js@^3.0.2:
     mkdirp "0.3.0"
     nopt "1.0.10"
 
+htm@^3.0.0:
+  version "3.1.1"
+  resolved "https://registry.yarnpkg.com/htm/-/htm-3.1.1.tgz#49266582be0dc66ed2235d5ea892307cc0c24b78"
+  integrity sha512-983Vyg8NwUE7JkZ6NmOqpCZ+sh1bKv2iYTlUkzlWmA5JD2acKoxd4KVxbMmxX/85mtfdnDmTFoNKcg5DGAvxNQ==
+
 htmlescape@^1.1.0:
   version "1.1.1"
   resolved "https://registry.npmjs.org/htmlescape/-/htmlescape-1.1.1.tgz"
@@ -4217,7 +4257,7 @@ posthtml@^0.16.4, posthtml@^0.16.5:
     posthtml-parser "^0.11.0"
     posthtml-render "^3.0.0"
 
-preact@^10.6.0:
+preact@^10.0.0, preact@^10.6.0:
   version "10.7.1"
   resolved "https://registry.yarnpkg.com/preact/-/preact-10.7.1.tgz#bdd2b2dce91a5842c3b9b34dfe050e5401068c9e"
   integrity sha512-MufnRFz39aIhs9AMFisonjzTud1PK1bY+jcJLo6m2T9Uh8AqjD77w11eAAawmjUogoGOnipECq7e/1RClIKsxg==

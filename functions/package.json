@@ -2,8 +2,8 @@
   "name": "functions",
   "description": "Cloud Functions for Firebase",
   "scripts": {
-    "start-parcel-ru": "parcel sites/rzk.com.ru/src/index.html",
-    "build-parcel-ru": "parcel build src/index.html",
+    "parcel-s": "parcel sites/rzk.com.ru/src/index.html --dist-dir ../sites/rzk.com.ru/dist",
+    "parcel-b": "parcel build sites/rzk.com.ru/src/index.html",
     "lint": "eslint .",
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",
@@ -16,6 +16,7 @@
   },
   "main": "index.js",
   "targets": {
+    "main": false,
     "web": {
       "context": "browser",
       "source": "sites/rzk.com.ru/src/index.html"
@@ -23,11 +24,13 @@
     "bundler": {
       "context": "browser",
       "source": "sites/rzk.com.ru/src/app.js",
-      "distDir": "../sites/rzk.com.ru/js/dist",
+      "distDir": "../sites/rzk.com.ru/dist",
       "sourceMap": false
     }
   },
   "dependencies": {
+    "@algolia/autocomplete-js": "^1.6.2",
+    "@algolia/autocomplete-theme-classic": "^1.6.2",
     "@googleapis/content": "^1.2.0",
     "@popperjs/core": "^2.11.5",
     "algoliasearch": "^4.13.0",
