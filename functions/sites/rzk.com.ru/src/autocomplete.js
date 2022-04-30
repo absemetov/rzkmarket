@@ -1,44 +1,76 @@
-import {autocomplete} from "@algolia/autocomplete-js";
-import {
-  debouncedSetInstantSearchUiState,
-  getInstantSearchCurrentCategory,
-  getInstantSearchUiState,
-  getInstantSearchUrl,
-  INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE,
-  INSTANT_SEARCH_INDEX_NAME,
-  setInstantSearchUiState,
-} from "./instantsearch";
+import {autocomplete, getAlgoliaResults} from "@algolia/autocomplete-js";
+import {setInstantSearchUiState, getInstantSearchUiState} from "./instantsearch";
+import {searchClient} from "./searchClient";
+
+const searchPageState = getInstantSearchUiState();
 
 export function startAutocomplete() {
   autocomplete({
     container: "#autocomplete",
     placeholder: "Search for products",
-    openOnFocus: true,
     detachedMediaQuery: "none",
     initialState: {
       query: searchPageState.query || "",
-    },
-    navigator: {
-      navigate() {
-        // We don't navigate to a new page because we leverage the InstantSearch
-        // UI state API.
-      },
     },
     onSubmit({state}) {
       setInstantSearchUiState({query: state.query});
     },
     onReset() {
-      setInstantSearchUiState({
-        query: "",
-        hierarchicalMenu: {
-          [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [],
-        },
-      });
+      setInstantSearchUiState({query: ""});
     },
     onStateChange({prevState, state}) {
       if (prevState.query !== state.query) {
-        debouncedSetInstantSearchUiState({query: state.query});
+        setInstantSearchUiState({query: state.query});
       }
+    },
+    getSources({query}) {
+      return [
+        {
+          sourceId: "links",
+          getItems({query}) {
+            return [
+              {label: "Twitter", url: "https://twitter.com"},
+              {label: "GitHub", url: "https://github.com"},
+            ].filter(({label}) =>
+              label.toLowerCase().includes(query.toLowerCase()));
+          },
+          getItemUrl({item}) {
+            return item.url;
+          },
+          templates: {
+            item({item}) {
+              return `Result: ${item.label}`;
+            },
+          },
+        },
+        {
+          sourceId: "products",
+          getItems() {
+            return getAlgoliaResults({
+              searchClient,
+              queries: [
+                {
+                  indexName: "products",
+                  query,
+                  params: {
+                    hitsPerPage: 5,
+                    attributesToSnippet: ["name:10"],
+                    snippetEllipsisText: "…",
+                  },
+                },
+              ],
+            });
+          },
+          getItemInputValue({item}) {
+            return item.name;
+          },
+          templates: {
+            item({item}) {
+              return `Result: ${item.name}`;
+            },
+          },
+        },
+      ];
     },
   });
 }
