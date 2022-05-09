@@ -1,8 +1,7 @@
 import instantsearch from "instantsearch.js";
-import {connectSearchBox, connectHits, connectPagination} from "instantsearch.js/es/connectors";
+import {connectSearchBox, connectHits, connectPagination, connectHierarchicalMenu} from "instantsearch.js/es/connectors";
 import historyRouter from "instantsearch.js/es/lib/routers/history";
 import {highlight} from "instantsearch.js/es/helpers";
-
 import {searchClient} from "../src/searchClient";
 
 export const INSTANT_SEARCH_INDEX_NAME = "products";
@@ -15,7 +14,7 @@ export const search = instantsearch({
 });
 const virtualSearchBox = connectSearchBox(() => {});
 
-// Create the render function
+// Create the render function for hits
 const renderHits = (renderOptions, isFirstRender) => {
   const {hits, widgetParams} = renderOptions;
 
@@ -34,9 +33,10 @@ const renderHits = (renderOptions, isFirstRender) => {
   `;
 };
 
-// Create the custom widget
+// Create the custom widget hits
 const customHits = connectHits(renderHits);
 
+// render pagination
 const renderPagination = (renderOptions, isFirstRender) => {
   const {
     pages,
@@ -118,15 +118,84 @@ const renderPagination = (renderOptions, isFirstRender) => {
   });
 };
 
-// Create the custom widget
+// Create the custom widget pagination
 const customPagination = connectPagination(
     renderPagination,
+);
+
+// create the render functions hierarchical-menu
+const renderList = ({newitems, createURL}) => `
+  ${newitems
+      .map(
+          (item) => `
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <a
+              href="${createURL(item.value)}"
+              data-value="${item.value}"
+            >
+            ${item.isRefined ? ">>>" : ""} ${item.label}
+            </a>
+            <span class="badge bg-primary rounded-pill">${item.count}</span>
+          </li>
+          ${item.data ? renderList({newitems: item.data, createURL}) : ""}
+        `,
+      )
+      .join("")}
+`;
+
+const renderHierarchicalMenu = (renderOptions, isFirstRender) => {
+  const {
+    items,
+    refine,
+    createURL,
+    widgetParams,
+  } = renderOptions;
+
+  // if (isFirstRender) {
+  //   const list = document.createElement("div");
+  //   widgetParams.container.appendChild(list);
+  // }
+  // check items
+  let newitems = [];
+  for (const element of items) {
+    if (element.isRefined) {
+      newitems.push(element);
+      break;
+    }
+  }
+  if (!newitems.length) {
+    newitems = items;
+  }
+  console.log(newitems);
+  const children = renderList({newitems, createURL});
+  widgetParams.container.innerHTML = children;
+  [...widgetParams.container.querySelectorAll("a")].forEach((element) => {
+    element.addEventListener("click", (event) => {
+      event.preventDefault();
+      refine(event.target.dataset.value);
+    });
+  });
+};
+
+// Create the custom widget hi
+const customHierarchicalMenu = connectHierarchicalMenu(
+    renderHierarchicalMenu,
 );
 
 search.addWidgets([
   // Mount a virtual search box to manipulate InstantSearch"s `query` UI
   // state parameter.
   virtualSearchBox(),
+  customHierarchicalMenu({
+    container: document.querySelector("#hierarchical-menu"),
+    attributes: [
+      "categories.lvl0",
+      "categories.lvl1",
+      "categories.lvl2",
+      "categories.lvl3",
+    ],
+    showParentLevel: false,
+  }),
   customHits({
     container: document.querySelector("#hits"),
   }),
