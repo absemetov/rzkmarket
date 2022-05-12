@@ -5,6 +5,7 @@ import {highlight} from "instantsearch.js/es/helpers";
 import {searchClient} from "../src/searchClient";
 
 export const INSTANT_SEARCH_INDEX_NAME = "products";
+export const INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE = "categories.lvl0";
 const instantSearchRouter = historyRouter();
 
 export const search = instantsearch({
@@ -166,7 +167,6 @@ const renderHierarchicalMenu = (renderOptions, isFirstRender) => {
   if (!newitems.length) {
     newitems = items;
   }
-  console.log(newitems);
   const children = renderList({newitems, createURL});
   widgetParams.container.innerHTML = children;
   [...widgetParams.container.querySelectorAll("a")].forEach((element) => {
@@ -215,6 +215,11 @@ export function setInstantSearchUiState(indexUiState) {
       ...indexUiState,
     },
   }));
+}
+
+// Build URLs that InstantSearch understands.
+export function getInstantSearchUrl(indexUiState) {
+  return search.createURL({[INSTANT_SEARCH_INDEX_NAME]: indexUiState});
 }
 
 // Return the InstantSearch index UI state.
