@@ -3,6 +3,14 @@
 
 // Include any default variable overrides here (though functions won't be available)
 
-@import "../../../node_modules/bootstrap/scss/bootstrap";
+@import "bootstrap/scss/bootstrap";
 
+body {
+  min-height: 75rem;
+  padding-top: 4.5rem;
+}
+
+.aa-Panel {
+  z-index: 9999;
+}
 // Then add additional custom code here

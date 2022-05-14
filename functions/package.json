@@ -38,7 +38,7 @@
     "algoliasearch": "^4.13.0",
     "axios": "^0.24.0",
     "body-parser": "^1.19.1",
-    "bootstrap": "^5.1.3",
+    "bootstrap": "5.2.0-beta1",
     "busboy": "^1.4.0",
     "cookie-parser": "^1.4.6",
     "currency-codes": "^2.1.0",
