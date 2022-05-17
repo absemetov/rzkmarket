@@ -11,7 +11,7 @@ const instantSearchRouter = historyRouter();
 export const search = instantsearch({
   searchClient,
   indexName: INSTANT_SEARCH_INDEX_NAME,
-  routing: instantSearchRouter,
+  routing: {router: instantSearchRouter},
 });
 const virtualSearchBox = connectSearchBox(() => {});
 
@@ -219,6 +219,7 @@ export function setInstantSearchUiState(indexUiState) {
 
 // Build URLs that InstantSearch understands.
 export function getInstantSearchUrl(indexUiState) {
+  console.log(indexUiState);
   return search.createURL({[INSTANT_SEARCH_INDEX_NAME]: indexUiState});
 }
 

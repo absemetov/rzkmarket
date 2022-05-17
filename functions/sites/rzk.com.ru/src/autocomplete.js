@@ -20,10 +20,9 @@ function getItemUrl({query}) {
 
 function createItemWrapperTemplate({children, query, html}) {
   const uiState = {query};
-
   return html`<a
     class="aa-ItemLink"
-    href="${getInstantSearchUrl(uiState)}"
+    href="/search?q=${uiState.query}"
   >
     ${children}
   </a>`;
@@ -36,9 +35,13 @@ const recentSearchesPlugin = createLocalStorageRecentSearchesPlugin({
     return {
       ...source,
       getItemUrl({item}) {
-        return getItemUrl({
-          query: item.label,
-        });
+        // redirects
+        if (window.location.pathname !== "/search") {
+          return "/search?" + item.label;
+        }
+        // return getItemUrl({
+        //   query: item.label,
+        // });
       },
       onSelect({setIsOpen, setQuery, item, event}) {
         onSelect({
@@ -72,8 +75,7 @@ export function startAutocomplete() {
   autocomplete({
     container: "#autocomplete",
     openOnFocus: true,
-    placeholder: "Search for products",
-    detachedMediaQuery: "none",
+    placeholder: "Search",
     initialState: {
       query: searchPageState.query || "",
     },
@@ -143,16 +145,14 @@ export function startAutocomplete() {
               ],
             });
           },
-          getItemInputValue({item}) {
-            return item.name;
-          },
-          onSelect({setIsOpen, setQuery, item, event}) {
-            onSelect({
-              setQuery,
-              setIsOpen,
-              event,
-              query: item.label,
-            });
+          // getItemInputValue({item}) {
+          //   return item.name;
+          // },
+          getItemUrl({item}) {
+            // redirects
+            if (window.location.pathname !== "/search") {
+              return "/search?" + item.name;
+            }
           },
           templates: {
             item({item}) {

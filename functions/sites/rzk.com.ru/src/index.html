@@ -8,29 +8,28 @@
     <script type="module" src="app.js"></script>
   </head>
   <body>
-    <nav class="navbar fixed-top navbar-expand navbar-light bg-light">
+    <nav class="navbar navbar-expand navbar-light bg-light">
       <div class="container-fluid">
         <button class="navbar-toggler d-inline" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
           <span class="navbar-toggler-icon"></span>
         </button>
-        <a class="d-none d-sm-inline ps-2 me-auto" href="/">
+        <a class="d-none d-sm-inline ps-2" href="/">
           <img src="//rzk.com.ru/logo-long.svg" alt="" width="" height="40">
         </a>
-        <a class="d-inline d-sm-none ps-2 me-auto" href="/">
+        <a class="d-inline d-sm-none ps-2" href="/">
           <img src="//rzk.com.ru/logo.svg" alt="" width="" height="40">
         </a>
+        <div id="autocomplete" class="w-100 px-2"></div>
         <ul class="navbar-nav me-2">
-          {{#if object.id}}
           <li class="nav-item"></li>
             <a class="text-nowrap nav-link{{#if cart}} active{{/if}} position-relative" href="//rzk.com.ru/o/{{object.id}}/cart">
-              Корзина <strong id="totalSumNav">{{object.cartInfo.totalSum}} {{currencyName}}</strong>
+              Корзина <strong id="totalSumNav">165р</strong>
               <span id="cartCountNav" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger mt-1">
-                {{object.cartInfo.cartCount}}
+                4
                 <span class="visually-hidden">count goods</span>
               </span>
             </a>
           </li>
-          {{/if}}
         </ul>
       </div>
     </nav>
@@ -66,33 +65,10 @@
       </div>
     </div>
     <div class="container-fluid">
-      <!-- Button trigger modal -->
-      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
-        Launch demo modal
-      </button>
-
-      <!-- Modal -->
-      <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title" id="exampleModalLabel">InstantSearch.js with Autocomlete!</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-              <div id="autocomplete"></div>
-              <div id="hierarchical-menu" class="list-group my-3"></div>
-              <div id="hits" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 row-cols-xxl-6 g-2 my-3"></div>
-              <div class="row">
-                <nav id="pagination" aria-label="Page navigation example"></nav>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-              <button type="button" class="btn btn-primary">Save changes</button>
-            </div>
-          </div>
-        </div>
+      <div id="hierarchical-menu" class="list-group my-3"></div>
+      <div id="hits" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 row-cols-xxl-6 g-2 my-3"></div>
+      <div class="row">
+        <nav id="pagination" aria-label="Page navigation example"></nav>
       </div>
     </div>
   </body>
