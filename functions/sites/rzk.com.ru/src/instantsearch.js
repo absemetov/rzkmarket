@@ -219,7 +219,6 @@ export function setInstantSearchUiState(indexUiState) {
 
 // Build URLs that InstantSearch understands.
 export function getInstantSearchUrl(indexUiState) {
-  console.log(indexUiState);
   return search.createURL({[INSTANT_SEARCH_INDEX_NAME]: indexUiState});
 }
 

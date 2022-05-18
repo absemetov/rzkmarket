@@ -1,32 +1,32 @@
 import {autocomplete, getAlgoliaResults} from "@algolia/autocomplete-js";
 import {createLocalStorageRecentSearchesPlugin} from "@algolia/autocomplete-plugin-recent-searches";
-import {setInstantSearchUiState, getInstantSearchUiState, INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE, getInstantSearchUrl} from "./instantsearch";
+import {setInstantSearchUiState, getInstantSearchUiState, INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE} from "./instantsearch";
 import {searchClient} from "./searchClient";
 
-function onSelect({setIsOpen, setQuery, event, query}) {
-  // You want to trigger the default browser behavior if the event is modified.
-  // if (isModifierEvent(event)) {
-  //   return;
-  // }
+// function onSelect({setIsOpen, setQuery, event, query}) {
+//   // You want to trigger the default browser behavior if the event is modified.
+//   // if (isModifierEvent(event)) {
+//   //   return;
+//   // }
 
-  setQuery(query);
-  setIsOpen(false);
-  setInstantSearchUiState({query});
-}
+//   setQuery(query);
+//   setIsOpen(false);
+//   setInstantSearchUiState({query});
+// }
 
-function getItemUrl({query}) {
-  return getInstantSearchUrl({query});
-}
+// function getItemUrl({query}) {
+//   return getInstantSearchUrl({query});
+// }
 
-function createItemWrapperTemplate({children, query, html}) {
-  const uiState = {query};
-  return html`<a
-    class="aa-ItemLink"
-    href="/search?q=${uiState.query}"
-  >
-    ${children}
-  </a>`;
-}
+// function createItemWrapperTemplate({children, query, html}) {
+//   const uiState = {query};
+//   return html`<a
+//     class="aa-ItemLink"
+//     href="${getItemUrl(uiState)}"
+//   >
+//     ${children}
+//   </a>`;
+// }
 
 const recentSearchesPlugin = createLocalStorageRecentSearchesPlugin({
   key: "instantsearch",
@@ -34,37 +34,42 @@ const recentSearchesPlugin = createLocalStorageRecentSearchesPlugin({
   transformSource({source}) {
     return {
       ...source,
-      getItemUrl({item}) {
-        // redirects
-        if (window.location.pathname !== "/search") {
-          return "/search?" + item.label;
-        }
-        // return getItemUrl({
+      // getItemUrl({item}) {
+      // redirects
+      // if (window.location.pathname !== "/search") {
+      //   return "/search?" + item.label;
+      // }
+      // return getItemUrl({
+      //   query: item.label,
+      // });
+      // },
+      onSelect({setIsOpen, setQuery, item, event}) {
+        // onSelect({
+        //   setQuery,
+        //   setIsOpen,
+        //   event,
         //   query: item.label,
         // });
-      },
-      onSelect({setIsOpen, setQuery, item, event}) {
-        onSelect({
-          setQuery,
-          setIsOpen,
-          event,
-          query: item.label,
-        });
+        if (window.location.pathname == "/search") {
+          setInstantSearchUiState(item.label);
+        } else {
+          window.location.href = "/search?q=" + item.label;
+        }
       },
       // Update the default `item` template to wrap it with a link
       // and plug it to the InstantSearch router.
-      templates: {
-        ...source.templates,
-        item(params) {
-          const {children} = source.templates.item(params).props;
+      // templates: {
+      //   ...source.templates,
+      //   item(params) {
+      //     const {children} = source.templates.item(params).props;
 
-          return createItemWrapperTemplate({
-            query: params.item.label,
-            children,
-            html: params.html,
-          });
-        },
-      },
+      //     return createItemWrapperTemplate({
+      //       query: params.item.label,
+      //       children,
+      //       html: params.html,
+      //     });
+      //   },
+      // },
     };
   },
 });
@@ -82,31 +87,37 @@ export function startAutocomplete() {
     // Add the recent searches plugin.
     plugins: [recentSearchesPlugin],
     onSubmit({state}) {
-      setInstantSearchUiState({
-        query: state.query,
-        hierarchicalMenu: {
-          [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [],
-        },
-      });
+      if (window.location.pathname == "/search") {
+        setInstantSearchUiState({
+          query: state.query,
+          hierarchicalMenu: {
+            [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [],
+          },
+        });
+      } else {
+        window.location.href = "/search?q=" + state.query;
+      }
     },
     onReset() {
-      setInstantSearchUiState({
-        query: "",
-        hierarchicalMenu: {
-          [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [],
-        },
-      });
+      if (window.location.pathname == "/search") {
+        setInstantSearchUiState({
+          query: "",
+          hierarchicalMenu: {
+            [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [],
+          },
+        });
+      }
     },
-    // onStateChange({prevState, state}) {
-    //   if (prevState.query !== state.query) {
-    //     setInstantSearchUiState({
-    //       query: state.query,
-    //       hierarchicalMenu: {
-    //         [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [],
-    //       },
-    //     });
-    //   }
-    // },
+    onStateChange({prevState, state}) {
+      if (window.location.pathname == "/search" && prevState.query !== state.query) {
+        setInstantSearchUiState({
+          query: state.query,
+          hierarchicalMenu: {
+            [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [],
+          },
+        });
+      }
+    },
     getSources({query}) {
       return [
         {
@@ -145,13 +156,19 @@ export function startAutocomplete() {
               ],
             });
           },
-          // getItemInputValue({item}) {
-          //   return item.name;
+          getItemInputValue({item}) {
+            return item.name;
+          },
+          // getItemUrl({item}) {
+          //   // redirects
+          //   if (window.location.pathname !== "/search") {
+          //     return "/search?" + item.name;
+          //   }
           // },
-          getItemUrl({item}) {
-            // redirects
+          onSelect({item}) {
+            recentSearchesPlugin.data.addItem({id: item.code, label: item.name});
             if (window.location.pathname !== "/search") {
-              return "/search?" + item.name;
+              window.location.href = "/search?q=" + item.name;
             }
           },
           templates: {
