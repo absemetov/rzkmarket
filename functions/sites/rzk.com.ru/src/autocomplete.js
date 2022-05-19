@@ -53,7 +53,7 @@ const recentSearchesPlugin = createLocalStorageRecentSearchesPlugin({
         if (window.location.pathname == "/search") {
           setInstantSearchUiState(item.label);
         } else {
-          window.location.href = "/search?q=" + item.label;
+          window.location.href = "/search?products%5Bquery%5D=" + item.label;
         }
       },
       // Update the default `item` template to wrap it with a link
@@ -95,7 +95,7 @@ export function startAutocomplete() {
           },
         });
       } else {
-        window.location.href = "/search?q=" + state.query;
+        window.location.href = "/search?products%5Bquery%5D=" + state.query;
       }
     },
     onReset() {
@@ -168,7 +168,7 @@ export function startAutocomplete() {
           onSelect({item}) {
             recentSearchesPlugin.data.addItem({id: item.code, label: item.name});
             if (window.location.pathname !== "/search") {
-              window.location.href = "/search?q=" + item.name;
+              window.location.href = "/search?products%5Bquery%5D=" + item.name;
             }
           },
           templates: {
