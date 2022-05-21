@@ -51,7 +51,9 @@ const recentSearchesPlugin = createLocalStorageRecentSearchesPlugin({
         //   query: item.label,
         // });
         if (window.location.pathname == "/search") {
-          setInstantSearchUiState(item.label);
+          console.log(item.label);
+          setQuery(item.label);
+          // setInstantSearchUiState(item.label);
         } else {
           window.location.href = "/search?products%5Bquery%5D=" + item.label;
         }
@@ -77,13 +79,14 @@ const recentSearchesPlugin = createLocalStorageRecentSearchesPlugin({
 const searchPageState = getInstantSearchUiState();
 
 export function startAutocomplete() {
-  autocomplete({
+  const {setIsOpen, setQuery} = autocomplete({
     container: "#autocomplete",
     openOnFocus: true,
     placeholder: "Search",
     initialState: {
       query: searchPageState.query || "",
     },
+    // detachedMediaQuery: "",
     // Add the recent searches plugin.
     plugins: [recentSearchesPlugin],
     onSubmit({state}) {
@@ -97,6 +100,7 @@ export function startAutocomplete() {
       } else {
         window.location.href = "/search?products%5Bquery%5D=" + state.query;
       }
+      console.log("onSubmit");
     },
     onReset() {
       if (window.location.pathname == "/search") {
@@ -108,15 +112,27 @@ export function startAutocomplete() {
         });
       }
     },
-    onStateChange({prevState, state}) {
-      if (window.location.pathname == "/search" && prevState.query !== state.query) {
-        setInstantSearchUiState({
-          query: state.query,
-          hierarchicalMenu: {
-            [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [],
-          },
-        });
-      }
+    // shouldPanelOpen({state}) {
+    //   const routeQuery = getInstantSearchUiState().query || "";
+    //   if (!state.isOpen && routeQuery !== state.query) {
+    //     console.log("state.query", state.query);
+    //     console.log("routeQuery", routeQuery);
+    //     state.query = routeQuery;
+    //   }
+    //   return true;
+    // },
+    onStateChange({prevState, state, setQuery}) {
+      // if (window.location.pathname == "/search" && !state.query && !state.isOpen) {
+      //   setQuery(getInstantSearchUiState().query || "");
+      // }
+      // if (window.location.pathname == "/search" && prevState.query !== state.query && state.isOpen) {
+      //   setInstantSearchUiState({
+      //     query: state.query,
+      //     hierarchicalMenu: {
+      //       [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [],
+      //     },
+      //   });
+      // }
     },
     getSources({query}) {
       return [
@@ -169,6 +185,13 @@ export function startAutocomplete() {
             recentSearchesPlugin.data.addItem({id: item.code, label: item.name});
             if (window.location.pathname !== "/search") {
               window.location.href = "/search?products%5Bquery%5D=" + item.name;
+            } else {
+              setInstantSearchUiState({
+                query: item.name,
+                hierarchicalMenu: {
+                  [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [],
+                },
+              });
             }
           },
           templates: {
@@ -180,4 +203,8 @@ export function startAutocomplete() {
       ];
     },
   });
+  document.getElementById("aa").onclick = function() {
+    setIsOpen(true);
+    setQuery(getInstantSearchUiState().query || "");
+  };
 }
