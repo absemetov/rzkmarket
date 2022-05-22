@@ -86,7 +86,7 @@ export function startAutocomplete() {
     initialState: {
       query: searchPageState.query || "",
     },
-    // detachedMediaQuery: "",
+    detachedMediaQuery: "(max-width: 767.98px)",
     // Add the recent searches plugin.
     plugins: [recentSearchesPlugin],
     onSubmit({state}) {
@@ -203,6 +203,7 @@ export function startAutocomplete() {
       ];
     },
   });
+  // open detached mode
   document.getElementById("aa").onclick = function() {
     setIsOpen(true);
     setQuery(getInstantSearchUiState().query || "");

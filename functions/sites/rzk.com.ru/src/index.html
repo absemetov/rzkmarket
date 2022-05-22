@@ -19,7 +19,13 @@
         <a class="d-inline d-sm-none me-auto ps-2" href="/">
           <img src="//rzk.com.ru/logo.svg" alt="" width="" height="40">
         </a>
-        <div id="autocomplete" class="w-100 px-2 d-none d-sm-inline"></div>
+        <div id="autocomplete" class="w-100 px-2 d-none d-md-inline"></div>
+        <div class="d-grid gap-2 w-100 px-2 d-inline d-md-none">
+          <button id="aa" type="button" class="btn btn-outline-secondary">
+            <i class="bi bi-search"></i>
+            Search
+          </button>
+        </div>
         <ul class="navbar-nav me-2">
           <li class="nav-item"></li>
             <a class="text-nowrap nav-link{{#if cart}} active{{/if}} position-relative" href="//rzk.com.ru/o/{{object.id}}/cart">
@@ -65,7 +71,6 @@
       </div>
     </div>
     <div class="container">
-      <button id="aa" type="button" class="btn btn-outline-dark d-inline d-sm-none">Dark</button>
       <div id="hierarchical-menu" class="list-group my-3"></div>
       <div id="hits" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 row-cols-xxl-6 g-2 my-3"></div>
       <div class="row">
