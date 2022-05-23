@@ -48,7 +48,7 @@
     "express-handlebars": "^6.0.2",
     "firebase": "^8.4.1",
     "firebase-admin": "^10.0.2",
-    "firebase-functions": "^3.20.1",
+    "firebase-functions": "^3.21.2",
     "google-spreadsheet": "^3.2.0",
     "googleapis": "^76.0.0",
     "instantsearch.js": "^4.40.4",
