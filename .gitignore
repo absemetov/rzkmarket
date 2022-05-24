@@ -65,7 +65,7 @@ typings/
 .env
 
 # parcel-bundler cache (https://parceljs.org/)
-.cache
+.parcel-cache
 
 # next.js build output
 .next

@@ -2,8 +2,8 @@
   "name": "functions",
   "description": "Cloud Functions for Firebase",
   "scripts": {
-    "parcel-s": "parcel --target web",
-    "parcel-b": "rm -rf sites/rzk.com.ru/dist && parcel build --target web",
+    "parcel-s": "parcel --target web --cache-dir ../.parcel-cache --dist-dir ../dist",
+    "parcel-b": "rm -rf ../sites/rzk.com.ru/dist && parcel build --target web",
     "lint": "eslint .",
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",
@@ -20,7 +20,7 @@
     "web": {
       "context": "browser",
       "source": "sites/rzk.com.ru/src/index.html",
-      "distDir": "sites/rzk.com.ru/dist"
+      "distDir": "../sites/rzk.com.ru/dist"
     },
     "bundler": {
       "context": "node",
