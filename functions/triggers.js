@@ -1,6 +1,7 @@
 const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
 const {Telegraf} = require("telegraf");
+const algoliasearch = require("algoliasearch");
 const bot = new Telegraf(process.env.BOT_TOKEN, {
   handlerTimeout: 540000,
 });
@@ -45,13 +46,57 @@ exports.notifyNewCart = functions.region("europe-central2").firestore
     });
 
 // add createdAt field to Products
-exports.productSetCreatedAt = functions.region("europe-central2").firestore
-    .document("objects/{objectId}/products/{docId}")
-    .onCreate((snap, context) => {
-      const newValue = snap.data();
+// and add data to Algolia index
+exports.productCreate = functions.region("europe-central2").firestore
+    .document("objects/{objectId}/products/{productId}")
+    .onCreate(async (snap, context) => {
+      const product = snap.data();
+      const productId = context.params.productId;
+      const productAlgolia = {
+        objectID: productId,
+        name: product.name,
+      };
+      // add data to Algolia
+      const client = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
+      const index = client.initIndex("products");
+      await index.saveObject(productAlgolia);
+      // return a promise of a set operation to update the count
       return snap.ref.set({
-        createdAt: newValue.updatedAt,
+        createdAt: product.updatedAt,
       }, {merge: true});
+    });
+// update product data
+exports.productUpdate = functions.region("europe-central2").firestore
+    .document("objects/{objectId}/products/{productId}")
+    .onUpdate(async (change, context) => {
+      const product = change.after.data();
+      const productId = context.params.productId;
+      const productAlgolia = {
+        objectID: productId,
+        name: product.name,
+      };
+      // add data to Algolia
+      const client = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
+      const index = client.initIndex("products");
+      await index.saveObject(productAlgolia);
+      // return a promise of a set operation to update the count
+      return null;
+    });
+// delete product
+exports.productDelete = functions.region("europe-central2").firestore
+    .document("objects/{objectId}/products/{productId}")
+    .onDelete(async (snap, context) => {
+      const objectId = context.params.objectId;
+      const productId = context.params.productId;
+      const client = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
+      const index = client.initIndex("products");
+      await index.deleteObject(productId);
+      // delete photo from storage
+      const bucket = firebase.storage().bucket();
+      await bucket.deleteFiles({
+        prefix: `photos/o/${objectId}/p/${productId}`,
+      });
+      return null;
     });
 // add createdAt field to Catalogs
 exports.catalogSetCreatedAt = functions.region("europe-central2").firestore
@@ -61,18 +106,6 @@ exports.catalogSetCreatedAt = functions.region("europe-central2").firestore
       return snap.ref.set({
         createdAt: newValue.updatedAt,
       }, {merge: true});
-    });
-// delete product photos
-exports.productPhotoDelete = functions.region("europe-central2").firestore
-    .document("objects/{objectId}/products/{productId}")
-    .onDelete(async (snap, context) => {
-      const bucket = firebase.storage().bucket();
-      const objectId = context.params.objectId;
-      const productId = context.params.productId;
-      await bucket.deleteFiles({
-        prefix: `photos/o/${objectId}/p/${productId}`,
-      });
-      return null;
     });
 // delete catalog photos
 exports.catalogPhotoDelete = functions.region("europe-central2").firestore

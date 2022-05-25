@@ -27,13 +27,6 @@ const showCatalog = async (ctx, next) => {
     }
     const inlineKeyboardArray =[];
     ctx.session.pathCatalog = ctx.callbackQuery.data;
-    // show catalog siblings, get catalogs snap index or siblings
-    const catalogsSnapshot = await firebase.firestore().collection("objects").doc(objectId)
-        .collection("catalogs")
-        .where("parentId", "==", catalogId ? catalogId : null).orderBy("orderNumber").get();
-    catalogsSnapshot.docs.forEach((doc) => {
-      inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}?o=${objectId}${uUrl}`}]);
-    });
     if (catalogId) {
       const currentCatalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
       // back button
@@ -66,6 +59,13 @@ const showCatalog = async (ctx, next) => {
         }
         inlineKeyboardArray.push(tagsArray);
       }
+      // show catalog siblings, get catalogs snap index or siblings
+      const catalogsSnapshot = await firebase.firestore().collection("objects").doc(objectId)
+          .collection("catalogs")
+          .where("parentId", "==", catalogId).orderBy("orderNumber").get();
+      catalogsSnapshot.docs.forEach((doc) => {
+        inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}?o=${objectId}${uUrl}`}]);
+      });
       // paginate goods, copy main query
       let query = mainQuery;
       if (startAfter) {
@@ -125,6 +125,16 @@ const showCatalog = async (ctx, next) => {
       if (currentCatalog.photo) {
         publicImgUrl = `photos/o/${objectId}/c/${currentCatalog.id}/${currentCatalog.photo}.jpg`;
       }
+    } else {
+      // back button
+      inlineKeyboardArray.push([{text: "⤴️ ../Главная", callback_data: `objects/${objectId}`}]);
+      // show catalog siblings, get catalogs snap index or siblings
+      const catalogsSnapshot = await firebase.firestore().collection("objects").doc(objectId)
+          .collection("catalogs")
+          .where("parentId", "==", null).orderBy("orderNumber").get();
+      catalogsSnapshot.docs.forEach((doc) => {
+        inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}?o=${objectId}${uUrl}`}]);
+      });
     }
     // cart buttons
     cartButtons[0].text = `🏪 ${object.name}`;

@@ -123,7 +123,6 @@ bot.on(["text", "contact"], async (ctx) => {
         inline_keyboard: inlineKeyboard,
       },
     });
-    return;
   } catch (error) {
     await ctx.reply(`Algolia error: ${error}`);
   }
