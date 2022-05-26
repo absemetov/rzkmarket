@@ -12,7 +12,8 @@ const photoCheckUrl = async (url) => {
       return bucket.file(url).publicUrl();
     }
   }
-  return bucket.file(process.env.BOT_LOGO).publicUrl();
+  // return bucket.file(process.env.BOT_LOGO).publicUrl();
+  return process.env.BOT_LOGO;
 };
 // store inst
 const store = {

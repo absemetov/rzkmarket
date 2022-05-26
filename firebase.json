@@ -125,9 +125,6 @@
     "source": "functions"
   },
   "emulators": {
-    "auth": {
-      "port": 9099
-    },
     "functions": {
       "port": 5001
     },
@@ -139,10 +136,16 @@
     },
     "ui": {
       "enabled": true
+    },
+    "storage": {
+      "port": 9199
     }
   },
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
   }
 }

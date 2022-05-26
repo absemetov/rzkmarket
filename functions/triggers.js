@@ -5,6 +5,10 @@ const algoliasearch = require("algoliasearch");
 const bot = new Telegraf(process.env.BOT_TOKEN, {
   handlerTimeout: 540000,
 });
+const bucket = firebase.storage().bucket();
+const algoliaClient = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
+const productsIndex = algoliaClient.initIndex("products");
+const catalogsIndex = algoliaClient.initIndex("dev_catalogs");
 // notify admin when new user
 exports.notifyNewUser = functions.region("europe-central2").firestore
     .document("users/{userId}")
@@ -51,15 +55,13 @@ exports.productCreate = functions.region("europe-central2").firestore
     .document("objects/{objectId}/products/{productId}")
     .onCreate(async (snap, context) => {
       const product = snap.data();
-      const productId = context.params.productId;
+      const objectID = context.params.productId;
       const productAlgolia = {
-        objectID: productId,
+        objectID,
         name: product.name,
       };
       // add data to Algolia
-      const client = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
-      const index = client.initIndex("products");
-      await index.saveObject(productAlgolia);
+      await productsIndex.saveObject(productAlgolia);
       // return a promise of a set operation to update the count
       return snap.ref.set({
         createdAt: product.updatedAt,
@@ -70,15 +72,13 @@ exports.productUpdate = functions.region("europe-central2").firestore
     .document("objects/{objectId}/products/{productId}")
     .onUpdate(async (change, context) => {
       const product = change.after.data();
-      const productId = context.params.productId;
+      const objectID = context.params.productId;
       const productAlgolia = {
-        objectID: productId,
+        objectID,
         name: product.name,
       };
-      // add data to Algolia
-      const client = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
-      const index = client.initIndex("products");
-      await index.saveObject(productAlgolia);
+      // update data in Algolia
+      await productsIndex.saveObject(productAlgolia);
       // return a promise of a set operation to update the count
       return null;
     });
@@ -88,32 +88,55 @@ exports.productDelete = functions.region("europe-central2").firestore
     .onDelete(async (snap, context) => {
       const objectId = context.params.objectId;
       const productId = context.params.productId;
-      const client = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
-      const index = client.initIndex("products");
-      await index.deleteObject(productId);
+      // delete data in Algolia
+      await productsIndex.deleteObject(productId);
       // delete photo from storage
-      const bucket = firebase.storage().bucket();
       await bucket.deleteFiles({
         prefix: `photos/o/${objectId}/p/${productId}`,
       });
       return null;
     });
 // add createdAt field to Catalogs
-exports.catalogSetCreatedAt = functions.region("europe-central2").firestore
-    .document("objects/{objectId}/catalogs/{docId}")
-    .onCreate((snap, context) => {
-      const newValue = snap.data();
+exports.catalogCreate = functions.region("europe-central2").firestore
+    .document("objects/{objectId}/catalogs/{catalogId}")
+    .onCreate(async (snap, context) => {
+      const catalog = snap.data();
+      const objectID = context.params.catalogId;
+      const catalogAlgolia = {
+        objectID,
+        name: catalog.name,
+      };
+      // add data to Algolia
+      await catalogsIndex.saveObject(catalogAlgolia);
+      // add created value
       return snap.ref.set({
-        createdAt: newValue.updatedAt,
+        createdAt: catalog.updatedAt,
       }, {merge: true});
     });
+// update catalog event
+exports.catalogCreate = functions.region("europe-central2").firestore
+    .document("objects/{objectId}/catalogs/{catalogId}")
+    .onUpdate(async (change, context) => {
+      const catalog = change.after.data();
+      const objectID = context.params.catalogId;
+      const catalogAlgolia = {
+        objectID,
+        name: catalog.name,
+      };
+      // update data in Algolia
+      await catalogsIndex.saveObject(catalogAlgolia);
+      // return a promise of a set operation to update the count
+      return null;
+    });
 // delete catalog photos
-exports.catalogPhotoDelete = functions.region("europe-central2").firestore
+exports.catalogDelete = functions.region("europe-central2").firestore
     .document("objects/{objectId}/catalogs/{catalogId}")
     .onDelete(async (snap, context) => {
-      const bucket = firebase.storage().bucket();
       const objectId = context.params.objectId;
       const catalogId = context.params.catalogId;
+      // delete from Algolia
+      await catalogsIndex.deleteObject(catalogId);
+      // delete photo catalog
       await bucket.deleteFiles({
         prefix: `photos/o/${objectId}/c/${catalogId}`,
       });
