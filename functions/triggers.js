@@ -114,7 +114,7 @@ exports.catalogCreate = functions.region("europe-central2").firestore
       }, {merge: true});
     });
 // update catalog event
-exports.catalogCreate = functions.region("europe-central2").firestore
+exports.catalogUpdate = functions.region("europe-central2").firestore
     .document("objects/{objectId}/catalogs/{catalogId}")
     .onUpdate(async (change, context) => {
       const catalog = change.after.data();
