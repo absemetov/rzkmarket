@@ -8,7 +8,7 @@ const {store, roundNumber, photoCheckUrl} = require("./bot_store_cart");
 const cyrillicToTranslit = new CyrillicToTranslit();
 const cyrillicToTranslitUk = new CyrillicToTranslit({preset: "uk"});
 // upload from googleSheet
-const uploadProducts = async (ctx, objectId, sheetId) => {
+const uploadProducts = async (telegram, objectId, sheetId) => {
   const start = new Date();
   // Max upload goods
   const maxUploadGoods = 2000;
@@ -54,9 +54,12 @@ const uploadProducts = async (ctx, objectId, sheetId) => {
   await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
   await doc.loadInfo(); // loads document properties and worksheets
   const sheet = doc.sheetsByTitle["products"];
-  await ctx.replyWithMarkdown(`Loading goods from ...
-Sheet name: *${doc.title}*
-Count rows: *${sheet.rowCount}*`);
+  //   await ctx.replyWithMarkdown(`Loading goods from ...
+  // Sheet name: *${doc.title}*
+  // Count rows: *${sheet.rowCount}*`);
+  await telegram.sendMessage(94899148, `<b>Loading goods from ${doc.title}\n`+
+  `Count rows: ${sheet.rowCount}</b>`,
+  {parse_mode: "html"});
   let rowCount = sheet.rowCount;
   // per page default 500
   const perPage = 500;
@@ -301,15 +304,20 @@ Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id).parentId}
     await Promise.all(batchArray);
     // commit catalogs tags
     await batchCatalogsTags.commit();
-    await ctx.replyWithMarkdown(`*${i + perPage}* rows scaned from *${sheet.rowCount}*`);
+    // await ctx.replyWithMarkdown(`*${i + perPage}* rows scaned from *${sheet.rowCount}*`);
+    await telegram.sendMessage(94899148, `<b>${i + perPage} rows scaned from ${sheet.rowCount}</b>`,
+        {parse_mode: "html"});
     // clear cache
     sheet.resetLocalCache(true);
   }
   // after upload show upload info
   const ms = new Date() - start;
-  await ctx.replyWithMarkdown(`Data uploaded in *${Math.floor(ms/1000)}*s:
-Goods: *${productIsSet.size}*
-Catalogs: *${catalogsIsSet.size}*`);
+  // await ctx.replyWithMarkdown(`Data uploaded in *${Math.floor(ms/1000)}*s:
+  // Goods: *${productIsSet.size}*
+  // Catalogs: *${catalogsIsSet.size}*`);
+  await telegram.sendMessage(94899148, `<b>Data uploaded in ${Math.floor(ms/1000)}s\n` +
+      `Goods: ${productIsSet.size}\nCatalogs: ${catalogsIsSet.size}</b>`,
+  {parse_mode: "html"});
   // delete old Products
   const batchProductsDelete = firebase.firestore().batch();
   const productsDeleteSnapshot = await firebase.firestore().collection("objects").doc(objectId)
@@ -320,7 +328,9 @@ Catalogs: *${catalogsIsSet.size}*`);
   });
   await batchProductsDelete.commit();
   if (productsDeleteSnapshot.size) {
-    await ctx.replyWithMarkdown(`*${productsDeleteSnapshot.size}* products deleted`);
+    // await ctx.replyWithMarkdown(`*${productsDeleteSnapshot.size}* products deleted`);
+    await telegram.sendMessage(94899148, `<b>${productsDeleteSnapshot.size} products deleted</b>`,
+        {parse_mode: "html"});
   }
   // delete old catalogs
   const batchCatalogsDelete = firebase.firestore().batch();
@@ -332,7 +342,9 @@ Catalogs: *${catalogsIsSet.size}*`);
   });
   await batchCatalogsDelete.commit();
   if (catalogsDeleteSnapshot.size) {
-    await ctx.replyWithMarkdown(`*${catalogsDeleteSnapshot.size}* catalogs deleted`);
+    // await ctx.replyWithMarkdown(`*${catalogsDeleteSnapshot.size}* catalogs deleted`);
+    await telegram.sendMessage(94899148, `<b>${catalogsDeleteSnapshot.size} catalogs deleted</b>`,
+        {parse_mode: "html"});
   }
   // } catch (error) {
   //   await ctx.replyWithMarkdown(`Sheet ${error}`);
@@ -363,8 +375,14 @@ const createObject = async (ctx, next) => {
     try {
       // upload goods
       if (todo === "uploadProducts") {
-        await uploadProducts(ctx, object.id, sheetId);
-        await ctx.replyWithHTML(`Товары загружены ${object.name}, удачных продаж!\n`);
+        // await uploadProducts(ctx, object.id, sheetId);
+        // await ctx.replyWithHTML(`Товары загружены ${object.name}, удачных продаж!\n`);
+        // the current timestamp
+        await ctx.replyWithHTML(`Начинаем загрузку ${object.name}\n`);
+        const uploadProductsStart = Math.floor(Date.now() / 1000);
+        await store.createRecord(`objects/${objectId}`, {
+          uploadProductsStart,
+        });
         return;
       }
       // start upload
@@ -580,3 +598,4 @@ const uploadMerch = async (ctx, next) => {
 uploadActions.push(uploadMerch);
 exports.uploadForm = uploadForm;
 exports.uploadActions = uploadActions;
+exports.uploadProducts = uploadProducts;

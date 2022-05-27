@@ -1,5 +1,6 @@
 const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
+const {uploadProducts} = require("./bot_upload_scene");
 const {Telegraf} = require("telegraf");
 const algoliasearch = require("algoliasearch");
 const bot = new Telegraf(process.env.BOT_TOKEN, {
@@ -141,4 +142,34 @@ exports.catalogDelete = functions.region("europe-central2").firestore
         prefix: `photos/o/${objectId}/c/${catalogId}`,
       });
       return null;
+    });
+// upload products trigger
+exports.productsUpload = functions.region("europe-central2").firestore
+    .document("objects/{objectId}")
+    .onUpdate(async (change, context) => {
+      const objectId = context.params.objectId;
+      // Retrieve the current and previous value
+      const data = change.after.data();
+      const previousData = change.before.data();
+
+      // We'll only update if the upload start has changed.
+      // This is crucial to prevent infinite loops.
+      if (data.uploadProductsStart == previousData.uploadProductsStart) {
+        return null;
+      }
+      // start uploading
+      try {
+        await uploadProducts(bot.telegram, objectId, data.sheetId);
+      } catch (error) {
+        // await ctx.replyWithMarkdown(`Sheet ${error}`);
+        await bot.telegram.sendMessage(94899148, `<b>Sheet ${error}</b>`,
+            {parse_mode: "html"});
+      }
+      // the current timestamp
+      const uploadProductsFinish = Math.floor(Date.now() / 1000);
+
+      // Then return a promise of a set operation to update the count
+      return change.after.ref.set({
+        uploadProductsFinish,
+      }, {merge: true});
     });
