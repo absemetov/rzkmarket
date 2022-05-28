@@ -1,6 +1,7 @@
 const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
 const {uploadProducts} = require("./bot_upload_scene");
+const {photoCheckUrl} = require("./bot_store_cart");
 const {Telegraf} = require("telegraf");
 const algoliasearch = require("algoliasearch");
 const bot = new Telegraf(process.env.BOT_TOKEN, {
@@ -57,9 +58,12 @@ exports.productCreate = functions.region("europe-central2").firestore
     .onCreate(async (snap, context) => {
       const product = snap.data();
       const objectID = context.params.productId;
+      const objectId = context.params.objectId;
+      const img = await photoCheckUrl(`photos/o/${objectId}/p/${objectID}/${product.mainPhoto}/1.jpg`);
       const productAlgolia = {
         objectID,
         name: product.name,
+        img,
       };
       // add data to Algolia
       await productsIndex.saveObject(productAlgolia);
@@ -74,9 +78,12 @@ exports.productUpdate = functions.region("europe-central2").firestore
     .onUpdate(async (change, context) => {
       const product = change.after.data();
       const objectID = context.params.productId;
+      const objectId = context.params.objectId;
+      const img = await photoCheckUrl(`photos/o/${objectId}/p/${objectID}/${product.mainPhoto}/1.jpg`);
       const productAlgolia = {
         objectID,
         name: product.name,
+        img,
       };
       // update data in Algolia
       await productsIndex.saveObject(productAlgolia);
@@ -103,9 +110,12 @@ exports.catalogCreate = functions.region("europe-central2").firestore
     .onCreate(async (snap, context) => {
       const catalog = snap.data();
       const objectID = context.params.catalogId;
+      const objectId = context.params.objectId;
+      const img = await photoCheckUrl(`photos/o/${objectId}/c/${objectID}/${catalog.photo}.jpg`);
       const catalogAlgolia = {
         objectID,
         name: catalog.name,
+        img,
       };
       // add data to Algolia
       await catalogsIndex.saveObject(catalogAlgolia);
@@ -120,9 +130,12 @@ exports.catalogUpdate = functions.region("europe-central2").firestore
     .onUpdate(async (change, context) => {
       const catalog = change.after.data();
       const objectID = context.params.catalogId;
+      const objectId = context.params.objectId;
+      const img = await photoCheckUrl(`photos/o/${objectId}/c/${objectID}/${catalog.photo}.jpg`);
       const catalogAlgolia = {
         objectID,
         name: catalog.name,
+        img,
       };
       // update data in Algolia
       await catalogsIndex.saveObject(catalogAlgolia);

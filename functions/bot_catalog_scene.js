@@ -961,17 +961,17 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
         return;
       }
       // photo id with zoom level
-      const photoId = `${telegramPhotos[2].file_unique_id}-${telegramPhotos.length - 1}`;
+      const photoId = `${telegramPhotos[0].file_unique_id}-${telegramPhotos.length - 1}`;
       // loop photos
-      for (const [index, photo] of telegramPhotos.entries()) {
-        // without small photo
-        if (index >= 2) {
+      for (const [zoom, photo] of telegramPhotos.entries()) {
+        // without small photo [0 (90*90),1 (320*320), 2 (800*800), 3 (1000*1000)]
+        if (zoom >= 1) {
           const photoUrl = await ctx.telegram.getFileLink(photo.file_id);
           try {
             // download photos from telegram server
             const photoPath = await download(photoUrl.href);
             await bucket.upload(photoPath, {
-              destination: `photos/o/${objectId}/p/${product.id}/${photoId}/${index}.jpg`,
+              destination: `photos/o/${objectId}/p/${product.id}/${photoId}/${zoom}.jpg`,
             });
             // delete download file
             fs.unlinkSync(photoPath);
@@ -1015,6 +1015,7 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
             },
           });
     }
+    // clear session
     await store.createRecord(`users/${ctx.from.id}`, {"session": {
       "scene": null,
       "objectId": null,
@@ -1044,13 +1045,14 @@ const uploadPhotoCat = async (ctx, objectId, catalogId) => {
         prefix: `photos/o/${objectId}/c/${catalogId}`,
       });
     }
-    const fileUniqueId = telegramPhotos[2].file_unique_id;
+    // zoom level 2 (800*800)
+    const photoId = telegramPhotos[2].file_unique_id;
     const photoUrl = await ctx.telegram.getFileLink(telegramPhotos[2].file_id);
     try {
       // download photos from telegram server
       const photoPath = await download(photoUrl.href);
       await bucket.upload(photoPath, {
-        destination: `photos/o/${objectId}/c/${catalog.id}/${fileUniqueId}.jpg`,
+        destination: `photos/o/${objectId}/c/${catalog.id}/${photoId}.jpg`,
       });
       // delete download file
       fs.unlinkSync(photoPath);
@@ -1062,11 +1064,11 @@ const uploadPhotoCat = async (ctx, objectId, catalogId) => {
     }
 
     await store.updateRecord(`objects/${objectId}/catalogs/${catalog.id}`, {
-      photo: fileUniqueId,
+      photo: photoId,
     });
     // get catalog url (path)
     const catalogUrl = `c/${catalog.id}?o=${objectId}`;
-    const media = await photoCheckUrl(`photos/o/${objectId}/c/${catalog.id}/${fileUniqueId}.jpg`);
+    const media = await photoCheckUrl(`photos/o/${objectId}/c/${catalog.id}/${photoId}.jpg`);
     await ctx.replyWithPhoto(media,
         {
           caption: `${catalog.name} (${catalog.id}) photo uploaded`,

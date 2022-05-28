@@ -149,6 +149,7 @@ const uploadPhotoObj = async (ctx, objectId) => {
         prefix: `photos/o/${objectId}/logo`,
       });
     }
+    // zoom level 2 (800*800)
     const fileUniqueId = telegramPhotos[2].file_unique_id;
     const photoUrl = await ctx.telegram.getFileLink(telegramPhotos[2].file_id);
     try {
