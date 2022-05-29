@@ -1,8 +1,6 @@
 const firebase = require("firebase-admin");
 const bucket = firebase.storage().bucket();
-const {store, cart, photoCheckUrl} = require("./bot_store_cart");
-const {download} = require("./download");
-const fs = require("fs");
+const {store, cart, photoCheckUrl, savePhotoTelegram} = require("./bot_store_cart");
 const startActions = [];
 
 // admin midleware
@@ -134,15 +132,6 @@ startActions.push( async (ctx, next) => {
 const uploadPhotoObj = async (ctx, objectId) => {
   if (objectId) {
     const object = await store.findRecord(`objects/${objectId}`);
-    if (ctx.message.media_group_id) {
-      await ctx.reply("Choose only one Photo!");
-      return;
-    }
-    const telegramPhotos = ctx.message.photo;
-    if (telegramPhotos.length < 3) {
-      await ctx.reply("Choose large photo!");
-      return;
-    }
     // first delete old photos
     if (object.logo) {
       await bucket.deleteFiles({
@@ -150,43 +139,50 @@ const uploadPhotoObj = async (ctx, objectId) => {
       });
     }
     // zoom level 2 (800*800)
-    const fileUniqueId = telegramPhotos[2].file_unique_id;
-    const photoUrl = await ctx.telegram.getFileLink(telegramPhotos[2].file_id);
+    // const fileUniqueId = telegramPhotos[2].file_unique_id;
+    // const photoUrl = await ctx.telegram.getFileLink(telegramPhotos[2].file_id);
+    // try {
+    //   // download photos from telegram server
+    //   const photoPath = await download(photoUrl.href);
+    //   await bucket.upload(photoPath, {
+    //     destination: `photos/o/${objectId}/logo/${fileUniqueId}.jpg`,
+    //   });
+    //   // delete download file
+    //   fs.unlinkSync(photoPath);
+    // } catch (e) {
+    //   console.log("Download failed");
+    //   console.log(e.message);
+    //   await ctx.reply(`Error upload photos ${e.message}`);
+    //   return;
+    // }
     try {
       // download photos from telegram server
-      const photoPath = await download(photoUrl.href);
-      await bucket.upload(photoPath, {
-        destination: `photos/o/${objectId}/logo/${fileUniqueId}.jpg`,
+      const photoId = await savePhotoTelegram(ctx, `photos/o/${objectId}/logo`);
+      // save fileID to Firestore
+      await store.updateRecord(`objects/${objectId}`, {
+        photoId,
       });
-      // delete download file
-      fs.unlinkSync(photoPath);
+      // get catalog url (path)
+      const catalogUrl = `objects/${objectId}`;
+      const url = await photoCheckUrl(`photos/o/${objectId}/logo/${photoId}/2.jpg`);
+      await ctx.replyWithPhoto({url},
+          {
+            caption: `${object.name} (${object.id}) photo uploaded`,
+            reply_markup: {
+              inline_keyboard: [
+                [{text: "⤴️ Goto object",
+                  callback_data: catalogUrl}],
+              ],
+            },
+          });
+      await store.createRecord(`users/${ctx.from.id}`, {"session": {
+        "scene": null,
+        "objectId": null,
+      }});
     } catch (e) {
-      console.log("Download failed");
-      console.log(e.message);
       await ctx.reply(`Error upload photos ${e.message}`);
       return;
     }
-    // save fileID to Firestore
-    await store.updateRecord(`objects/${objectId}`, {
-      logo: fileUniqueId,
-    });
-    // get catalog url (path)
-    const catalogUrl = `objects/${objectId}`;
-    const url = await photoCheckUrl(`photos/o/${objectId}/logo/${fileUniqueId}.jpg`);
-    await ctx.replyWithPhoto({url},
-        {
-          caption: `${object.name} (${object.id}) photo uploaded`,
-          reply_markup: {
-            inline_keyboard: [
-              [{text: "⤴️ Goto object",
-                callback_data: catalogUrl}],
-            ],
-          },
-        });
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {
-      "scene": null,
-      "objectId": null,
-    }});
   } else {
     await ctx.reply("Please select a object to upload Photo");
   }

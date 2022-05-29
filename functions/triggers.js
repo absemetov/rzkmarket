@@ -111,7 +111,7 @@ exports.catalogCreate = functions.region("europe-central2").firestore
       const catalog = snap.data();
       const objectID = context.params.catalogId;
       const objectId = context.params.objectId;
-      const img = await photoCheckUrl(`photos/o/${objectId}/c/${objectID}/${catalog.photo}.jpg`);
+      const img = await photoCheckUrl(`photos/o/${objectId}/c/${objectID}/${catalog.photoId}/1.jpg`);
       const catalogAlgolia = {
         objectID,
         name: catalog.name,
@@ -131,7 +131,7 @@ exports.catalogUpdate = functions.region("europe-central2").firestore
       const catalog = change.after.data();
       const objectID = context.params.catalogId;
       const objectId = context.params.objectId;
-      const img = await photoCheckUrl(`photos/o/${objectId}/c/${objectID}/${catalog.photo}.jpg`);
+      const img = await photoCheckUrl(`photos/o/${objectId}/c/${objectID}/${catalog.photoId}/1.jpg`);
       const catalogAlgolia = {
         objectID,
         name: catalog.name,

@@ -1,8 +1,6 @@
 const firebase = require("firebase-admin");
-const {download} = require("./download");
-const fs = require("fs");
 const bucket = firebase.storage().bucket();
-const {cart, store, roundNumber, photoCheckUrl} = require("./bot_store_cart");
+const {cart, store, roundNumber, photoCheckUrl, savePhotoTelegram} = require("./bot_store_cart");
 // catalogs actions array
 const catalogsActions = [];
 // show catalogs and goods
@@ -948,42 +946,12 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
     // get count photos to check limits 5 photos
     if (product.photos && product.photos.length > 4) {
       await ctx.reply("Limit 5 photos");
-    } else {
+      return;
+    }
+    try {
       // upload only one photo!!!
-      if (ctx.message.media_group_id) {
-        await ctx.reply("Choose only one Photo!");
-        return;
-      }
-      // get telegram file_id photos data
-      const telegramPhotos = ctx.message.photo;
-      if (telegramPhotos.length < 3) {
-        await ctx.reply("Choose large photo!");
-        return;
-      }
-      // photo id with zoom level
-      const photoId = `${telegramPhotos[0].file_unique_id}-${telegramPhotos.length - 1}`;
-      // loop photos
-      for (const [zoom, photo] of telegramPhotos.entries()) {
-        // without small photo [0 (90*90),1 (320*320), 2 (800*800), 3 (1000*1000)]
-        if (zoom >= 1) {
-          const photoUrl = await ctx.telegram.getFileLink(photo.file_id);
-          try {
-            // download photos from telegram server
-            const photoPath = await download(photoUrl.href);
-            await bucket.upload(photoPath, {
-              destination: `photos/o/${objectId}/p/${product.id}/${photoId}/${zoom}.jpg`,
-            });
-            // delete download file
-            fs.unlinkSync(photoPath);
-          } catch (e) {
-            console.log("Download failed");
-            console.log(e.message);
-            await ctx.reply(`Error upload photos ${e.message}`);
-            return;
-          }
-        }
-      }
-      // save file id with zoom level 2 or 3
+      const photoId = await savePhotoTelegram(ctx, `photos/o/${objectId}/p/${product.id}`);
+      // save file id
       if (!product.mainPhoto) {
         // set main photo
         await store.updateRecord(`objects/${objectId}/products/${productId}`, {
@@ -1014,13 +982,16 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
               ],
             },
           });
+      // clear session
+      await store.createRecord(`users/${ctx.from.id}`, {"session": {
+        "scene": null,
+        "objectId": null,
+        "productId": null,
+      }});
+    } catch (e) {
+      await ctx.reply(`Error upload photos ${e.message}`);
+      return;
     }
-    // clear session
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {
-      "scene": null,
-      "objectId": null,
-      "productId": null,
-    }});
   } else {
     await ctx.reply("Please select a product to upload Photo");
   }
@@ -1029,16 +1000,6 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
 const uploadPhotoCat = async (ctx, objectId, catalogId) => {
   if (catalogId && objectId) {
     const catalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
-    if (ctx.message.media_group_id) {
-      await ctx.reply("Choose only one Photo!");
-      return;
-    }
-    // get telegram file_id photos data
-    const telegramPhotos = ctx.message.photo;
-    if (telegramPhotos.length < 3) {
-      await ctx.reply("Choose large photo!");
-      return;
-    }
     // first delete old photos
     if (catalog.photo) {
       await bucket.deleteFiles({
@@ -1046,44 +1007,50 @@ const uploadPhotoCat = async (ctx, objectId, catalogId) => {
       });
     }
     // zoom level 2 (800*800)
-    const photoId = telegramPhotos[2].file_unique_id;
-    const photoUrl = await ctx.telegram.getFileLink(telegramPhotos[2].file_id);
+    // const photoId = telegramPhotos[2].file_unique_id;
+    // const photoUrl = await ctx.telegram.getFileLink(telegramPhotos[2].file_id);
+    // try {
+    //   // download photos from telegram server
+    //   const photoPath = await download(photoUrl.href);
+    //   await bucket.upload(photoPath, {
+    //     destination: `photos/o/${objectId}/c/${catalog.id}/${photoId}.jpg`,
+    //   });
+    //   // delete download file
+    //   fs.unlinkSync(photoPath);
+    // } catch (e) {
+    //   console.log("Download failed");
+    //   console.log(e.message);
+    //   await ctx.reply(`Error upload photos ${e.message}`);
+    //   return;
+    // }
     try {
-      // download photos from telegram server
-      const photoPath = await download(photoUrl.href);
-      await bucket.upload(photoPath, {
-        destination: `photos/o/${objectId}/c/${catalog.id}/${photoId}.jpg`,
+      const photoId = await savePhotoTelegram(ctx, `photos/o/${objectId}/c/${catalog.id}`);
+
+      await store.updateRecord(`objects/${objectId}/catalogs/${catalog.id}`, {
+        photoId,
       });
-      // delete download file
-      fs.unlinkSync(photoPath);
+      // get catalog url (path)
+      const catalogUrl = `c/${catalog.id}?o=${objectId}`;
+      const media = await photoCheckUrl(`photos/o/${objectId}/c/${catalog.id}/${photoId}/2.jpg`);
+      await ctx.replyWithPhoto(media,
+          {
+            caption: `${catalog.name} (${catalog.id}) photo uploaded`,
+            reply_markup: {
+              inline_keyboard: [
+                [{text: "⤴️ Goto catalog",
+                  callback_data: catalogUrl}],
+              ],
+            },
+          });
+      await store.createRecord(`users/${ctx.from.id}`, {"session": {
+        "scene": null,
+        "objectId": null,
+        "catalogId": null,
+      }});
     } catch (e) {
-      console.log("Download failed");
-      console.log(e.message);
       await ctx.reply(`Error upload photos ${e.message}`);
       return;
     }
-
-    await store.updateRecord(`objects/${objectId}/catalogs/${catalog.id}`, {
-      photo: photoId,
-    });
-    // get catalog url (path)
-    const catalogUrl = `c/${catalog.id}?o=${objectId}`;
-    const media = await photoCheckUrl(`photos/o/${objectId}/c/${catalog.id}/${photoId}.jpg`);
-    await ctx.replyWithPhoto(media,
-        {
-          caption: `${catalog.name} (${catalog.id}) photo uploaded`,
-          reply_markup: {
-            inline_keyboard: [
-              [{text: "⤴️ Goto catalog",
-                callback_data: catalogUrl}],
-            ],
-          },
-        });
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {
-      "scene": null,
-      "objectId": null,
-      "catalogId": null,
-    }});
   } else {
     await ctx.reply("Please select a product to upload Photo");
   }

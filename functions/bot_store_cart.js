@@ -1,5 +1,7 @@
 const firebase = require("firebase-admin");
 const bucket = firebase.storage().bucket();
+const {download} = require("./download");
+const fs = require("fs");
 // round to 2 decimals
 const roundNumber = (num) => {
   return Math.round((num + Number.EPSILON) * 100) / 100;
@@ -14,6 +16,34 @@ const photoCheckUrl = async (url) => {
   }
   // return bucket.file(process.env.BOT_LOGO).publicUrl();
   return process.env.BOT_LOGO;
+};
+// download and save photo from telegram
+const savePhotoTelegram = async (ctx, path, zoom) => {
+  if (ctx.message.media_group_id) {
+    throw new Error("Choose only one Photo!");
+  }
+  const telegramPhotos = ctx.message.photo;
+  if (telegramPhotos.length < 3) {
+    throw new Error("Choose large photo!");
+  }
+  const photoId = `${telegramPhotos[0].file_unique_id}-${telegramPhotos.length}`;
+  // loop photos [0 (90*90),1 (320*320), 2 (800*800), 3 (1000*1000)]
+  for (const [zoom, photo] of telegramPhotos.entries()) {
+    const photoUrl = await ctx.telegram.getFileLink(photo.file_id);
+    try {
+      // download photos from telegram server
+      const photoPath = await download(photoUrl.href);
+      await bucket.upload(photoPath, {
+        destination: `${path}/${photoId}/${zoom}.jpg`,
+      });
+      // delete download file
+      fs.unlinkSync(photoPath);
+    } catch (e) {
+      throw new Error(`Error upload photos ${e.message}`);
+    }
+  }
+  // return photoId;
+  return photoId;
 };
 // store inst
 const store = {
@@ -227,3 +257,4 @@ exports.store = store;
 exports.cart = cart;
 exports.roundNumber = roundNumber;
 exports.photoCheckUrl = photoCheckUrl;
+exports.savePhotoTelegram = savePhotoTelegram;
