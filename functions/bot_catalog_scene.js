@@ -15,8 +15,8 @@ const showCatalog = async (ctx, next) => {
     const uploadPhotoCat = ctx.state.params.get("u");
     let publicImgUrl = null;
     const object = await store.findRecord(`objects/${objectId}`);
-    if (object.logo) {
-      publicImgUrl = `photos/o/${objectId}/logo/${object.logo}.jpg`;
+    if (object.photoId) {
+      publicImgUrl = `photos/o/${objectId}/logo/${object.photoId}/2.jpg`;
     }
     // and show upload catalog photo
     let uUrl = "";
@@ -120,8 +120,8 @@ const showCatalog = async (ctx, next) => {
         inlineKeyboardArray.push(prevNext);
       }
       // get photo catalog
-      if (currentCatalog.photo) {
-        publicImgUrl = `photos/o/${objectId}/c/${currentCatalog.id}/${currentCatalog.photo}.jpg`;
+      if (currentCatalog.photoId) {
+        publicImgUrl = `photos/o/${objectId}/c/${currentCatalog.id}/${currentCatalog.photoId}/2.jpg`;
       }
     } else {
       // back button
@@ -192,8 +192,8 @@ const showProduct = async (ctx, next) => {
     }
     // Get main photo url.
     let publicImgUrl = null;
-    if (object.logo) {
-      publicImgUrl = `photos/o/${objectId}/logo/${object.logo}.jpg`;
+    if (object.photoId) {
+      publicImgUrl = `photos/o/${objectId}/logo/${object.photoId}/2.jpg`;
     }
     if (product.mainPhoto) {
       publicImgUrl = `photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/2.jpg`;
@@ -305,8 +305,8 @@ catalogsActions.push( async (ctx, next) => {
       addButtonArray.push(addButton);
       // get main photo url.
       let publicImgUrl = null;
-      if (object.logo) {
-        publicImgUrl = `photos/o/${objectId}/logo/${object.logo}.jpg`;
+      if (object.photoId) {
+        publicImgUrl = `photos/o/${objectId}/logo/${object.photoId}/2.jpg`;
       }
       if (product.mainPhoto) {
         publicImgUrl = `photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/2.jpg`;
@@ -460,8 +460,8 @@ const showCart = async (ctx, next) => {
       callback_data: `objects/${objectId}`}]);
     // edit message
     let publicImgUrl = null;
-    if (object.logo) {
-      publicImgUrl = `photos/o/${objectId}/logo/${object.logo}.jpg`;
+    if (object.photoId) {
+      publicImgUrl = `photos/o/${objectId}/logo/${object.photoId}/2.jpg`;
     }
     const media = await photoCheckUrl(publicImgUrl);
     await ctx.editMessageMedia({
@@ -775,8 +775,8 @@ catalogsActions.push( async (ctx, next) => {
     }
     const object = await store.findRecord(`objects/${objectId}`);
     let publicImgUrl = null;
-    if (object.logo) {
-      publicImgUrl = `photos/o/${objectId}/logo/${object.logo}.jpg`;
+    if (object.photoId) {
+      publicImgUrl = `photos/o/${objectId}/logo/${object.photoId}/2.jpg`;
     }
     const media = await photoCheckUrl(publicImgUrl);
     await ctx.editMessageMedia({
@@ -1001,7 +1001,7 @@ const uploadPhotoCat = async (ctx, objectId, catalogId) => {
   if (catalogId && objectId) {
     const catalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
     // first delete old photos
-    if (catalog.photo) {
+    if (catalog.photoId) {
       await bucket.deleteFiles({
         prefix: `photos/o/${objectId}/c/${catalogId}`,
       });

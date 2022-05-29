@@ -558,7 +558,7 @@ const uploadMerch = async (ctx, next) => {
     const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
     let publicImgUrl = null;
     if (product.mainPhoto) {
-      publicImgUrl = `photos/${objectId}/products/${product.id}/2/${product.mainPhoto}.jpg`;
+      publicImgUrl = `photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/2.jpg`;
     }
     const photoUrl = await photoCheckUrl(publicImgUrl);
     const content = google.content("v2.1");

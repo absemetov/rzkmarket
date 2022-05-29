@@ -34,7 +34,7 @@ const savePhotoTelegram = async (ctx, path, zoom) => {
       // download photos from telegram server
       const photoPath = await download(photoUrl.href);
       await bucket.upload(photoPath, {
-        destination: `${path}/${photoId}/${zoom}.jpg`,
+        destination: `${path}/${photoId}/${zoom + 1}.jpg`,
       });
       // delete download file
       fs.unlinkSync(photoPath);

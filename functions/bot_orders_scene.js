@@ -298,8 +298,8 @@ const showOrders = async (ctx, next) => {
     //   caption = caption.substring(0, 1024);
     // }
     let publicImgUrl = null;
-    if (object.logo) {
-      publicImgUrl = `photos/${objectId}/logo/2/${object.logo}.jpg`;
+    if (object.photoId) {
+      publicImgUrl = `photos/o/${objectId}/logo/${object.photoId}/2.jpg`;
     }
     const media = await photoCheckUrl(publicImgUrl);
     await ctx.editMessageMedia({

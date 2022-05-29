@@ -47,8 +47,8 @@ app.get("/", auth, async (req, res) => {
   // generate cart link
   for (const object of objects) {
     object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
-    if (object.logo) {
-      object.imgUrl = bucket.file(`photos/o/${object.id}/logo/${object.logo}.jpg`).publicUrl();
+    if (object.photoId) {
+      object.imgUrl = bucket.file(`photos/o/${object.id}/logo/${object.photoId}/2.jpg`).publicUrl();
     } else {
       object.imgUrl = "/icons/shop.svg";
     }
@@ -76,8 +76,8 @@ app.get("/o/:objectId", auth, async (req, res) => {
   if (object) {
     // count cart items
     object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
-    if (object.logo) {
-      object.imgUrl = bucket.file(`photos/o/${object.id}/logo/${object.logo}.jpg`).publicUrl();
+    if (object.photoId) {
+      object.imgUrl = bucket.file(`photos/o/${object.id}/logo/${object.photoId}/3.jpg`).publicUrl();
     } else {
       object.imgUrl = "/icons/shop.svg";
     }
@@ -110,8 +110,8 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
         name: doc.data().name,
         url: `/o/${object.id}/c/${doc.id}`,
       };
-      if (doc.data().photo) {
-        catalogSibl.imgUrl = bucket.file(`photos/o/${object.id}/c/${doc.id}/${doc.data().photo}.jpg`).publicUrl();
+      if (doc.data().photoId) {
+        catalogSibl.imgUrl = bucket.file(`photos/o/${object.id}/c/${doc.id}/${doc.data().photoId}/2.jpg`).publicUrl();
       } else {
         catalogSibl.imgUrl = "/icons/folder.svg";
       }

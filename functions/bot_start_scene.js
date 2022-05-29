@@ -81,8 +81,8 @@ startActions.push(async (ctx, next) => {
       }
       inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: "objects"}]);
       // set logo obj
-      if (object.logo) {
-        imgUrl = `photos/o/${objectId}/logo/${object.logo}.jpg`;
+      if (object.photoId) {
+        imgUrl = `photos/o/${objectId}/logo/${object.photoId}/2.jpg`;
       }
     } else {
       // show all objects
@@ -133,7 +133,7 @@ const uploadPhotoObj = async (ctx, objectId) => {
   if (objectId) {
     const object = await store.findRecord(`objects/${objectId}`);
     // first delete old photos
-    if (object.logo) {
+    if (object.photoId) {
       await bucket.deleteFiles({
         prefix: `photos/o/${objectId}/logo`,
       });
