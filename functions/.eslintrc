@@ -12,6 +12,7 @@
   "rules": {
     "max-len": ["error", {"code": 150}],
     "quotes": ["error", "double"],
+    "new-cap": ["error", { "properties": false }],
     "require-jsdoc": 0
   },
   "parserOptions": {

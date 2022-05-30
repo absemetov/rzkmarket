@@ -1,17 +1,19 @@
 import {autocomplete, getAlgoliaResults} from "@algolia/autocomplete-js";
 import {createLocalStorageRecentSearchesPlugin} from "@algolia/autocomplete-plugin-recent-searches";
+import {createQuerySuggestionsPlugin} from "@algolia/autocomplete-plugin-query-suggestions";
 import {setInstantSearchUiState, getInstantSearchUiState, INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE} from "./instantsearch";
 import {searchClient} from "./searchClient";
-import {highlight, snippet} from "instantsearch.js/es/helpers";
 // recent search
 const recentSearchesPlugin = createLocalStorageRecentSearchesPlugin({
-  key: "instantsearch",
+  key: "navbar",
   limit: 3,
-  transformSource({source}) {
+  transformSource({source, onRemove}) {
     return {
       ...source,
-      onSelect({setQuery, item}) {
-        if (window.location.pathname == "/search") {
+      onSelect({item, setQuery}) {
+        if (window.location.pathname !== "/search") {
+          window.location.href = "/search?products%5Bquery%5D=" + item.label;
+        } else {
           setTimeout(() => {
             setQuery(item.label);
           }, 3);
@@ -21,8 +23,35 @@ const recentSearchesPlugin = createLocalStorageRecentSearchesPlugin({
               [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [],
             },
           });
+        }
+      },
+    };
+  },
+});
+const querySuggestionsPlugin = createQuerySuggestionsPlugin({
+  searchClient,
+  indexName: "instant_search_demo_query_suggestions",
+  getSearchParams() {
+    return recentSearchesPlugin.data.getAlgoliaSearchParams({
+      hitsPerPage: 6,
+    });
+  },
+  transformSource({source, onRemove}) {
+    return {
+      ...source,
+      onSelect({item, setQuery}) {
+        if (window.location.pathname !== "/search") {
+          window.location.href = "/search?products%5Bquery%5D=" + item.query;
         } else {
-          window.location.href = "/search?products%5Bquery%5D=" + item.label;
+          setTimeout(() => {
+            setQuery(item.query);
+          }, 3);
+          setInstantSearchUiState({
+            query: item.query,
+            hierarchicalMenu: {
+              [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [],
+            },
+          });
         }
       },
     };
@@ -33,7 +62,7 @@ const searchPageState = getInstantSearchUiState();
 
 export function startAutocomplete() {
   autocomplete({
-    debug: true,
+    debug: false,
     container: "#autocomplete",
     openOnFocus: true,
     placeholder: "Search",
@@ -41,7 +70,7 @@ export function startAutocomplete() {
       query: searchPageState.query || "",
     },
     detachedMediaQuery: "(max-width: 991.98px)",
-    plugins: [recentSearchesPlugin],
+    plugins: [recentSearchesPlugin, querySuggestionsPlugin],
     onSubmit({state, setQuery}) {
       if (window.location.pathname == "/search") {
         setTimeout(() => {
@@ -80,7 +109,7 @@ export function startAutocomplete() {
                   query,
                   params: {
                     hitsPerPage: 5,
-                    attributesToSnippet: ["name:10"],
+                    attributesToSnippet: ["name:1"],
                     snippetEllipsisText: "…",
                   },
                 },
@@ -88,7 +117,8 @@ export function startAutocomplete() {
             });
           },
           onSelect({item, setQuery}) {
-            recentSearchesPlugin.data.addItem({id: item.code, label: item.name});
+            console.log(item);
+            recentSearchesPlugin.data.addItem({id: item.objectID, label: item.name});
             if (window.location.pathname !== "/search") {
               window.location.href = "/search?products%5Bquery%5D=" + item.name;
             } else {
@@ -103,11 +133,14 @@ export function startAutocomplete() {
               });
             }
           },
+          getItemInputValue({item}) {
+            return item.name;
+          },
           templates: {
             header() {
               return "Products";
             },
-            item({item, html}) {
+            item({item, html, components}) {
               return html`<div class="aa-ItemWrapper">
                 <div class="aa-ItemContent">
                   <div class="aa-ItemIcon">
@@ -120,10 +153,10 @@ export function startAutocomplete() {
                   </div>
                   <div class="aa-ItemContentBody">
                     <div class="aa-ItemContentTitle">
-                      ${highlight({hit: item, attribute: "name"})}
+                      ${components.Highlight({hit: item, attribute: "name"})}
                     </div>
                     <div class="aa-ItemContentDescription">
-                      ${snippet({hit: item, attribute: "description"})}
+                      ${components.Snippet({hit: item, attribute: "name"})}
                     </div>
                   </div>
                 </div>
@@ -163,8 +196,12 @@ export function startAutocomplete() {
             });
           },
           onSelect({item, setQuery}) {
+            console.log(item);
             recentSearchesPlugin.data.addItem({id: item.code, label: item.name});
             window.location.href = "/search?products%5Bquery%5D=" + item.name;
+          },
+          getItemInputValue({item}) {
+            return item.name;
           },
           templates: {
             header() {
