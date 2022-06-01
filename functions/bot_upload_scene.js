@@ -129,49 +129,39 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
             if (url) {
               parentId = url[2].trim();
             } else {
-              parentId = cyrillicToTranslit.transform(groupArray[index - 1].trim(), "-").toLowerCase();
-              parentId = cyrillicToTranslitUk.transform(parentId).toLowerCase();
+              parentId = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(groupArray[index - 1].trim(), "-")).toLowerCase();
             }
           }
           const url = catalogName.match(/(.+)\[([[a-zA-Z0-9-_]+)\]$/);
+          // url exist
           if (url) {
             name = url[1].trim();
             id = url[2].trim();
           } else {
-            id = cyrillicToTranslit.transform(catalogName.trim(), "-").toLowerCase();
-            id = cyrillicToTranslitUk.transform(id).toLowerCase();
+            id = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(catalogName.trim(), "-")).toLowerCase();
           }
           return {
             id,
             name,
-            parentId: parentId,
+            parentId,
           };
         });
       }
       // generate tags array
-      let tagsArray = [];
+      // let tagsArray = [];
       const tags = [];
       const tagsNames = [];
       if (row.TAGS) {
         // generate Ids
-        tagsArray = row.TAGS.split(",");
+        const tagsArray = row.TAGS.split(",");
         tagsArray.forEach((tagName) => {
-          tagName = tagName.trim();
-          let tagId = cyrillicToTranslit.transform(tagName, "-").toLowerCase();
-          tagId = cyrillicToTranslitUk.transform(tagId).toLowerCase();
-          let tagHidden = false;
-          if (tagId.substring(0, 1) === "+") {
-            tagHidden = true;
-            tagName = tagName.substring(1).trim();
-            tagId = cyrillicToTranslit.transform(tagName, "-").toLowerCase();
-            tagId = cyrillicToTranslitUk.transform(tagId).toLowerCase();
-          }
+          const name = tagName.trim();
+          const id = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name, "-")).toLowerCase();
           tagsNames.push({
-            id: tagId,
-            name: tagName,
-            hidden: tagHidden,
+            id,
+            name,
           });
-          tags.push(tagId);
+          tags.push(id);
         });
       }
       // price mutation
@@ -276,17 +266,14 @@ Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id).parentId}
         if (tagsNames.length) {
           for (const tagsRow of tagsNames) {
             if (!catalogsIsSet.get(groupArray[groupArray.length - 1].id).tags.has(tagsRow.id)) {
-              // if hidden tag not save
-              if (!tagsRow.hidden) {
-                const catalogRef = firebase.firestore().collection("objects").doc(objectId)
-                    .collection("catalogs").doc(groupArray[groupArray.length - 1].id);
-                batchCatalogsTags.set(catalogRef, {
-                  "tags": firebase.firestore.FieldValue.arrayUnion({
-                    id: tagsRow.id,
-                    name: tagsRow.name,
-                  }),
-                }, {merge: true});
-              }
+              const catalogRef = firebase.firestore().collection("objects").doc(objectId)
+                  .collection("catalogs").doc(groupArray[groupArray.length - 1].id);
+              batchCatalogsTags.set(catalogRef, {
+                "tags": firebase.firestore.FieldValue.arrayUnion({
+                  id: tagsRow.id,
+                  name: tagsRow.name,
+                }),
+              }, {merge: true});
             }
             // Add tags value to tmp Map
             catalogsIsSet.get(groupArray[groupArray.length - 1].id).tags.add(tagsRow.id);
