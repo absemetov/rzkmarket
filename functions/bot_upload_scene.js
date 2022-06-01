@@ -9,95 +9,44 @@ const cyrillicToTranslit = new CyrillicToTranslit();
 const cyrillicToTranslitUk = new CyrillicToTranslit({preset: "uk"});
 // upload from googleSheet
 const uploadProducts = async (telegram, objectId, sheetId) => {
-  const start = new Date();
+  const startTime = new Date();
+  // for goods and catalogs
+  const serverTimestamp = Math.floor(startTime / 1000);
+  // per page default 500
+  const perPage = 500;
   // Max upload goods
   const maxUploadGoods = 2000;
   // Catalogs set array
   const catalogsIsSet = new Map();
   // Products set array
   const productIsSet = new Set();
-  // const serverTimestamp = firebase.firestore.FieldValue.serverTimestamp();
-  const serverTimestamp = Math.floor(Date.now() / 1000);
-  // Get sheetId parse url
-  // const objectId = ctx.state.param;
-  // const object = await store.findRecord(`objects/${objectId}`);
-  // const sheetId = object.spreadsheets.split("/").reduce((sum, section) => {
-  //   if (section.length === 44) {
-  //     return section;
-  //     // return;
-  //   } else {
-  //     // save data
-  //     return sum;
-  //   }
-  // }, "");
-  // const sheetUrl = object.spreadsheets && object.spreadsheets.match(/d\/(.*)\/edit#gid=([0-9]+)/);
-  // if (!sheetUrl) {
-  //   await ctx.replyWithMarkdown("SheetID or listID not found, please check you url (object.spreadsheets)");
-  //   return false;
-  // }
-  // const sheetId = sheetUrl[1];
-  // const listId = sheetUrl[2];
-  // get data for check upload process
-  // let uploading = ctx.session.uploading;
-  // const uplodingTime = ctx.session.uploadStartAt && serverTimestamp - ctx.session.uploadStartAt;
-  // kill process
-  // if (ctx.session.uploading && uplodingTime > 570) {
-  //   uploading = false;
-  // }
-  // if (!uploading) {
-  // set data for check upload process
-  // ctx.session.uploading = true;
-  // ctx.session.uploadStartAt = serverTimestamp;
-  // load goods
+  // load sheet
   const doc = new GoogleSpreadsheet(sheetId);
-  // try {
   await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
-  await doc.loadInfo(); // loads document properties and worksheets
+  // loads document properties and worksheets
+  await doc.loadInfo();
   const sheet = doc.sheetsByTitle["products"];
-  //   await ctx.replyWithMarkdown(`Loading goods from ...
-  // Sheet name: *${doc.title}*
-  // Count rows: *${sheet.rowCount}*`);
   await telegram.sendMessage(94899148, `<b>Loading goods from ${doc.title}\n`+
   `Count rows: ${sheet.rowCount}</b>`,
   {parse_mode: "html"});
   let rowCount = sheet.rowCount;
-  // per page default 500
-  const perPage = 500;
   // read rows
-  // batches 500
-  // test load cells
-  // for (let i = 1; i < rowCount; i += perPage) {
-  //   console.log("row", i + 1 );
-  //   // boundaries must be +1
-  //   await sheet.loadCells({
-  //     startRowIndex: i, endRowIndex: i + perPage, startColumnIndex: 0, endColumnIndex: 2,
-  //   });
-  //   for (let j = i; j < i + perPage && j < rowCount; j++) {
-  //     console.log(j + 1, sheet.getCell(j, 0).value, sheet.getCell(j, 1).value);
-  //   }
-  //   // clear chash save memory
-  //   sheet.resetLocalCache(true);
-  // }
-
   for (let i = 1; i < rowCount; i += perPage) {
     // get rows data
-    // const rows = await sheet.getRows({limit: perPage, offset: i});
     // use get cell because this method have numder formats
-    // GridRange object
     await sheet.loadCells({
       startRowIndex: i, endRowIndex: i + perPage, startColumnIndex: 0, endColumnIndex: 8,
     });
-    // Get a new write batch
+    // write batch
     const batchArray = [];
     const batchGoods = firebase.firestore().batch();
     // catalog parallel batched writes
     let batchCatalogs = firebase.firestore().batch();
     let batchCatalogsCount = 0;
-    // catalog Tags batch
+    // catalog tags batch
     const batchCatalogsTags = firebase.firestore().batch();
     // loop rows from SHEET
     for (let j = i; j < i + perPage && j < rowCount; j++) {
-      // Stop scan if ID = "stop"
       const row = {
         ID: sheet.getCell(j, 0).value ? sheet.getCell(j, 0).value.toString() : sheet.getCell(j, 0).value,
         NAME: sheet.getCell(j, 1).value ? sheet.getCell(j, 1).value.trim() : sheet.getCell(j, 1).value,
@@ -108,7 +57,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
         GROUP: sheet.getCell(j, 6).value,
         TAGS: sheet.getCell(j, 7).value,
       };
-      // stop loop
+      // stop scan if ID = "stop"
       if (row.ID === "stop") {
         rowCount = 0;
         break;
@@ -148,11 +97,10 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
         });
       }
       // generate tags array
-      // let tagsArray = [];
       const tags = [];
       const tagsNames = [];
       if (row.TAGS) {
-        // generate Ids
+        // parse data
         const tagsArray = row.TAGS.split(",");
         tagsArray.forEach((tagName) => {
           const name = tagName.trim();
@@ -164,10 +112,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
           tags.push(id);
         });
       }
-      // price mutation
-      // const purchasePrice = rows[j].PURCHASE_PRICE &&
-      //   Number(rows[j].PURCHASE_PRICE.replace(",", ".").replace(/\s+/g, ""));
-      // const price = rows[j].PRICE && Number(rows[j].PRICE.replace(",", ".").replace(/\s+/g, ""));
+      // product data
       const product = {
         id: row.ID,
         name: row.NAME,
@@ -190,32 +135,27 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
         "unit": "required|in:м,шт",
       };
       const validateProductRow = new Validator(product, rulesProductRow);
-      // validate data if ID and NAME set org Name and PRICE
       // check fails If product have ID Name else this commet etc...
       if (validateProductRow.fails() && (product.id && product.name)) {
         let errorRow = `In row *${j + 1}* Product ID *${product.id}*\n`;
         for (const [key, error] of Object.entries(validateProductRow.errors.all())) {
           errorRow += `Column *${key}* => *${error}* \n`;
         }
-        // ctx.session.uploading = false;
         throw new Error(errorRow);
       }
       // group is required!!!
-      if (product.group.length === 0 && (product.id && product.name && product.price)) {
-        // ctx.session.uploading = false;
+      if (product.group.length === 0 && (product.id && product.name)) {
         throw new Error(`Group required in row ${j + 1}`);
       }
-      // save data to firestore
+      // validate product
       if (validateProductRow.passes()) {
         // check limit goods
         if (productIsSet.size === maxUploadGoods) {
-          // ctx.session.uploading = false;
           throw new Error(`Limit *${maxUploadGoods}* goods!`);
         }
         // add products in batch
         // check id product is unic
         if (productIsSet.has(product.id)) {
-          // ctx.session.uploading = false;
           throw new Error(`Product ID *${product.id}* in row *${j + 1}* is exist`);
         } else {
           productIsSet.add(product.id);
@@ -257,12 +197,11 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
           }
           // Check if catalog moved
           if (catalogsIsSet.get(catalog.id).parentId !== catalog.parentId) {
-            // ctx.session.uploading = false;
             throw new Error(`Goods *${product.name}* in row *${j + 1}*,
 Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id).parentId}* to  *${catalog.parentId}*, `);
           }
         }
-        // add tags Catalogs TODO delete TAGS!!!!
+        // add tags to catalogs
         if (tagsNames.length) {
           for (const tagsRow of tagsNames) {
             if (!catalogsIsSet.get(groupArray[groupArray.length - 1].id).tags.has(tagsRow.id)) {
@@ -297,12 +236,12 @@ Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id).parentId}
     // clear cache
     sheet.resetLocalCache(true);
   }
-  // after upload show upload info
-  const ms = new Date() - start;
+  // upload time
+  const uploadTime = new Date() - startTime;
   // await ctx.replyWithMarkdown(`Data uploaded in *${Math.floor(ms/1000)}*s:
   // Goods: *${productIsSet.size}*
   // Catalogs: *${catalogsIsSet.size}*`);
-  await telegram.sendMessage(94899148, `<b>Data uploaded in ${Math.floor(ms/1000)}s\n` +
+  await telegram.sendMessage(94899148, `<b>Data uploaded in ${Math.floor(uploadTime/1000)}s\n` +
       `Goods: ${productIsSet.size}\nCatalogs: ${catalogsIsSet.size}</b>`,
   {parse_mode: "html"});
   // delete old Products
@@ -333,17 +272,6 @@ Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id).parentId}
     await telegram.sendMessage(94899148, `<b>${catalogsDeleteSnapshot.size} catalogs deleted</b>`,
         {parse_mode: "html"});
   }
-  // } catch (error) {
-  //   await ctx.replyWithMarkdown(`Sheet ${error}`);
-  // }
-  // set data for check upload process done!
-  // await ctx.state.cart.setSessionData({
-  //   uploading: false,
-  // });
-  // ctx.session.uploading = false;
-  // } else {
-  //   throw new Error("Uploading..., please wait");
-  // }
 };
 // create object handler
 const uploadActions = [];
