@@ -35,6 +35,7 @@ const startHandler = async (ctx) => {
     inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
   });
   inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
+  inlineKeyboardArray.push([{text: "🧾 Поиск товаров", callback_data: "search"}]);
   inlineKeyboardArray.push([{text: `Войти на сайт ${process.env.BOT_SITE}`, login_url: {
     url: `https://${process.env.BOT_SITE}/login`,
     request_write_access: true,
@@ -91,6 +92,7 @@ startActions.push(async (ctx, next) => {
         inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
       });
       inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
+      inlineKeyboardArray.push([{text: "🧾 Поиск товаров", callback_data: "search"}]);
       inlineKeyboardArray.push([{text: `Войти на сайт ${process.env.BOT_SITE}`, login_url: {
         url: `https://${process.env.BOT_SITE}/login`,
         request_write_access: true,
@@ -187,6 +189,18 @@ const uploadPhotoObj = async (ctx, objectId) => {
     await ctx.reply("Please select a object to upload Photo");
   }
 };
+
+// search products
+// upload object photo
+startActions.push( async (ctx, next) => {
+  if (ctx.state.routeName === "search") {
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": "search"}});
+    await ctx.replyWithHTML("Введите поисковой запрос");
+    await ctx.answerCbQuery();
+  } else {
+    return next();
+  }
+});
 
 exports.startActions = startActions;
 exports.startHandler = startHandler;

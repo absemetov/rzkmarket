@@ -106,27 +106,7 @@ bot.command("mono", async (ctx) => {
 });
 // check session vars
 bot.on(["text", "contact"], async (ctx) => {
-  // algolia search test
-  const client = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
-  const index = client.initIndex("products");
-  const inlineKeyboard = [];
-  try {
-    const resalt = await index.search(ctx.message.text);
-    console.log(resalt);
-    for (const product of resalt.hits) {
-      const addButton = {text: `${product.objectID} ${product.name} ${product.price} ${product.currency}`,
-        callback_data: `p/${product.id}?o=absemetov`};
-      inlineKeyboard.push([addButton]);
-    }
-    await ctx.reply(`Search resalts1111: ${resalt.nbHits}`, {
-      reply_markup: {
-        inline_keyboard: inlineKeyboard,
-      },
-    });
-  } catch (error) {
-    await ctx.reply(`Algolia error: ${error}`);
-  }
-
+  // edit order wizard
   if (ctx.session.scene === "editOrder") {
     await orderWizard[ctx.session.cursor](ctx);
     return;
@@ -151,6 +131,28 @@ bot.on(["text", "contact"], async (ctx) => {
   const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");
   if (sessionFire && sessionFire.scene === "wizardOrder") {
     await cartWizard[sessionFire.cursor](ctx);
+    return;
+  }
+  // algolia search test
+  if (sessionFire && sessionFire.scene === "search") {
+    const client = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
+    const index = client.initIndex("products");
+    const inlineKeyboard = [];
+    try {
+      const resalt = await index.search(ctx.message.text);
+      for (const product of resalt.hits) {
+        const addButton = {text: `${product.objectID} ${product.name} ${product.price} ${product.currency}`,
+          callback_data: `p/${product.objectID}?o=absemetov`};
+        inlineKeyboard.push([addButton]);
+      }
+      await ctx.reply(`Search resalts: ${resalt.nbHits}`, {
+        reply_markup: {
+          inline_keyboard: inlineKeyboard,
+        },
+      });
+    } catch (error) {
+      await ctx.reply(`Algolia error: ${error}`);
+    }
     return;
   }
   await ctx.reply("session scene is null");

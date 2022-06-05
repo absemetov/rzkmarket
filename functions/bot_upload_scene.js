@@ -30,6 +30,8 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
   `Count rows: ${sheet.rowCount}</b>`,
   {parse_mode: "html"});
   let rowCount = sheet.rowCount;
+  // array for save tags
+  const catalogsTagsMap = new Map();
   // read rows
   for (let i = 1; i < rowCount; i += perPage) {
     // get rows data
@@ -178,7 +180,11 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
         for (const catalog of groupArray) {
           // check if catalog added to batch
           if (!catalogsIsSet.has(catalog.id)) {
-            catalogsIsSet.set(catalog.id, {parentId: catalog.parentId, tags: new Set()});
+            // set tags property only last catalog!!!
+            if (groupArray[groupArray.length - 1].id === catalog.id) {
+              catalogsTagsMap.set(catalog.id, new Map());
+            }
+            catalogsIsSet.set(catalog.id, {parentId: catalog.parentId});
             const catalogRef = firebase.firestore().collection("objects").doc(objectId)
                 .collection("catalogs").doc(catalog.id);
             batchCatalogs.set(catalogRef, {
@@ -201,21 +207,24 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
 Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id).parentId}* to  *${catalog.parentId}*, `);
           }
         }
-        // add tags to catalogs
+        // add tags to last catalog
         if (tagsNames.length) {
           for (const tagsRow of tagsNames) {
-            if (!catalogsIsSet.get(groupArray[groupArray.length - 1].id).tags.has(tagsRow.id)) {
-              const catalogRef = firebase.firestore().collection("objects").doc(objectId)
-                  .collection("catalogs").doc(groupArray[groupArray.length - 1].id);
-              batchCatalogsTags.set(catalogRef, {
-                "tags": firebase.firestore.FieldValue.arrayUnion({
-                  id: tagsRow.id,
-                  name: tagsRow.name,
-                }),
-              }, {merge: true});
+            if (!catalogsTagsMap.get(groupArray[groupArray.length - 1].id).has(tagsRow.id)) {
+              catalogsTagsMap.get(groupArray[groupArray.length - 1].id).set(tagsRow.id, tagsRow.name);
             }
-            // Add tags value to tmp Map
-            catalogsIsSet.get(groupArray[groupArray.length - 1].id).tags.add(tagsRow.id);
+            // if (!catalogsIsSet.get(groupArray[groupArray.length - 1].id).tags.has(tagsRow.id)) {
+            //   const catalogRef = firebase.firestore().collection("objects").doc(objectId)
+            //       .collection("catalogs").doc(groupArray[groupArray.length - 1].id);
+            //   batchCatalogsTags.set(catalogRef, {
+            //     "tags": firebase.firestore.FieldValue.arrayUnion({
+            //       id: tagsRow.id,
+            //       name: tagsRow.name,
+            //     }),
+            //   }, {merge: true});
+            // }
+            // // Add tags value to tmp Map
+            // catalogsIsSet.get(groupArray[groupArray.length - 1].id).tags.add(tagsRow.id);
           }
         }
       }
@@ -229,26 +238,38 @@ Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id).parentId}
     // commit all bathes parallel with tags delete option
     await Promise.all(batchArray);
     // commit catalogs tags
+    for (const catalog of catalogsTagsMap) {
+      const catalogRef = firebase.firestore().collection("objects").doc(objectId)
+          .collection("catalogs").doc(catalog[0]);
+      batchCatalogsTags.set(catalogRef, {
+        "tags": Array.from(catalog[1], ([id, name]) => ({id, name})),
+      }, {merge: true});
+    }
     await batchCatalogsTags.commit();
-    // await ctx.replyWithMarkdown(`*${i + perPage}* rows scaned from *${sheet.rowCount}*`);
-    await telegram.sendMessage(94899148, `<b>${i + perPage} rows scaned from ${sheet.rowCount}</b>`,
+    // send done info
+    await telegram.sendMessage(94899148, `<b>${i + perPage - 1} rows scaned from ${sheet.rowCount}</b>`,
         {parse_mode: "html"});
     // clear cache
     sheet.resetLocalCache(true);
   }
-  // upload time
+  // start delete trigger
+  await store.createRecord(`objects/${objectId}`, {
+    uploadProductsUpdatedAt: serverTimestamp,
+  });
+  // send notify
   const uploadTime = new Date() - startTime;
-  // await ctx.replyWithMarkdown(`Data uploaded in *${Math.floor(ms/1000)}*s:
-  // Goods: *${productIsSet.size}*
-  // Catalogs: *${catalogsIsSet.size}*`);
   await telegram.sendMessage(94899148, `<b>Data uploaded in ${Math.floor(uploadTime/1000)}s\n` +
       `Goods: ${productIsSet.size}\nCatalogs: ${catalogsIsSet.size}</b>`,
   {parse_mode: "html"});
+};
+
+// upload from googleSheet
+const deleteProducts = async (telegram, objectId, updatedAt) => {
   // delete old Products
   const batchProductsDelete = firebase.firestore().batch();
   const productsDeleteSnapshot = await firebase.firestore().collection("objects").doc(objectId)
       .collection("products")
-      .where("updatedAt", "!=", serverTimestamp).limit(perPage).get();
+      .where("updatedAt", "!=", updatedAt).limit(500).get();
   productsDeleteSnapshot.forEach((doc) =>{
     batchProductsDelete.delete(doc.ref);
   });
@@ -262,7 +283,7 @@ Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id).parentId}
   const batchCatalogsDelete = firebase.firestore().batch();
   const catalogsDeleteSnapshot = await firebase.firestore().collection("objects").doc(objectId)
       .collection("catalogs")
-      .where("updatedAt", "!=", serverTimestamp).limit(perPage).get();
+      .where("updatedAt", "!=", updatedAt).limit(500).get();
   catalogsDeleteSnapshot.forEach((doc) =>{
     batchCatalogsDelete.delete(doc.ref);
   });
@@ -293,7 +314,7 @@ const createObject = async (ctx, next) => {
         // await uploadProducts(ctx, object.id, sheetId);
         // await ctx.replyWithHTML(`Товары загружены ${object.name}, удачных продаж!\n`);
         // the current timestamp
-        await ctx.replyWithHTML(`Начинаем загрузку ${object.name}\n`);
+        await ctx.replyWithHTML(`Начинаем загрузку товаров ${object.name}\n`);
         const uploadProductsStart = Math.floor(Date.now() / 1000);
         await store.createRecord(`objects/${objectId}`, {
           uploadProductsStart,
@@ -514,3 +535,4 @@ uploadActions.push(uploadMerch);
 exports.uploadForm = uploadForm;
 exports.uploadActions = uploadActions;
 exports.uploadProducts = uploadProducts;
+exports.deleteProducts = deleteProducts;
