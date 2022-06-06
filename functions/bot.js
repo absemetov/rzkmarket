@@ -13,7 +13,7 @@ const bot = new Telegraf(process.env.BOT_TOKEN, {
 bot.use(session());
 bot.use(isAdmin);
 bot.use(async (ctx, next) => {
-  if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
+  if (ctx.callbackQuery && "data" in ctx.callbackQuery && process.env.FUNCTIONS_EMULATOR) {
     console.log("=============callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
   }
   // set session

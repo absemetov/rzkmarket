@@ -60,13 +60,22 @@ exports.productCreate = functions.region("europe-central2").firestore
       const objectID = context.params.productId;
       const objectId = context.params.objectId;
       const img = await photoCheckUrl(`photos/o/${objectId}/p/${objectID}/${product.mainPhoto}/1.jpg`);
+      // add data to Algolia
       const productAlgolia = {
         objectID,
         name: product.name,
         img,
       };
-      // add data to Algolia
-      await productsIndex.saveObject(productAlgolia);
+      // create HierarchicalMenu
+      const groupString = product.catalogsNamePath.split("#");
+      const helpArray = [];
+      const objProp = {};
+      groupString.forEach((item, index) => {
+        helpArray.push(item);
+        objProp[`categories.lvl${index}`] = helpArray.join(" > ");
+      });
+      const productAlgoliaHierarchicalMenu = Object.assign(productAlgolia, objProp);
+      await productsIndex.saveObject(productAlgoliaHierarchicalMenu);
       // return a promise of a set operation to update the count
       return snap.ref.set({
         createdAt: product.updatedAt,
@@ -80,13 +89,22 @@ exports.productUpdate = functions.region("europe-central2").firestore
       const objectID = context.params.productId;
       const objectId = context.params.objectId;
       const img = await photoCheckUrl(`photos/o/${objectId}/p/${objectID}/${product.mainPhoto}/1.jpg`);
+      // update data in Algolia
       const productAlgolia = {
         objectID,
         name: product.name,
         img,
       };
-      // update data in Algolia
-      await productsIndex.saveObject(productAlgolia);
+      // create HierarchicalMenu
+      const groupString = product.catalogsNamePath.split("#");
+      const helpArray = [];
+      const objProp = {};
+      groupString.forEach((item, index) => {
+        helpArray.push(item);
+        objProp[`categories.lvl${index}`] = helpArray.join(" > ");
+      });
+      const productAlgoliaHierarchicalMenu = Object.assign(productAlgolia, objProp);
+      await productsIndex.saveObject(productAlgoliaHierarchicalMenu);
       // return a promise of a set operation to update the count
       return null;
     });
