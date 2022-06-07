@@ -66,6 +66,9 @@ exports.productCreate = functions.region("europe-central2").firestore
         name: product.name,
         img,
       };
+      if (product.brand) {
+        productAlgolia.brand = product.brand;
+      }
       // create HierarchicalMenu
       const groupString = product.catalogsNamePath.split("#");
       const helpArray = [];
@@ -95,6 +98,9 @@ exports.productUpdate = functions.region("europe-central2").firestore
         name: product.name,
         img,
       };
+      if (product.brand) {
+        productAlgolia.brand = product.brand;
+      }
       // create HierarchicalMenu
       const groupString = product.catalogsNamePath.split("#");
       const helpArray = [];
