@@ -1,7 +1,7 @@
 const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
-const {uploadProducts, deleteProducts} = require("./bot_upload_scene");
-const {photoCheckUrl} = require("./bot_store_cart");
+const {uploadProducts} = require("./bot_upload_scene");
+const {store, photoCheckUrl} = require("./bot_store_cart");
 const {Telegraf} = require("telegraf");
 const algoliasearch = require("algoliasearch");
 const bot = new Telegraf(process.env.BOT_TOKEN, {
@@ -181,7 +181,12 @@ exports.catalogDelete = functions.region("europe-central2").firestore
       return null;
     });
 // upload products trigger
-exports.productsUpload = functions.region("europe-central2").firestore
+const runtimeOpts = {
+  timeoutSeconds: 540,
+  memory: "1GB",
+};
+exports.productsUpload = functions.region("europe-central2")
+    .runWith(runtimeOpts).firestore
     .document("objects/{objectId}")
     .onUpdate(async (change, context) => {
       const objectId = context.params.objectId;
@@ -195,42 +200,28 @@ exports.productsUpload = functions.region("europe-central2").firestore
         return null;
       }
       // start uploading
-      try {
-        await uploadProducts(bot.telegram, objectId, data.sheetId);
-      } catch (error) {
-        // await ctx.replyWithMarkdown(`Sheet ${error}`);
-        await bot.telegram.sendMessage(94899148, `<b>Sheet ${error}</b>`,
+      const sessionFire = await store.findRecord("users/94899148", "session");
+      const timeSeconds = Math.floor(new Date() / 1000);
+      let uploading = sessionFire.status == "loading";
+      const loadingTime = uploading && sessionFire.uploadStartAt && (Math.floor(new Date() / 1000) - sessionFire.uploadStartAt) > 570;
+      console.log(loadingTime);
+      // kill process
+      if (loadingTime) {
+        uploading = false;
+      }
+      if (!uploading) {
+        await store.createRecord("users/94899148", {"session": {"status": "loading", "uploadStartAt": timeSeconds}});
+        try {
+          await uploadProducts(bot.telegram, objectId, data.sheetId);
+        } catch (error) {
+          await store.createRecord("users/94899148", {"session": {"status": "error: " + error}});
+          await bot.telegram.sendMessage(94899148, `<b>Sheet ${error}</b>`,
+              {parse_mode: "html"});
+        }
+        await store.createRecord("users/94899148", {"session": {"status": "success"}});
+      } else {
+        await bot.telegram.sendMessage(94899148, "<b>Products loading...</b>",
             {parse_mode: "html"});
       }
       return null;
-    });
-
-// delete old products trigger
-exports.oldProductsDelete = functions.region("europe-central2").firestore
-    .document("objects/{objectId}")
-    .onUpdate(async (change, context) => {
-      const objectId = context.params.objectId;
-      // Retrieve the current and previous value
-      const data = change.after.data();
-      const previousData = change.before.data();
-
-      // We'll only update if the upload start has changed.
-      // This is crucial to prevent infinite loops.
-      if (data.uploadProductsUpdatedAt == previousData.uploadProductsUpdatedAt) {
-        return null;
-      }
-      // start uploading
-      try {
-        await deleteProducts(bot.telegram, objectId, data.uploadProductsUpdatedAt);
-      } catch (error) {
-        // await ctx.replyWithMarkdown(`Sheet ${error}`);
-        await bot.telegram.sendMessage(94899148, `<b>Delete products error ${error}</b>`,
-            {parse_mode: "html"});
-      }
-      // the current timestamp
-      const deleteProductsFinish = Math.floor(Date.now() / 1000);
-      // Then return a promise of a set operation to update the count
-      return change.after.ref.set({
-        deleteProductsFinish,
-      }, {merge: true});
     });

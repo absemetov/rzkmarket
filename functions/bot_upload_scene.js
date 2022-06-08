@@ -22,6 +22,9 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
   const productIsSet = new Set();
   // array for save tags
   const catalogsTagsMap = new Map();
+  // batch catalogs
+  let batchCatalogs = firebase.firestore().batch();
+  let batchCatalogsCount = 0;
   // load sheet
   const doc = new GoogleSpreadsheet(sheetId);
   await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
@@ -34,18 +37,12 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
   let rowCount = sheet.rowCount;
   // read rows
   for (let i = 1; i < rowCount; i += perPage) {
+    // write batch
+    const batchGoods = firebase.firestore().batch();
     // get rows data, use get cell because this method have numder formats
     await sheet.loadCells({
       startRowIndex: i, endRowIndex: i + perPage, startColumnIndex: 0, endColumnIndex: 9,
     });
-    // write batch
-    const batchArray = [];
-    const batchArrayTags = [];
-    const batchGoods = firebase.firestore().batch();
-    let batchCatalogs = firebase.firestore().batch();
-    let batchCatalogsCount = 0;
-    let batchCatalogsTags = firebase.firestore().batch();
-    let batchCatalogsTagsCount = 0;
     // loop rows from SHEET
     for (let j = i; j < i + perPage && j < rowCount; j++) {
       const row = {
@@ -178,7 +175,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
               }, {merge: true});
               // if 500 items commit
               if (++batchCatalogsCount === perPage) {
-                batchArray.push(batchCatalogs.commit());
+                await batchCatalogs.commit();
                 batchCatalogs = firebase.firestore().batch();
                 batchCatalogsCount = 0;
               }
@@ -203,42 +200,48 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
         }
       }
     }
-    // add bath goods to array
-    batchArray.push(batchGoods.commit());
-    // commit batch catalog if not commit
-    if (batchCatalogsCount !== perPage) {
-      batchArray.push(batchCatalogs.commit());
-    }
-    // save all bathes parallel with tags delete option
-    await Promise.all(batchArray);
-    // save catalogs tags
-    for (const catalog of catalogsTagsMap) {
-      const catalogRef = firebase.firestore().collection("objects").doc(objectId)
-          .collection("catalogs").doc(catalog[0]);
-      batchCatalogsTags.set(catalogRef, {
-        "tags": Array.from(catalog[1], ([id, name]) => ({id, name})),
-      }, {merge: true});
-      // if more 500 catalogs commit batch
-      if (++batchCatalogsTagsCount === perPage) {
-        batchArrayTags.push(batchCatalogsTags.commit());
-        batchCatalogsTags = firebase.firestore().batch();
-        batchCatalogsTagsCount = 0;
-      }
-    }
-    if (batchCatalogsTagsCount !== perPage) {
-      batchArrayTags.push(batchCatalogsTags.commit());
-    }
-    await Promise.all(batchArrayTags);
+    // commit goods
+    await batchGoods.commit();
     // send done info
     await telegram.sendMessage(94899148, `<b>${i + perPage - 1} rows scaned from ${sheet.rowCount}</b>`,
         {parse_mode: "html"});
     // clear cache
     sheet.resetLocalCache(true);
   }
+  // commit last catalog batch
+  if (batchCatalogsCount !== perPage) {
+    await batchCatalogs.commit();
+  }
+  // save catalogs tags
+  let batchCatalogsTags = firebase.firestore().batch();
+  let batchCatalogsTagsCount = 0;
+  for (const catalog of catalogsTagsMap) {
+    const catalogRef = firebase.firestore().collection("objects").doc(objectId)
+        .collection("catalogs").doc(catalog[0]);
+    batchCatalogsTags.set(catalogRef, {
+      "tags": Array.from(catalog[1], ([id, name]) => ({id, name})),
+    }, {merge: true});
+    // by 500 catalogs commit batch
+    if (++batchCatalogsTagsCount === perPage) {
+      await batchCatalogsTags.commit();
+      batchCatalogsTags = firebase.firestore().batch();
+      batchCatalogsTagsCount = 0;
+    }
+  }
+  if (batchCatalogsTagsCount !== perPage) {
+    await batchCatalogsTags.commit();
+  }
   // start delete trigger
-  await store.createRecord(`objects/${objectId}`, {
-    uploadProductsUpdatedAt: updatedAtTimestamp,
-  });
+  // await store.createRecord(`objects/${objectId}`, {
+  //   uploadProductsUpdatedAt: updatedAtTimestamp,
+  // });
+  try {
+    await deleteProducts(telegram, objectId, updatedAtTimestamp);
+  } catch (error) {
+    // await ctx.replyWithMarkdown(`Sheet ${error}`);
+    await telegram.sendMessage(94899148, `<b>Delete products error ${error}</b>`,
+        {parse_mode: "html"});
+  }
   // send notify
   const uploadTime = new Date() - startTime;
   await telegram.sendMessage(94899148, `<b>Data uploaded in ${Math.floor(uploadTime/1000)}s\n` +
@@ -252,7 +255,7 @@ const deleteProducts = async (telegram, objectId, updatedAt) => {
   const batchProductsDelete = firebase.firestore().batch();
   const productsDeleteSnapshot = await firebase.firestore().collection("objects").doc(objectId)
       .collection("products")
-      .where("updatedAt", "!=", updatedAt).limit(500).get();
+      .where("updatedAt", "<", updatedAt).limit(500).get();
   productsDeleteSnapshot.forEach((doc) =>{
     batchProductsDelete.delete(doc.ref);
   });
@@ -266,7 +269,7 @@ const deleteProducts = async (telegram, objectId, updatedAt) => {
   const batchCatalogsDelete = firebase.firestore().batch();
   const catalogsDeleteSnapshot = await firebase.firestore().collection("objects").doc(objectId)
       .collection("catalogs")
-      .where("updatedAt", "!=", updatedAt).limit(500).get();
+      .where("updatedAt", "<", updatedAt).limit(500).get();
   catalogsDeleteSnapshot.forEach((doc) =>{
     batchCatalogsDelete.delete(doc.ref);
   });
@@ -302,6 +305,7 @@ const createObject = async (ctx, next) => {
         await store.createRecord(`objects/${objectId}`, {
           uploadProductsStart,
         });
+        await ctx.answerCbQuery();
         return;
       }
       // start upload
