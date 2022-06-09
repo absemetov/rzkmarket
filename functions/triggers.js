@@ -202,23 +202,17 @@ exports.productsUpload = functions.region("europe-central2")
       // start uploading
       const sessionFire = await store.findRecord("users/94899148", "session");
       const timeSeconds = Math.floor(new Date() / 1000);
-      let uploading = sessionFire.status == "loading";
-      const loadingTime = uploading && sessionFire.uploadStartAt && (Math.floor(new Date() / 1000) - sessionFire.uploadStartAt) > 570;
-      console.log(loadingTime);
-      // kill process
-      if (loadingTime) {
-        uploading = false;
-      }
+      const uploading = sessionFire.uploading && (Math.floor(new Date() / 1000) - sessionFire.uploadStartAt) < 540;
       if (!uploading) {
-        await store.createRecord("users/94899148", {"session": {"status": "loading", "uploadStartAt": timeSeconds}});
+        await store.createRecord("users/94899148", {"session": {"uploading": true, "uploadStartAt": timeSeconds}});
         try {
           await uploadProducts(bot.telegram, objectId, data.sheetId);
         } catch (error) {
-          await store.createRecord("users/94899148", {"session": {"status": "error: " + error}});
+          await store.createRecord("users/94899148", {"session": {"uploading": false}});
           await bot.telegram.sendMessage(94899148, `<b>Sheet ${error}</b>`,
               {parse_mode: "html"});
         }
-        await store.createRecord("users/94899148", {"session": {"status": "success"}});
+        await store.createRecord("users/94899148", {"session": {"uploading": false}});
       } else {
         await bot.telegram.sendMessage(94899148, "<b>Products loading...</b>",
             {parse_mode: "html"});
