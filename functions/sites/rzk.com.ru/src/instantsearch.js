@@ -193,6 +193,7 @@ search.addWidgets([
       "categories.lvl1",
       "categories.lvl2",
       "categories.lvl3",
+      "categories.lvl4",
     ],
     showParentLevel: false,
   }),

@@ -34,7 +34,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
   await telegram.sendMessage(94899148, `<b>Loading goods from ${doc.title}\n`+
   `Count rows: ${sheet.rowCount}</b>`,
   {parse_mode: "html"});
-  let rowCount = sheet.rowCount;
+  const rowCount = sheet.rowCount;
   // read rows
   for (let i = 1; i < rowCount; i += perPage) {
     // write batch
@@ -57,10 +57,10 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
         BRAND: sheet.getCell(j, 8).value,
       };
       // stop scan if ID = "stop"
-      if (row.ID === "stop") {
-        rowCount = 0;
-        break;
-      }
+      // if (row.ID === "stop") {
+      //   rowCount = 0;
+      //   break;
+      // }
       // check if this products have ID and NAME
       if (row.ID && row.NAME) {
         // generate catalogs array
@@ -105,7 +105,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
           name: row.NAME,
           purchasePrice: row.PURCHASE_PRICE ? roundNumber(row.PURCHASE_PRICE) : null,
           price: row.PRICE ? roundNumber(row.PRICE) : null,
-          group: groupArray.length ? groupArray : null,
+          groupLength: groupArray.length ? groupArray.length : null,
           tags: tags.length ? tags.map((tag) => tag.id) : firebase.firestore.FieldValue.delete(),
           currency: row.CURRENCY,
           unit: row.UNIT,
@@ -117,7 +117,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
           "name": "required|string",
           "purchasePrice": "numeric",
           "price": "required|numeric",
-          "group": "required",
+          "groupLength": "required|max:5",
           "group.*.id": "alpha_dash|max:16",
           "tags.*": "alpha_dash|max:12",
           "currency": "required|in:USD,EUR,RUB,UAH",
@@ -126,20 +126,20 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
         const validateProductRow = new Validator(product, rulesProductRow);
         // check fails
         if (validateProductRow.fails()) {
-          let errorRow = `In row *${j + 1}* Product ID *${product.id}*\n`;
+          let errorRow = `In row <b>${j + 1}</b> Product ID <b>${product.id}</b>\n`;
           for (const [key, error] of Object.entries(validateProductRow.errors.all())) {
-            errorRow += `Column *${key}* => *${error}* \n`;
+            errorRow += `Column <b>${key}</b> => <b>${error}</b> \n`;
           }
           throw new Error(errorRow);
         }
         if (validateProductRow.passes()) {
           // check limit goods
           if (productIsSet.size === maxUploadGoods) {
-            throw new Error(`Limit *${maxUploadGoods}* goods!`);
+            throw new Error(`Limit <b>${maxUploadGoods}</b> goods!`);
           }
           // add products in batch, check id product is unic
           if (productIsSet.has(product.id)) {
-            throw new Error(`Product ID *${product.id}* in row *${j + 1}* is exist`);
+            throw new Error(`Product ID <b>${product.id}</b> in row <b>${j + 1}</b> is exist`);
           } else {
             productIsSet.add(product.id);
           }
@@ -182,8 +182,8 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
             }
             // check if catalog moved
             if (catalogsIsSet.get(catalog.id).parentId !== catalog.parentId) {
-              throw new Error(`Goods *${product.name}* in row *${j + 1}*,
-  Catalog *${catalog.name}* moved from  *${catalogsIsSet.get(catalog.id).parentId}* to  *${catalog.parentId}*, `);
+              throw new Error(`Goods <b>${product.name}</b> in row <b>${j + 1}</b>,
+  Catalog <b>${catalog.name}</b> moved from  <b>${catalogsIsSet.get(catalog.id).parentId}</b> to  <b>${catalog.parentId}</b>, `);
             }
           }
           // generate tags Map for last catalog
@@ -203,7 +203,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
     // commit goods
     await batchGoods.commit();
     // send done info
-    await telegram.sendMessage(94899148, `<b>${i + perPage - 1} rows scaned from ${sheet.rowCount}</b>`,
+    await telegram.sendMessage(94899148, `<b>${i + perPage - 1} rows scaned from ${rowCount}</b>`,
         {parse_mode: "html"});
     // clear cache
     sheet.resetLocalCache(true);
@@ -261,7 +261,6 @@ const deleteProducts = async (telegram, objectId, updatedAt) => {
   });
   await batchProductsDelete.commit();
   if (productsDeleteSnapshot.size) {
-    // await ctx.replyWithMarkdown(`*${productsDeleteSnapshot.size}* products deleted`);
     await telegram.sendMessage(94899148, `<b>${productsDeleteSnapshot.size} products deleted</b>`,
         {parse_mode: "html"});
   }
@@ -275,7 +274,6 @@ const deleteProducts = async (telegram, objectId, updatedAt) => {
   });
   await batchCatalogsDelete.commit();
   if (catalogsDeleteSnapshot.size) {
-    // await ctx.replyWithMarkdown(`*${catalogsDeleteSnapshot.size}* catalogs deleted`);
     await telegram.sendMessage(94899148, `<b>${catalogsDeleteSnapshot.size} catalogs deleted</b>`,
         {parse_mode: "html"});
   }
@@ -356,7 +354,7 @@ const createObject = async (ctx, next) => {
       if (validateObject.fails()) {
         let errorRow = "";
         for (const [key, error] of Object.entries(validateObject.errors.all())) {
-          errorRow += `field *${key}* => *${error}* \n`;
+          errorRow += `field <b>${key}</b> => <b>${error}</b>\n`;
         }
         throw new Error(errorRow);
       }
@@ -440,7 +438,7 @@ const uploadForm = async (ctx, sheetId) => {
     if (validateObject.fails()) {
       let errorRow = "";
       for (const [key, error] of Object.entries(validateObject.errors.all())) {
-        errorRow += `field *${key}* => *${error}* \n`;
+        errorRow += `field <b>${key}</b> => <b>${error}</b> \n`;
       }
       throw new Error(errorRow);
     }

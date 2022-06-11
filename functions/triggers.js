@@ -72,13 +72,12 @@ exports.productCreate = functions.region("europe-central2").firestore
       // create HierarchicalMenu
       const groupString = product.catalogsNamePath.split("#");
       const helpArray = [];
-      const objProp = {};
       groupString.forEach((item, index) => {
         helpArray.push(item);
-        objProp[`categories.lvl${index}`] = helpArray.join(" > ");
+        productAlgolia[`categories.lvl${index}`] = helpArray.join(" > ");
       });
-      const productAlgoliaHierarchicalMenu = Object.assign(productAlgolia, objProp);
-      await productsIndex.saveObject(productAlgoliaHierarchicalMenu);
+      // const productAlgoliaHierarchicalMenu = Object.assign(productAlgolia, objProp);
+      await productsIndex.saveObject(productAlgolia);
       // return a promise of a set operation to update the count
       return snap.ref.set({
         createdAt: product.updatedAt,
@@ -104,13 +103,12 @@ exports.productUpdate = functions.region("europe-central2").firestore
       // create HierarchicalMenu
       const groupString = product.catalogsNamePath.split("#");
       const helpArray = [];
-      const objProp = {};
       groupString.forEach((item, index) => {
         helpArray.push(item);
-        objProp[`categories.lvl${index}`] = helpArray.join(" > ");
+        productAlgolia[`categories.lvl${index}`] = helpArray.join(" > ");
       });
-      const productAlgoliaHierarchicalMenu = Object.assign(productAlgolia, objProp);
-      await productsIndex.saveObject(productAlgoliaHierarchicalMenu);
+      // const productAlgoliaHierarchicalMenu = Object.assign(productAlgolia, objProp);
+      await productsIndex.saveObject(productAlgolia);
       // return a promise of a set operation to update the count
       return null;
     });
@@ -209,7 +207,7 @@ exports.productsUpload = functions.region("europe-central2")
           await uploadProducts(bot.telegram, objectId, data.sheetId);
         } catch (error) {
           await store.createRecord("users/94899148", {"session": {"uploading": false}});
-          await bot.telegram.sendMessage(94899148, `<b>Sheet ${error}</b>`,
+          await bot.telegram.sendMessage(94899148, `Sheet ${error}`,
               {parse_mode: "html"});
         }
         await store.createRecord("users/94899148", {"session": {"uploading": false}});
