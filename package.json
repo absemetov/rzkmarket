@@ -16,7 +16,8 @@
     "deploy-bot-ru":"firebase deploy --project=ru --only functions:bot",
     "deploy-triggers-ru":"firebase deploy --project=ru --only functions:triggers",
     "pl": "firebase use",
-    "s": "firebase emulators:start"
+    "s": "firebase serve",
+    "es": "firebase emulators:start"
   },
   "dependencies": {},
   "devDependencies": {}

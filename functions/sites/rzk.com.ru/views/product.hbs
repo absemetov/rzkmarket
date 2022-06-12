@@ -16,10 +16,10 @@
     <div class="card text-center h-100">
       {{#if product.imgUrlOrigin}}
         <a href="{{product.imgUrlOrigin}}" class="js-smartphoto" data-caption="{{product.name}}">
-          <img src="{{product.imgUrl}}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="{{product.name}}">
+          <img src="{{product.imgUrl}}" loading="lazy" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="{{product.name}}">
         </a>
       {{else}}
-        <img src="{{product.imgUrl}}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="{{product.name}}">
+        <img src="{{product.imgUrl}}" loading="lazy" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="{{product.name}}">
       {{/if}}
       <div class="card-body">
         <h5>{{product.name}} <small class="text-muted">({{product.id}})</small>
