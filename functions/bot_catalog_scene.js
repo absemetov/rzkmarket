@@ -16,7 +16,7 @@ const showCatalog = async (ctx, next) => {
     let publicImgUrl = null;
     const object = await store.findRecord(`objects/${objectId}`);
     if (object.photoId) {
-      publicImgUrl = `photos/o/${objectId}/logo/${object.photoId}/${object.photoId.slice(-1)}.jpg`;
+      publicImgUrl = `photos/o/${objectId}/logo/${object.photoId}/2.jpg`;
     }
     // and show upload catalog photo
     let uUrl = "";
@@ -121,7 +121,7 @@ const showCatalog = async (ctx, next) => {
       }
       // get photo catalog
       if (currentCatalog.photoId) {
-        publicImgUrl = `photos/o/${objectId}/c/${currentCatalog.id}/${currentCatalog.photoId}/${currentCatalog.photoId.slice(-1)}.jpg`;
+        publicImgUrl = `photos/o/${objectId}/c/${currentCatalog.id}/${currentCatalog.photoId}/2.jpg`;
       }
     } else {
       // back button
@@ -193,10 +193,10 @@ const showProduct = async (ctx, next) => {
     // Get main photo url.
     let publicImgUrl = null;
     if (object.photoId) {
-      publicImgUrl = `photos/o/${objectId}/logo/${object.photoId}/${object.photoId.slice(-1)}.jpg`;
+      publicImgUrl = `photos/o/${objectId}/logo/${object.photoId}/2.jpg`;
     }
     if (product.mainPhoto) {
-      publicImgUrl = `photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/${product.mainPhoto.slice(-1)}.jpg`;
+      publicImgUrl = `photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/2.jpg`;
     }
     // footer buttons
     cartButtons[0].text = `🏪 ${object.name}`;
@@ -306,10 +306,10 @@ catalogsActions.push( async (ctx, next) => {
       // get main photo url.
       let publicImgUrl = null;
       if (object.photoId) {
-        publicImgUrl = `photos/o/${objectId}/logo/${object.photoId}/${object.photoId.slice(-1)}.jpg`;
+        publicImgUrl = `photos/o/${objectId}/logo/${object.photoId}/2.jpg`;
       }
       if (product.mainPhoto) {
-        publicImgUrl = `photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/${product.mainPhoto.slice(-1)}.jpg`;
+        publicImgUrl = `photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/2.jpg`;
       }
       const uploadPhotoButton =[];
       if (ctx.state.isAdmin) {
@@ -461,7 +461,7 @@ const showCart = async (ctx, next) => {
     // edit message
     let publicImgUrl = null;
     if (object.photoId) {
-      publicImgUrl = `photos/o/${objectId}/logo/${object.photoId}/${object.photoId.slice(-1)}.jpg`;
+      publicImgUrl = `photos/o/${objectId}/logo/${object.photoId}/2.jpg`;
     }
     const media = await photoCheckUrl(publicImgUrl);
     await ctx.editMessageMedia({
@@ -776,7 +776,7 @@ catalogsActions.push( async (ctx, next) => {
     const object = await store.findRecord(`objects/${objectId}`);
     let publicImgUrl = null;
     if (object.photoId) {
-      publicImgUrl = `photos/o/${objectId}/logo/${object.photoId}/${object.photoId.slice(-1)}.jpg`;
+      publicImgUrl = `photos/o/${objectId}/logo/${object.photoId}/2.jpg`;
     }
     const media = await photoCheckUrl(publicImgUrl);
     await ctx.editMessageMedia({
@@ -815,7 +815,7 @@ catalogsActions.push( async (ctx, next) => {
       if (product.mainPhoto === photoId) {
         caption = "✅ " + caption;
       }
-      const media = await photoCheckUrl(`photos/o/${objectId}/p/${product.id}/${photoId}/${photoId.slice(-1)}.jpg`);
+      const media = await photoCheckUrl(`photos/o/${objectId}/p/${product.id}/${photoId}/2.jpg`);
       await ctx.replyWithPhoto(media, {
         caption,
         parse_mode: "html",
@@ -968,7 +968,7 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
       if (ctx.session.pathCatalog) {
         catalogUrl = ctx.session.pathCatalog;
       }
-      const media = await photoCheckUrl(`photos/o/${objectId}/p/${product.id}/${photoId}/${photoId.slice(-1)}.jpg`);
+      const media = await photoCheckUrl(`photos/o/${objectId}/p/${product.id}/${photoId}/2.jpg`);
       await ctx.replyWithPhoto(media,
           {
             caption: `${product.name} (${product.id}) photo uploaded`,
@@ -1031,7 +1031,7 @@ const uploadPhotoCat = async (ctx, objectId, catalogId) => {
       });
       // get catalog url (path)
       const catalogUrl = `c/${catalog.id}?o=${objectId}`;
-      const media = await photoCheckUrl(`photos/o/${objectId}/c/${catalog.id}/${photoId}/${photoId.slice(-1)}.jpg`);
+      const media = await photoCheckUrl(`photos/o/${objectId}/c/${catalog.id}/${photoId}/2.jpg`);
       await ctx.replyWithPhoto(media,
           {
             caption: `${catalog.name} (${catalog.id}) photo uploaded`,

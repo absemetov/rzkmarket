@@ -83,7 +83,7 @@ startActions.push(async (ctx, next) => {
       inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: "objects"}]);
       // set logo obj
       if (object.photoId) {
-        imgUrl = `photos/o/${objectId}/logo/${object.photoId}/${object.photoId.slice(-1)}.jpg`;
+        imgUrl = `photos/o/${objectId}/logo/${object.photoId}/2.jpg`;
       }
     } else {
       // show all objects
@@ -166,7 +166,7 @@ const uploadPhotoObj = async (ctx, objectId) => {
       });
       // get catalog url (path)
       const catalogUrl = `objects/${objectId}`;
-      const url = await photoCheckUrl(`photos/o/${objectId}/logo/${photoId}/${photoId.slice(-1)}.jpg`);
+      const url = await photoCheckUrl(`photos/o/${objectId}/logo/${photoId}/2.jpg`);
       await ctx.replyWithPhoto({url},
           {
             caption: `${object.name} (${object.id}) photo uploaded`,

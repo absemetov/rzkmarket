@@ -23,12 +23,17 @@ const savePhotoTelegram = async (ctx, path, zoom) => {
     throw new Error("Choose only one Photo!");
   }
   const telegramPhotos = ctx.message.photo;
+  const savePhotos = [];
   if (telegramPhotos.length < 3) {
     throw new Error("Choose large photo!");
   }
-  const photoId = `${telegramPhotos[0].file_unique_id}-${telegramPhotos.length}`;
   // loop photos [0 (90*90),1 (320*320), 2 (800*800), 3 (1000*1000)]
-  for (const [zoom, photo] of telegramPhotos.entries()) {
+  // download only 1, 3 or 4 index
+  savePhotos.push(telegramPhotos[1]);
+  savePhotos.push(telegramPhotos.length == 4 ? telegramPhotos[3] : telegramPhotos[2]);
+  // set photo id
+  const photoId = savePhotos[0].file_unique_id;
+  for (const [zoom, photo] of savePhotos.entries()) {
     const photoUrl = await ctx.telegram.getFileLink(photo.file_id);
     try {
       // download photos from telegram server

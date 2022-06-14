@@ -60,11 +60,13 @@ exports.productCreate = functions.region("europe-central2").firestore
       const objectID = context.params.productId;
       const objectId = context.params.objectId;
       const img = await photoCheckUrl(`photos/o/${objectId}/p/${objectID}/${product.mainPhoto}/1.jpg`);
+      const imgBig = await photoCheckUrl(`photos/o/${objectId}/p/${objectID}/${product.mainPhoto}/2.jpg`);
       // add data to Algolia
       const productAlgolia = {
         objectID,
         name: product.name,
         img,
+        imgBig,
       };
       if (product.brand) {
         productAlgolia.brand = product.brand;
@@ -91,11 +93,13 @@ exports.productUpdate = functions.region("europe-central2").firestore
       const objectID = context.params.productId;
       const objectId = context.params.objectId;
       const img = await photoCheckUrl(`photos/o/${objectId}/p/${objectID}/${product.mainPhoto}/1.jpg`);
+      const imgBig = await photoCheckUrl(`photos/o/${objectId}/p/${objectID}/${product.mainPhoto}/2.jpg`);
       // update data in Algolia
       const productAlgolia = {
         objectID,
         name: product.name,
         img,
+        imgBig,
       };
       if (product.brand) {
         productAlgolia.brand = product.brand;
