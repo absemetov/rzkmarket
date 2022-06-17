@@ -57,19 +57,19 @@ exports.productCreate = functions.region("europe-central2").firestore
     .document("objects/{objectId}/products/{productId}")
     .onCreate(async (snap, context) => {
       const product = snap.data();
-      const objectID = context.params.productId;
-      const objectId = context.params.objectId;
-      const img = await photoCheckUrl(`photos/o/${objectId}/p/${objectID}/${product.mainPhoto}/1.jpg`);
-      const imgBig = await photoCheckUrl(`photos/o/${objectId}/p/${objectID}/${product.mainPhoto}/2.jpg`);
+      const productId = context.params.productId;
       // add data to Algolia
       const productAlgolia = {
-        objectID,
+        objectID: productId,
         name: product.name,
-        img,
-        imgBig,
       };
       if (product.brand) {
         productAlgolia.brand = product.brand;
+      }
+      // add default photo
+      for (const zoom of [1, 2]) {
+        const imgUrl = await photoCheckUrl();
+        productAlgolia[`img${zoom}`] = imgUrl;
       }
       // create HierarchicalMenu
       const groupString = product.catalogsNamePath.split("#");
@@ -90,19 +90,28 @@ exports.productUpdate = functions.region("europe-central2").firestore
     .document("objects/{objectId}/products/{productId}")
     .onUpdate(async (change, context) => {
       const product = change.after.data();
-      const objectID = context.params.productId;
       const objectId = context.params.objectId;
-      const img = await photoCheckUrl(`photos/o/${objectId}/p/${objectID}/${product.mainPhoto}/1.jpg`);
-      const imgBig = await photoCheckUrl(`photos/o/${objectId}/p/${objectID}/${product.mainPhoto}/2.jpg`);
+      const productId = context.params.productId;
       // update data in Algolia
       const productAlgolia = {
-        objectID,
+        objectID: productId,
         name: product.name,
-        img,
-        imgBig,
       };
+      // add brand
       if (product.brand) {
         productAlgolia.brand = product.brand;
+      }
+      // add photos
+      if (product.mainPhoto) {
+        for (const zoom of [1, 2]) {
+          const imgUrl = await photoCheckUrl(`photos/o/${objectId}/p/${productId}/${product.mainPhoto}/${zoom}.jpg`, true);
+          if (imgUrl) {
+            productAlgolia[`img${zoom}`] = imgUrl;
+          } else {
+            await bot.telegram.sendMessage(94899148, `Photo error productId: ${productId} zoom: ${zoom}`,
+                {parse_mode: "html"});
+          }
+        }
       }
       // create HierarchicalMenu
       const groupString = product.catalogsNamePath.split("#");
@@ -112,7 +121,7 @@ exports.productUpdate = functions.region("europe-central2").firestore
         productAlgolia[`categories.lvl${index}`] = helpArray.join(" > ");
       });
       // const productAlgoliaHierarchicalMenu = Object.assign(productAlgolia, objProp);
-      await productsIndex.saveObject(productAlgolia);
+      await productsIndex.partialUpdateObject(productAlgolia);
       // return a promise of a set operation to update the count
       return null;
     });

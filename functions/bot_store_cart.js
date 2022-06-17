@@ -7,14 +7,16 @@ const roundNumber = (num) => {
   return Math.round((num + Number.EPSILON) * 100) / 100;
 };
 // check photo
-const photoCheckUrl = async (url) => {
+const photoCheckUrl = async (url, check) => {
   if (url) {
     const photoProjectExists = await bucket.file(url).exists();
     if (photoProjectExists[0]) {
       return bucket.file(url).publicUrl();
+    } else if (check) {
+      return false;
     }
   }
-  // return bucket.file(process.env.BOT_LOGO).publicUrl();
+  // default url
   return process.env.BOT_LOGO;
 };
 // download and save photo from telegram
