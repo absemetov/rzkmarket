@@ -91,7 +91,7 @@ export function startAutocomplete() {
         setInstantSearchUiState({
           query: "",
           hierarchicalMenu: {
-            [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [],
+            [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: ["Cat1 > Cat2 > Cat3 > Cat4 > Cat5"],
           },
         });
       }
@@ -145,7 +145,7 @@ export function startAutocomplete() {
                 <div class="aa-ItemContent">
                   <div class="aa-ItemIcon">
                     <img
-                      src="${item.img}"
+                      src="${item.img1}"
                       alt="${item.name}"
                       width="100"
                       height="100"

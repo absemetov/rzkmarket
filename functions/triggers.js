@@ -62,6 +62,7 @@ exports.productCreate = functions.region("europe-central2").firestore
       const productAlgolia = {
         objectID: productId,
         name: product.name,
+        orderNumber: product.orderNumber,
       };
       if (product.brand) {
         productAlgolia.brand = product.brand;
@@ -90,36 +91,41 @@ exports.productUpdate = functions.region("europe-central2").firestore
     .document("objects/{objectId}/products/{productId}")
     .onUpdate(async (change, context) => {
       const product = change.after.data();
+      const previousData = change.before.data();
       const objectId = context.params.objectId;
       const productId = context.params.productId;
       // update data in Algolia
       const productAlgolia = {
         objectID: productId,
         name: product.name,
+        orderNumber: product.orderNumber,
       };
-      // add brand
-      if (product.brand) {
+      // add brand if changed
+      if (product.brand !== previousData.brand) {
         productAlgolia.brand = product.brand;
       }
-      // add photos
-      if (product.mainPhoto) {
+      // add photos if changed
+      if (product.mainPhoto !== previousData.mainPhoto) {
         for (const zoom of [1, 2]) {
-          const imgUrl = await photoCheckUrl(`photos/o/${objectId}/p/${productId}/${product.mainPhoto}/${zoom}.jpg`, true);
+          const imgUrl = await photoCheckUrl(`photos/o/${objectId}/p/${productId}/${product.mainPhoto}/${zoom}.jpg`,
+            product.mainPhoto ? true : false);
           if (imgUrl) {
             productAlgolia[`img${zoom}`] = imgUrl;
           } else {
-            await bot.telegram.sendMessage(94899148, `Photo error productId: ${productId} zoom: ${zoom}`,
+            await bot.telegram.sendMessage(94899148, `Photo load error productId: ${productId} zoom: ${zoom}`,
                 {parse_mode: "html"});
           }
         }
       }
       // create HierarchicalMenu
-      const groupString = product.catalogsNamePath.split("#");
-      const helpArray = [];
-      groupString.forEach((item, index) => {
-        helpArray.push(item);
-        productAlgolia[`categories.lvl${index}`] = helpArray.join(" > ");
-      });
+      if (product.catalogsNamePath !== previousData.catalogsNamePath) {
+        const groupString = product.catalogsNamePath.split("#");
+        const helpArray = [];
+        groupString.forEach((item, index) => {
+          helpArray.push(item);
+          productAlgolia[`categories.lvl${index}`] = helpArray.join(" > ");
+        });
+      }
       // const productAlgoliaHierarchicalMenu = Object.assign(productAlgolia, objProp);
       await productsIndex.partialUpdateObject(productAlgolia);
       // return a promise of a set operation to update the count
@@ -144,14 +150,17 @@ exports.catalogCreate = functions.region("europe-central2").firestore
     .document("objects/{objectId}/catalogs/{catalogId}")
     .onCreate(async (snap, context) => {
       const catalog = snap.data();
-      const objectID = context.params.catalogId;
-      const objectId = context.params.objectId;
-      const img = await photoCheckUrl(`photos/o/${objectId}/c/${objectID}/${catalog.photoId}/1.jpg`);
+      const catalogId = context.params.catalogId;
       const catalogAlgolia = {
-        objectID,
+        objectID: catalogId,
         name: catalog.name,
-        img,
+        orderNumber: catalog.orderNumber,
       };
+      // add default photo
+      for (const zoom of [1, 2]) {
+        const imgUrl = await photoCheckUrl();
+        catalogAlgolia[`img${zoom}`] = imgUrl;
+      }
       // add data to Algolia
       await catalogsIndex.saveObject(catalogAlgolia);
       // add created value
@@ -164,16 +173,28 @@ exports.catalogUpdate = functions.region("europe-central2").firestore
     .document("objects/{objectId}/catalogs/{catalogId}")
     .onUpdate(async (change, context) => {
       const catalog = change.after.data();
-      const objectID = context.params.catalogId;
+      const previousData = change.before.data();
+      const catalogId = context.params.catalogId;
       const objectId = context.params.objectId;
-      const img = await photoCheckUrl(`photos/o/${objectId}/c/${objectID}/${catalog.photoId}/1.jpg`);
       const catalogAlgolia = {
-        objectID,
+        objectID: catalogId,
         name: catalog.name,
-        img,
+        orderNumber: catalog.orderNumber,
       };
+      // add photos if changed
+      if (catalog.photoId !== previousData.photoId) {
+        for (const zoom of [1, 2]) {
+          const imgUrl = await photoCheckUrl(`photos/o/${objectId}/c/${catalogId}/${catalog.photoId}/${zoom}.jpg`, true);
+          if (imgUrl) {
+            catalogAlgolia[`img${zoom}`] = imgUrl;
+          } else {
+            await bot.telegram.sendMessage(94899148, `Photo load error catalogId: ${catalogId} zoom: ${zoom}`,
+                {parse_mode: "html"});
+          }
+        }
+      }
       // update data in Algolia
-      await catalogsIndex.saveObject(catalogAlgolia);
+      await catalogsIndex.partialUpdateObject(catalogAlgolia);
       // return a promise of a set operation to update the count
       return null;
     });
