@@ -229,3 +229,11 @@ export function getInstantSearchUiState() {
 
   return (uiState && uiState[INSTANT_SEARCH_INDEX_NAME]) || {};
 }
+
+// Return the InstantSearch index UI state.
+export function showSearchPanel() {
+  const searchPage = document.getElementById("search");
+  const mainPage = document.getElementById("main");
+  mainPage.classList.add("d-none");
+  searchPage.classList.remove("d-none");
+}

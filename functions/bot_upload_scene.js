@@ -160,7 +160,10 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
             "updatedAt": updatedAtTimestamp,
           }, {merge: true});
           // save catalogs to batch
+          const helpArray = [];
           for (const catalog of groupArray) {
+            // helper url for algolia
+            helpArray.push(catalog.name);
             // check if catalog added to batch
             if (!catalogsIsSet.has(catalog.id)) {
               catalogsIsSet.set(catalog.id, {parentId: catalog.parentId});
@@ -172,6 +175,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
                 "orderNumber": catalogsIsSet.size,
                 "updatedAt": updatedAtTimestamp,
                 "tags": firebase.firestore.FieldValue.delete(),
+                "hierarchicalUrl": helpArray.join(" > "),
               }, {merge: true});
               // if 500 items commit
               if (++batchCatalogsCount === perPage) {

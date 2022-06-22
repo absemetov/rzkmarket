@@ -155,6 +155,7 @@ exports.catalogCreate = functions.region("europe-central2").firestore
         objectID: catalogId,
         name: catalog.name,
         orderNumber: catalog.orderNumber,
+        hierarchicalUrl: catalog.hierarchicalUrl,
       };
       // add default photo
       for (const zoom of [1, 2]) {
@@ -180,6 +181,7 @@ exports.catalogUpdate = functions.region("europe-central2").firestore
         objectID: catalogId,
         name: catalog.name,
         orderNumber: catalog.orderNumber,
+        hierarchicalUrl: catalog.hierarchicalUrl,
       };
       // add photos if changed
       if (catalog.photoId !== previousData.photoId) {
