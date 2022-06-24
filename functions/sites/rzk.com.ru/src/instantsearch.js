@@ -231,9 +231,17 @@ export function getInstantSearchUiState() {
 }
 
 // Return the InstantSearch index UI state.
-export function showSearchPanel() {
+export function searchPanel(visible) {
   const searchPage = document.getElementById("search");
   const mainPage = document.getElementById("main");
-  mainPage.classList.add("d-none");
-  searchPage.classList.remove("d-none");
+  if (visible == "show") {
+    if (window.location.pathname !== "/search") {
+      history.pushState(null, "Search", "/search");
+    }
+    mainPage.classList.add("d-none");
+    searchPage.classList.remove("d-none");
+  } else if (visible == "hide") {
+    searchPage.classList.add("d-none");
+    mainPage.classList.remove("d-none");
+  }
 }

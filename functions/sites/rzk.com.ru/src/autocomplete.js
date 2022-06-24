@@ -1,7 +1,7 @@
 import {autocomplete, getAlgoliaResults} from "@algolia/autocomplete-js";
 import {createLocalStorageRecentSearchesPlugin} from "@algolia/autocomplete-plugin-recent-searches";
 import {createQuerySuggestionsPlugin} from "@algolia/autocomplete-plugin-query-suggestions";
-import {setInstantSearchUiState, getInstantSearchUiState, INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE, showSearchPanel} from "./instantsearch";
+import {setInstantSearchUiState, getInstantSearchUiState, INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE, searchPanel} from "./instantsearch";
 import {searchClient} from "./searchClient";
 // recent search
 const recentSearchesPlugin = createLocalStorageRecentSearchesPlugin({
@@ -15,7 +15,7 @@ const recentSearchesPlugin = createLocalStorageRecentSearchesPlugin({
         //   setQuery(item.label);
         // }, 3);
         // window.location.href = "/search";
-        showSearchPanel();
+        searchPanel("show");
         setInstantSearchUiState({
           query: item.label,
           hierarchicalMenu: {
@@ -41,7 +41,7 @@ const querySuggestionsPlugin = createQuerySuggestionsPlugin({
         // setTimeout(() => {
         //   setQuery(item.query);
         // }, 3);
-        showSearchPanel();
+        searchPanel("show");
         setInstantSearchUiState({
           query: item.query,
           hierarchicalMenu: {
@@ -70,7 +70,7 @@ export function startAutocomplete() {
       // setTimeout(() => {
       //   setQuery(state.query);
       // }, 3);
-      showSearchPanel();
+      searchPanel("show");
       setInstantSearchUiState({
         query: state.query,
         hierarchicalMenu: {
@@ -108,7 +108,7 @@ export function startAutocomplete() {
           },
           onSelect({item, setQuery}) {
             recentSearchesPlugin.data.addItem({id: item.objectID, label: item.name});
-            showSearchPanel();
+            searchPanel("show");
             setInstantSearchUiState({
               query: item.name,
               hierarchicalMenu: {
@@ -176,7 +176,7 @@ export function startAutocomplete() {
             });
           },
           onSelect({item, setQuery}) {
-            showSearchPanel();
+            searchPanel("show");
             setInstantSearchUiState({
               query: "",
               hierarchicalMenu: {
