@@ -25,8 +25,24 @@ const renderHits = (renderOptions, isFirstRender) => {
           (item) =>
             `<div class="col">
               <div class="card text-center h-100">
+                <a href="/p/${item.objectID}">
+                  <img src="${item.img1}" onerror="this.src = '//rzk.com.ru/icons/photo_error.svg';" class="card-img-top" alt="{{product.name}}">
+                </a>
                 <div class="card-body">
-                  <h6>${highlight({attribute: "name", hit: item})}</h6>
+                  <h6>
+                    <a href="/p/${item.objectID}">${highlight({attribute: "name", hit: item})}</a> <small class="text-muted">(${item.objectID})</small>
+                    <a href="//t.me/RzkMarketBot?start=o_{{../object.id}}_p_{{product.id}}" target="_blank" class="ps-1 text-decoration-none">
+                      tg
+                    </a>
+                  </h6>
+                </div>
+                <div class="card-footer">
+                  <h3>
+                    {{product.price}} <small class="text-muted">{{../currencyName}}</small>
+                  </h3>
+                  <div class="d-grid gap-2">
+                    Купить
+                  </div>
                 </div>
               </div>
             </div>`,
@@ -129,15 +145,9 @@ const renderList = ({newitems, createURL}) => `
   ${newitems
       .map(
           (item) => `
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <a
-              href="${createURL(item.value)}"
-              data-value="${item.value}"
-            >
-            ${item.isRefined ? ">>>" : ""} ${item.label}
-            </a>
-            <span class="badge bg-primary rounded-pill">${item.count}</span>
-          </li>
+          <a href="${createURL(item.value)}" data-value="${item.value}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center ${item.isRefined ? "list-group-item-primary" : ""}">
+            ${item.label} <span data-value="${item.value}" class="badge bg-primary rounded-pill">${item.count}</span>
+          </a>
           ${item.data ? renderList({newitems: item.data, createURL}) : ""}
         `,
       )

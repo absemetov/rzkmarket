@@ -65,11 +65,28 @@
       </div>
     </div>
     <div class="container d-none" id="search">
-      <h1>Search page</h1>
-      <div id="hierarchical-menu" class="list-group my-3"></div>
-      <div id="hits" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 row-cols-xxl-6 g-2 my-3"></div>
+      <h1>
+        Search page
+        <button class="btn btn-primary d-block d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasResponsive" aria-controls="offcanvasResponsive">Фильтр</button>
+      </h1>
       <div class="row">
-        <nav id="pagination" aria-label="Page navigation example"></nav>
+        <div class="col-lg-3">
+          <div class="offcanvas-lg offcanvas-start" tabindex="-1" id="offcanvasResponsive" aria-labelledby="offcanvasResponsiveLabel">
+            <div class="offcanvas-header">
+              <h5 class="offcanvas-title" id="offcanvasResponsiveLabel">Фильтр</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#offcanvasResponsive" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+              <div id="hierarchical-menu" class="list-group w-100"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-12 col-lg-9">
+          <div id="hits" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2"></div>
+          <div class="row pt-2">
+            <nav id="pagination" aria-label="Page navigation example"></nav>
+          </div>
+        </div>
       </div>
     </div>
     <div class="container" id="main">
