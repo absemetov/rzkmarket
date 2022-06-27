@@ -1,5 +1,6 @@
 import instantsearch from "instantsearch.js";
-import {connectSearchBox, connectHits, connectPagination, connectHierarchicalMenu} from "instantsearch.js/es/connectors";
+import {connectSearchBox, connectHits, connectPagination, connectHierarchicalMenu, connectRefinementList} from "instantsearch.js/es/connectors";
+import {poweredBy} from "instantsearch.js/es/widgets";
 import historyRouter from "instantsearch.js/es/lib/routers/history";
 import {highlight} from "instantsearch.js/es/helpers";
 import {searchClient} from "../src/searchClient";
@@ -192,6 +193,79 @@ const customHierarchicalMenu = connectHierarchicalMenu(
     renderHierarchicalMenu,
 );
 
+
+// add refinementList
+const renderRefinementList = (renderOptions, isFirstRender) => {
+  const {
+    items,
+    isFromSearch,
+    refine,
+    createURL,
+    isShowingMore,
+    canToggleShowMore,
+    searchForItems,
+    toggleShowMore,
+    widgetParams,
+  } = renderOptions;
+
+  if (isFirstRender) {
+    const input = document.createElement("input");
+    input.classList.add("form-control");
+    input.placeholder = widgetParams.searchablePlaceholder;
+    const div = document.createElement("div");
+    div.classList.add("list-group");
+    div.classList.add("pt-2");
+    const button = document.createElement("button");
+    button.classList.add("btn");
+    button.classList.add("btn-info");
+    button.textContent = "Show more";
+
+    input.addEventListener("input", (event) => {
+      searchForItems(event.currentTarget.value);
+    });
+
+    button.addEventListener("click", () => {
+      toggleShowMore();
+    });
+
+    widgetParams.container.appendChild(input);
+    widgetParams.container.appendChild(div);
+    widgetParams.container.appendChild(button);
+  }
+
+  const input = widgetParams.container.querySelector("input");
+
+  if (!isFromSearch && input.value) {
+    input.value = "";
+  }
+
+  widgetParams.container.querySelector("div").innerHTML = items.length ? items
+      .map((item) => `
+        <a href="${createURL(item.value)}" data-value="${item.value}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center ${item.isRefined ? "list-group-item-warning" : ""}">
+          ${item.label}
+          <span class="badge bg-primary rounded-pill">${item.count}</span>
+        </a>
+        `).join("") : "No resalts";
+
+  [...widgetParams.container.querySelectorAll("a")].forEach((element) => {
+    element.addEventListener("click", (event) => {
+      event.preventDefault();
+      refine(event.currentTarget.dataset.value);
+    });
+  });
+
+  const button = widgetParams.container.querySelector("button");
+
+  // button.disabled = !canToggleShowMore;
+  canToggleShowMore ? button.classList.remove("d-none") : button.classList.add("d-none");
+  button.textContent = isShowingMore ? "Show less" : "Show more";
+};
+
+// create custom widget
+const customRefinementList = connectRefinementList(
+    renderRefinementList,
+);
+
 search.addWidgets([
   // Mount a virtual search box to manipulate InstantSearch"s `query` UI
   // state parameter.
@@ -212,6 +286,20 @@ search.addWidgets([
   }),
   customPagination({
     container: document.querySelector("#pagination"),
+  }),
+  customRefinementList({
+    container: document.querySelector("#refinement-list-brand"),
+    attribute: "brand",
+    searchablePlaceholder: "Search a brand",
+    limit: 1,
+  }),
+  customRefinementList({
+    container: document.querySelector("#refinement-list-tags"),
+    attribute: "_tags",
+    searchablePlaceholder: "Search a tags",
+  }),
+  poweredBy({
+    container: "#powered-by",
   }),
 ]);
 
