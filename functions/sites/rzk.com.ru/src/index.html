@@ -77,7 +77,6 @@
               <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#offcanvasResponsive" aria-label="Close"></button>
             </div>
             <div class="offcanvas-body flex-column">
-              Каталог
               <div id="hierarchical-menu" class="list-group py-2"></div>
               Бренды
               <div id="refinement-list-brand" class="list-group py-2"></div>
@@ -88,9 +87,11 @@
           </div>
         </div>
         <div class="col-md-12 col-lg-9">
-          <div id="breadcrumb"></div>
+          <div class="row">
+            <nav id="breadcrumb" aria-label="breadcrumb"></nav>
+          </div>
           <div id="current-refinements"></div>
-          <div id="hits" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2"></div>
+          <div id="hits" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2 pt-2"></div>
           <div class="row pt-2">
             <nav id="pagination" aria-label="Page navigation example"></nav>
           </div>

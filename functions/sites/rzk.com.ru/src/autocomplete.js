@@ -223,9 +223,6 @@ export function startAutocomplete() {
                 </div>
               </div>`;
             },
-            footer() {
-              return "Search by algolia";
-            },
           },
         },
       ];

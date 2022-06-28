@@ -1,6 +1,12 @@
 import instantsearch from "instantsearch.js";
-import {connectSearchBox, connectHits, connectPagination, connectHierarchicalMenu, connectRefinementList} from "instantsearch.js/es/connectors";
-import {poweredBy, currentRefinements, breadcrumb} from "instantsearch.js/es/widgets";
+import {connectSearchBox,
+  connectHits,
+  connectPagination,
+  connectHierarchicalMenu,
+  connectRefinementList,
+  connectBreadcrumb,
+  connectCurrentRefinements} from "instantsearch.js/es/connectors";
+import {poweredBy} from "instantsearch.js/es/widgets";
 import historyRouter from "instantsearch.js/es/lib/routers/history";
 import {highlight} from "instantsearch.js/es/helpers";
 import {searchClient} from "../src/searchClient";
@@ -27,7 +33,7 @@ const renderHits = (renderOptions, isFirstRender) => {
             `<div class="col">
               <div class="card text-center h-100">
                 <a href="/p/${item.objectID}">
-                  <img src="${item.img1}" onerror="this.src = '//rzk.com.ru/icons/photo_error.svg';" class="card-img-top" alt="{{product.name}}">
+                  <img src="${item.img1}" onerror="this.src = "//rzk.com.ru/icons/photo_error.svg";" class="card-img-top" alt="{{product.name}}">
                 </a>
                 <div class="card-body">
                   <h6>
@@ -163,10 +169,6 @@ const renderHierarchicalMenu = (renderOptions, isFirstRender) => {
     widgetParams,
   } = renderOptions;
 
-  // if (isFirstRender) {
-  //   const list = document.createElement("div");
-  //   widgetParams.container.appendChild(list);
-  // }
   // check items
   let newitems = [];
   for (const element of items) {
@@ -192,7 +194,6 @@ const renderHierarchicalMenu = (renderOptions, isFirstRender) => {
 const customHierarchicalMenu = connectHierarchicalMenu(
     renderHierarchicalMenu,
 );
-
 
 // add refinementList
 const renderRefinementList = (renderOptions, isFirstRender) => {
@@ -269,6 +270,85 @@ const customRefinementList = connectRefinementList(
     renderRefinementList,
 );
 
+// connect breadcrumb
+// render function
+const renderBreadcrumbItem = ({item, createURL}) => `
+    ${
+      item.value ? `
+        <li class="breadcrumb-item">
+        <a href="${createURL(item.value)}" data-value="${item.value}">
+          ${item.label}
+        </a></li>` : `<li class="breadcrumb-item active" aria-current="page">${item.label}</li>`}
+`;
+
+const renderBreadcrumb = (renderOptions, isFirstRender) => {
+  const {items, refine, createURL, widgetParams} = renderOptions;
+
+  widgetParams.container.innerHTML = items.length ? `
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a href="#" data-value="">Home</a>
+      </li>
+      ${items.map((item) =>
+    renderBreadcrumbItem({
+      item,
+      createURL,
+    })).join("")}
+    </ol>
+  ` : "";
+
+  [...widgetParams.container.querySelectorAll("a")].forEach((element) => {
+    element.addEventListener("click", (event) => {
+      event.preventDefault();
+      refine(event.currentTarget.dataset.value);
+    });
+  });
+};
+
+// Create the custom widget
+const customBreadcrumb = connectBreadcrumb(
+    renderBreadcrumb,
+);
+
+// connect current refinements
+// Create the render function
+const createDataAttribtues = (refinement) =>
+  Object.keys(refinement).map((key) => `data-${key}="${refinement[key]}"`).join(" ");
+
+const renderListItem = (item) => `
+  ${item.refinements.map((refinement) =>
+    `<span class="badge text-bg-success">
+      ${refinement.label} (${refinement.count}) <button type="button" class="btn-close" aria-label="Close" ${createDataAttribtues(refinement)}></button>
+    </span>`).join(" ")}
+`;
+
+const renderCurrentRefinements = (renderOptions, isFirstRender) => {
+  const {items, refine, widgetParams} = renderOptions;
+
+  widgetParams.container.innerHTML = `
+    ${items.map(renderListItem).join("")}
+  `;
+
+  [...widgetParams.container.querySelectorAll("button")].forEach((element) => {
+    element.addEventListener("click", (event) => {
+      const item = Object.keys(event.currentTarget.dataset).reduce(
+          (acc, key) => ({
+            ...acc,
+            [key]: event.currentTarget.dataset[key],
+          }),
+          {},
+      );
+
+      refine(item);
+    });
+  });
+};
+
+// Create the custom widget
+const customCurrentRefinements = connectCurrentRefinements(
+    renderCurrentRefinements,
+);
+
 search.addWidgets([
   // Mount a virtual search box to manipulate InstantSearch"s `query` UI
   // state parameter.
@@ -309,12 +389,19 @@ search.addWidgets([
   poweredBy({
     container: "#powered-by",
   }),
-  currentRefinements({
-    container: "#current-refinements",
-  }),
-  breadcrumb({
-    container: "#breadcrumb",
+  customBreadcrumb({
+    container: document.querySelector("#breadcrumb"),
     attributes: [
+      "categories.lvl0",
+      "categories.lvl1",
+      "categories.lvl2",
+      "categories.lvl3",
+      "categories.lvl4",
+    ],
+  }),
+  customCurrentRefinements({
+    container: document.querySelector("#current-refinements"),
+    excludedAttributes: [
       "categories.lvl0",
       "categories.lvl1",
       "categories.lvl2",
