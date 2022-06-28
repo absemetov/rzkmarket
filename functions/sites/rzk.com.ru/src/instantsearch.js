@@ -1,6 +1,6 @@
 import instantsearch from "instantsearch.js";
 import {connectSearchBox, connectHits, connectPagination, connectHierarchicalMenu, connectRefinementList} from "instantsearch.js/es/connectors";
-import {poweredBy} from "instantsearch.js/es/widgets";
+import {poweredBy, currentRefinements, breadcrumb} from "instantsearch.js/es/widgets";
 import historyRouter from "instantsearch.js/es/lib/routers/history";
 import {highlight} from "instantsearch.js/es/helpers";
 import {searchClient} from "../src/searchClient";
@@ -214,7 +214,7 @@ const renderRefinementList = (renderOptions, isFirstRender) => {
     input.placeholder = widgetParams.searchablePlaceholder;
     const div = document.createElement("div");
     div.classList.add("list-group");
-    div.classList.add("pt-2");
+    div.classList.add("py-2");
     const button = document.createElement("button");
     button.classList.add("btn");
     button.classList.add("btn-info");
@@ -257,7 +257,10 @@ const renderRefinementList = (renderOptions, isFirstRender) => {
   const button = widgetParams.container.querySelector("button");
 
   // button.disabled = !canToggleShowMore;
-  canToggleShowMore ? button.classList.remove("d-none") : button.classList.add("d-none");
+  button.classList.add("d-none");
+  if (canToggleShowMore) {
+    button.classList.remove("d-none");
+  }
   button.textContent = isShowingMore ? "Show less" : "Show more";
 };
 
@@ -291,15 +294,33 @@ search.addWidgets([
     container: document.querySelector("#refinement-list-brand"),
     attribute: "brand",
     searchablePlaceholder: "Search a brand",
-    limit: 1,
+    showMore: true,
+    limit: 5,
+    showMoreLimit: 10,
   }),
   customRefinementList({
     container: document.querySelector("#refinement-list-tags"),
     attribute: "_tags",
     searchablePlaceholder: "Search a tags",
+    showMore: true,
+    limit: 5,
+    showMoreLimit: 10,
   }),
   poweredBy({
     container: "#powered-by",
+  }),
+  currentRefinements({
+    container: "#current-refinements",
+  }),
+  breadcrumb({
+    container: "#breadcrumb",
+    attributes: [
+      "categories.lvl0",
+      "categories.lvl1",
+      "categories.lvl2",
+      "categories.lvl3",
+      "categories.lvl4",
+    ],
   }),
 ]);
 
