@@ -319,7 +319,7 @@ const renderListItem = (item) => `
   ${item.refinements.map((refinement) =>
     `<span class="badge text-bg-success">
       ${refinement.label} (${refinement.count}) <button type="button" class="btn-close" aria-label="Close" ${createDataAttribtues(refinement)}></button>
-    </span>`).join(" ")}
+    </span>`).join("")}
 `;
 
 const renderCurrentRefinements = (renderOptions, isFirstRender) => {
@@ -373,15 +373,23 @@ search.addWidgets([
   customRefinementList({
     container: document.querySelector("#refinement-list-brand"),
     attribute: "brand",
-    searchablePlaceholder: "Search a brand",
+    searchablePlaceholder: "Search by brand",
     showMore: true,
     limit: 5,
     showMoreLimit: 10,
   }),
   customRefinementList({
-    container: document.querySelector("#refinement-list-tags"),
-    attribute: "_tags",
-    searchablePlaceholder: "Search a tags",
+    container: document.querySelector("#refinement-list-subcategory"),
+    attribute: "subCategory",
+    searchablePlaceholder: "Search by subCategory",
+    showMore: true,
+    limit: 5,
+    showMoreLimit: 10,
+  }),
+  customRefinementList({
+    container: document.querySelector("#refinement-list-fop"),
+    attribute: "fop",
+    searchablePlaceholder: "Search by FOP",
     showMore: true,
     limit: 5,
     showMoreLimit: 10,
@@ -407,6 +415,7 @@ search.addWidgets([
       "categories.lvl2",
       "categories.lvl3",
       "categories.lvl4",
+      "query",
     ],
   }),
 ]);

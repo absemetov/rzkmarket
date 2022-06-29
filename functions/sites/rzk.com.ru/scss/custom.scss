@@ -2,6 +2,11 @@
 @import "bootstrap-icons/font/bootstrap-icons";
 @import "@algolia/autocomplete-theme-classic";
 
+/* Autocomplete */
 :root {
   --aa-search-input-height: 38px;
+}
+
+.aa-Panel {
+  z-index: 4;
 }

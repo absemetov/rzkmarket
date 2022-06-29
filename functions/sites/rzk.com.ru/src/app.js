@@ -3,6 +3,7 @@ import {search, searchPanel} from "./instantsearch";
 // Import custom plugins
 import "bootstrap/js/dist/modal";
 import "bootstrap/js/dist/offcanvas";
+import "bootstrap/js/dist/collapse";
 
 search.start();
 search.on("render", () => {
