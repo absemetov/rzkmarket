@@ -128,7 +128,7 @@ export function startAutocomplete() {
                 <div class="aa-ItemContent">
                   <div class="aa-ItemIcon">
                     <img
-                      src="${item.img1}"
+                      src="${item.img1 ? item.img1 : "//rzk.com.ru/icons/cart3.svg"}"
                       alt="${item.name}"
                       width="100"
                       height="100"
@@ -196,7 +196,7 @@ export function startAutocomplete() {
                 <div class="aa-ItemContent">
                   <div class="aa-ItemIcon">
                     <img
-                      src="${item.img1}"
+                      src="${item.img1 ? item.img1 : "//rzk.com.ru/icons/cart3.svg"}"
                       alt="${item.name}"
                       width="100"
                       height="100"

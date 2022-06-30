@@ -63,9 +63,14 @@ exports.productCreate = functions.region("europe-central2").firestore
         objectID: productId,
         name: product.name,
         orderNumber: product.orderNumber,
+        seller: product.objectName,
       };
       if (product.brand) {
         productAlgolia.brand = product.brand;
+      }
+      // add subCategory
+      if (product.tagsNames) {
+        productAlgolia.subCategory = product.tagsNames.map((item) => item.name);
       }
       // add default photo
       for (const zoom of [1, 2]) {
@@ -91,7 +96,6 @@ exports.productUpdate = functions.region("europe-central2").firestore
     .document("objects/{objectId}/products/{productId}")
     .onUpdate(async (change, context) => {
       const product = change.after.data();
-      const previousData = change.before.data();
       const objectId = context.params.objectId;
       const productId = context.params.productId;
       // update data in Algolia
@@ -99,13 +103,18 @@ exports.productUpdate = functions.region("europe-central2").firestore
         objectID: productId,
         name: product.name,
         orderNumber: product.orderNumber,
+        seller: product.objectName,
       };
       // add brand if changed
-      if (product.brand !== previousData.brand) {
+      if (product.brand) {
         productAlgolia.brand = product.brand;
       }
+      // add subCategory
+      if (product.tagsNames) {
+        productAlgolia.subCategory = product.tagsNames.map((item) => item.name);
+      }
       // add photos if changed
-      if (product.mainPhoto !== previousData.mainPhoto) {
+      if (product.mainPhoto) {
         for (const zoom of [1, 2]) {
           const imgUrl = await photoCheckUrl(`photos/o/${objectId}/p/${productId}/${product.mainPhoto}/${zoom}.jpg`,
             product.mainPhoto ? true : false);
@@ -118,16 +127,14 @@ exports.productUpdate = functions.region("europe-central2").firestore
         }
       }
       // create HierarchicalMenu
-      if (product.catalogsNamePath !== previousData.catalogsNamePath) {
-        const groupString = product.catalogsNamePath.split("#");
-        const helpArray = [];
-        groupString.forEach((item, index) => {
-          helpArray.push(item);
-          productAlgolia[`categories.lvl${index}`] = helpArray.join(" > ");
-        });
-      }
+      const groupString = product.catalogsNamePath.split("#");
+      const helpArray = [];
+      groupString.forEach((item, index) => {
+        helpArray.push(item);
+        productAlgolia[`categories.lvl${index}`] = helpArray.join(" > ");
+      });
       // const productAlgoliaHierarchicalMenu = Object.assign(productAlgolia, objProp);
-      await productsIndex.partialUpdateObject(productAlgolia);
+      await productsIndex.saveObject(productAlgolia);
       // return a promise of a set operation to update the count
       return null;
     });

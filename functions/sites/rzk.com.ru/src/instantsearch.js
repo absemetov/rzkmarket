@@ -33,7 +33,7 @@ const renderHits = (renderOptions, isFirstRender) => {
             `<div class="col">
               <div class="card text-center h-100">
                 <a href="/p/${item.objectID}">
-                  <img src="${item.img1}" onerror="this.src = "//rzk.com.ru/icons/photo_error.svg";" class="card-img-top" alt="{{product.name}}">
+                  <img src="${item.img1 ? item.img1 : "//rzk.com.ru/icons/cart3.svg"}" onerror="this.src = "//rzk.com.ru/icons/photo_error.svg";" class="card-img-top" alt="{{product.name}}">
                 </a>
                 <div class="card-body">
                   <h6>
@@ -152,8 +152,8 @@ const renderList = ({newitems, createURL}) => `
   ${newitems
       .map(
           (item) => `
-          <a href="${createURL(item.value)}" data-value="${item.value}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center ${item.isRefined ? "list-group-item-primary" : ""}">
-            ${item.label} <span data-value="${item.value}" class="badge bg-primary rounded-pill">${item.count}</span>
+          <a href="${createURL(item.value)}" data-value="${item.value}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+            <div data-value="${item.value}"> <i class="bi bi-chevron-${item.isRefined ? "up" : "down"}"></i> ${item.label}</div> <span data-value="${item.value}" class="badge bg-primary rounded-pill">${item.count}</span>
           </a>
           ${item.data ? renderList({newitems: item.data, createURL}) : ""}
         `,
@@ -324,7 +324,7 @@ const renderListItem = (item) => `
 
 const renderCurrentRefinements = (renderOptions, isFirstRender) => {
   const {items, refine, widgetParams} = renderOptions;
-
+  items.length ? widgetParams.container.classList.add("pb-2") : widgetParams.container.classList.remove("pb-2");
   widgetParams.container.innerHTML = `
     ${items.map(renderListItem).join("")}
   `;
@@ -388,7 +388,7 @@ search.addWidgets([
   }),
   customRefinementList({
     container: document.querySelector("#refinement-list-fop"),
-    attribute: "fop",
+    attribute: "seller",
     searchablePlaceholder: "Search by FOP",
     showMore: true,
     limit: 5,

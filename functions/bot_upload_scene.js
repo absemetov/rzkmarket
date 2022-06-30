@@ -9,6 +9,7 @@ const cyrillicToTranslit = new CyrillicToTranslit();
 const cyrillicToTranslitUk = new CyrillicToTranslit({preset: "uk"});
 // upload from googleSheet
 const uploadProducts = async (telegram, objectId, sheetId) => {
+  const object = await store.findRecord(`objects/${objectId}`);
   const startTime = new Date();
   // for goods and catalogs
   const updatedAtTimestamp = Math.floor(startTime / 1000);
@@ -157,6 +158,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
             "tags": tags.length ? tags.map((tag) => tag.id) : firebase.firestore.FieldValue.delete(),
             "tagsNames": tags.length ? tags : firebase.firestore.FieldValue.delete(),
             "brand": product.brand ? product.brand : firebase.firestore.FieldValue.delete(),
+            "objectName": object.name,
             "updatedAt": updatedAtTimestamp,
           }, {merge: true});
           // save catalogs to batch
