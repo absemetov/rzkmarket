@@ -73,10 +73,10 @@ exports.productCreate = functions.region("europe-central2").firestore
         productAlgolia.subCategory = product.tagsNames.map((item) => item.name);
       }
       // add default photo
-      for (const zoom of [1, 2]) {
-        const imgUrl = await photoCheckUrl();
-        productAlgolia[`img${zoom}`] = imgUrl;
-      }
+      // for (const zoom of [1, 2]) {
+      //   const imgUrl = await photoCheckUrl();
+      //   productAlgolia[`img${zoom}`] = imgUrl;
+      // }
       // create HierarchicalMenu
       const groupString = product.catalogsNamePath.split("#");
       const helpArray = [];
@@ -165,10 +165,10 @@ exports.catalogCreate = functions.region("europe-central2").firestore
         hierarchicalUrl: catalog.hierarchicalUrl,
       };
       // add default photo
-      for (const zoom of [1, 2]) {
-        const imgUrl = await photoCheckUrl();
-        catalogAlgolia[`img${zoom}`] = imgUrl;
-      }
+      // for (const zoom of [1, 2]) {
+      //   const imgUrl = await photoCheckUrl();
+      //   catalogAlgolia[`img${zoom}`] = imgUrl;
+      // }
       // add data to Algolia
       await catalogsIndex.saveObject(catalogAlgolia);
       // add created value
@@ -181,7 +181,6 @@ exports.catalogUpdate = functions.region("europe-central2").firestore
     .document("objects/{objectId}/catalogs/{catalogId}")
     .onUpdate(async (change, context) => {
       const catalog = change.after.data();
-      const previousData = change.before.data();
       const catalogId = context.params.catalogId;
       const objectId = context.params.objectId;
       const catalogAlgolia = {
@@ -191,7 +190,7 @@ exports.catalogUpdate = functions.region("europe-central2").firestore
         hierarchicalUrl: catalog.hierarchicalUrl,
       };
       // add photos if changed
-      if (catalog.photoId !== previousData.photoId) {
+      if (catalog.photoId) {
         for (const zoom of [1, 2]) {
           const imgUrl = await photoCheckUrl(`photos/o/${objectId}/c/${catalogId}/${catalog.photoId}/${zoom}.jpg`, true);
           if (imgUrl) {
@@ -203,7 +202,7 @@ exports.catalogUpdate = functions.region("europe-central2").firestore
         }
       }
       // update data in Algolia
-      await catalogsIndex.partialUpdateObject(catalogAlgolia);
+      await catalogsIndex.saveObject(catalogAlgolia);
       // return a promise of a set operation to update the count
       return null;
     });

@@ -39,7 +39,7 @@ const renderHits = (renderOptions, isFirstRender) => {
                   <h6>
                     <a href="/p/${item.objectID}">${highlight({attribute: "name", hit: item})}</a> <small class="text-muted">(${item.objectID})</small>
                     <a href="//t.me/RzkMarketBot?start=o_{{../object.id}}_p_{{product.id}}" target="_blank" class="ps-1 text-decoration-none">
-                      tg
+                      <i class="bi bi-telegram"></i>
                     </a>
                   </h6>
                 </div>
@@ -150,15 +150,14 @@ const customPagination = connectPagination(
 // create the render functions hierarchical-menu
 const renderList = ({newitems, createURL}) => `
   ${newitems
-      .map(
-          (item) => `
-          <a href="${createURL(item.value)}" data-value="${item.value}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-            <div data-value="${item.value}"> <i class="bi bi-chevron-${item.isRefined ? "up" : "down"}"></i> ${item.label}</div> <span data-value="${item.value}" class="badge bg-primary rounded-pill">${item.count}</span>
+      .map((item) => `
+          <a href="${createURL(item.value)}" data-value="${item.value}"
+            class="list-group-item list-group-item-action d-flex justify-content-between align-items-center ${item.isRefined ? "list-group-item-warning" : ""}">
+            <div class="${item.isRefined ? "fw-bold" : ""}">  ${item.isRefined ? "<i class=\"bi bi-chevron-down\"></i>" : ""}
+            ${item.label}</div> <span class="badge bg-primary rounded-pill">${item.count}</span>
           </a>
           ${item.data ? renderList({newitems: item.data, createURL}) : ""}
-        `,
-      )
-      .join("")}
+      `).join("")}
 `;
 
 const renderHierarchicalMenu = (renderOptions, isFirstRender) => {
@@ -185,7 +184,7 @@ const renderHierarchicalMenu = (renderOptions, isFirstRender) => {
   [...widgetParams.container.querySelectorAll("a")].forEach((element) => {
     element.addEventListener("click", (event) => {
       event.preventDefault();
-      refine(event.target.dataset.value);
+      refine(event.currentTarget.dataset.value);
     });
   });
 };
@@ -215,7 +214,8 @@ const renderRefinementList = (renderOptions, isFirstRender) => {
     input.placeholder = widgetParams.searchablePlaceholder;
     const div = document.createElement("div");
     div.classList.add("list-group");
-    div.classList.add("py-2");
+    div.classList.add("list-group-flush");
+    div.classList.add("pt-2");
     const button = document.createElement("button");
     button.classList.add("btn");
     button.classList.add("btn-info");
@@ -242,8 +242,11 @@ const renderRefinementList = (renderOptions, isFirstRender) => {
 
   widgetParams.container.querySelector("div").innerHTML = items.length ? items
       .map((item) => `
-        <a href="${createURL(item.value)}" data-value="${item.value}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center ${item.isRefined ? "list-group-item-warning" : ""}">
-          ${item.label}
+        <a href="${createURL(item.value)}" data-value="${item.value}"
+        class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+          <div>
+            <i class="bi bi-${item.isRefined ? "check-square" : "square"}"></i> ${item.label}
+          </div>
           <span class="badge bg-primary rounded-pill">${item.count}</span>
         </a>
         `).join("") : "No resalts";
@@ -317,9 +320,9 @@ const createDataAttribtues = (refinement) =>
 
 const renderListItem = (item) => `
   ${item.refinements.map((refinement) =>
-    `<span class="badge text-bg-success">
+    `<li class="nav-item"><span class="badge text-bg-success m-1">
       ${refinement.label} (${refinement.count}) <button type="button" class="btn-close" aria-label="Close" ${createDataAttribtues(refinement)}></button>
-    </span>`).join("")}
+    </span></li>`).join("")}
 `;
 
 const renderCurrentRefinements = (renderOptions, isFirstRender) => {
