@@ -44,11 +44,8 @@ const renderHits = (renderOptions, isFirstRender) => {
                   </h6>
                 </div>
                 <div class="card-footer">
-                  <h3>
-                    {{product.price}} <small class="text-muted">{{../currencyName}}</small>
-                  </h3>
                   <div class="d-grid gap-2">
-                    Купить
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" data-bs-whatever="${item.name}">Открыть</button>
                   </div>
                 </div>
               </div>
