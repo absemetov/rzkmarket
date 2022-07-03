@@ -11,15 +11,19 @@ const recentSearchesPlugin = createLocalStorageRecentSearchesPlugin({
     return {
       ...source,
       onSelect({item, setQuery}) {
-        // setTimeout(() => {
-        //   setQuery(item.label);
-        // }, 3);
-        // window.location.href = "/search";
+        // for detachedmode use timer for set search input value
+        setTimeout(() => {
+          setQuery(item.label);
+        }, 3);
         searchPanel("show");
         setInstantSearchUiState({
           query: item.label,
           hierarchicalMenu: {
             [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [],
+          },
+          refinementList: {
+            brand: [],
+            subCategory: [],
           },
         });
       },
@@ -38,14 +42,19 @@ const querySuggestionsPlugin = createQuerySuggestionsPlugin({
     return {
       ...source,
       onSelect({item, setQuery}) {
-        // setTimeout(() => {
-        //   setQuery(item.query);
-        // }, 3);
+        // for detachedmode use timer for set search input value
+        setTimeout(() => {
+          setQuery(item.query);
+        }, 3);
         searchPanel("show");
         setInstantSearchUiState({
           query: item.query,
           hierarchicalMenu: {
             [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [],
+          },
+          refinementList: {
+            brand: [],
+            subCategory: [],
           },
         });
       },
@@ -67,14 +76,19 @@ export function startAutocomplete() {
     detachedMediaQuery: "(max-width: 991.98px)",
     plugins: [recentSearchesPlugin, querySuggestionsPlugin],
     onSubmit({state, setQuery}) {
-      // setTimeout(() => {
-      //   setQuery(state.query);
-      // }, 3);
+      // for derachedmode save input value
+      setTimeout(() => {
+        setQuery(state.query);
+      }, 3);
       searchPanel("show");
       setInstantSearchUiState({
         query: state.query,
         hierarchicalMenu: {
           [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [],
+        },
+        refinementList: {
+          brand: [],
+          subCategory: [],
         },
       });
     },
@@ -83,6 +97,10 @@ export function startAutocomplete() {
         query: "",
         hierarchicalMenu: {
           [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [],
+        },
+        refinementList: {
+          brand: [],
+          subCategory: [],
         },
       });
     },
@@ -108,11 +126,19 @@ export function startAutocomplete() {
           },
           onSelect({item, setQuery}) {
             recentSearchesPlugin.data.addItem({id: item.objectID, label: item.name});
+            // for detachedmode use timer for set search input value
+            setTimeout(() => {
+              setQuery(item.name);
+            }, 3);
             searchPanel("show");
             setInstantSearchUiState({
               query: item.name,
               hierarchicalMenu: {
                 [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [],
+              },
+              refinementList: {
+                brand: [],
+                subCategory: [],
               },
             });
           },
@@ -182,6 +208,10 @@ export function startAutocomplete() {
               hierarchicalMenu: {
                 [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [item.hierarchicalUrl],
               },
+              refinementList: {
+                brand: [],
+                subCategory: [],
+              },
             });
           },
           getItemInputValue({item}) {
@@ -204,7 +234,7 @@ export function startAutocomplete() {
                   </div>
                   <div class="aa-ItemContentBody">
                     <div class="aa-ItemContentTitle">
-                      ${components.Highlight({hit: item, attribute: "name"})}
+                      ${components.Highlight({hit: item, attribute: "name"})} (${components.Highlight({hit: item, attribute: "hierarchicalUrl"})})
                     </div>
                   </div>
                 </div>

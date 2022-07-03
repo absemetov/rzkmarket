@@ -3,7 +3,7 @@
   "description": "Cloud Functions for Firebase",
   "scripts": {
     "parcel-s": "parcel --target web --cache-dir ../.parcel-cache --dist-dir ../dist",
-    "parcel-b": "rm -rf ../sites/rzk.com.ru/dist && parcel build --target web",
+    "parcel-b": "rm -rf ../sites/rzk.com.ru/dist && parcel build --target web --cache-dir ../.parcel-cache --no-cache",
     "lint": "eslint .",
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",
@@ -49,7 +49,7 @@
     "express-handlebars": "^6.0.2",
     "firebase": "^8.4.1",
     "firebase-admin": "^10.0.2",
-    "firebase-functions": "^3.21.2",
+    "firebase-functions": "^3.22.0",
     "google-spreadsheet": "^3.2.0",
     "googleapis": "^76.0.0",
     "instantsearch.js": "^4.41.2",
@@ -59,11 +59,11 @@
     "validatorjs": "^3.22.1"
   },
   "devDependencies": {
-    "@parcel/transformer-sass": "2.5.0",
+    "@parcel/transformer-sass": "2.6.2",
     "eslint": "^8.14.0",
     "eslint-config-google": "^0.14.0",
     "firebase-functions-test": "^0.2.0",
-    "parcel": "^2.5.0"
+    "parcel": "^2.6.2"
   },
   "private": true
 }

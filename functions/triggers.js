@@ -58,12 +58,13 @@ exports.productCreate = functions.region("europe-central2").firestore
     .onCreate(async (snap, context) => {
       const product = snap.data();
       const productId = context.params.productId;
+      const objectId = context.params.objectId;
       // add data to Algolia
       const productAlgolia = {
-        objectID: productId,
+        objectID: `${objectId}-${productId}`,
         name: product.name,
         orderNumber: product.orderNumber,
-        seller: product.objectName,
+        // seller: product.objectName,
       };
       if (product.brand) {
         productAlgolia.brand = product.brand;
@@ -80,6 +81,7 @@ exports.productCreate = functions.region("europe-central2").firestore
       // create HierarchicalMenu
       const groupString = product.catalogsNamePath.split("#");
       const helpArray = [];
+      // add first object name
       groupString.forEach((item, index) => {
         helpArray.push(item);
         productAlgolia[`categories.lvl${index}`] = helpArray.join(" > ");
@@ -100,10 +102,10 @@ exports.productUpdate = functions.region("europe-central2").firestore
       const productId = context.params.productId;
       // update data in Algolia
       const productAlgolia = {
-        objectID: productId,
+        objectID: `${objectId}-${productId}`,
         name: product.name,
         orderNumber: product.orderNumber,
-        seller: product.objectName,
+        // seller: product.objectName,
       };
       // add brand if changed
       if (product.brand) {
@@ -158,8 +160,9 @@ exports.catalogCreate = functions.region("europe-central2").firestore
     .onCreate(async (snap, context) => {
       const catalog = snap.data();
       const catalogId = context.params.catalogId;
+      const objectId = context.params.objectId;
       const catalogAlgolia = {
-        objectID: catalogId,
+        objectID: `${objectId}-${catalogId}`,
         name: catalog.name,
         orderNumber: catalog.orderNumber,
         hierarchicalUrl: catalog.hierarchicalUrl,
@@ -184,7 +187,7 @@ exports.catalogUpdate = functions.region("europe-central2").firestore
       const catalogId = context.params.catalogId;
       const objectId = context.params.objectId;
       const catalogAlgolia = {
-        objectID: catalogId,
+        objectID: `${objectId}-${catalogId}`,
         name: catalog.name,
         orderNumber: catalog.orderNumber,
         hierarchicalUrl: catalog.hierarchicalUrl,

@@ -361,6 +361,7 @@ search.addWidgets([
       "categories.lvl2",
       "categories.lvl3",
       "categories.lvl4",
+      "categories.lvl5",
     ],
     showParentLevel: false,
   }),
@@ -386,14 +387,6 @@ search.addWidgets([
     limit: 5,
     showMoreLimit: 10,
   }),
-  customRefinementList({
-    container: document.querySelector("#refinement-list-fop"),
-    attribute: "seller",
-    searchablePlaceholder: "Search by FOP",
-    showMore: true,
-    limit: 5,
-    showMoreLimit: 10,
-  }),
   poweredBy({
     container: "#powered-by",
   }),
@@ -405,6 +398,7 @@ search.addWidgets([
       "categories.lvl2",
       "categories.lvl3",
       "categories.lvl4",
+      "categories.lvl5",
     ],
   }),
   customCurrentRefinements({
@@ -415,6 +409,7 @@ search.addWidgets([
       "categories.lvl2",
       "categories.lvl3",
       "categories.lvl4",
+      "categories.lvl5",
       "query",
     ],
   }),
