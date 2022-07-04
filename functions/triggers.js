@@ -64,7 +64,7 @@ exports.productCreate = functions.region("europe-central2").firestore
         objectID: `${objectId}-${productId}`,
         name: product.name,
         orderNumber: product.orderNumber,
-        // seller: product.objectName,
+        seller: product.objectName,
       };
       if (product.brand) {
         productAlgolia.brand = product.brand;
@@ -105,7 +105,7 @@ exports.productUpdate = functions.region("europe-central2").firestore
         objectID: `${objectId}-${productId}`,
         name: product.name,
         orderNumber: product.orderNumber,
-        // seller: product.objectName,
+        seller: product.objectName,
       };
       // add brand if changed
       if (product.brand) {
@@ -147,7 +147,7 @@ exports.productDelete = functions.region("europe-central2").firestore
       const objectId = context.params.objectId;
       const productId = context.params.productId;
       // delete data in Algolia
-      await productsIndex.deleteObject(productId);
+      await productsIndex.deleteObject(`${objectId}-${productId}`);
       // delete photo from storage
       await bucket.deleteFiles({
         prefix: `photos/o/${objectId}/p/${productId}`,
@@ -160,9 +160,8 @@ exports.catalogCreate = functions.region("europe-central2").firestore
     .onCreate(async (snap, context) => {
       const catalog = snap.data();
       const catalogId = context.params.catalogId;
-      const objectId = context.params.objectId;
       const catalogAlgolia = {
-        objectID: `${objectId}-${catalogId}`,
+        objectID: catalogId,
         name: catalog.name,
         orderNumber: catalog.orderNumber,
         hierarchicalUrl: catalog.hierarchicalUrl,
@@ -187,7 +186,7 @@ exports.catalogUpdate = functions.region("europe-central2").firestore
       const catalogId = context.params.catalogId;
       const objectId = context.params.objectId;
       const catalogAlgolia = {
-        objectID: `${objectId}-${catalogId}`,
+        objectID: catalogId,
         name: catalog.name,
         orderNumber: catalog.orderNumber,
         hierarchicalUrl: catalog.hierarchicalUrl,

@@ -154,16 +154,15 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
             "unit": product.unit,
             "orderNumber": productIsSet.size,
             "catalog": groupArray[groupArray.length - 1],
-            "catalogsNamePath": object.name + "#" + groupArray.map((item) => item.name).join("#"),
+            "catalogsNamePath": groupArray.map((item) => item.name).join("#"),
             "tags": tags.length ? tags.map((tag) => tag.id) : firebase.firestore.FieldValue.delete(),
             "tagsNames": tags.length ? tags : firebase.firestore.FieldValue.delete(),
             "brand": product.brand ? product.brand : firebase.firestore.FieldValue.delete(),
             "updatedAt": updatedAtTimestamp,
+            "objectName": object.name,
           }, {merge: true});
           // save catalogs to batch
           const helpArray = [];
-          // first add obj name
-          helpArray.push(object.name);
           for (const catalog of groupArray) {
             // helper url for algolia
             helpArray.push(catalog.name);

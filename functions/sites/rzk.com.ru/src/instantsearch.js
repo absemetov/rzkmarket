@@ -44,6 +44,7 @@ const renderHits = (renderOptions, isFirstRender) => {
                   </h6>
                 </div>
                 <div class="card-footer">
+                  <h6>${item.seller}</h6>
                   <div class="d-grid gap-2">
                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" data-bs-whatever="${item.name}">Открыть</button>
                   </div>
@@ -284,10 +285,10 @@ const renderBreadcrumbItem = ({item, createURL}) => `
 const renderBreadcrumb = (renderOptions, isFirstRender) => {
   const {items, refine, createURL, widgetParams} = renderOptions;
 
-  widgetParams.container.innerHTML = items.length ? `
+  widgetParams.container.innerHTML = `
     <ol class="breadcrumb">
       <li class="breadcrumb-item">
-        <a href="#" data-value="">Home</a>
+        <a href="/search" data-value="default">Поиск</a>
       </li>
       ${items.map((item) =>
     renderBreadcrumbItem({
@@ -295,11 +296,13 @@ const renderBreadcrumb = (renderOptions, isFirstRender) => {
       createURL,
     })).join("")}
     </ol>
-  ` : "";
+  `;
 
   [...widgetParams.container.querySelectorAll("a")].forEach((element) => {
     element.addEventListener("click", (event) => {
-      event.preventDefault();
+      if (event.currentTarget.dataset.value !== "default") {
+        event.preventDefault();
+      }
       refine(event.currentTarget.dataset.value);
     });
   });
@@ -383,6 +386,14 @@ search.addWidgets([
     container: document.querySelector("#refinement-list-subcategory"),
     attribute: "subCategory",
     searchablePlaceholder: "Search by subCategory",
+    showMore: true,
+    limit: 5,
+    showMoreLimit: 10,
+  }),
+  customRefinementList({
+    container: document.querySelector("#refinement-list-seller"),
+    attribute: "seller",
+    searchablePlaceholder: "Search by seller",
     showMore: true,
     limit: 5,
     showMoreLimit: 10,
