@@ -65,6 +65,8 @@ exports.productCreate = functions.region("europe-central2").firestore
         name: product.name,
         orderNumber: product.orderNumber,
         seller: product.objectName,
+        price: product.price,
+        currency: product.currency,
       };
       if (product.brand) {
         productAlgolia.brand = product.brand;
@@ -106,6 +108,8 @@ exports.productUpdate = functions.region("europe-central2").firestore
         name: product.name,
         orderNumber: product.orderNumber,
         seller: product.objectName,
+        price: product.price,
+        currency: product.currency,
       };
       // add brand if changed
       if (product.brand) {

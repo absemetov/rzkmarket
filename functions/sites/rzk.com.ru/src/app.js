@@ -1,7 +1,9 @@
 import {startAutocomplete} from "./autocomplete";
 import {search, searchPanel} from "./instantsearch";
 // Import custom plugins
-import "bootstrap/js/dist/modal";
+// Import all plugins
+// eslint-disable-next-line no-unused-vars
+import Modal from "bootstrap/js/dist/modal";
 import "bootstrap/js/dist/offcanvas";
 import "bootstrap/js/dist/collapse";
 

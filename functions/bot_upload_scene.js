@@ -372,10 +372,12 @@ const createObject = async (ctx, next) => {
           phoneArray,
           address,
           sheetId,
-          USD,
-          EUR,
-          UAH,
-          RUB,
+          currencies: {
+            USD,
+            EUR,
+            UAH,
+            RUB,
+          },
         });
         if (object) {
           messageTxt = `Данные обновлены ${object.name} /objects`;
@@ -511,7 +513,7 @@ const uploadMerch = async (ctx, next) => {
         "availability": "in stock",
         "condition": "new",
         "price": {
-          "value": roundNumber(product.price * object[product.currency]),
+          "value": roundNumber(product.price * object.currencies[product.currency]),
           "currency": "UAH",
         },
       },

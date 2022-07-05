@@ -87,7 +87,7 @@ const showCatalog = async (ctx, next) => {
       const cartProductsArray = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`, "products");
       // generate products array
       for (const product of productsSnapshot.docs) {
-        const addButton = {text: `📦 ${roundNumber(product.data().price * object[product.data().currency])}` +
+        const addButton = {text: `📦 ${roundNumber(product.data().price * object.currencies[product.data().currency])}` +
         `${process.env.BOT_CURRENCY} ${product.data().name} (${product.id})`,
         callback_data: `aC/${product.id}?o=${objectId}`};
         // get cart products
@@ -162,7 +162,7 @@ const showProduct = async (ctx, next) => {
     const objectId = ctx.state.params.get("o");
     const object = await store.findRecord(`objects/${objectId}`);
     const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
-    product.price = roundNumber(product.price * object[product.currency]);
+    product.price = roundNumber(product.price * object.currencies[product.currency]);
     const cartButtons = await cart.cartButtons(objectId, ctx.from.id);
     let catalogUrl = `c/${product.catalog.id}?o=${objectId}`;
     if (ctx.session.pathCatalog) {
@@ -265,7 +265,7 @@ catalogsActions.push( async (ctx, next) => {
     }
     const object = await store.findRecord(`objects/${objectId}`);
     const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
-    product.price = roundNumber(product.price * object[product.currency]);
+    product.price = roundNumber(product.price * object.currencies[product.currency]);
     if (product) {
       let catalogUrl = `c/${product.catalog.id}?o=${objectId}`;
       if (ctx.session.pathCatalog) {
@@ -390,7 +390,7 @@ const showCart = async (ctx, next) => {
     for (const [index, cartProduct] of products.entries()) {
       // check cart products price exist...
       const product = await store.findRecord(`objects/${objectId}/products/${cartProduct.id}`);
-      product.price = roundNumber(product.price * object[product.currency]);
+      product.price = roundNumber(product.price * object.currencies[product.currency]);
       if (product) {
         const productTxt = `${index + 1}) <b>${product.name}</b> (${product.id})` +
         `=${product.price} ${process.env.BOT_CURRENCY}*${cartProduct.qty}${product.unit}` +

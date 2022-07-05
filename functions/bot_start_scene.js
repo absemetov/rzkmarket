@@ -77,8 +77,8 @@ startActions.push(async (ctx, next) => {
           callback_data: `c?o=${object.id}&u=1`}]);
         inlineKeyboardArray.push([{text: "📸 Загрузить фото объекта",
           callback_data: `uploadPhotoObj/${object.id}`}]);
-        caption += `<b>Курсы валют: USD = ${object.USD}${process.env.BOT_CURRENCY}, ` +
-        `EUR = ${object.EUR}${process.env.BOT_CURRENCY}</b>\n`;
+        caption += `<b>Курсы валют: USD = ${object.currencies.USD}${process.env.BOT_CURRENCY}, ` +
+        `EUR = ${object.currencies.EUR}${process.env.BOT_CURRENCY}</b>\n`;
       }
       inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: "objects"}]);
       // set logo obj

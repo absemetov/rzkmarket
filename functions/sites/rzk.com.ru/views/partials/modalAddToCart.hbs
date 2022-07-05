@@ -6,7 +6,7 @@
         <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <form id="addToCartForm" action="/o/{{object.id}}/cart/add">
+      <form id="addToCartForm" action="/o/{{object.id}}">
         <div class="modal-body">
           <div class="input-group mb-3">
             <input type="number" min="0" id="qty" name="qty" class="form-control" placeholder="Введите количество товара" aria-label="Введите количество товара" aria-describedby="basic-addon2">
@@ -27,7 +27,7 @@
     return Math.round((num + Number.EPSILON) * 100) / 100;
   };
   const cartAddModal = document.getElementById("cartAddModal");
-  const cartAddModalOpt = new bootstrap.Modal(cartAddModal);
+  const cartAddModalOpt = new Modal(cartAddModal);
   const addButton = document.getElementById("addToCart")
   const delButton = document.getElementById("deleteFromCart");
   const qtyInput = document.getElementById("qty");
@@ -68,7 +68,7 @@
       const qty = + qtyInput.value;
       const productId = button.getAttribute("data-bs-id");
       const added = + button.getAttribute("data-bs-qty");
-      const response = await fetch(form.action, {
+      const response = await fetch(`${form.action}/cart/add`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json;charset=utf-8",
@@ -79,11 +79,13 @@
           added,
         }),
       });
+      const response1 = await fetch(`${form.action}/p/${productId}`);
+      const resJson1 = await response1.json();
+      console.log(JSON.stringify(resJson1));
       const resJson = await response.json();
       if (!response.ok) {
         throw new Error(resJson.error);
       }
-      // console.log(JSON.stringify(resJson));
       const currencyName = addButton.getAttribute("data-bs-currencyName");
       if (qty) {
         button.innerText = `${qty} ${button.getAttribute("data-bs-unit")} ${roundNumber(qty * resJson.price)} ${currencyName}`;

@@ -169,7 +169,7 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
       const productObj = {
         id: product.id,
         name: product.data().name,
-        price: roundNumber(product.data().price * object[product.data().currency]),
+        price: roundNumber(product.data().price * object.currencies[product.data().currency]),
         unit: product.data().unit,
         url: `/o/${objectId}/p/${product.id}`,
         imgUrl: "/icons/cart3.svg",
@@ -253,13 +253,21 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
   });
 });
 
+// algolia view
+app.post("/o/:objectId/p/:productId", auth, async (req, res) => {
+  const objectId = req.params.objectId;
+  const productId = req.params.productId;
+  const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
+  return res.json({product});
+});
+
 // show product
 app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
   const objectId = req.params.objectId;
   const productId = req.params.productId;
   const object = await store.findRecord(`objects/${objectId}`);
   const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
-  product.price = roundNumber(product.price * object[product.currency]);
+  product.price = roundNumber(product.price * object.currencies[product.currency]);
   product.imgUrl = "/icons/cart3.svg";
   const photos = [];
   // get cart qty
@@ -459,7 +467,7 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
     for (const cartProduct of cartProducts) {
       // check cart products price exist...
       const product = await store.findRecord(`objects/${objectId}/products/${cartProduct.id}`);
-      product.price = roundNumber(product.price * object[product.currency]);
+      product.price = roundNumber(product.price * object.currencies[product.currency]);
       if (product) {
         product.imgUrl = "/icons/cart3.svg";
         if (product.mainPhoto) {
@@ -615,7 +623,7 @@ app.post("/o/:objectId/cart/add", auth, jsonParser, async (req, res) => {
   // get product data
   const object = await store.findRecord(`objects/${objectId}`);
   const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
-  const price = roundNumber(product.price * object[product.currency]);
+  const price = roundNumber(product.price * object.currencies[product.currency]);
   // add to cart
   let products = {};
   // add product
