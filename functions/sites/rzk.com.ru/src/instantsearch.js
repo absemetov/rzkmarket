@@ -23,9 +23,8 @@ export const search = instantsearch({
 const virtualSearchBox = connectSearchBox(() => {});
 
 // Create the render function for hits
-const renderHits = (renderOptions, isFirstRender) => {
+const renderHits = async (renderOptions, isFirstRender) => {
   const {hits, widgetParams} = renderOptions;
-
   widgetParams.container.innerHTML = `
     ${hits
       .map(
@@ -44,9 +43,12 @@ const renderHits = (renderOptions, isFirstRender) => {
                   </h6>
                 </div>
                 <div class="card-footer">
-                  <h6>${item.seller}</h6>
+                  <h6>${item.seller} ${item.price}</h6>
                   <div class="d-grid gap-2">
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" data-bs-whatever="${item.name}">Открыть</button>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
+                    data-product-id="${item.objectID}"
+                    data-product-name="${item.name}"
+                    data-seller-id="${item.sellerId}">Открыть</button>
                   </div>
                 </div>
               </div>

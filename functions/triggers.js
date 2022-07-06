@@ -64,7 +64,9 @@ exports.productCreate = functions.region("europe-central2").firestore
         objectID: `${objectId}-${productId}`,
         name: product.name,
         orderNumber: product.orderNumber,
+        productId,
         seller: product.objectName,
+        sellerId: objectId,
         price: product.price,
         currency: product.currency,
       };
@@ -107,7 +109,9 @@ exports.productUpdate = functions.region("europe-central2").firestore
         objectID: `${objectId}-${productId}`,
         name: product.name,
         orderNumber: product.orderNumber,
+        productId,
         seller: product.objectName,
+        sellerId: objectId,
         price: product.price,
         currency: product.currency,
       };
