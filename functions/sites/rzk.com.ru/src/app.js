@@ -25,23 +25,63 @@ window.addEventListener("popstate", function() {
 const exampleModal = document.getElementById("exampleModal");
 
 exampleModal.addEventListener("show.bs.modal", async (event) => {
-  // Button that triggered the modal
-  const button = event.relatedTarget;
+  const modalBody = exampleModal.querySelector(".modal-body");
   // Extract info from data-bs-* attributes
+  const button = event.relatedTarget;
   const productId = button.getAttribute("data-product-id");
   const productName = button.getAttribute("data-product-name");
+  const productImg1 = button.getAttribute("data-product-img1");
   const sellerId = button.getAttribute("data-seller-id");
-  const response1 = await fetch(`http://localhost:5000/o/${sellerId}/p/${productId}`, {
-    method: "POST",
-  });
-  const currencies = await response1.json();
-  console.log(currencies["USD"], currencies["EUR"]);
+  // add placeholders
+  modalBody.innerHTML = `<div class="card text-center h-100" aria-hidden="true">
+    <img src="${productImg1}" class="card-img-top" alt="...">
+    <div class="card-body">
+      <h5 class="card-title placeholder-glow">
+        <a href="/p/${productId}">${productName}</a> <small class="text-muted">(${productId})</small>
+        <a href="//t.me/RzkMarketBot?start=o_${sellerId}_p_${productId}" target="_blank" class="ps-1 text-decoration-none">
+          <i class="bi bi-telegram"></i>
+        </a>
+        <span class="placeholder col-12"></span>
+      </h5>
+      <p class="card-text placeholder-glow">
+        <span class="placeholder col-7"></span>
+        <span class="placeholder col-4"></span>
+        <span class="placeholder col-4"></span>
+        <span class="placeholder col-6"></span>
+        <span class="placeholder col-8"></span>
+      </p>
+      <a href="#" tabindex="-1" class="btn btn-primary disabled placeholder col-6"></a>
+    </div>
+  </div>`;
+  // Button that triggered the modal
+  const productRes = await fetch(`//localhost:5000/o/${sellerId}/p/${productId}`, {method: "POST"});
+  const product = await productRes.json();
+  console.log(product);
   // Update the modal"s content.
-  const modalTitle = exampleModal.querySelector(".modal-title");
-  const modalBodyInput = exampleModal.querySelector(".modal-body input");
-
-  modalTitle.textContent = productName;
-  modalBodyInput.value = productName;
+  // const modalTitle = exampleModal.querySelector(".modal-title");
+  // modalTitle.textContent = product.name;
+  // modalBodyInput.value = product.price;
+  modalBody.innerHTML = `<div class="card text-center h-100">
+        <a href="/p/${product.id}">
+          <img src="${productImg1}" onerror="this.src = "//rzk.com.ru/icons/photo_error.svg";" class="card-img-top" alt="{{product.name}}">
+        </a>
+        <div class="card-body">
+          <h6>
+            <a href="/p/${product.id}">${product.name}</a> <small class="text-muted">(${product.id})</small>
+            <a href="//t.me/RzkMarketBot?start=o_{{../object.id}}_p_{{product.id}}" target="_blank" class="ps-1 text-decoration-none">
+              <i class="bi bi-telegram"></i>
+            </a>
+          </h6>
+        </div>
+        <div class="card-footer">
+          <h6>${product.name} ${product.price}</h6>
+          <div class="d-grid gap-2">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
+            data-product-id="${product.id}"
+            data-seller-id="${product.id}">Открыть</button>
+          </div>
+        </div>
+      </div>`;
 });
 
 // modal cart

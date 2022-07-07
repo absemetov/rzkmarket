@@ -16,7 +16,7 @@ const cors = require("cors");
 // require("moment/locale/ru");
 // moment.locale("ru");
 const app = express();
-app.use(cors());
+app.use(cors({origin: true}));
 app.use(cookieParser());
 // Configure template Engine and Main Template File
 const hbs = exphbs.create({
@@ -255,13 +255,12 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
   });
 });
 
-// algolia view
-app.post("/o/:objectId/p/:productId", auth, async (req, res) => {
+// algolia instant search product shower
+app.post("/o/:objectId/p/:productId", async (req, res) => {
   const objectId = req.params.objectId;
   const productId = req.params.productId;
   const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
-  console.log(product);
-  return res.json({product});
+  return res.json({...product});
 });
 
 // show product

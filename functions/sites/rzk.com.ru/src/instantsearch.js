@@ -46,8 +46,9 @@ const renderHits = async (renderOptions, isFirstRender) => {
                   <h6>${item.seller} ${item.price}</h6>
                   <div class="d-grid gap-2">
                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
-                    data-product-id="${item.objectID}"
+                    data-product-id="${item.productId}"
                     data-product-name="${item.name}"
+                    data-product-img1="${item.img1 ? item.img1 : "//rzk.com.ru/icons/cart3.svg"}"
                     data-seller-id="${item.sellerId}">Открыть</button>
                   </div>
                 </div>
