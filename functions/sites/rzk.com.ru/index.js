@@ -256,11 +256,26 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
 });
 
 // algolia instant search product shower
-app.post("/o/:objectId/p/:productId", async (req, res) => {
+app.post("/o/:objectId/p/:productId", auth, async (req, res) => {
   const objectId = req.params.objectId;
   const productId = req.params.productId;
+  const object = await store.findRecord(`objects/${objectId}`);
   const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
-  return res.json({...product});
+  const productAlgolia = {};
+  productAlgolia.id = productId;
+  productAlgolia.name = product.name;
+  productAlgolia.price = roundNumber(product.price * object.currencies[product.currency]);
+  productAlgolia.currencyName = process.env.BOT_CURRENCY;
+  // get cart qty
+  if (req.user.uid) {
+    const cartProduct = await store.findRecord(`objects/${objectId}/carts/${req.user.uid}`,
+        `products.${product.id}`);
+    if (cartProduct) {
+      productAlgolia.qty = cartProduct.qty;
+      productAlgolia.sum = roundNumber(cartProduct.qty * product.price);
+    }
+  }
+  return res.json({...productAlgolia});
 });
 
 // show product

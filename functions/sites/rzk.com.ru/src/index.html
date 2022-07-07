@@ -145,7 +145,7 @@
     <div class="container" id="main">
       <h1>Main page</h1>
     </div>
-
+    <!-- Modal show product -->
     <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
@@ -161,6 +161,28 @@
         </div>
       </div>
     </div>
-    
+    <!-- Modal cart -->
+    <div class="modal" id="cartAddModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form id="addToCartForm" action="/o/{{object.id}}">
+            <div class="modal-body">
+              <div class="input-group mb-3">
+                <input type="number" min="0" id="qty" name="qty" class="form-control" placeholder="Введите количество товара" aria-label="Введите количество товара" aria-describedby="basic-addon2">
+                <span class="input-group-text" id="basic-addon2"></span>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" id="deleteFromCart" class="btn btn-danger">Удалить</button>
+              <button type="submit" id="addToCart" class="btn btn-primary" data-bs-currencyName="{{currencyName}}">Купить</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

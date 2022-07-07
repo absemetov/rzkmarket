@@ -74,7 +74,7 @@ exampleModal.addEventListener("show.bs.modal", async (event) => {
           </h6>
         </div>
         <div class="card-footer">
-          <h6>${product.name} ${product.price}</h6>
+          <h6>${product.name} ${product.price} ${product.currencyName}</h6>
           <div class="d-grid gap-2">
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
             data-product-id="${product.id}"
