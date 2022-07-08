@@ -4,6 +4,7 @@ import {search, searchPanel} from "./instantsearch";
 import Modal from "bootstrap/js/dist/modal";
 import "bootstrap/js/dist/offcanvas";
 import "bootstrap/js/dist/collapse";
+import SmartPhoto from "smartphoto";
 
 search.start();
 startAutocomplete();
@@ -31,29 +32,35 @@ exampleModal.addEventListener("show.bs.modal", async (event) => {
   const productId = button.getAttribute("data-product-id");
   const productName = button.getAttribute("data-product-name");
   const productImg1 = button.getAttribute("data-product-img1");
+  const productImg2 = button.getAttribute("data-product-img2");
   const sellerId = button.getAttribute("data-seller-id");
   // add placeholders
-  modalBody.innerHTML = `<div class="card text-center h-100" aria-hidden="true">
-    <img src="${productImg1}" class="card-img-top" alt="...">
+  modalBody.innerHTML = `<div class="card text-center h-100">
+    <a href="${productImg2}" class="js-smartphoto" data-caption="${productName}">
+      <img src="${productImg1}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="${productName}">
+    </a>
     <div class="card-body">
-      <h5 class="card-title placeholder-glow">
+      <h5 class="card-title">
         <a href="/p/${productId}">${productName}</a> <small class="text-muted">(${productId})</small>
         <a href="//t.me/RzkMarketBot?start=o_${sellerId}_p_${productId}" target="_blank" class="ps-1 text-decoration-none">
           <i class="bi bi-telegram"></i>
         </a>
-        <span class="placeholder col-12"></span>
       </h5>
-      <p class="card-text placeholder-glow">
-        <span class="placeholder col-7"></span>
-        <span class="placeholder col-4"></span>
-        <span class="placeholder col-4"></span>
-        <span class="placeholder col-6"></span>
-        <span class="placeholder col-8"></span>
-      </p>
+    </div>
+    <div class="card-footer">
+      <span class="placeholder col-7"></span>
+      <span class="placeholder col-4"></span>
+      <span class="placeholder col-4"></span>
+      <span class="placeholder col-6"></span>
+      <span class="placeholder col-8"></span>
       <a href="#" tabindex="-1" class="btn btn-primary disabled placeholder col-6"></a>
     </div>
   </div>`;
-  // Button that triggered the modal
+  // lightbox
+  new SmartPhoto(".js-smartphoto", {
+    resizeStyle: "fit",
+  });
+  // get product data
   const productRes = await fetch(`//localhost:5000/o/${sellerId}/p/${productId}`, {method: "POST"});
   const product = await productRes.json();
   console.log(product);
@@ -61,29 +68,25 @@ exampleModal.addEventListener("show.bs.modal", async (event) => {
   // const modalTitle = exampleModal.querySelector(".modal-title");
   // modalTitle.textContent = product.name;
   // modalBodyInput.value = product.price;
-  modalBody.innerHTML = `<div class="card text-center h-100">
-        <a href="/p/${product.id}">
-          <img src="${productImg1}" onerror="this.src = "//rzk.com.ru/icons/photo_error.svg";" class="card-img-top" alt="{{product.name}}">
-        </a>
-        <div class="card-body">
-          <h6>
-            <a href="/p/${product.id}">${product.name}</a> <small class="text-muted">(${product.id})</small>
-            <a href="//t.me/RzkMarketBot?start=o_{{../object.id}}_p_{{product.id}}" target="_blank" class="ps-1 text-decoration-none">
-              <i class="bi bi-telegram"></i>
-            </a>
-          </h6>
-        </div>
-        <div class="card-footer">
+  const modalFooter = exampleModal.querySelector(".card-footer");
+  modalFooter.innerHTML = `
           <h6>${product.name} ${product.price} ${product.currencyName}</h6>
           <div class="d-grid gap-2">
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
-            data-product-id="${product.id}"
-            data-seller-id="${product.id}">Открыть</button>
-          </div>
-        </div>
-      </div>`;
+          <button type="button" class="btn ${product.qty ? "btn-success" : "btn-primary"}" data-bs-toggle="modal"
+            data-bs-target="#cartAddModal"
+            data-bs-id="{{product.id}}"
+            data-bs-name="{{product.name}}"
+            data-bs-unit="{{product.unit}}"
+            data-bs-qty="{{product.qty}}">
+            ${product.qty ? product.qty + " " + product.unit + " " + product.sum + " " + product.currencyName : "Купить"}
+          </button>
+        </div>`;
 });
 
+// lightbox
+new SmartPhoto(".js-smartphoto", {
+  resizeStyle: "fit",
+});
 // modal cart
 // helper round to 2 decimals
 const roundNumber = (num) => {

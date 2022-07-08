@@ -49,6 +49,7 @@ const renderHits = async (renderOptions, isFirstRender) => {
                     data-product-id="${item.productId}"
                     data-product-name="${item.name}"
                     data-product-img1="${item.img1 ? item.img1 : "//rzk.com.ru/icons/cart3.svg"}"
+                    data-product-img2="${item.img2 ? item.img2 : "//rzk.com.ru/icons/cart3.svg"}"
                     data-seller-id="${item.sellerId}">Открыть</button>
                   </div>
                 </div>

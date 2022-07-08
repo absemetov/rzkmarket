@@ -1,6 +1,7 @@
 @import "bootstrap/scss/bootstrap";
 @import "bootstrap-icons/font/bootstrap-icons";
 @import "@algolia/autocomplete-theme-classic";
+@import "smartphoto/scss/smartphoto";
 
 /* Autocomplete */
 :root {
@@ -9,4 +10,8 @@
 
 .aa-Panel {
   z-index: 4;
+}
+
+.smartphoto {
+  z-index: 2100;
 }

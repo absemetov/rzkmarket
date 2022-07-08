@@ -264,6 +264,7 @@ app.post("/o/:objectId/p/:productId", auth, async (req, res) => {
   const productAlgolia = {};
   productAlgolia.id = productId;
   productAlgolia.name = product.name;
+  productAlgolia.unit = product.unit;
   productAlgolia.price = roundNumber(product.price * object.currencies[product.currency]);
   productAlgolia.currencyName = process.env.BOT_CURRENCY;
   // get cart qty
