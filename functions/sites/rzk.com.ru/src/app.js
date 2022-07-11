@@ -24,7 +24,7 @@ window.addEventListener("popstate", function() {
 
 // open modal algolia
 const exampleModal = document.getElementById("exampleModal");
-
+const showProductModal = new Modal(exampleModal);
 exampleModal.addEventListener("show.bs.modal", async (event) => {
   const modalBody = exampleModal.querySelector(".modal-body");
   // Extract info from data-bs-* attributes
@@ -57,8 +57,13 @@ exampleModal.addEventListener("show.bs.modal", async (event) => {
     </div>
   </div>`;
   // lightbox
-  new SmartPhoto(".js-smartphoto", {
+  const photo = new SmartPhoto(".js-smartphoto", {
     resizeStyle: "fit",
+  });
+  // when the modal closed
+  photo.on("close", function() {
+    console.log("close");
+    showProductModal.show();
   });
   // get product data
   const productRes = await fetch(`//localhost:5000/o/${sellerId}/p/${productId}`, {method: "POST"});

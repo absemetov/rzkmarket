@@ -20,7 +20,18 @@ export const search = instantsearch({
   indexName: INSTANT_SEARCH_INDEX_NAME,
   routing: {router: instantSearchRouter},
 });
-const virtualSearchBox = connectSearchBox(() => {});
+const virtualSearchBox = connectSearchBox((renderOptions, isFirstRender) => {
+  const {isSearchStalled} = renderOptions;
+  const loadingIndicator = document.querySelector("#loading-indicator");
+  const hitsPage = document.getElementById("hits");
+  // if (isSearchStalled) {
+  //   hitsPage.classList.add("d-none");
+  // } else {
+  //   hitsPage.classList.remove("d-none");
+  // }
+  hitsPage.hidden = isSearchStalled;
+  loadingIndicator.hidden = !isSearchStalled;
+});
 
 // Create the render function for hits
 const renderHits = async (renderOptions, isFirstRender) => {
@@ -50,7 +61,7 @@ const renderHits = async (renderOptions, isFirstRender) => {
                     data-product-name="${item.name}"
                     data-product-img1="${item.img1 ? item.img1 : "//rzk.com.ru/icons/cart3.svg"}"
                     data-product-img2="${item.img2 ? item.img2 : "//rzk.com.ru/icons/cart3.svg"}"
-                    data-seller-id="${item.sellerId}">Открыть</button>
+                    data-seller-id="${item.sellerId}">Добавить в корзину</button>
                   </div>
                 </div>
               </div>
