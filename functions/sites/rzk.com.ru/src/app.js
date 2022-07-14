@@ -55,7 +55,7 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
       </div>
     </div>`;
     // get product data
-    const productRes = await fetch(`//localhost:5000/o/${sellerId}/p/${productId}`, {method: "POST"});
+    const productRes = await fetch(`http://localhost:5000/o/${sellerId}/p/${productId}`, {method: "POST"});
     const product = await productRes.json();
     console.log(product);
     // Update the modal"s content.
@@ -74,7 +74,8 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
               data-product-name="${product.name}"
               data-product-unit="${product.unit}"
               data-product-qty="${product.qty ? product.qty : 0}"
-              data-seller-id="${sellerId}">
+              data-seller-id="${sellerId}"
+              data-modal-close="true">
               ${product.qty ? product.qty + " " + product.unit + " " + product.sum + " " + currencyName : "Купить"}
             </button>
           </div>`;
@@ -100,7 +101,9 @@ let button = {};
 
 // show algolia form when close
 cartAddModalEl.addEventListener("hide.bs.modal", function(event) {
-  productModal.show();
+  if (button.getAttribute("data-modal-close")) {
+    productModal.show();
+  }
 });
 
 cartAddModalEl.addEventListener("show.bs.modal", function(event) {
@@ -140,7 +143,7 @@ form.addEventListener("submit", async (event) => {
     const productId = button.getAttribute("data-product-id");
     const added = + button.getAttribute("data-product-qty");
     const sellerId = button.getAttribute("data-seller-id");
-    const response = await fetch(`http://localhost:5000/o/${sellerId}/cart/add`, {
+    const response = await fetch(`o/${sellerId}/cart/add`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json;charset=utf-8",
@@ -169,16 +172,17 @@ form.addEventListener("submit", async (event) => {
     }
     const cartCountNav = document.getElementById("cartCountNav");
     const totalSumNav = document.getElementById("totalSumNav");
+    // total cart data
     const totalQty = document.getElementById("totalQty");
     const totalSum = document.getElementById("totalSum");
     if (totalQty) {
       totalQty.innerText = resJson.cartInfo.totalQty;
-    }
-    if (totalSum) {
       totalSum.innerText = `${resJson.cartInfo.totalSum} ${currencyName}`;
     }
-    cartCountNav.innerText = resJson.cartInfo.cartCount;
-    totalSumNav.innerText = `${resJson.cartInfo.totalSum} ${currencyName}`;
+    if (cartCountNav) {
+      cartCountNav.innerText = resJson.cartInfo.cartCount;
+      totalSumNav.innerText = `${resJson.cartInfo.totalSum} ${currencyName}`;
+    }
     // hide modal
     cartAddModal.hide();
   } catch (error) {

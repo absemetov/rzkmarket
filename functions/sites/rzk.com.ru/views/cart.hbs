@@ -28,7 +28,9 @@
             {{product.price}} <small class="text-muted">{{../currencyName}}</small>
           </h3>
           <div class="d-grid gap-2">
-            <button type="button" class="btn {{#if product.qty}}btn-success{{else}}btn-primary{{/if}}" data-bs-toggle="modal" data-bs-target="#cartAddModal" data-bs-id="{{product.id}}" data-bs-name="{{product.name}}" data-bs-unit="{{product.unit}}" data-bs-qty="{{product.qty}}">
+            <button type="button" class="btn {{#if product.qty}}btn-success{{else}}btn-primary{{/if}}" data-bs-toggle="modal" data-bs-target="#cartAddModal"
+              data-product-id="{{product.id}}" data-product-name="{{product.name}}" data-product-unit="{{product.unit}}" data-product-qty="{{product.qty}}"
+              data-seller-id="{{../object.id}}">
               {{#if product.qty}}{{product.qty}} {{product.unit}} {{product.sum}} {{../currencyName}}{{else}}Купить{{/if}}
             </button>
           </div>
