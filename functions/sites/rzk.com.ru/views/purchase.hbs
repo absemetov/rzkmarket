@@ -90,8 +90,8 @@
         }
         // clear cart count
         linkOrder.setAttribute("href", `/o/${order.objectId}/s/${order.orderId}`);
-        const cartCountNav = document.getElementById("cartCount");
-        cartCountNav.innerText = 0;
+        const cartCountNav = document.getElementById("cartCountNav");
+        cartCountNav.textContent = 0;
         // scroll to top
         window.scrollTo(0, 0);
         console.log(JSON.stringify(order));

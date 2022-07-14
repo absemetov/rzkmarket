@@ -4,6 +4,8 @@ import {search, searchPanel} from "./instantsearch";
 import Modal from "bootstrap/js/dist/modal";
 import "bootstrap/js/dist/offcanvas";
 import "bootstrap/js/dist/collapse";
+import "bootstrap/js/dist/dropdown";
+import "bootstrap/js/dist/alert";
 import SmartPhoto from "smartphoto";
 
 search.start();
@@ -31,12 +33,12 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
   if (button) {
     const productId = button.getAttribute("data-product-id");
     const productName = button.getAttribute("data-product-name");
-    const productImg1 = button.getAttribute("data-product-img1");
+    const productImg2 = button.getAttribute("data-product-img2");
     const sellerId = button.getAttribute("data-seller-id");
     // add placeholders
     const modalBody = productModalEl.querySelector(".modal-body");
     modalBody.innerHTML = `<div class="card text-center h-100">
-      <img src="${productImg1}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="${productName}">
+      <img src="${productImg2}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="${productName}">
       <div class="card-body">
         <h5 class="card-title">
           <a href="/p/${productId}">${productName}</a> <small class="text-muted">(${productId})</small>
@@ -143,7 +145,7 @@ form.addEventListener("submit", async (event) => {
     const productId = button.getAttribute("data-product-id");
     const added = + button.getAttribute("data-product-qty");
     const sellerId = button.getAttribute("data-seller-id");
-    const response = await fetch(`o/${sellerId}/cart/add`, {
+    const response = await fetch(`http://localhost:5000/o/${sellerId}/cart/add`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json;charset=utf-8",
