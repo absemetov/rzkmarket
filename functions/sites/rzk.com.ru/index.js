@@ -115,7 +115,7 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
       if (doc.data().photoId) {
         catalogSibl.imgUrl = bucket.file(`photos/o/${object.id}/c/${doc.id}/${doc.data().photoId}/2.jpg`).publicUrl();
       } else {
-        catalogSibl.imgUrl = "/icons/folder.svg";
+        catalogSibl.imgUrl = "/icons/folder2.svg";
       }
       catalogs.push(catalogSibl);
     });
@@ -275,7 +275,8 @@ app.post("/o/:objectId/p/:productId", auth, async (req, res) => {
       productAlgolia.sum = roundNumber(cartProduct.qty * product.price);
     }
   }
-  return res.json({...productAlgolia});
+  const cartInfo = await cart.cartInfo(objectId, req.user.uid);
+  return res.json({...productAlgolia, cartInfo});
 });
 
 // show product

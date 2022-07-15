@@ -27,6 +27,8 @@ window.addEventListener("popstate", function() {
 // open modal algolia
 const productModalEl = document.getElementById("productModal");
 const productModal = new Modal(productModalEl);
+const addButton = document.getElementById("addToCart");
+const currencyName = addButton.getAttribute("data-object-currencyName");
 productModalEl.addEventListener("show.bs.modal", async (event) => {
   // Extract info from data-bs-* attributes
   const button = event.relatedTarget;
@@ -58,7 +60,13 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
       </div>
     </div>`;
     modalFooter.innerHTML = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-    <a class="btn btn-primary" href="/o/${sellerId}/cart" role="button"><i class="bi bi-cart3"></i> Корзина</a>`;
+    <a href="/o/${sellerId}/cart"  class="btn btn-primary position-relative" role="button">
+      Корзина <strong id="totalSumNavAlg">0 ${currencyName}</strong>
+      <span id="cartCountNavAlg" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+        0
+        <span class="visually-hidden">count goods</span>
+      </span>
+    </a>`;
     // get product data
     const productRes = await fetch(`/o/${sellerId}/p/${productId}`, {method: "POST"});
     const product = await productRes.json();
@@ -68,8 +76,6 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
     // modalTitle.textContent = product.name;
     // modalBodyInput.value = product.price;
     const cardFooter = productModalEl.querySelector(".card-footer");
-    const addButton = document.getElementById("addToCart");
-    const currencyName = addButton.getAttribute("data-object-currencyName");
     cardFooter.innerHTML = `
             <h6>${product.name} ${product.price} ${currencyName}</h6>
             <div class="d-grid gap-2">
@@ -84,6 +90,10 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
               ${product.qty ? product.qty + " " + product.unit + " " + product.sum + " " + currencyName : "Купить"}
             </button>
           </div>`;
+    const cartCountNavAlg = document.getElementById("cartCountNavAlg");
+    const totalSumNavAlg = document.getElementById("totalSumNavAlg");
+    cartCountNavAlg.innerText = product.cartInfo.cartCount;
+    totalSumNavAlg.innerText = `${product.cartInfo.totalSum} ${currencyName}`;
   }
 });
 
@@ -98,7 +108,7 @@ const roundNumber = (num) => {
 };
 const cartAddModalEl = document.getElementById("cartAddModal");
 const cartAddModal = new Modal(cartAddModalEl);
-const addButton = document.getElementById("addToCart");
+// const addButton = document.getElementById("addToCart");
 const delButton = document.getElementById("deleteFromCart");
 const qtyInput = document.getElementById("qty");
 // show info after add prod in button
@@ -165,7 +175,7 @@ form.addEventListener("submit", async (event) => {
     addButton.disabled = false;
     delButton.disabled = false;
   }
-  const currencyName = addButton.getAttribute("data-object-currencyName");
+  // const currencyName = addButton.getAttribute("data-object-currencyName");
   if (qty) {
     button.innerText = `${qty} ${button.getAttribute("data-product-unit")} ${roundNumber(qty * resJson.price)} ${currencyName}`;
     button.setAttribute("data-product-qty", qty);
@@ -186,6 +196,11 @@ form.addEventListener("submit", async (event) => {
     totalQty.innerText = resJson.cartInfo.totalQty;
     totalSum.innerText = `${resJson.cartInfo.totalSum} ${currencyName}`;
   }
+  // update algolia product
+  const cartCountNavAlg = document.getElementById("cartCountNavAlg");
+  const totalSumNavAlg = document.getElementById("totalSumNavAlg");
+  cartCountNavAlg.innerText = resJson.cartInfo.cartCount;
+  totalSumNavAlg.innerText = `${resJson.cartInfo.totalSum} ${currencyName}`;
   if (cartCountNav) {
     cartCountNav.innerText = resJson.cartInfo.cartCount;
     totalSumNav.innerText = `${resJson.cartInfo.totalSum} ${currencyName}`;
