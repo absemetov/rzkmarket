@@ -79,7 +79,7 @@ app.get("/o/:objectId", auth, async (req, res) => {
     // count cart items
     object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
     if (object.photoId) {
-      object.imgUrl = bucket.file(`photos/o/${object.id}/logo/${object.photoId}/3.jpg`).publicUrl();
+      object.imgUrl = bucket.file(`photos/o/${object.id}/logo/${object.photoId}/2.jpg`).publicUrl();
     } else {
       object.imgUrl = "/icons/shop.svg";
     }
@@ -174,7 +174,7 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
         price: roundNumber(product.data().price * object.currencies[product.data().currency]),
         unit: product.data().unit,
         url: `/o/${objectId}/p/${product.id}`,
-        imgUrl: "/icons/cart3.svg",
+        imgUrl: "/icons/flower3.svg",
       };
       if (req.user.uid) {
         const cartProduct = await store.findRecord(`objects/${objectId}/carts/${req.user.uid}`,
@@ -285,7 +285,7 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
   const object = await store.findRecord(`objects/${objectId}`);
   const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
   product.price = roundNumber(product.price * object.currencies[product.currency]);
-  product.imgUrl = "/icons/cart3.svg";
+  product.imgUrl = "/icons/flower3.svg";
   const photos = [];
   // get cart qty
   if (req.user.uid) {
@@ -297,14 +297,12 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
     }
   }
   if (product.mainPhoto) {
-    product.imgUrl = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/2.jpg`).publicUrl();
-    product.imgUrlOrigin = bucket.file(`photos/o/${objectId}/p/${product.id}/` +
-    `${product.mainPhoto}/${product.mainPhoto.slice(-1)}.jpg`).publicUrl();
+    product.imgUrl = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/1.jpg`).publicUrl();
+    product.imgUrlOrigin = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/2.jpg`).publicUrl();
     for (const imageId of product.photos) {
       if (product.mainPhoto !== imageId) {
-        const imgUrl = bucket.file(`photos/o/${objectId}/p/${product.id}/${imageId}/2.jpg`).publicUrl();
-        const imgUrlOrigin = bucket.file(`photos/o/${objectId}/p/${product.id}/` +
-        `${imageId}/${imageId.slice(-1)}.jpg`).publicUrl();
+        const imgUrl = bucket.file(`photos/o/${objectId}/p/${product.id}/${imageId}/1.jpg`).publicUrl();
+        const imgUrlOrigin = bucket.file(`photos/o/${objectId}/p/${product.id}/${imageId}/2.jpg`).publicUrl();
         photos.push({
           imgUrl,
           imgUrlOrigin,
@@ -486,7 +484,7 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
       const product = await store.findRecord(`objects/${objectId}/products/${cartProduct.id}`);
       product.price = roundNumber(product.price * object.currencies[product.currency]);
       if (product) {
-        product.imgUrl = "/icons/cart3.svg";
+        product.imgUrl = "/icons/flower3.svg";
         if (product.mainPhoto) {
           product.imgUrl = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/2.jpg`)
               .publicUrl();

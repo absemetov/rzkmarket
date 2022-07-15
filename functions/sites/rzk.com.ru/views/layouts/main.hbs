@@ -4,8 +4,8 @@
       <!-- Required meta tags -->
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
-      <link rel="stylesheet" href="/dist/index.1bbda903.css">
-      <script type="module" src="/dist/index.bdae73ad.js"></script>
+      <link rel="stylesheet" href="/dist/index.7a20371f.css">
+      <script type="module" src="/dist/index.b8a32fbb.js"></script>
       <title>{{#if title}}{{title}} - {{/if}}Маркетплейс RZK Маркет Крым: купить элетротовары, кабель, провод, автоматика, лампы в Крыму</title>
       <link rel="icon" href="/logo.svg">
       <meta name="description" content="{{#if description}}{{description}}{{else}}Маркетплейс RZK Маркет Крым: кабель, провод, розетки, выключатели,
@@ -39,7 +39,7 @@
             <ul class="navbar-nav me-2">
               <li class="nav-item"></li>
                 <a class="text-nowrap nav-link{{#if cart}} active{{/if}} position-relative" href="/o/{{object.id}}/cart">
-                  Корзина <strong id="totalSumNav">{{object.cartInfo.totalSum}} {{currencyName}}</strong>
+                  <i class="bi bi-cart3"></i> Корзина <strong id="totalSumNav">{{object.cartInfo.totalSum}} {{currencyName}}</strong>
                   <span id="cartCountNav" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger mt-1">
                     {{object.cartInfo.cartCount}}
                     <span class="visually-hidden">count goods</span>
@@ -71,9 +71,7 @@
             <a class="nav-link" href="//maps.app.goo.gl/F46h38LnK3Dq3jC7A">Оставить отзыв</a>
             <a class="nav-link" href="tel:+79788986431">+7 978 89 86 431</a>
             <a class="nav-link text-decoration-none" href="//t.me/RzkCrimeaBot?start=fromsite">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-telegram" viewBox="0 0 16 16">
-                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8.287 5.906c-.778.324-2.334.994-4.666 2.01-.378.15-.577.298-.595.442-.03.243.275.339.69.47l.175.055c.408.133.958.288 1.243.294.26.006.549-.1.868-.32 2.179-1.471 3.304-2.214 3.374-2.23.05-.012.12-.026.166.016.047.041.042.12.037.141-.03.129-1.227 1.241-1.846 1.817-.193.18-.33.307-.358.336a8.154 8.154 0 0 1-.188.186c-.38.366-.664.64.015 1.088.327.216.589.393.85.571.284.194.568.387.936.629.093.06.183.125.27.187.331.236.63.448.997.414.214-.02.435-.22.547-.82.265-1.417.786-4.486.906-5.751a1.426 1.426 0 0 0-.013-.315.337.337 0 0 0-.114-.217.526.526 0 0 0-.31-.093c-.3.005-.763.166-2.984 1.09z"></path>
-              </svg>
+              <i class="bi bi-telegram"></i>
               @RzkCrimeaBot
             </a>
             <a class="nav-link disabled">rzk-warsaw-ru v.2.0.0 © 2022</a>
@@ -180,7 +178,6 @@
             <div class="modal-body">
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
           </div>
         </div>

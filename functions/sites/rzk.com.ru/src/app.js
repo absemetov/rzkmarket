@@ -37,8 +37,9 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
     const sellerId = button.getAttribute("data-seller-id");
     // add placeholders
     const modalBody = productModalEl.querySelector(".modal-body");
+    const modalFooter = productModalEl.querySelector(".modal-footer");
     modalBody.innerHTML = `<div class="card text-center h-100">
-      <img src="${productImg2}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="${productName}">
+      <img src="${productImg2 ? productImg2 : "//rzk.com.ru/icons/flower3.svg"}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="${productName}">
       <div class="card-body">
         <h5 class="card-title">
           <a href="/p/${productId}">${productName}</a> <small class="text-muted">(${productId})</small>
@@ -56,18 +57,20 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
         <a href="#" tabindex="-1" class="btn btn-primary disabled placeholder col-6"></a>
       </div>
     </div>`;
+    modalFooter.innerHTML = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+    <a class="btn btn-primary" href="/o/${sellerId}/cart" role="button"><i class="bi bi-cart3"></i> Корзина</a>`;
     // get product data
-    const productRes = await fetch(`http://localhost:5000/o/${sellerId}/p/${productId}`, {method: "POST"});
+    const productRes = await fetch(`/o/${sellerId}/p/${productId}`, {method: "POST"});
     const product = await productRes.json();
     console.log(product);
     // Update the modal"s content.
     // const modalTitle = exampleModal.querySelector(".modal-title");
     // modalTitle.textContent = product.name;
     // modalBodyInput.value = product.price;
-    const modalFooter = productModalEl.querySelector(".card-footer");
+    const cardFooter = productModalEl.querySelector(".card-footer");
     const addButton = document.getElementById("addToCart");
     const currencyName = addButton.getAttribute("data-object-currencyName");
-    modalFooter.innerHTML = `
+    cardFooter.innerHTML = `
             <h6>${product.name} ${product.price} ${currencyName}</h6>
             <div class="d-grid gap-2">
             <button type="button" class="btn ${product.qty ? "btn-success" : "btn-primary"}" data-bs-toggle="modal"
@@ -138,60 +141,57 @@ cartAddModalEl.addEventListener("shown.bs.modal", function(event) {
 const form = document.getElementById("addToCartForm");
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
-  try {
-    addButton.disabled = true;
-    delButton.disabled = true;
-    const qty = + qtyInput.value;
-    const productId = button.getAttribute("data-product-id");
-    const added = + button.getAttribute("data-product-qty");
-    const sellerId = button.getAttribute("data-seller-id");
-    const response = await fetch(`http://localhost:5000/o/${sellerId}/cart/add`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json;charset=utf-8",
-      },
-      body: JSON.stringify({
-        productId,
-        qty,
-        added,
-      }),
-    });
-    const resJson = await response.json();
-    if (!response.ok) {
-      throw new Error(resJson.error);
-    }
-    const currencyName = addButton.getAttribute("data-object-currencyName");
-    if (qty) {
-      button.innerText = `${qty} ${button.getAttribute("data-product-unit")} ${roundNumber(qty * resJson.price)} ${currencyName}`;
-      button.setAttribute("data-product-qty", qty);
-      button.classList.remove("btn-primary");
-      button.classList.add("btn-success");
-    } else {
-      button.innerText = "Купить";
-      button.classList.remove("btn-success");
-      button.classList.add("btn-primary");
-      button.removeAttribute("data-product-qty");
-    }
-    const cartCountNav = document.getElementById("cartCountNav");
-    const totalSumNav = document.getElementById("totalSumNav");
-    // total cart data
-    const totalQty = document.getElementById("totalQty");
-    const totalSum = document.getElementById("totalSum");
-    if (totalQty) {
-      totalQty.innerText = resJson.cartInfo.totalQty;
-      totalSum.innerText = `${resJson.cartInfo.totalSum} ${currencyName}`;
-    }
-    if (cartCountNav) {
-      cartCountNav.innerText = resJson.cartInfo.cartCount;
-      totalSumNav.innerText = `${resJson.cartInfo.totalSum} ${currencyName}`;
-    }
-    // hide modal
-    cartAddModal.hide();
-  } catch (error) {
-    alert(error);
+  addButton.disabled = true;
+  delButton.disabled = true;
+  const qty = + qtyInput.value;
+  const productId = button.getAttribute("data-product-id");
+  const added = + button.getAttribute("data-product-qty");
+  const sellerId = button.getAttribute("data-seller-id");
+  const response = await fetch(`/o/${sellerId}/cart/add`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json;charset=utf-8",
+    },
+    body: JSON.stringify({
+      productId,
+      qty,
+      added,
+    }),
+  });
+  const resJson = await response.json();
+  if (!response.ok) {
+    // throw new Error(resJson.error);
+    alert(resJson.error);
     addButton.disabled = false;
     delButton.disabled = false;
   }
+  const currencyName = addButton.getAttribute("data-object-currencyName");
+  if (qty) {
+    button.innerText = `${qty} ${button.getAttribute("data-product-unit")} ${roundNumber(qty * resJson.price)} ${currencyName}`;
+    button.setAttribute("data-product-qty", qty);
+    button.classList.remove("btn-primary");
+    button.classList.add("btn-success");
+  } else {
+    button.innerText = "Купить";
+    button.classList.remove("btn-success");
+    button.classList.add("btn-primary");
+    button.removeAttribute("data-product-qty");
+  }
+  const cartCountNav = document.getElementById("cartCountNav");
+  const totalSumNav = document.getElementById("totalSumNav");
+  // total cart data
+  const totalQty = document.getElementById("totalQty");
+  const totalSum = document.getElementById("totalSum");
+  if (totalQty) {
+    totalQty.innerText = resJson.cartInfo.totalQty;
+    totalSum.innerText = `${resJson.cartInfo.totalSum} ${currencyName}`;
+  }
+  if (cartCountNav) {
+    cartCountNav.innerText = resJson.cartInfo.cartCount;
+    totalSumNav.innerText = `${resJson.cartInfo.totalSum} ${currencyName}`;
+  }
+  // hide modal
+  cartAddModal.hide();
 });
 // delete product
 delButton.addEventListener("click", async () => {
