@@ -54,14 +54,14 @@ const renderHits = async (renderOptions, isFirstRender) => {
                   </h6>
                 </div>
                 <div class="card-footer">
-                  <h6>${item.seller} ${item.price}</h6>
+                  <h6>${item.seller}</h6>
                   <div class="d-grid gap-2">
                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal"
                     data-product-id="${item.productId}"
                     data-product-name="${item.name}"
                     data-product-img1="${item.img1 ? item.img1 : "//rzk.com.ru/icons/flower3.svg"}"
                     data-product-img2="${item.img2 ? item.img2 : "//rzk.com.ru/icons/flower3.svg"}"
-                    data-seller-id="${item.sellerId}">Добавить в корзину</button>
+                    data-seller-id="${item.sellerId}">Просмотр</button>
                   </div>
                 </div>
               </div>

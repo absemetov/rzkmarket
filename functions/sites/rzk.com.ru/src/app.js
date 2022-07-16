@@ -23,7 +23,6 @@ window.addEventListener("popstate", function() {
     searchPanel("hide");
   }
 });
-
 // open modal algolia
 const productModalEl = document.getElementById("productModal");
 const productModal = new Modal(productModalEl);
@@ -61,7 +60,7 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
     </div>`;
     modalFooter.innerHTML = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
     <a href="/o/${sellerId}/cart"  class="btn btn-primary position-relative" role="button">
-      Корзина <strong id="totalSumNavAlg">0 ${currencyName}</strong>
+      Корзина (${sellerId}) <strong id="totalSumNavAlg">0 ${currencyName}</strong>
       <span id="cartCountNavAlg" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
         0
         <span class="visually-hidden">count goods</span>
@@ -77,7 +76,9 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
     // modalBodyInput.value = product.price;
     const cardFooter = productModalEl.querySelector(".card-footer");
     cardFooter.innerHTML = `
-            <h6>${product.name} ${product.price} ${currencyName}</h6>
+            <h3>
+              ${product.price} <small class="text-muted">${currencyName}</small>
+            </h3>
             <div class="d-grid gap-2">
             <button type="button" class="btn ${product.qty ? "btn-success" : "btn-primary"}" data-bs-toggle="modal"
               data-bs-target="#cartAddModal"
@@ -97,10 +98,22 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
   }
 });
 
+// fullscreen
+const fullscreen = document.getElementById("fullscreen");
+fullscreen.addEventListener("click", () => {
+  productModalEl.querySelector(".modal-dialog").classList.toggle("modal-fullscreen");
+});
+
 // lightbox
 new SmartPhoto(".js-smartphoto", {
   resizeStyle: "fit",
 });
+new SmartPhoto(".js-smartphoto-single", {
+  resizeStyle: "fit",
+  arrows: false,
+  nav: false,
+});
+
 // modal cart
 // helper round to 2 decimals
 const roundNumber = (num) => {

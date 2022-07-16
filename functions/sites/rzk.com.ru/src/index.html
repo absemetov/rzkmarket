@@ -22,7 +22,7 @@
         <div id="autocomplete" class="w-100"></div>
         <ul class="navbar-nav me-2">
           <li class="nav-item"></li>
-            <a class="text-nowrap nav-link{{#if cart}} active{{/if}} position-relative" href="//rzk.com.ru/o/{{object.id}}/cart">
+            <a class="text-nowrap nav-link position-relative" href="//rzk.com.ru/o/{{object.id}}/cart">
               Корзина <strong id="totalSumNav">165р</strong>
               <span id="cartCountNav" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger mt-1">
                 4
@@ -158,11 +158,20 @@
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title" id="productModalLabel">Просмотр</h5>
+            <button id="fullscreen" type="button" class="btn btn-outline-secondary ms-2"><i class="bi bi-arrows-fullscreen"></i></button>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
           </div>
           <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <a href="/o/${sellerId}/cart"  class="btn btn-primary position-relative" role="button">
+              Корзина (${sellerId}) <strong id="totalSumNavAlg">0 ${currencyName}</strong>
+              <span id="cartCountNavAlg" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                0
+                <span class="visually-hidden">count goods</span>
+              </span>
+            </a>
           </div>
         </div>
       </div>

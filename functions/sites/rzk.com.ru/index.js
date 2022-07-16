@@ -50,9 +50,11 @@ app.get("/", auth, async (req, res) => {
   for (const object of objects) {
     object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
     if (object.photoId) {
-      object.imgUrl = bucket.file(`photos/o/${object.id}/logo/${object.photoId}/2.jpg`).publicUrl();
+      object.img1 = bucket.file(`photos/o/${object.id}/logo/${object.photoId}/1.jpg`).publicUrl();
+      object.img2 = bucket.file(`photos/o/${object.id}/logo/${object.photoId}/2.jpg`).publicUrl();
     } else {
-      object.imgUrl = "/icons/shop.svg";
+      object.img1 = "/icons/shop.svg";
+      object.img2 = "/icons/shop.svg";
     }
   }
   res.render("index", {objects, user: req.user, currencyName: process.env.BOT_CURRENCY});
@@ -79,9 +81,11 @@ app.get("/o/:objectId", auth, async (req, res) => {
     // count cart items
     object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
     if (object.photoId) {
-      object.imgUrl = bucket.file(`photos/o/${object.id}/logo/${object.photoId}/2.jpg`).publicUrl();
+      object.img1 = bucket.file(`photos/o/${object.id}/logo/${object.photoId}/1.jpg`).publicUrl();
+      object.img2 = bucket.file(`photos/o/${object.id}/logo/${object.photoId}/2.jpg`).publicUrl();
     } else {
-      object.imgUrl = "/icons/shop.svg";
+      object.img1 = "/icons/shop.svg";
+      object.img2 = "/icons/shop.svg";
     }
     // Set Cache-Control
     // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
@@ -113,9 +117,11 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
         url: `/o/${object.id}/c/${doc.id}`,
       };
       if (doc.data().photoId) {
-        catalogSibl.imgUrl = bucket.file(`photos/o/${object.id}/c/${doc.id}/${doc.data().photoId}/2.jpg`).publicUrl();
+        catalogSibl.img1 = bucket.file(`photos/o/${object.id}/c/${doc.id}/${doc.data().photoId}/1.jpg`).publicUrl();
+        catalogSibl.img2 = bucket.file(`photos/o/${object.id}/c/${doc.id}/${doc.data().photoId}/2.jpg`).publicUrl();
       } else {
-        catalogSibl.imgUrl = "/icons/folder2.svg";
+        catalogSibl.img1 = "/icons/folder2.svg";
+        catalogSibl.img2 = "/icons/folder2.svg";
       }
       catalogs.push(catalogSibl);
     });
@@ -174,7 +180,8 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
         price: roundNumber(product.data().price * object.currencies[product.data().currency]),
         unit: product.data().unit,
         url: `/o/${objectId}/p/${product.id}`,
-        imgUrl: "/icons/flower3.svg",
+        img1: "/icons/flower3.svg",
+        img2: "/icons/flower3.svg",
       };
       if (req.user.uid) {
         const cartProduct = await store.findRecord(`objects/${objectId}/carts/${req.user.uid}`,
@@ -185,7 +192,9 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
         }
       }
       if (product.data().mainPhoto) {
-        productObj.imgUrl = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.data().mainPhoto}/2.jpg`)
+        productObj.img1 = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.data().mainPhoto}/1.jpg`)
+            .publicUrl();
+        productObj.img2 = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.data().mainPhoto}/2.jpg`)
             .publicUrl();
       }
       // add to array
@@ -286,7 +295,8 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
   const object = await store.findRecord(`objects/${objectId}`);
   const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
   product.price = roundNumber(product.price * object.currencies[product.currency]);
-  product.imgUrl = "/icons/flower3.svg";
+  product.img1 = "/icons/flower3.svg";
+  product.img2 = "/icons/flower3.svg";
   const photos = [];
   // get cart qty
   if (req.user.uid) {
@@ -298,15 +308,15 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
     }
   }
   if (product.mainPhoto) {
-    product.imgUrl = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/1.jpg`).publicUrl();
-    product.imgUrlOrigin = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/2.jpg`).publicUrl();
+    product.img1 = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/1.jpg`).publicUrl();
+    product.img2 = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/2.jpg`).publicUrl();
     for (const imageId of product.photos) {
       if (product.mainPhoto !== imageId) {
-        const imgUrl = bucket.file(`photos/o/${objectId}/p/${product.id}/${imageId}/1.jpg`).publicUrl();
-        const imgUrlOrigin = bucket.file(`photos/o/${objectId}/p/${product.id}/${imageId}/2.jpg`).publicUrl();
+        const img1 = bucket.file(`photos/o/${objectId}/p/${product.id}/${imageId}/1.jpg`).publicUrl();
+        const img2 = bucket.file(`photos/o/${objectId}/p/${product.id}/${imageId}/2.jpg`).publicUrl();
         photos.push({
-          imgUrl,
-          imgUrlOrigin,
+          img1,
+          img2,
         });
       }
     }
@@ -485,9 +495,12 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
       const product = await store.findRecord(`objects/${objectId}/products/${cartProduct.id}`);
       product.price = roundNumber(product.price * object.currencies[product.currency]);
       if (product) {
-        product.imgUrl = "/icons/flower3.svg";
+        product.img1 = "/icons/flower3.svg";
+        product.img2 = "/icons/flower3.svg";
         if (product.mainPhoto) {
-          product.imgUrl = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/2.jpg`)
+          product.img1 = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/1.jpg`)
+              .publicUrl();
+          product.img2 = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/2.jpg`)
               .publicUrl();
         }
         products.push({
@@ -498,7 +511,8 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
           qty: cartProduct.qty,
           sum: roundNumber(cartProduct.qty * product.price),
           url: `/o/${objectId}/p/${product.id}`,
-          imgUrl: product.imgUrl,
+          img1: product.img1,
+          img2: product.img2,
         });
         // update price in cart
         if (product.price !== cartProduct.price) {

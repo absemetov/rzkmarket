@@ -2,8 +2,11 @@
   {{#each objects as |object|}}
     <div class="col">
       <div class="card text-center h-100">
+        <a href="{{object.img2}}" class="js-smartphoto-single" data-caption="{{object.name}}">
+          <img src="/icons/search.svg" width="24" height="24" class="position-absolute bottom-0 end-0 m-2">
+        </a>
         <a href="/o/{{object.id}}">
-          <img src="{{object.imgUrl}}" class="card-img-top" onerror="this.src = '/icons/photo_error.svg';" alt="{{object.name}}">
+          <img src="{{object.img1}}" class="card-img-top" onerror="this.src = '/icons/photo_error.svg';" alt="{{object.name}}">
         </a>
         <div class="card-body">
           <h5>
@@ -30,8 +33,8 @@
           </li>
         </ul>
         <div class="card-footer">
-          <a href="/o/{{object.id}}/cart"  class="btn btn-primary position-relative">
-            <i class="bi bi-cart3"></i> Корзина {{object.cartInfo.totalSum}} {{../currencyName}}
+          <a href="/o/{{object.id}}/cart"  class="text-nowrap btn btn-primary position-relative">
+            Корзина {{object.cartInfo.totalSum}} {{../currencyName}}
             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
               {{object.cartInfo.cartCount}}
               <span class="visually-hidden">count goods</span>

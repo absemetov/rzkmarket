@@ -17,13 +17,9 @@
 <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2 pb-3">
   <div class="col">
     <div class="card text-center h-100">
-      {{#if product.imgUrlOrigin}}
-        <a href="{{product.imgUrlOrigin}}" class="js-smartphoto" data-caption="{{product.name}}">
-          <img src="{{product.imgUrl}}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="{{product.name}}">
-        </a>
-      {{else}}
-        <img src="{{product.imgUrl}}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="{{product.name}}">
-      {{/if}}
+      <a href="{{product.img2}}" class="js-smartphoto" data-caption="{{product.name}}">
+        <img src="{{product.img1}}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="{{product.name}}">
+      </a>
       <div class="card-body">
         <h5>{{product.name}} <small class="text-muted">({{product.id}})</small>
           <a href="//t.me/RzkCrimeaBot?start=o_{{object.id}}_p_{{product.id}}" target="_blank" class="ps-1 text-decoration-none">
@@ -71,8 +67,8 @@
     {{#each photos as |photo|}}
       <div class="col">
         <div class="card text-center h-100">
-          <a href="{{photo.imgUrlOrigin}}" class="js-smartphoto" data-caption="{{../product.name}}">
-            <img src="{{photo.imgUrl}}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="{{../product.name}}">
+          <a href="{{photo.img2}}" class="js-smartphoto" data-caption="{{../product.name}}">
+            <img src="{{photo.img1}}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="{{../product.name}}">
           </a>
         </div>
       </div>
