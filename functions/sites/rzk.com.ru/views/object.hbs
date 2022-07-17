@@ -31,12 +31,12 @@
           {{/each}}
         </li>
         <li class="list-group-item">
-          <a href="/o/{{object.id}}/c" class="btn btn-primary">Каталог товаров</a>
+          <a href="/o/{{object.id}}/c" class="btn btn-primary"><i class="bi bi-folder2"></i> Каталог</a>
         </li>
       </ul>
       <div class="card-footer">
         <a href="/o/{{object.id}}/cart"  class="btn btn-primary position-relative">
-          Корзина {{object.cartInfo.totalSum}} {{currencyName}}
+          <i class="bi bi-cart3"></i> {{object.cartInfo.totalSum}} {{currencyName}}
           <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
             {{object.cartInfo.cartCount}}
             <span class="visually-hidden">count goods</span>

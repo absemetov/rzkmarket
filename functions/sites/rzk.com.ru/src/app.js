@@ -36,6 +36,7 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
     const productName = button.getAttribute("data-product-name");
     const productImg2 = button.getAttribute("data-product-img2");
     const sellerId = button.getAttribute("data-seller-id");
+    const seller = button.getAttribute("data-seller");
     // add placeholders
     const modalBody = productModalEl.querySelector(".modal-body");
     const modalFooter = productModalEl.querySelector(".modal-footer");
@@ -43,11 +44,12 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
       <img src="${productImg2 ? productImg2 : "//rzk.com.ru/icons/flower3.svg"}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="${productName}">
       <div class="card-body">
         <h5 class="card-title">
-          <a href="/p/${productId}">${productName}</a> <small class="text-muted">(${productId})</small>
+          <a href="/o/${sellerId}/p/${productId}">${productName}</a> <small class="text-muted">(${productId})</small>
           <a href="//t.me/RzkMarketBot?start=o_${sellerId}_p_${productId}" target="_blank" class="ps-1 text-decoration-none">
             <i class="bi bi-telegram"></i>
           </a>
         </h5>
+        <h5>${seller}</h5>
       </div>
       <div class="card-footer">
         <span class="placeholder col-7"></span>
@@ -59,8 +61,8 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
       </div>
     </div>`;
     modalFooter.innerHTML = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-    <a href="/o/${sellerId}/cart"  class="btn btn-primary position-relative" role="button">
-      Корзина (${sellerId}) <strong id="totalSumNavAlg">0 ${currencyName}</strong>
+    <a href="/o/${sellerId}/cart"  class="text-nowrap btn btn-primary position-relative" role="button">
+      Корзина <strong id="totalSumNavAlg">0 ${currencyName}</strong>
       <span id="cartCountNavAlg" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
         0
         <span class="visually-hidden">count goods</span>

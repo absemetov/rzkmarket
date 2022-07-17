@@ -10,9 +10,6 @@
   {{#each products as |product|}}
     <div class="col">
       <div class="card text-center h-100">
-        <a href="{{product.img2}}" class="js-smartphoto-single" data-caption="{{product.name}}">
-          <img src="/icons/search.svg" width="24" height="24" class="position-absolute top-0 end-0 m-2">
-        </a>
         <a href="{{product.url}}">
           <img src="{{product.img1}}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="{{product.name}}">
         </a>
@@ -21,6 +18,9 @@
             <a href="{{product.url}}">{{product.name}}</a> <small class="text-muted">({{product.id}})</small>
             <a href="//t.me/RzkCrimeaBot?start=o_{{../object.id}}_p_{{product.id}}" target="_blank" class="ps-1 text-decoration-none">
               <i class="bi bi-telegram"></i>
+            </a>
+            <a href="{{product.img2}}" class="js-smartphoto-single" data-caption="{{product.name}}">
+              <img src="/icons/search.svg" width="24" height="24" class="m-2">
             </a>
           </h5>
         </div>

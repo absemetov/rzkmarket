@@ -69,7 +69,7 @@ export function startAutocomplete() {
     debug: false,
     container: "#autocomplete",
     openOnFocus: true,
-    placeholder: "Search",
+    placeholder: "Поиск",
     initialState: {
       query: searchPageState.query || "",
     },
@@ -154,7 +154,7 @@ export function startAutocomplete() {
                 <div class="aa-ItemContent">
                   <div class="aa-ItemIcon">
                     <img
-                      src="${item.img1 ? item.img1 : "//rzk.com.ru/icons/cart3.svg"}"
+                      src="${item.img1 ? item.img1 : "/icons/flower3.svg"}"
                       alt="${item.name}"
                       width="100"
                       height="100"
@@ -226,7 +226,7 @@ export function startAutocomplete() {
                 <div class="aa-ItemContent">
                   <div class="aa-ItemIcon">
                     <img
-                      src="${item.img1 ? item.img1 : "//rzk.com.ru/icons/folder.svg"}"
+                      src="${item.img1 ? item.img1 : "/icons/folder2.svg"}"
                       alt="${item.name}"
                       width="100"
                       height="100"
