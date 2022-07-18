@@ -51,7 +51,7 @@
             <h6>
               <a href="{{catalog.url}}">{{catalog.name}}</a>
               <a href="{{catalog.img2}}" class="js-smartphoto-single" data-caption="{{catalog.name}}">
-                <img src="/icons/search.svg" width="24" height="24" class="m-2">
+                <img src="/icons/zoom-in.svg" width="24" height="24" class="m-2" alt="zoom img">
               </a>
             </h6>
           </div>
@@ -67,13 +67,14 @@
             <img src="{{product.img1}}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="{{product.name}}">
           </a>
           <div class="card-body">
+            {{#if product.brand}}<h6>{{product.brand}}</h6>{{/if}}
             <h6>
               <a href="{{product.url}}">{{product.name}}</a> <small class="text-muted">({{product.id}})</small>
               <a href="//t.me/RzkCrimeaBot?start=o_{{../object.id}}_p_{{product.id}}" target="_blank" class="ps-1 text-decoration-none">
                 <i class="bi bi-telegram"></i>
               </a>
               <a href="{{product.img2}}" class="js-smartphoto-single" data-caption="{{product.name}}">
-                <img src="/icons/search.svg" width="24" height="24" class="m-2">
+                <img src="/icons/zoom-in.svg" width="24" height="24" class="m-2" alt="zoom img">
               </a>
             </h6>
           </div>

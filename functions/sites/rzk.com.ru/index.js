@@ -177,6 +177,7 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
       const productObj = {
         id: product.id,
         name: product.data().name,
+        brand: product.data().brand ? product.data().brand : null,
         price: roundNumber(product.data().price * object.currencies[product.data().currency]),
         unit: product.data().unit,
         url: `/o/${objectId}/p/${product.id}`,
@@ -505,6 +506,7 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
         }
         products.push({
           id: product.id,
+          brand: product.brand ? product.brand : null,
           name: product.name,
           price: product.price,
           unit: product.unit,
@@ -668,7 +670,7 @@ app.post("/o/:objectId/cart/add", auth, jsonParser, async (req, res) => {
       // get product price
       products = {
         [productId]: {
-          name: product.name,
+          name: `${product.brand ? product.brand + " " : ""}${product.name}`,
           price,
           unit: product.unit,
           qty,

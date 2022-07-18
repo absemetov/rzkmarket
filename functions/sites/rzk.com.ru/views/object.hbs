@@ -31,17 +31,21 @@
           {{/each}}
         </li>
         <li class="list-group-item">
-          <a href="/o/{{object.id}}/c" class="btn btn-primary"><i class="bi bi-folder2"></i> Каталог</a>
+          <div class="d-grid gap-2">
+            <a href="/o/{{object.id}}/c" class="btn btn-primary"><i class="bi bi-folder2"></i> Каталог</a>
+          </div>
         </li>
       </ul>
       <div class="card-footer">
-        <a href="/o/{{object.id}}/cart"  class="btn btn-primary position-relative">
-          <i class="bi bi-cart3"></i> {{object.cartInfo.totalSum}} {{currencyName}}
-          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-            {{object.cartInfo.cartCount}}
-            <span class="visually-hidden">count goods</span>
-          </span>
-        </a>
+        <div class="d-grid gap-2">
+          <a href="/o/{{object.id}}/cart"  class="btn btn-primary position-relative mt-2">
+            <i class="bi bi-cart3"></i> {{object.cartInfo.totalSum}} {{currencyName}}
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+              {{object.cartInfo.cartCount}}
+              <span class="visually-hidden">count goods</span>
+            </span>
+          </a>
+        </div>
       </div>
     </div>
   </div>

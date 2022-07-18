@@ -21,11 +21,12 @@
         <img src="{{product.img1}}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="{{product.name}}">
       </a>
       <div class="card-body">
-        <h5>{{product.name}} <small class="text-muted">({{product.id}})</small>
+        {{#if product.brand}}<h6>{{product.brand}}</h6>{{/if}}
+        <h6>{{product.name}} <small class="text-muted">({{product.id}})</small>
           <a href="//t.me/RzkCrimeaBot?start=o_{{object.id}}_p_{{product.id}}" target="_blank" class="ps-1 text-decoration-none">
             <i class="bi bi-telegram"></i>
           </a>
-        </h5>
+        </h6>
       </div>
       <div class="card-footer">
         <h3>

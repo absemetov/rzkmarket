@@ -43,24 +43,25 @@ const renderHits = async (renderOptions, isFirstRender) => {
             `<div class="col">
               <div class="card text-center h-100">
                 <a href="/o/${item.sellerId}/p/${item.productId}">
-                  <img src="${item.img1 ? item.img1 : "/icons/flower3.svg"}" onerror="this.src = "/icons/photo_error.svg";" class="card-img-top" alt="${item.name}">
+                  <img src="${item.img1 ? item.img1 : "https://rzk.com.ru/icons/flower3.svg"}" onerror="this.src = "/icons/photo_error.svg";" class="card-img-top" alt="${item.name}">
                 </a>
                 <div class="card-body">
+                  ${item.brand ? "<h6>" + item.brand + "</h6>" : ""}
                   <h6>
                     <a href="/o/${item.sellerId}/p/${item.productId}">${highlight({attribute: "name", hit: item})}</a> <small class="text-muted">(${item.productId})</small>
                     <a href="//t.me/RzkMarketBot?start=o_${item.sellerId}_p_${item.productId}" target="_blank" class="ps-1 text-decoration-none">
                       <i class="bi bi-telegram"></i>
                     </a>
                   </h6>
+                  <h6>${item.seller}</h6>
                 </div>
                 <div class="card-footer">
-                  <h6>${item.seller}</h6>
                   <div class="d-grid gap-2">
                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal"
                     data-product-id="${item.productId}"
                     data-product-name="${item.name}"
-                    data-product-img1="${item.img1 ? item.img1 : "/icons/flower3.svg"}"
-                    data-product-img2="${item.img2 ? item.img2 : "/icons/flower3.svg"}"
+                    data-product-brand="${item.brand}"
+                    data-product-img2="${item.img2 ? item.img2 : "https://rzk.com.ru/icons/flower3.svg"}"
                     data-seller="${item.seller}"
                     data-seller-id="${item.sellerId}">Просмотр</button>
                   </div>
