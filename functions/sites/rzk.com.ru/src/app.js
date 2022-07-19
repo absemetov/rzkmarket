@@ -44,7 +44,7 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
     modalBody.innerHTML = `<div class="card text-center h-100">
       <img src="${productImg2}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="${productName}">
       <div class="card-body">
-        ${productBrand ? "<h6>" + productBrand + "</h6>" : ""}
+        ${productBrand !== "undefined" ? "<h6>" + productBrand + "</h6>" : ""}
         <h6>
           <a href="/o/${sellerId}/p/${productId}">${productName}</a> <small class="text-muted">(${productId})</small>
           <a href="//t.me/RzkMarketBot?start=o_${sellerId}_p_${productId}" target="_blank" class="ps-1 text-decoration-none">

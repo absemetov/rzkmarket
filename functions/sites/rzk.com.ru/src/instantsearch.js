@@ -228,14 +228,9 @@ const renderRefinementList = (renderOptions, isFirstRender) => {
     input.classList.add("form-control");
     input.placeholder = widgetParams.searchablePlaceholder;
     const div = document.createElement("div");
-    div.classList.add("list-group");
-    div.classList.add("list-group-flush");
-    div.classList.add("pt-2");
+    div.classList.add("list-group", "list-group-flush", "pt-2");
     const button = document.createElement("button");
-    button.classList.add("btn");
-    button.classList.add("btn-info");
-    button.textContent = "Show more";
-
+    button.classList.add("btn", "btn-primary", "mt-2");
     input.addEventListener("input", (event) => {
       searchForItems(event.currentTarget.value);
     });
@@ -280,7 +275,7 @@ const renderRefinementList = (renderOptions, isFirstRender) => {
   if (canToggleShowMore) {
     button.classList.remove("d-none");
   }
-  button.textContent = isShowingMore ? "Show less" : "Show more";
+  button.textContent = isShowingMore ? "Свернуть" : "Развернуть";
 };
 
 // create custom widget
@@ -394,7 +389,7 @@ search.addWidgets([
   customRefinementList({
     container: document.querySelector("#refinement-list-brand"),
     attribute: "brand",
-    searchablePlaceholder: "Search by brand",
+    searchablePlaceholder: "Поиск бренда",
     showMore: true,
     limit: 5,
     showMoreLimit: 10,
@@ -402,7 +397,7 @@ search.addWidgets([
   customRefinementList({
     container: document.querySelector("#refinement-list-subcategory"),
     attribute: "subCategory",
-    searchablePlaceholder: "Search by subCategory",
+    searchablePlaceholder: "Поиск категории",
     showMore: true,
     limit: 5,
     showMoreLimit: 10,
@@ -410,7 +405,7 @@ search.addWidgets([
   customRefinementList({
     container: document.querySelector("#refinement-list-seller"),
     attribute: "seller",
-    searchablePlaceholder: "Search by seller",
+    searchablePlaceholder: "Поиск продавца",
     showMore: true,
     limit: 5,
     showMoreLimit: 10,
