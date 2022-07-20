@@ -15,6 +15,12 @@ export const INSTANT_SEARCH_INDEX_NAME = "products";
 export const INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE = "categories.lvl0";
 const instantSearchRouter = historyRouter();
 
+import i18n from "./i18n";
+
+const addButton1 = document.getElementById("addToCart");
+const lang = addButton1.getAttribute("data-lang");
+console.log(i18n[lang].hello);
+
 export const search = instantsearch({
   searchClient,
   indexName: INSTANT_SEARCH_INDEX_NAME,
@@ -63,7 +69,7 @@ const renderHits = async (renderOptions, isFirstRender) => {
                     data-product-brand="${item.brand}"
                     data-product-img2="${item.img2 ? item.img2 : "https://rzk.com.ru/icons/flower3.svg"}"
                     data-seller="${item.seller}"
-                    data-seller-id="${item.sellerId}">Просмотр</button>
+                    data-seller-id="${item.sellerId}">${i18n[lang].hello}</button>
                   </div>
                 </div>
               </div>

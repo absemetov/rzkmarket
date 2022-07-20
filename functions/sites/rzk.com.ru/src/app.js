@@ -7,6 +7,11 @@ import "bootstrap/js/dist/collapse";
 import "bootstrap/js/dist/dropdown";
 import "bootstrap/js/dist/alert";
 import SmartPhoto from "smartphoto";
+import i18n from "./i18n";
+
+const addButton1 = document.getElementById("addToCart");
+const lang = addButton1.getAttribute("data-lang");
+console.log(i18n[lang].hello);
 
 search.start();
 startAutocomplete();

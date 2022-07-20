@@ -24,6 +24,9 @@ const i18n = new TelegrafI18n({
 });
 const i18nRu = i18n.createContext("ru");
 const i18nUk = i18n.createContext("uk");
+const i18nJSON = require("./src/i18n");
+console.log(process.env.BOT_LANG);
+console.log(typeof i18nJSON);
 // require("moment/locale/ru");
 // moment.locale("ru");
 const app = express();
