@@ -13,6 +13,17 @@ const Validator = require("validatorjs");
 const busboy = require("busboy");
 const moment = require("moment");
 const cors = require("cors");
+const TelegrafI18n = require("telegraf-i18n");
+const path = require("path");
+const i18n = new TelegrafI18n({
+  directory: path.resolve(__dirname, "locales"),
+  templateData: {
+    pluralize: TelegrafI18n.pluralize,
+    uppercase: (value) => value.toUpperCase(),
+  },
+});
+const i18nRu = i18n.createContext("ru");
+const i18nUk = i18n.createContext("uk");
 // require("moment/locale/ru");
 // moment.locale("ru");
 const app = express();
@@ -57,6 +68,10 @@ app.get("/", auth, async (req, res) => {
       object.img2 = "/icons/shop.svg";
     }
   }
+  i18n.loadLocale("ru", {greeting1: "Hello!"});
+  console.log(i18nRu);
+  console.log(i18nRu.t("greeting", {name: "Nadir"}));
+  console.log(i18nUk.t("hello"));
   res.render("index", {objects, user: req.user, currencyName: process.env.BOT_CURRENCY});
 });
 

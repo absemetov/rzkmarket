@@ -1,0 +1,4 @@
+greeting: Привет ${uppercase(name)}!
+cart: В вашей корзине ${pluralize(apples, 'яблоко', 'яблокa', 'яблок')}
+hello: Привет
+test: Как дела

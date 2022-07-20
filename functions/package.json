@@ -57,6 +57,7 @@
     "moment": "^2.29.1",
     "smartphoto": "^1.6.4",
     "telegraf": "^4.7.0",
+    "telegraf-i18n": "^6.6.0",
     "validatorjs": "^3.22.1"
   },
   "devDependencies": {
