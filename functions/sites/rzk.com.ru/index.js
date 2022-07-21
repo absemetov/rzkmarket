@@ -15,6 +15,7 @@ const moment = require("moment");
 const cors = require("cors");
 const TelegrafI18n = require("telegraf-i18n");
 const path = require("path");
+// locale
 const i18n = new TelegrafI18n({
   directory: path.resolve(__dirname, "locales"),
   templateData: {
@@ -22,13 +23,14 @@ const i18n = new TelegrafI18n({
     uppercase: (value) => value.toUpperCase(),
   },
 });
-const i18nRu = i18n.createContext("ru");
-const i18nUk = i18n.createContext("uk");
-const i18nJSON = require("./src/i18n");
-console.log(process.env.BOT_LANG);
-console.log(typeof i18nJSON);
-// require("moment/locale/ru");
-// moment.locale("ru");
+const i18nContext = i18n.createContext(process.env.BOT_LANG);
+// site env
+const envSite = {
+  lang: process.env.BOT_LANG,
+  currency: process.env.BOT_CURRENCY,
+  i18n: i18nContext.repository[process.env.BOT_LANG],
+  gtag: process.env.SITE_GTAG
+};
 const app = express();
 app.use(cors({origin: true}));
 app.use(cookieParser());
@@ -54,6 +56,7 @@ const auth = (req, res, next) => {
     req.user.auth = false;
     req.user.uid = null;
   }
+  envSite.user = req.user;
   return next();
 };
 
@@ -71,11 +74,7 @@ app.get("/", auth, async (req, res) => {
       object.img2 = "/icons/shop.svg";
     }
   }
-  i18n.loadLocale("ru", {greeting1: "Hello!"});
-  console.log(i18nRu);
-  console.log(i18nRu.t("greeting", {name: "Nadir"}));
-  console.log(i18nUk.t("hello"));
-  res.render("index", {objects, user: req.user, currencyName: process.env.BOT_CURRENCY});
+  res.render("index", {objects, envSite});
 });
 
 // search products
@@ -107,7 +106,7 @@ app.get("/o/:objectId", auth, async (req, res) => {
     }
     // Set Cache-Control
     // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
-    res.render("object", {title: object.name, object, user: req.user, currencyName: process.env.BOT_CURRENCY});
+    res.render("object", {title: object.name, object, envSite});
   } else {
     return res.redirect("/");
   }

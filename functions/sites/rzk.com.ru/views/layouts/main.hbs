@@ -1,24 +1,23 @@
 <!doctype html>
-  <html lang="ru">
+  <html lang="{{envSite.lang}}">
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <link rel="stylesheet" href="/dist/index.7a20371f.css">
       <script type="module" src="/dist/index.8fccab75.js"></script>
-      <title>{{#if title}}{{title}} - {{/if}}Маркетплейс RZK Маркет Крым: купить элетротовары, кабель, провод, автоматика, лампы в Крыму</title>
-      <link rel="icon" href="/logo.svg">
-      <meta name="description" content="{{#if description}}{{description}}{{else}}Маркетплейс RZK Маркет Крым: кабель, провод, розетки, выключатели,
-      автоматика. ✓ Доставка по всему Крыму $ Выгодные цены и скидки %{{/if}}">
-      <meta name="keywords" content="{{keywords}}, rzk маркет крым, rzk, надир абсеметов">
+      <title>{{#if title}}{{title}} - {{/if}}{{envSite.i18n.siteTitle}}</title>
+      <link rel="icon" href="/logo/logo.svg">
+      <meta name="description" content="{{#if description}}{{description}}{{else}}{{envSite.i18n.siteDesc}}{{/if}}">
+      <meta name="keywords" content="{{keywords}}, {{envSite.i18n.siteKeywords}}">
       <meta name="robots" content="index,follow">
-      <meta name="author" content="Nadir Absemetov">
+      <meta name="author" content="Nadir Absemetov - absemetov.org.ua">
       <!-- Global site tag (gtag.js) - Google Analytics -->
-      <script async src="https://www.googletagmanager.com/gtag/js?id=G-9TD3C9HNSL"></script>
+      <script async src="https://www.googletagmanager.com/gtag/js?id={{envSite.gtag}}"></script>
       <script>
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-9TD3C9HNSL');
+        gtag("js", new Date());
+        gtag("config", "{{envSite.gtag}}");
       </script>
     </head>
     <body>
@@ -28,17 +27,17 @@
             <span class="navbar-toggler-icon"></span>
           </button>
           <a class="d-none d-md-inline px-2" href="/">
-            <img src="/logo-long.svg" alt="" width="" height="40">
+            <img src="/logo/logo-long-{{envSite.lang}}.svg" alt="{{envSite.i18n.siteName}}" width="" height="40">
           </a>
           <a class="d-inline d-md-none px-2" href="/">
-            <img src="/logo.svg" alt="" width="" height="40">
+            <img src="/logo.svg" alt="{{envSite.i18n.siteName}}" width="" height="40">
           </a>
           <div id="autocomplete" class="w-100"></div>
           {{#if object.id}}
             <ul class="navbar-nav me-2">
               <li class="nav-item"></li>
                 <a class="text-nowrap nav-link{{#if cart}} active{{/if}} position-relative" href="/o/{{object.id}}/cart">
-                  <i class="bi bi-cart3"></i> <strong id="totalSumNav">{{object.cartInfo.totalSum}} {{currencyName}}</strong>
+                  <i class="bi bi-cart3"></i> <strong id="totalSumNav">{{object.cartInfo.totalSum}} {{envSite.currency}}</strong>
                   <span id="cartCountNav" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger mt-1">
                     {{object.cartInfo.cartCount}}
                     <span class="visually-hidden">count goods</span>
@@ -51,17 +50,15 @@
       </nav>
       <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
         <div class="offcanvas-header">
-          <h5 class="offcanvas-title" id="offcanvasNavbarLabel">RZK Маркет Крым</h5>
+          <h5 class="offcanvas-title" id="offcanvasNavbarLabel">{{envSite.i18n.siteName}}</h5>
           <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body">
-          <p class="lead">RZK Маркет Крым - это маркетплейс, здесь можно купить товары по выгодным ценам напрямую со склада.
-            Мы полностью контролируем процесс обработки заказа.
-            С нами легко, быстро и удобно!
+          <p class="lead">{{envSite.i18n.desc}}
           </p>
           <nav class="nav flex-column">
-            {{#if user.auth}}
-              <a class="nav-link" href="/login">{{user.firstName}}</a>
+            {{#if envSite.user.auth}}
+              <a class="nav-link" href="/login">{{envSite.user.firstName}}</a>
             {{else}}
               <a class="nav-link" href="/login">Войти</a>
             {{/if}}
@@ -197,7 +194,7 @@
               </div>
               <div class="modal-footer">
                 <button type="button" id="deleteFromCart" class="btn btn-danger">Удалить</button>
-                <button type="submit" id="addToCart" class="btn btn-primary" data-object-currencyName="{{currencyName}}">Купить</button>
+                <button type="submit" id="addToCart" class="btn btn-primary" data-object-currencyName="{{envSite.currency}}">Купить</button>
               </div>
             </form>
           </div>
