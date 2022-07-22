@@ -1,6 +1,8 @@
 {
 "ru": {
-  "hello": "Привет"
+  "hello": "Привет",
+  "ALGOLIA_ID": "YZIFWJVE7R",
+  "ALGOLIA_SEARCH_KEY": "a56bd432142fc9813846fa737167eeef"
 },
 "uk": {
   "hello": "Привіт",
