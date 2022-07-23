@@ -7,10 +7,10 @@ import "bootstrap/js/dist/collapse";
 import "bootstrap/js/dist/dropdown";
 import "bootstrap/js/dist/alert";
 import SmartPhoto from "smartphoto";
-import i18n from "./i18n";
 
+import i18nContext from "./i18n";
 const lang = document.getElementById("addToCart").dataset.lang;
-console.log(i18n[lang].hello);
+const i18n = i18nContext[lang];
 
 search.start();
 startAutocomplete();
@@ -58,12 +58,13 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
         <h6>${seller}</h6>
       </div>
       <div class="card-footer">
-        <span class="placeholder col-7"></span>
-        <span class="placeholder col-4"></span>
-        <span class="placeholder col-4"></span>
-        <span class="placeholder col-6"></span>
-        <span class="placeholder col-8"></span>
-        <a href="#" tabindex="-1" class="btn btn-primary disabled placeholder col-6"></a>
+        <h3>
+          <span class="placeholder">111</span><small class="text-muted">${currency}</small>
+        </h3>
+        <div class="d-grid gap-2">
+          <a href="#" tabindex="-1" class="btn btn-success disabled placeholder"></a>
+          <a href="#" tabindex="-1" class="btn btn-primary disabled placeholder mt-2"></a>
+        </div>
       </div>
     </div>`;
     // modalFooter.innerHTML = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -96,7 +97,7 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
               data-product-qty="${product.qty ? product.qty : 0}"
               data-seller-id="${sellerId}"
               data-modal-close="true">
-              ${product.qty ? product.qty + product.unit + " " + product.sum + currency : "Купить"}
+              ${product.qty ? product.qty + product.unit + " " + product.sum + currency : i18n.btn_buy}
             </button>
             <a href="/o/${sellerId}/cart"  class="btn btn-primary position-relative mt-2" role="button">
               Корзина <strong id="totalSumNavAlg">${product.cartInfo.totalSum}${currency}</strong>
@@ -106,10 +107,6 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
               </span>
             </a>
           </div>`;
-    // const cartCountNavAlg = document.getElementById("cartCountNavAlg");
-    // const totalSumNavAlg = document.getElementById("totalSumNavAlg");
-    // cartCountNavAlg.innerText = product.cartInfo.cartCount;
-    // totalSumNavAlg.innerText = `${product.cartInfo.totalSum} ${currencyName}`;
   }
 });
 

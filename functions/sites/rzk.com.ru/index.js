@@ -29,7 +29,7 @@ const envSite = {
   lang: process.env.BOT_LANG,
   currency: process.env.BOT_CURRENCY,
   i18n: i18nContext.repository[process.env.BOT_LANG],
-  gtag: process.env.SITE_GTAG
+  gtag: process.env.SITE_GTAG,
 };
 const app = express();
 app.use(cors({origin: true}));

@@ -3,6 +3,10 @@ import {createLocalStorageRecentSearchesPlugin} from "@algolia/autocomplete-plug
 import {createQuerySuggestionsPlugin} from "@algolia/autocomplete-plugin-query-suggestions";
 import {setInstantSearchUiState, getInstantSearchUiState, INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE, searchPanel} from "./instantsearch";
 import {searchClient} from "./searchClient";
+
+import i18nContext from "./i18n";
+const lang = document.getElementById("addToCart").dataset.lang;
+const i18n = i18nContext[lang];
 // recent search
 const recentSearchesPlugin = createLocalStorageRecentSearchesPlugin({
   key: "navbar",
@@ -69,7 +73,7 @@ export function startAutocomplete() {
     debug: false,
     container: "#autocomplete",
     openOnFocus: true,
-    placeholder: "Поиск",
+    placeholder: i18n.a_search,
     initialState: {
       query: searchPageState.query || "",
     },
@@ -147,7 +151,7 @@ export function startAutocomplete() {
           },
           templates: {
             header() {
-              return "Products";
+              return i18n.a_products;
             },
             item({item, html, components}) {
               return html`<div class="aa-ItemWrapper">
@@ -219,7 +223,7 @@ export function startAutocomplete() {
           },
           templates: {
             header() {
-              return "Catalogs";
+              return i18n.a_catalogs;
             },
             item({item, html, components}) {
               return html`<div class="aa-ItemWrapper">

@@ -15,11 +15,9 @@ export const INSTANT_SEARCH_INDEX_NAME = "products";
 export const INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE = "categories.lvl0";
 const instantSearchRouter = historyRouter();
 
-import i18n from "./i18n";
-
-const addButton1 = document.getElementById("addToCart");
-const lang = addButton1.getAttribute("data-lang");
-console.log(i18n[lang].hello);
+import i18nContext from "./i18n";
+const lang = document.getElementById("addToCart").dataset.lang;
+const i18n = i18nContext[lang];
 
 export const search = instantsearch({
   searchClient,
@@ -30,11 +28,6 @@ const virtualSearchBox = connectSearchBox((renderOptions, isFirstRender) => {
   const {isSearchStalled} = renderOptions;
   const loadingIndicator = document.querySelector("#loading-indicator");
   const hitsPage = document.getElementById("hits");
-  // if (isSearchStalled) {
-  //   hitsPage.classList.add("d-none");
-  // } else {
-  //   hitsPage.classList.remove("d-none");
-  // }
   hitsPage.hidden = isSearchStalled;
   loadingIndicator.hidden = !isSearchStalled;
 });
@@ -69,7 +62,7 @@ const renderHits = async (renderOptions, isFirstRender) => {
                     data-product-brand="${item.brand}"
                     data-product-img2="${item.img2 ? item.img2 : "https://rzk.com.ru/icons/flower3.svg"}"
                     data-seller="${item.seller}"
-                    data-seller-id="${item.sellerId}">${i18n[lang].hello}</button>
+                    data-seller-id="${item.sellerId}">${i18n.btn_show}</button>
                   </div>
                 </div>
               </div>
@@ -105,7 +98,7 @@ const renderPagination = (renderOptions, isFirstRender) => {
                 href="${createURL(0)}"
                 data-value="${0}"
               >
-                First
+                ${i18n.a_pag_first}
               </a>
             </li>
             <li class="page-item">
@@ -113,12 +106,11 @@ const renderPagination = (renderOptions, isFirstRender) => {
                 href="${createURL(currentRefinement - 1)}"
                 data-value="${currentRefinement - 1}"
               >
-                Previous
+                ${i18n.a_pag_previous}
               </a>
             </li>
             ` :
-          ""
-}
+          ""}
       ${pages.map(
       (page) => `
         <li class="page-item ${currentRefinement === page ? "active" : ""}">
@@ -139,7 +131,7 @@ const renderPagination = (renderOptions, isFirstRender) => {
                   href="${createURL(currentRefinement + 1)}"
                   data-value="${currentRefinement + 1}"
                 >
-                  Next
+                ${i18n.a_pag_next}
                 </a>
               </li>
               <li class="page-item">
@@ -147,7 +139,7 @@ const renderPagination = (renderOptions, isFirstRender) => {
                   href="${createURL(nbPages - 1)}"
                   data-value="${nbPages - 1}"
                 >
-                  Last
+                ${i18n.a_pag_last}
                 </a>
               </li>
               ` : ""
@@ -281,7 +273,7 @@ const renderRefinementList = (renderOptions, isFirstRender) => {
   if (canToggleShowMore) {
     button.classList.remove("d-none");
   }
-  button.textContent = isShowingMore ? "Свернуть" : "Развернуть";
+  button.textContent = isShowingMore ? i18n.btn_ref_hide : i18n.btn_ref_show;
 };
 
 // create custom widget
@@ -306,7 +298,7 @@ const renderBreadcrumb = (renderOptions, isFirstRender) => {
   widgetParams.container.innerHTML = `
     <ol class="breadcrumb">
       <li class="breadcrumb-item">
-        <a href="/search" data-value="default">Поиск</a>
+        <a href="/search" data-value="default">${i18n.a_search}</a>
       </li>
       ${items.map((item) =>
     renderBreadcrumbItem({
@@ -395,7 +387,7 @@ search.addWidgets([
   customRefinementList({
     container: document.querySelector("#refinement-list-brand"),
     attribute: "brand",
-    searchablePlaceholder: "Поиск бренда",
+    searchablePlaceholder: i18n.placehold_brand,
     showMore: true,
     limit: 5,
     showMoreLimit: 10,
@@ -403,7 +395,7 @@ search.addWidgets([
   customRefinementList({
     container: document.querySelector("#refinement-list-subcategory"),
     attribute: "subCategory",
-    searchablePlaceholder: "Поиск категории",
+    searchablePlaceholder: i18n.placehold_cat,
     showMore: true,
     limit: 5,
     showMoreLimit: 10,
@@ -411,7 +403,7 @@ search.addWidgets([
   customRefinementList({
     container: document.querySelector("#refinement-list-seller"),
     attribute: "seller",
-    searchablePlaceholder: "Поиск продавца",
+    searchablePlaceholder: i18n.placehold_seller,
     showMore: true,
     limit: 5,
     showMoreLimit: 10,
