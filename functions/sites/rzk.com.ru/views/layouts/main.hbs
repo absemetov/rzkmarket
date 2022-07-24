@@ -3,8 +3,8 @@
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
-      <link rel="stylesheet" href="/dist/index.7a20371f.css">
-      <script type="module" src="/dist/index.8fccab75.js"></script>
+      <link rel="stylesheet" href="/dist/index.4bb70a15.css">
+      <script type="module" src="/dist/index.88385f71.js"></script>
       <title>{{#if title}}{{title}} - {{/if}}{{envSite.i18n.siteTitle}}</title>
       <link rel="icon" href="/logo/logo.svg">
       <meta name="description" content="{{#if description}}{{description}}{{else}}{{envSite.i18n.siteDesc}}{{/if}}">
@@ -60,19 +60,19 @@
             {{#if envSite.user.auth}}
               <a class="nav-link" href="/login">{{envSite.user.firstName}}</a>
             {{else}}
-              <a class="nav-link" href="/login">Войти</a>
+              <a class="nav-link" href="/login">{{envSite.i18n.aLogin}}</a>
             {{/if}}
-            <a class="nav-link" href="/delivery-info">Доставка и оплата</a>
-            <a class="nav-link" href="/return-policy">Обмен и возврат</a>
-            <a class="nav-link" href="//maps.app.goo.gl/F46h38LnK3Dq3jC7A">Оставить отзыв</a>
-            <a class="nav-link" href="tel:+79788986431">+7 978 89 86 431</a>
-            <a class="nav-link text-decoration-none" href="//t.me/RzkCrimeaBot?start=fromsite">
+            <a class="nav-link" href="/delivery-info">{{envSite.i18n.aDelivery}}</a>
+            <a class="nav-link" href="/return-policy">{{envSite.i18n.aReturn}}</a>
+            <a class="nav-link" href="//maps.app.goo.gl/F46h38LnK3Dq3jC7A">{{envSite.i18n.aReview}}</a>
+            <a class="nav-link" href="tel:{{envSite.siteTel}}">{{envSite.siteTel}}</a>
+            <a class="nav-link text-decoration-none" href="//t.me/{{envSite.botName}}?start=fromsite">
               <i class="bi bi-telegram"></i>
-              @RzkCrimeaBot
+              @{{envSite.botName}}
             </a>
-            <a class="nav-link disabled" href="https://github.com/absemetov/rzk-com-ua">rzk-warsaw-ru v.2.0.0 © 2022</a>
             <a class="nav-link" href="//absemetov.org.ua/">Nadir Absemetov</a>
-          </nav>
+            <a class="nav-link disabled" href="https://github.com/absemetov/rzk-com-ua">RZK Market v.2.0.0 © 2022</a>
+            </nav>
         </div>
       </div>
       <div class="container d-none pt-2" id="search">
@@ -168,7 +168,7 @@
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title" id="productModalLabel">Просмотр</h5>
+              <h5 class="modal-title" id="productModalLabel">{{envSite.i18n.modalShowTitle}}</h5>
               <button id="fullscreen" type="button" class="btn btn-outline-secondary ms-2"><i class="bi bi-arrows-fullscreen"></i></button>
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>

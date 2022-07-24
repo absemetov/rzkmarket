@@ -2,14 +2,21 @@
 "ru": {
   "ALGOLIA_ID": "YZIFWJVE7R",
   "ALGOLIA_SEARCH_KEY": "a56bd432142fc9813846fa737167eeef",
+  "btn_buy": "Купить",
   "btn_show": "Просмотр",
   "btn_ref_show": "Развернуть",
   "btn_ref_hide": "Свернуть",
+  "btn_cart": "Корзина",
   "a_search": "Поиск",
+  "a_products": "Товары",
+  "a_catalogs": "Каталоги",
   "a_pag_first": "Первая",
   "a_pag_previous": "Предыдущая",
   "a_pag_next": "Следующая",
-  "a_pag_last": "Последняя"
+  "a_pag_last": "Последняя",
+  "placehold_brand": "Поиск бренда",
+  "placehold_cat": "Поиск категории",
+  "placehold_seller": "Поиск продавца"
 },
 "uk": {
   "ALGOLIA_ID": "YZIFWJVE7R",
@@ -18,6 +25,7 @@
   "btn_show": "Переглянути",
   "btn_ref_show": "Розгорнути",
   "btn_ref_hide": "Згорнути",
+  "btn_cart": "Кошик",
   "a_search": "Пошук",
   "a_products": "Товари",
   "a_catalogs": "Каталоги",

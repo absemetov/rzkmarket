@@ -30,6 +30,8 @@ const envSite = {
   currency: process.env.BOT_CURRENCY,
   i18n: i18nContext.repository[process.env.BOT_LANG],
   gtag: process.env.SITE_GTAG,
+  botName: process.env.BOT_NAME,
+  siteTel: process.env.BOT_PHONETEMPLATE,
 };
 const app = express();
 app.use(cors({origin: true}));
@@ -88,7 +90,7 @@ app.get("/search", auth, async (req, res) => {
   //   page,
   //   hitsPerPage: 40,
   // });
-  res.render("search", {user: req.user, currencyName: process.env.BOT_CURRENCY});
+  res.render("search", {envSite});
 });
 
 // show object
@@ -277,8 +279,7 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
     products,
     tags,
     prevNextLinks,
-    user: req.user,
-    currencyName: process.env.BOT_CURRENCY,
+    envSite,
   });
 });
 
@@ -348,8 +349,7 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
     object,
     product,
     photos,
-    user: req.user,
-    currencyName: process.env.BOT_CURRENCY,
+    envSite,
   });
 });
 
@@ -393,7 +393,7 @@ app.get("/o/:objectId/s/:orderId", auth, async (req, res) => {
       products,
       totalQty,
       totalSum: roundNumber(totalSum),
-      currencyName: process.env.BOT_CURRENCY,
+      envSite,
     });
   }
   res.send("Order not found");
@@ -432,13 +432,32 @@ app.get("/o/:objectId/share-cart/:orderId", auth, async (req, res) => {
       products,
       totalQty,
       totalSum: roundNumber(totalSum),
-      currencyName: process.env.BOT_CURRENCY,
+      envSite,
     });
   }
   res.send("Cart not found");
 });
 
 // login with telegram
+// We'll destructure req.query to make our code clearer
+const checkSignature = ({hash, ...userData}) => {
+  // create a hash of a secret that both you and Telegram know. In this case, it is your bot token
+  const secretKey = createHash("sha256")
+      .update(process.env.BOT_TOKEN)
+      .digest();
+  // this is the data to be authenticated i.e. telegram user id, first_name, last_name etc.
+  const dataCheckString = Object.keys(userData)
+      .sort()
+      .map((key) => (`${key}=${userData[key]}`))
+      .join("\n");
+  // run a cryptographic hash function over the data to be authenticated and the secret
+  const hmac = createHmac("sha256", secretKey)
+      .update(dataCheckString)
+      .digest("hex");
+  // compare the hash that you calculate on your side (hmac) with what Telegram sends you (hash) and return the result
+  return hmac === hash;
+};
+
 app.get("/login/:objectId?", auth, async (req, res) => {
   const objectId = req.params.objectId;
   // redirect params
@@ -489,7 +508,7 @@ app.get("/login/:objectId?", auth, async (req, res) => {
   // data is not authenticated
   // Set Cache-Control
   // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
-  res.render("login", {user: req.user, redirectPage});
+  res.render("login", {envSite, redirectPage});
 });
 
 app.get("/logout", auth, (req, res) => {
@@ -551,8 +570,7 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
     title,
     object,
     products,
-    user: req.user,
-    currencyName: process.env.BOT_CURRENCY,
+    envSite,
   });
 });
 
@@ -566,12 +584,11 @@ app.get("/o/:objectId/cart/purchase", auth, async (req, res) => {
   res.render("purchase", {
     title,
     object,
-    user: req.user,
     phoneregexp: process.env.BOT_PHONEREGEXP,
     phonetemplate: process.env.BOT_PHONETEMPLATE,
     carriers: Array.from(store.carriers(), ([id, obj]) => ({id, name: obj.name, reqNumber: obj.reqNumber ? 1 : 0})),
     payments: Array.from(store.payments(), ([id, name]) => ({id, name})),
-    currencyName: process.env.BOT_CURRENCY,
+    envSite,
   });
 });
 
@@ -723,25 +740,6 @@ app.use(function(req, res, next) {
   console.log("** HTTP Error - 404 for request: " + req.url);
   res.redirect("/");
 });
-
-// We'll destructure req.query to make our code clearer
-const checkSignature = ({hash, ...userData}) => {
-  // create a hash of a secret that both you and Telegram know. In this case, it is your bot token
-  const secretKey = createHash("sha256")
-      .update(process.env.BOT_TOKEN)
-      .digest();
-  // this is the data to be authenticated i.e. telegram user id, first_name, last_name etc.
-  const dataCheckString = Object.keys(userData)
-      .sort()
-      .map((key) => (`${key}=${userData[key]}`))
-      .join("\n");
-  // run a cryptographic hash function over the data to be authenticated and the secret
-  const hmac = createHmac("sha256", secretKey)
-      .update(dataCheckString)
-      .digest("hex");
-  // compare the hash that you calculate on your side (hmac) with what Telegram sends you (hash) and return the result
-  return hmac === hash;
-};
 
 // config GCP
 const runtimeOpts = {

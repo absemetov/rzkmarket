@@ -100,7 +100,7 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
               ${product.qty ? product.qty + product.unit + " " + product.sum + currency : i18n.btn_buy}
             </button>
             <a href="/o/${sellerId}/cart"  class="btn btn-primary position-relative mt-2" role="button">
-              Корзина <strong id="totalSumNavAlg">${product.cartInfo.totalSum}${currency}</strong>
+              ${i18n.btn_cart} <strong id="totalSumNavAlg">${product.cartInfo.totalSum}${currency}</strong>
               <span id="cartCountNavAlg" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                 ${product.cartInfo.cartCount}
                 <span class="visually-hidden">count goods</span>
