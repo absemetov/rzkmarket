@@ -1,8 +1,8 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="/">Торговые объекты</a></li>
+    <li class="breadcrumb-item"><a href="/">{{envSite.i18n.aObjects}}</a></li>
     <li class="breadcrumb-item"><a href="/o/{{object.id}}">{{object.name}}</a></li>
-    <li class="breadcrumb-item"><a href="/o/{{object.id}}/c">Каталог товаров</a></li>
+    <li class="breadcrumb-item"><a href="/o/{{object.id}}/c">{{envSite.i18n.aCatGoods}}</a></li>
     {{#if currentCatalog}}
       {{#if currentCatalog.parentId}}
         <li class="breadcrumb-item">
@@ -33,7 +33,7 @@
       {{#each tags as |tag|}}
         {{#if tag.active}}
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/o/{{../object.id}}/c/{{../currentCatalog.id}}">Все товары</a></li>
+          <li><a class="dropdown-item" href="/o/{{../object.id}}/c/{{../currentCatalog.id}}">{{envSite.i18n.aAllGoods}}</a></li>
         {{/if}}
       {{/each}}
     </ul>
@@ -86,7 +86,7 @@
               <button type="button" class="btn {{#if product.qty}}btn-success{{else}}btn-primary{{/if}}" data-bs-toggle="modal" data-bs-target="#cartAddModal"
                 data-product-id="{{product.id}}" data-product-name="{{product.name}}" data-product-unit="{{product.unit}}" data-product-qty="{{product.qty}}"
                 data-seller-id="{{../object.id}}">
-                {{#if product.qty}}{{product.qty}}{{product.unit}} {{product.sum}}{{../envSite.currency}}{{else}}Купить{{/if}}
+                {{#if product.qty}}{{product.qty}}{{product.unit}} {{product.sum}}{{../envSite.currency}}{{else}}{{envSite.i18n.btnBuy}}{{/if}}
               </button>
             </div>
           </div>

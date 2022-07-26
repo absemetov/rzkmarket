@@ -1,6 +1,6 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="/">Торговые объекты</a></li>
+    <li class="breadcrumb-item"><a href="/">{{envSite.i18n.aObjects}}</a></li>
     <li class="breadcrumb-item active" aria-current="page">{{object.name}}</li>
   </ol>
 </nav>
@@ -39,7 +39,7 @@
       <div class="card-footer">
         <div class="d-grid gap-2">
           <a href="/o/{{object.id}}/cart"  class="btn btn-primary position-relative mt-2">
-            <i class="bi bi-cart3"></i> {{object.cartInfo.totalSum}} {{currencyName}}
+            <i class="bi bi-cart3"></i> {{object.cartInfo.totalSum}}{{envSite.currency}}
             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
               {{object.cartInfo.cartCount}}
               <span class="visually-hidden">count goods</span>

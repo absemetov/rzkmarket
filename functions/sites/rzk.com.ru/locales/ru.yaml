@@ -10,9 +10,7 @@ aLogin: Войти
 aDelivery: Доставка и оплата
 aReturn: Обмен и возврат
 aReview: Оставить отзыв
+aObjects: Торговые объекты
+aCatGoods: Каталог товаров
+aAllGoods: Все товары
 modalShowTitle: Просмотр
-
-greeting: Привет ${uppercase(name)}!
-cart: В вашей корзине ${pluralize(apples, 'яблоко', 'яблокa', 'яблок')}
-hello: Привет
-test: Как дела
