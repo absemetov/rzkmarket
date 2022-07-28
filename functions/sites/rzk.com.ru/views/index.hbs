@@ -37,7 +37,7 @@
         <div class="card-footer">
           <div class="d-grid gap-2">
             <a href="/o/{{object.id}}/cart"  class=" btn btn-primary position-relative mt-2">
-              <i class="bi bi-cart3"></i> <span class="">{{object.cartInfo.totalSum}}</span> <span class="fs-6">{{../envSite.currency}}</span>
+              <span class="text-nowrap"><i class="bi bi-cart3"></i> {{object.cartInfo.totalSum}} {{../envSite.currency}}</span>
               <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                 {{object.cartInfo.cartCount}}
                 <span class="visually-hidden">count goods</span>

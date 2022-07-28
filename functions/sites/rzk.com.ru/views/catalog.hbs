@@ -61,37 +61,7 @@
   {{/if}}
   {{#if products}}
     {{#each products as |product|}}
-      <div class="col">
-        <div class="card text-center h-100">
-          <a href="{{product.url}}">
-            <img src="{{product.img1}}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="{{product.name}}">
-          </a>
-          <div class="card-body">
-            {{#if product.brand}}<h6>{{product.brand}}</h6>{{/if}}
-            <h6>
-              <a href="{{product.url}}">{{product.name}}</a> <small class="text-muted">({{product.id}})</small>
-              <a href="//t.me/RzkCrimeaBot?start=o_{{../object.id}}_p_{{product.id}}" target="_blank" class="ps-1 text-decoration-none">
-                <i class="bi bi-telegram"></i>
-              </a>
-              <a href="{{product.img2}}" class="js-smartphoto-single" data-caption="{{product.name}}">
-                <img src="/icons/zoom-in.svg" width="24" height="24" class="m-2" alt="zoom img">
-              </a>
-            </h6>
-          </div>
-          <div class="card-footer">
-            <h3>
-              {{product.price}}<small class="text-muted">{{../envSite.currency}}</small>
-            </h3>
-            <div class="d-grid gap-2">
-              <button type="button" class="btn {{#if product.qty}}btn-success{{else}}btn-primary{{/if}}" data-bs-toggle="modal" data-bs-target="#cartAddModal"
-                data-product-id="{{product.id}}" data-product-name="{{product.name}}" data-product-unit="{{product.unit}}" data-product-qty="{{product.qty}}"
-                data-seller-id="{{../object.id}}">
-                {{#if product.qty}}{{product.qty}}{{product.unit}} {{product.sum}}{{../envSite.currency}}{{else}}{{envSite.i18n.btnBuy}}{{/if}}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      {{> product product=product currency=../envSite.currency btnBuy=../envSite.i18n.btnBuy}}
     {{/each}}
   {{/if}}
 </div>

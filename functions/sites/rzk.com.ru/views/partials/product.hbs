@@ -1,0 +1,31 @@
+<div class="col">
+  <div class="card text-center h-100">
+    <a href="{{product.url}}">
+      <img src="{{product.img1}}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="{{product.name}}">
+    </a>
+    <div class="card-body">
+      {{#if product.brand}}<h6>{{product.brand}}</h6>{{/if}}
+      <h6>
+        <a href="{{product.url}}">{{product.name}}</a> <small class="text-muted">({{product.id}})</small>
+        <a href="//t.me/RzkCrimeaBot?start=o_{{../object.id}}_p_{{product.id}}" target="_blank" class="ps-1 text-decoration-none">
+          <i class="bi bi-telegram"></i>
+        </a>
+        <a href="{{product.img2}}" class="js-smartphoto-single" data-caption="{{product.name}}">
+          <img src="/icons/zoom-in.svg" width="24" height="24" class="m-2" alt="zoom img">
+        </a>
+      </h6>
+    </div>
+    <div class="card-footer">
+      <h3>
+        {{product.price}} <small class="text-muted">{{currency}}</small>
+      </h3>
+      <div class="d-grid gap-2">
+        <button type="button" class="btn {{#if product.qty}}btn-success{{else}}btn-primary{{/if}}" data-bs-toggle="modal" data-bs-target="#cartAddModal"
+          data-product-id="{{product.id}}" data-product-name="{{product.name}}" data-product-unit="{{product.unit}}" data-product-qty="{{product.qty}}"
+          data-seller-id="{{product.sellerId}}">
+          {{#if product.qty}}{{product.qty}} {{product.unit}} {{product.sum}} {{currency}}{{else}}{{btnBuy}}{{/if}}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

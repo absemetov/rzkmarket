@@ -86,7 +86,7 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
     const cardFooter = productModalEl.querySelector(".card-footer");
     cardFooter.innerHTML = `
             <h3>
-              ${product.price}<small class="text-muted">${currency}</small>
+              ${product.price} <small class="text-muted">${currency}</small>
             </h3>
             <div class="d-grid gap-2">
             <button type="button" class="btn ${product.qty ? "btn-success" : "btn-primary"}" data-bs-toggle="modal"
@@ -97,10 +97,10 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
               data-product-qty="${product.qty ? product.qty : 0}"
               data-seller-id="${sellerId}"
               data-modal-close="true">
-              ${product.qty ? product.qty + product.unit + " " + product.sum + currency : i18n.btn_buy}
+              ${product.qty ? product.qty + " " + product.unit + " " + product.sum + " " + currency : i18n.btn_buy}
             </button>
             <a href="/o/${sellerId}/cart"  class="btn btn-primary position-relative mt-2" role="button">
-              ${i18n.btn_cart} <strong id="totalSumNavAlg">${product.cartInfo.totalSum}${currency}</strong>
+              ${i18n.btn_cart} <strong id="totalSumNavAlg">${product.cartInfo.totalSum} ${currency}</strong>
               <span id="cartCountNavAlg" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                 ${product.cartInfo.cartCount}
                 <span class="visually-hidden">count goods</span>
@@ -201,7 +201,7 @@ form.addEventListener("submit", async (event) => {
     delButton.disabled = false;
   }
   if (qty) {
-    button.innerText = `${qty}${button.dataset.productUnit} ${roundNumber(qty * resJson.price)}${currency}`;
+    button.innerText = `${qty} ${button.dataset.productUnit} ${roundNumber(qty * resJson.price)} ${currency}`;
     button.setAttribute("data-product-qty", qty);
     button.classList.remove("btn-primary");
     button.classList.add("btn-success");

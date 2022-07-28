@@ -3,8 +3,8 @@
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
-      <link rel="stylesheet" href="/dist/index.f6d1d39d.css">
-      <script type="module" src="/dist/index.d6ac906d.js"></script>
+      <link rel="stylesheet" href="/dist/index.4bb70a15.css">
+      <script type="module" src="/dist/index.af047135.js"></script>
       <title>{{#if title}}{{title}} - {{/if}}{{envSite.i18n.siteTitle}}</title>
       <link rel="icon" href="/favicon.ico">
       <link rel="icon" href="/logo/logo.svg" type="image/svg+xml">
@@ -31,14 +31,14 @@
             <img src="/logo/logo-long-{{envSite.lang}}.svg" alt="{{envSite.i18n.siteName}}" width="" height="40">
           </a>
           <a class="d-inline d-md-none px-2" href="/">
-            <img src="/logo.svg" alt="{{envSite.i18n.siteName}}" width="" height="40">
+            <img src="/logo/logo.svg" alt="{{envSite.i18n.siteName}}" width="" height="40">
           </a>
           <div id="autocomplete" class="w-100"></div>
           {{#if object.id}}
             <ul class="navbar-nav me-2">
               <li class="nav-item"></li>
                 <a class="text-nowrap nav-link{{#if cart}} active{{/if}} position-relative" href="/o/{{object.id}}/cart">
-                  <i class="bi bi-cart3"></i> <strong id="totalSumNav">{{object.cartInfo.totalSum}}{{envSite.currency}}</strong>
+                  <i class="bi bi-cart3"></i> <strong id="totalSumNav">{{object.cartInfo.totalSum}} {{envSite.currency}}</strong>
                   <span id="cartCountNav" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger mt-1">
                     {{object.cartInfo.cartCount}}
                     <span class="visually-hidden">count goods</span>
@@ -55,8 +55,7 @@
           <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body">
-          <p class="lead">{{envSite.i18n.desc}}
-          </p>
+          <p class="lead">{{envSite.i18n.desc}}</p>
           <nav class="nav flex-column">
             {{#if envSite.user.auth}}
               <a class="nav-link" href="/login">{{envSite.user.firstName}}</a>
@@ -200,6 +199,74 @@
             </form>
           </div>
         </div>
+      </div>
+      <!-- Modal purchase -->
+      <div class="modal fade" id="purchaseModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalLabel">Оформить заказ</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <form id="purchase" action="/o/{{object.id}}/cart/purchase">
+                {{#unless user.auth}}
+                  <div id="infoAlert" class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <strong>У вас есть Telegram?</strong> <a href="/login?r={{object.id}}">Войдите через Telegram</a>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                  </div>
+                {{/unless}}
+                <div id="successAlert" class="alert alert-success d-none" role="alert">
+                  <h4 class="alert-heading">Ваш заказ оформлен</h4>
+                  <p><a id="linkOrder" href="#">Ccылка на ваш заказ</a> для просмотра статуса заказа</p>
+                  <hr>
+                  <p class="mb-0">В ближайшее время мы с Вами свяжемся</p>
+                </div>
+                <div class="mb-3">
+                  <label for="lastName" class="form-label">Фамилия получателя</label>
+                  <input type="text" class="form-control" name="lastName" id="lastName" aria-describedby="lastName" required autofocus>
+                </div>
+                <div class="mb-3">
+                  <label for="firstName" class="form-label">Имя получателя</label>
+                  <input type="text" class="form-control" name="firstName" id="firstName" aria-describedby="firstName" required>
+                </div>
+                <div class="mb-3">
+                  <label for="phoneNumber" class="form-label">Моб. номер телефона</label>
+                  <input type="tel" pattern="{{phoneregexp}}" title="{{phonetemplate}}" class="form-control" name="phoneNumber" id="phoneNumber" aria-describedby="phoneNumber" required>
+                </div>
+                <div class="mb-3">
+                  <label for="address" class="form-label">Адрес</label>
+                  <input type="text" class="form-control" name="address" id="address" aria-describedby="address" required>
+                </div>
+                <div class="mb-3">
+                  <label for="carrierId" class="form-label">Способ доставки</label>
+                  <select name="carrierId" id="carrierId" class="form-select" aria-label="carrierId">
+                    {{#each carriers as |carrier|}}
+                      <option value="{{carrier.id}}" data-bs-reqnumber="{{carrier.reqNumber}}">{{carrier.name}}</option>
+                    {{/each}}
+                  </select>
+                </div>
+                <div class="mb-3" id="carrierNumberDiv">
+                  <label for="carrierNumber" class="form-label">Номер отделения</label>
+                  <input type="number" min="1" class="form-control" name="carrierNumber" id="carrierNumber" aria-describedby="carrierNumberFeedback">
+                  <div id="carrierNumberFeedback" class="invalid-feedback"></div>
+                </div>
+                <div class="mb-3">
+                  <label for="paymentId" class="form-label">Способ оплаты</label>
+                  <select name="paymentId" id="paymentId" class="form-select" aria-label="paymentId">
+                    {{#each payments as |payment|}}
+                      <option value="{{payment.id}}">{{payment.name}}</option>
+                    {{/each}}
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label for="comment" class="form-label">Комментарий</label>
+                  <textarea class="form-control" id="comment" name="comment" rows="3"></textarea>
+                </div>
+                <button type="submit" id="createOrderButton" class="btn btn-primary">Заказ подтверждаю</button>
+              </form>
+            </div>
+          </div>
       </div>
     </body>
   </html>

@@ -202,6 +202,7 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
         url: `/o/${objectId}/p/${product.id}`,
         img1: "/icons/flower3.svg",
         img2: "/icons/flower3.svg",
+        sellerId: objectId,
       };
       if (req.user.uid) {
         const cartProduct = await store.findRecord(`objects/${objectId}/carts/${req.user.uid}`,
@@ -316,6 +317,7 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
   product.price = roundNumber(product.price * object.currencies[product.currency]);
   product.img1 = "/icons/flower3.svg";
   product.img2 = "/icons/flower3.svg";
+  product.sellerId = objectId;
   const photos = [];
   // get cart qty
   if (req.user.uid) {
@@ -551,6 +553,7 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
           url: `/o/${objectId}/p/${product.id}`,
           img1: product.img1,
           img2: product.img2,
+          sellerId: objectId,
         });
         // update price in cart
         if (product.price !== cartProduct.price) {
