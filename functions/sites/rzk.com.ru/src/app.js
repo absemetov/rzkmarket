@@ -59,7 +59,7 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
       </div>
       <div class="card-footer">
         <h3>
-          <span class="placeholder">111</span><small class="text-muted">${currency}</small>
+          <span class="placeholder">111</span> <small class="text-muted">${currency}</small>
         </h3>
         <div class="d-grid gap-2">
           <a href="#" tabindex="-1" class="btn btn-success disabled placeholder"></a>
@@ -218,18 +218,18 @@ form.addEventListener("submit", async (event) => {
   const totalSum = document.getElementById("totalSum");
   if (totalQty) {
     totalQty.innerText = resJson.cartInfo.totalQty;
-    totalSum.innerText = `${resJson.cartInfo.totalSum}${currency}`;
+    totalSum.innerText = `${resJson.cartInfo.totalSum} ${currency}`;
   }
   // update algolia product
   const cartCountNavAlg = document.getElementById("cartCountNavAlg");
   const totalSumNavAlg = document.getElementById("totalSumNavAlg");
   if (cartCountNavAlg) {
     cartCountNavAlg.innerText = resJson.cartInfo.cartCount;
-    totalSumNavAlg.innerText = `${resJson.cartInfo.totalSum}${currency}`;
+    totalSumNavAlg.innerText = `${resJson.cartInfo.totalSum} ${currency}`;
   }
   if (cartCountNav) {
     cartCountNav.innerText = resJson.cartInfo.cartCount;
-    totalSumNav.innerText = `${resJson.cartInfo.totalSum}${currency}`;
+    totalSumNav.innerText = `${resJson.cartInfo.totalSum} ${currency}`;
   }
   // hide modal
   cartAddModal.hide();
