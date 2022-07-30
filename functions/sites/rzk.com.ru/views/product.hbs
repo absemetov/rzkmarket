@@ -15,7 +15,7 @@
   </ol>
 </nav>
 <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2 pb-3">
-  {{> product product=product currency=envSite.currency btnBuy=envSite.i18n.btnBuy smartPhoto=true}}
+  {{> product product=product object=object envSite=envSite smartPhoto=true}}
 </div>
 {{#if product.tagsNames}}
   <h3>Tags</h3>

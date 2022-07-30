@@ -3,18 +3,20 @@
 ## Build Setup
 
 ```bash
-# install dependencies
-$ yarn install
+# projects list
+$ yarn pl
 
-# serve with hot reload at localhost:3000
-$ yarn dev
+# serve frontend
+$ yarn --cwd functions/ parcel-s
+
+# serve functions, hosting
+$ yarn s
 
 # build for production and launch server
-$ yarn build
-$ yarn start
-
-# generate static project
-$ yarn generate
+$ yarn --cwd functions/ parcel-b
+$ yarn deploy-site-*
+$ yarn deploy-bot-*
+$ yarn deploy-triggers-*
 ```
 
 For detailed explanation on how things work, check out [RZK Маркет Україна](https://rzk.com.ua).
