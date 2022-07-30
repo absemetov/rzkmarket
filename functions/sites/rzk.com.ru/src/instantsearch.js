@@ -90,63 +90,61 @@ const renderPagination = (renderOptions, isFirstRender) => {
 
   container.innerHTML = `
     <ul class="pagination">
-      ${
-        !isFirstPage ?
-          `
-            <li class="page-item">
-              <a class="page-link"
-                href="${createURL(0)}"
-                data-value="${0}"
-              >
-                ${i18n.a_pag_first}
-              </a>
-            </li>
-            <li class="page-item">
-              <a class="page-link"
-                href="${createURL(currentRefinement - 1)}"
-                data-value="${currentRefinement - 1}"
-              >
-                ${i18n.a_pag_previous}
-              </a>
-            </li>
-            ` :
-          ""}
+      <li class="page-item ${isFirstPage ? "disabled" : ""}">
+        <a class="page-link "
+          href="${createURL(0)}"
+          data-value="${0}"
+          title="${i18n.a_pag_first}"
+        >
+          <i class="bi bi-chevron-bar-left"></i>
+        </a>
+      </li>
+      <li class="page-item">
+        <a class="page-link ${isFirstPage ? "disabled" : ""}"
+          href="${createURL(currentRefinement - 1)}"
+          data-value="${currentRefinement - 1}"
+          title="${i18n.a_pag_previous}"
+        >
+          <i class="bi bi-chevron-left"></i>
+        </a>
+      </li>
+      <li class="d-inline d-md-none page-item">
+        <a class="page-link"
+          href="${createURL(currentRefinement)}"
+          data-value="${currentRefinement}"
+        >
+          ${currentRefinement + 1} of ${nbPages} page(s)
+        </a>
+      </li>
       ${pages.map(
       (page) => `
-        <li class="page-item ${currentRefinement === page ? "active" : ""}">
+        <li class="d-none d-md-inline page-item ${currentRefinement === page ? "active" : ""}">
           <a class="page-link"
             href="${createURL(page)}"
             data-value="${page}"
           >
             ${page + 1}
           </a>
-        </li>
-      `,
-  ).join("")}
-        ${
-          !isLastPage ?
-            `
-              <li class="page-item">
-                <a class="page-link"
-                  href="${createURL(currentRefinement + 1)}"
-                  data-value="${currentRefinement + 1}"
-                >
-                ${i18n.a_pag_next}
-                </a>
-              </li>
-              <li class="page-item">
-                <a class="page-link"
-                  href="${createURL(nbPages - 1)}"
-                  data-value="${nbPages - 1}"
-                >
-                ${i18n.a_pag_last}
-                </a>
-              </li>
-              ` : ""
-}
-    </ul>
-  `;
-
+        </li>`).join("")}
+    <li class="page-item">
+      <a class="page-link ${isLastPage ? "disabled" : ""}"
+        href="${createURL(currentRefinement + 1)}"
+        data-value="${currentRefinement + 1}"
+        title="${i18n.a_pag_next}"
+      >
+        <i class="bi bi-chevron-right"></i>
+      </a>
+    </li>
+    <li class="page-item">
+      <a class="page-link ${isLastPage ? "disabled" : ""}"
+        href="${createURL(nbPages - 1)}"
+        data-value="${nbPages - 1}"
+        title="${i18n.a_pag_last}"
+      >
+        <i class="bi bi-chevron-bar-right"></i>
+      </a>
+    </li>
+  </ul>`;
   [...container.querySelectorAll("a")].forEach((element) => {
     element.addEventListener("click", (event) => {
       event.preventDefault();

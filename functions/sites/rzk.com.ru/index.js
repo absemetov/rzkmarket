@@ -493,9 +493,10 @@ app.get("/login/:objectId?", auth, async (req, res) => {
     // create token
     const token = jwt.sign({uid: req.query.id, auth: true, firstName: req.query.first_name}, process.env.BOT_TOKEN);
     // save token to cookie
+    // for localhost disable secure opt
     return res.cookie("__session", token, {
       httpOnly: true,
-      secure: true,
+      // secure: true,
       maxAge: 30 * 24 * 60 * 60 * 1000,
     }).redirect(objectId ? `/o/${objectId}/cart/purchase` : "/");
   }
@@ -685,7 +686,7 @@ app.post("/o/:objectId/cart/add", auth, jsonParser, async (req, res) => {
     // save token to cookie
     res.cookie("__session", token, {
       httpOnly: true,
-      secure: true,
+      // secure: true,
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
   }

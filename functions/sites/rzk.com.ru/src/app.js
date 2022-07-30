@@ -67,22 +67,9 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
         </div>
       </div>
     </div>`;
-    // modalFooter.innerHTML = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-    // <a href="/o/${sellerId}/cart"  class="text-nowrap btn btn-primary position-relative" role="button">
-    //   Корзина <strong id="totalSumNavAlg">0 ${currencyName}</strong>
-    //   <span id="cartCountNavAlg" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-    //     0
-    //     <span class="visually-hidden">count goods</span>
-    //   </span>
-    // </a>`;
     // get product data
     const productRes = await fetch(`/o/${sellerId}/p/${productId}`, {method: "POST"});
     const product = await productRes.json();
-    console.log(product);
-    // Update the modal"s content.
-    // const modalTitle = exampleModal.querySelector(".modal-title");
-    // modalTitle.textContent = product.name;
-    // modalBodyInput.value = product.price;
     const cardFooter = productModalEl.querySelector(".card-footer");
     cardFooter.innerHTML = `
             <h3>
