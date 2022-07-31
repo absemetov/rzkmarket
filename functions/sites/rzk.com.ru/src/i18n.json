@@ -2,6 +2,7 @@
 "ru": {
   "ALGOLIA_ID": "YZIFWJVE7R",
   "ALGOLIA_SEARCH_KEY": "a56bd432142fc9813846fa737167eeef",
+  "bot_name": "RzkCrimeaBot",
   "btn_buy": "Купить",
   "btn_show": "Просмотр",
   "btn_ref_show": "Развернуть",
@@ -21,6 +22,7 @@
 "uk": {
   "ALGOLIA_ID": "YZIFWJVE7R",
   "ALGOLIA_SEARCH_KEY": "a56bd432142fc9813846fa737167eeef",
+  "bot_name": "RzkMarketBot",
   "btn_buy": "Купити",
   "btn_show": "Переглянути",
   "btn_ref_show": "Розгорнути",

@@ -51,8 +51,8 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
         ${productBrand !== "undefined" ? "<h6>" + productBrand + "</h6>" : ""}
         <h6>
           <a href="/o/${sellerId}/p/${productId}">${productName}</a> <small class="text-muted">(${productId})</small>
-          <a href="//t.me/RzkMarketBot?start=o_${sellerId}_p_${productId}" target="_blank" class="ps-1 text-decoration-none">
-            <i class="bi bi-telegram"></i>
+          <a href="//t.me/${i18n.bot_name}?start=o_${sellerId}_p_${productId}" target="_blank" class="ms-2">
+            <i class="bi bi-telegram fs-3"></i>
           </a>
         </h6>
         <h6>${seller}</h6>
@@ -188,7 +188,7 @@ form.addEventListener("submit", async (event) => {
     delButton.disabled = false;
   }
   if (qty) {
-    button.innerText = `${qty} ${button.dataset.productUnit} ${roundNumber(qty * resJson.price)} ${currency}`;
+    button.innerHTML = `${qty} ${button.dataset.productUnit} <span class="text-nowrap">${roundNumber(qty * resJson.price)} ${currency}</span>`;
     button.setAttribute("data-product-qty", qty);
     button.classList.remove("btn-primary");
     button.classList.add("btn-success");

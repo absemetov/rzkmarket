@@ -23,7 +23,7 @@
         <button type="button" class="btn {{#if product.qty}}btn-success{{else}}btn-primary{{/if}}" data-bs-toggle="modal" data-bs-target="#cartAddModal"
           data-product-id="{{product.id}}" data-product-name="{{product.name}}" data-product-unit="{{product.unit}}" data-product-qty="{{product.qty}}"
           data-seller-id="{{product.sellerId}}">
-          {{#if product.qty}}{{product.qty}} {{product.unit}} {{product.sum}} {{envSite.currency}}{{else}}{{envSite.i18n.btnBuy}}{{/if}}
+          {{#if product.qty}}{{product.qty}} {{product.unit}} <span class="text-nowrap">{{product.sum}} {{envSite.currency}}</span>{{else}}{{envSite.i18n.btnBuy}}{{/if}}
         </button>
       </div>
     </div>
