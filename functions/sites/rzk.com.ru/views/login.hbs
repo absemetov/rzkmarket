@@ -1,13 +1,13 @@
-{{#if user.auth}}
-  <a href="/logout">Выйти</a>
-  <h3>Для полного выхода, также нажмите кнопку «Завершить сеанс» в Telegram</h3>
-  <h3>Историю заказов можно просмотреть в боте <a href="//t.me/RzkCrimeaBot?start=fromsite">@RzkCrimeaBot</a></h3>
+{{#if siteEnv.user.auth}}
+  <a href="/logout">{{envSite.i18n.aLogout}}</a>
+  <h3>{{envSite.i18n.tLoginAuth0}}</h3>
+  <h3>{{envSite.i18n.tLoginAuth1}} <a href="//t.me/{{envSite.botName}}?start=fromsite">@{{envSite.botName}}</a></h3>
 {{else}}
-  <h3>Войти</h3>
+  <h3>{{envSite.i18n.aLogin}}</h3>
   <div class="alert alert-warning alert-dismissible fade show" role="alert">
-    <strong>Можно войти прямо из приложения Telegram!</strong> Подписывайтесь на нашего бота
-    <a href="//t.me/RzkCrimeaBot?start=fromsite">@RzkCrimeaBot</a> внизу списка объектов есть кнопка Войти на сайт rzk.com.ru
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    {{envSite.i18n.tLoginAuth2}}
+    <a href="//t.me/{{envSite.botName}}?start=fromsite">@{{envSite.botName}}</a> {{envSite.i18n.tLoginAuth3}} {{envSite.domain}}
   </div>
 {{/if}}
-<script async src="https://telegram.org/js/telegram-widget.js?15" data-telegram-login="RzkCrimeaBot" data-size="large" data-auth-url="https://rzk.com.ru/login/{{redirectPage}}" data-request-access="write"></script>
+
+<script async src="https://telegram.org/js/telegram-widget.js?15" data-telegram-login="{{envSite.botName}}" data-size="large" data-auth-url="{{envSite.domain}}/login/{{redirectPage}}" data-request-access="write"></script>

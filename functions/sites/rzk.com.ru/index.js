@@ -26,12 +26,14 @@ const i18n = new TelegrafI18n({
 const i18nContext = i18n.createContext(process.env.BOT_LANG);
 // site env
 const envSite = {
+  i18n: i18nContext.repository[process.env.BOT_LANG],
   lang: process.env.BOT_LANG,
   currency: process.env.BOT_CURRENCY,
-  i18n: i18nContext.repository[process.env.BOT_LANG],
   gtag: process.env.SITE_GTAG,
   botName: process.env.BOT_NAME,
-  siteTel: process.env.BOT_PHONETEMPLATE,
+  phoneregexp: process.env.BOT_PHONEREGEXP,
+  phonetemplate: process.env.BOT_PHONETEMPLATE,
+  domain: process.env.BOT_SITE,
 };
 const app = express();
 app.use(cors({origin: true}));
@@ -240,12 +242,14 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
       if (!ifBeforeProducts.empty) {
         if (currentCatalog) {
           prevNextLinks.push({
-            text: "⬅️ Назад",
+            text: envSite.i18n.aPagPrevious,
+            icon: "bi-chevron-left",
             url: `/o/${object.id}/c/${currentCatalog.id}?endBefore=${endBeforeSnap.id}${tagUrl}`,
           });
         } else {
           prevNextLinks.push({
-            text: "⬅️ Назад",
+            text: envSite.i18n.aPagPrevious,
+            icon: "bi-chevron-left",
             url: `/o/${object.id}/c?endBefore=${endBeforeSnap.id}${tagUrl}`,
           });
         }
@@ -256,12 +260,14 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
       if (!ifAfterProducts.empty) {
         if (currentCatalog) {
           prevNextLinks.push({
-            text: "➡️ Вперед",
+            text: envSite.i18n.aPagNext,
+            icon: "bi-chevron-right",
             url: `/o/${object.id}/c/${currentCatalog.id}?startAfter=${startAfterSnap.id}${tagUrl}`,
           });
         } else {
           prevNextLinks.push({
-            text: "➡️ Вперед",
+            text: envSite.i18n.aPagNext,
+            icon: "bi-chevron-right",
             url: `/o/${object.id}/c?startAfter=${startAfterSnap.id}${tagUrl}`,
           });
         }
@@ -511,7 +517,7 @@ app.get("/login/:objectId?", auth, async (req, res) => {
   // data is not authenticated
   // Set Cache-Control
   // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
-  res.render("login", {envSite, redirectPage});
+  res.render("login", {title: envSite.i18n.aLogin, envSite, redirectPage});
 });
 
 app.get("/logout", auth, (req, res) => {
@@ -574,6 +580,8 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
     title,
     object,
     products,
+    carriers: Array.from(store.carriers(), ([id, obj]) => ({id, name: obj.name, reqNumber: obj.reqNumber ? 1 : 0})),
+    payments: Array.from(store.payments(), ([id, name]) => ({id, name})),
     envSite,
   });
 });

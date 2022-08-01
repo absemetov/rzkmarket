@@ -10,7 +10,7 @@
 </h4>
 <div class="table-responsive">
   <table class="table table-striped table-hover">
-    <caption>Общее количество {{totalQty}}, Общая сумма <strong class="text-nowrap">{{totalSum}} {{currencyName}}</strong></caption>
+    <caption>Общее количество {{totalQty}}, Общая сумма <strong class="text-nowrap">{{totalSum}} {{envSite.currency}}</strong></caption>
     <thead>
       <tr>
         <th scope="col">#</th>
@@ -28,8 +28,8 @@
         <td><strong class="text-nowrap">{{product.id}}</strong></td>
         <td><a href="{{product.url}}">{{product.name}}</a></td>
         <td><strong class="text-nowrap">{{product.qty}}</strong></td>
-        <td><strong class="text-nowrap">{{product.price}} {{../currencyName}}</strong></td>
-        <td><strong class="text-nowrap">{{product.sum}} {{../currencyName}}</strong></td>
+        <td><strong class="text-nowrap">{{product.price}} {{../envSite.currency}}</strong></td>
+        <td><strong class="text-nowrap">{{product.sum}} {{../envSite.currency}}</strong></td>
       </tr>
       {{/each}}
     </tbody>

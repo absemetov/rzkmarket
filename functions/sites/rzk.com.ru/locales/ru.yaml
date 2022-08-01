@@ -6,11 +6,27 @@ siteKeywords: кабель, провод, розетка, выключатель
 placeholderQty: Введите количество товара
 btnBuy: Купить
 btnDel: Удалить
+btnPurchase: Оформить заказ
+btnPurchaseConfirm: Заказ подтверждаю
 aLogin: Войти
+aLoginTelegram: Войдите через Telegram
+aLogout: Выйти
 aDelivery: Доставка и оплата
 aReturn: Обмен и возврат
 aReview: Оставить отзыв
 aObjects: Торговые объекты
 aCatGoods: Каталог товаров
 aAllGoods: Все товары
+aChuseGoods: Выбрать товары
+aPagPrevious: Предыдущая
+aPagNext: Следующая
+aCart: Корзина
 modalShowTitle: Просмотр
+modalPurchase: Оформление заказа
+tCartEmpty: Корзина пуста
+tQty: Кількість
+tSum: Cума
+tLoginAuth0: Для полного выхода, также нажмите кнопку «Завершить сеанс» в Telegram
+tLoginAuth1: Историю заказов можно просмотреть в боте
+tLoginAuth2: Можно войти прямо из приложения Telegram! Подписывайтесь на нашего бота
+tLoginAuth3: внизу списка объектов есть кнопка Войти на сайт

@@ -6,11 +6,27 @@ siteKeywords: rzk маркет україна, rzk, розетка, вимика
 placeholderQty: Введіть кількість товару
 btnBuy: Купити
 btnDel: Видалити
+btnPurchase: Оформити замовлення
+btnPurchaseConfirm: Замовлення підтверджую
 aLogin: Вхід
+aLoginTelegram: Увійти через Telegram
+aLogout: Вийти
 aDelivery: Доставка та оплата
 aReturn: Повернення товару
 aReview: Написати відгук
 aObjects: Торговельні об'єкти
 aCatGoods: Каталог товарів
 aAllGoods: Усі товари
+aChuseGoods: Вибрати товари
+aPagPrevious: Попередня
+aPagNext: Наступна
+aCart: Кошик
 modalShowTitle: Перегляд
+modalPurchase: Оформлення замовлення
+tCartEmpty: Кошик порожній
+tQty: Кількість
+tSum: Cума
+tLoginAuth0: Щоб відʼєднатися від rzk.com.ua, натисніть кнопку «Відʼєднатися» в Telegram
+tLoginAuth1: Історію замовлень можна переглянути тут
+tLoginAuth2: На сайт можно увійти прямо з додатку Telegram! Приєднуйтесь до нашего бота
+tLoginAuth3: внизу списку об'єктів є кнопка Вхід на сайт
