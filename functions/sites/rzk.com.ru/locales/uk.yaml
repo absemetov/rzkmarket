@@ -22,7 +22,16 @@ aPagPrevious: Попередня
 aPagNext: Наступна
 aCart: Кошик
 modalShowTitle: Перегляд
-modalPurchase: Оформлення замовлення
+modalPurchase:
+  title: Оформлення замовлення
+  lastName: Прізвище отримувача
+  firstName: Ім'я отримувача
+  phoneNumber: Мобільний телефон
+  address: Адреса
+  carrier: Спосіб доставки
+  carrierNumber: Номер відділення
+  payment: Спосіб оплати
+  comment: Коментар
 tCartEmpty: Кошик порожній
 tQty: Кількість
 tSum: Cума

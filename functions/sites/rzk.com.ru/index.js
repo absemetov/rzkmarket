@@ -30,6 +30,7 @@ const envSite = {
   lang: process.env.BOT_LANG,
   currency: process.env.BOT_CURRENCY,
   gtag: process.env.SITE_GTAG,
+  gmaps: process.env.BOT_GMAPS,
   botName: process.env.BOT_NAME,
   phoneregexp: process.env.BOT_PHONEREGEXP,
   phonetemplate: process.env.BOT_PHONETEMPLATE,
@@ -739,12 +740,17 @@ app.post("/o/:objectId/cart/add", auth, jsonParser, async (req, res) => {
 
 // payments-and-deliveries
 app.get("/delivery-info", (req, res) => {
-  res.render("delivery");
+  res.render("delivery", {
+    envSite,
+    title: envSite.i18n.aDelivery,
+    carriers: Array.from(store.carriers(), ([id, obj]) => ({id, name: obj.name, reqNumber: obj.reqNumber ? 1 : 0})),
+    payments: Array.from(store.payments(), ([id, name]) => ({id, name})),
+  });
 });
 
 // exchange-and-refund
 app.get("/return-policy", (req, res) => {
-  res.render("return");
+  res.render("return_" + process.env.BOT_LANG, {envSite, title: envSite.i18n.aReturn});
 });
 
 // not found route

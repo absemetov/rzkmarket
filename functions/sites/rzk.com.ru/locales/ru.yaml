@@ -22,7 +22,16 @@ aPagPrevious: Предыдущая
 aPagNext: Следующая
 aCart: Корзина
 modalShowTitle: Просмотр
-modalPurchase: Оформление заказа
+modalPurchase:
+  title: Оформление заказа
+  lastName: Фамилия получателя
+  firstName: Имя получателя
+  phoneNumber: Моб. номер телефона
+  address: Адрес
+  carrier: Способ доставки
+  carrierNumber: Номер отделения
+  payment: Способ оплаты
+  comment: Комментарий
 tCartEmpty: Корзина пуста
 tQty: Кількість
 tSum: Cума

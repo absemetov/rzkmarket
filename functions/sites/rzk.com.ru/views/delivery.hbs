@@ -1,12 +1,12 @@
-<h5>Способы доставки</h5>
+<h5>{{envSite.i18n.modalPurchase.carrier}}</h5>
 <ul>
-  <li>Доставка "СДЭК"</li>
-  <li>Самовывоз со склада</li>
+  {{#each carriers as |carrier|}}
+    <li>{{carrier.name}}</li>
+  {{/each}}
 </ul>
-<h5>Способы оплаты</h5>
+<h5>{{envSite.i18n.modalPurchase.payment}}</h5>
 <ul>
-  <li>Наложенный платеж "СДЭК"</li>
-  <li>Предоплата на карту РНКБ.</li>
-  <li>Предоплата на карту You Money</li>
-  <li>Наличными</li>
+  {{#each payments as |payment|}}
+    <li>{{payment.name}}</li>
+  {{/each}}
 </ul>
