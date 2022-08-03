@@ -3,8 +3,8 @@
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
-      <link rel="stylesheet" href="/dist/index.4bb70a15.css">
-      <script type="module" src="/dist/index.81af0a65.js"></script>
+      <link rel="stylesheet" href="/dist/index.93cf057c.css">
+      <script type="module" src="/dist/index.5a08fb85.js"></script>
       <title>{{#if title}}{{title}} - {{/if}}{{envSite.i18n.siteTitle}}</title>
       <link rel="icon" href="/favicon.ico">
       <link rel="icon" href="/logo/logo.svg" type="image/svg+xml">
@@ -77,7 +77,9 @@
       </div>
       <div class="container d-none mt-2 mb-5" id="search">
         <div class="d-grid gap-2">
-          <button class="btn btn-primary d-block d-lg-none mb-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasResponsive" aria-controls="offcanvasResponsive">Фильтр</button>
+          <button class="btn btn-primary d-block d-lg-none mb-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasResponsive" aria-controls="offcanvasResponsive">
+            {{envSite.i18n.btnFilter}}
+          </button>
         </div>
         <div class="row">
           <div class="col fs-3" id="stats"></div>
@@ -86,7 +88,7 @@
           <div class="col-lg-3">
             <div class="offcanvas-lg offcanvas-start" tabindex="-1" id="offcanvasResponsive" aria-labelledby="offcanvasResponsiveLabel">
               <div class="offcanvas-header">
-                <h5 class="offcanvas-title" id="offcanvasResponsiveLabel">Фильтр</h5>
+                <h5 class="offcanvas-title" id="offcanvasResponsiveLabel">{{envSite.i18n.btnFilter}}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#offcanvasResponsive" aria-label="Close"></button>
               </div>
               <div class="offcanvas-body flex-column">

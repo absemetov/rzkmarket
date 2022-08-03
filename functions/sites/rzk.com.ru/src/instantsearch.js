@@ -113,7 +113,7 @@ const renderPagination = (renderOptions, isFirstRender) => {
           href="${createURL(currentRefinement)}"
           data-value="${currentRefinement}"
         >
-          ${currentRefinement + 1} of ${nbPages} page(s)
+        ${i18n.t_pag_page} ${currentRefinement + 1} ${i18n.t_pag_of} ${nbPages}
         </a>
       </li>
       ${pages.map(

@@ -20,7 +20,7 @@ const recentSearchesPlugin = createLocalStorageRecentSearchesPlugin({
         //   setQuery(item.label);
         // }, 3);
         if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0]) {
-          document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = item.label.substring(0, 15) + "...";
+          document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = item.label.substring(0, 5) + "...";
         }
         searchPanel("show");
         setInstantSearchUiState({
@@ -54,7 +54,7 @@ const querySuggestionsPlugin = createQuerySuggestionsPlugin({
         //   setQuery(item.query);
         // }, 3);
         if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0]) {
-          document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = item.query.substring(0, 15) + "...";
+          document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = item.query.substring(0, 5) + "...";
         }
         searchPanel("show");
         setInstantSearchUiState({
@@ -91,7 +91,7 @@ export function startAutocomplete() {
       //   setQuery(state.query);
       // }, 3);
       if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0]) {
-        document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = state.query.substring(0, 15) + "...";
+        document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = state.query.substring(0, 5) + "...";
       }
       searchPanel("show");
       setInstantSearchUiState({
@@ -147,7 +147,7 @@ export function startAutocomplete() {
             //   setQuery(item.name);
             // }, 3);
             if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0]) {
-              document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = item.name.substring(0, 15) + "...";
+              document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = item.name.substring(0, 5) + "...";
             }
             searchPanel("show");
             setInstantSearchUiState({

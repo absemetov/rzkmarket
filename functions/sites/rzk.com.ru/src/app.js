@@ -15,8 +15,8 @@ const i18n = i18nContext[lang];
 search.start();
 startAutocomplete();
 const searchPageState = getInstantSearchUiState();
-if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0]) {
-  document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = searchPageState.query.substring(0, 15) + "...";
+if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0] && searchPageState.query) {
+  document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = searchPageState.query.substring(0, 5) + "...";
 }
 
 search.on("render", () => {
@@ -33,72 +33,72 @@ window.addEventListener("popstate", function() {
 });
 // open modal algolia
 const productModalEl = document.getElementById("productModal");
-const productModal = new Modal(productModalEl);
+// const productModal = new Modal(productModalEl);
 const addButton = document.getElementById("addToCart");
 const currency = addButton.dataset.currency;
+// btn show product
+let buttonShowProduct;
 productModalEl.addEventListener("show.bs.modal", async (event) => {
   // Extract info from data-bs-* attributes
-  const button = event.relatedTarget;
-  if (button) {
-    const productId = button.dataset.productId;
-    const productName = button.dataset.productName;
-    const productBrand = button.dataset.productBrand;
-    const productImg2 = button.dataset.productImg2;
-    const sellerId = button.dataset.sellerId;
-    const seller = button.dataset.seller;
-    // add placeholders
-    const modalBody = productModalEl.querySelector(".modal-body");
-    // const modalFooter = productModalEl.querySelector(".modal-footer");
-    modalBody.innerHTML = `<div class="card text-center h-100">
-      <img src="${productImg2}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="${productName}">
-      <div class="card-body">
-        ${productBrand !== "undefined" ? "<h6>" + productBrand + "</h6>" : ""}
-        <h6>
-          <a href="/o/${sellerId}/p/${productId}">${productName}</a> <small class="text-muted">(${productId})</small>
-          <a href="//t.me/${i18n.bot_name}?start=o_${sellerId}_p_${productId}" target="_blank" class="ms-2">
-            <i class="bi bi-telegram fs-3"></i>
-          </a>
-        </h6>
-        <h6>${seller}</h6>
+  buttonShowProduct = event.relatedTarget;
+  const productId = buttonShowProduct.dataset.productId;
+  const productName = buttonShowProduct.dataset.productName;
+  const productBrand = buttonShowProduct.dataset.productBrand;
+  const productImg2 = buttonShowProduct.dataset.productImg2;
+  const sellerId = buttonShowProduct.dataset.sellerId;
+  const seller = buttonShowProduct.dataset.seller;
+  // add placeholders
+  const modalBody = productModalEl.querySelector(".modal-body");
+  // const modalFooter = productModalEl.querySelector(".modal-footer");
+  modalBody.innerHTML = `<div class="card text-center h-100">
+    <img src="${productImg2}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="${productName}">
+    <div class="card-body">
+      ${productBrand !== "undefined" ? "<h6>" + productBrand + "</h6>" : ""}
+      <h6>
+        <a href="/o/${sellerId}/p/${productId}">${productName}</a> <small class="text-muted">(${productId})</small>
+        <a href="//t.me/${i18n.bot_name}?start=o_${sellerId}_p_${productId}" target="_blank" class="ms-2">
+          <i class="bi bi-telegram fs-3"></i>
+        </a>
+      </h6>
+      <h6>${seller}</h6>
+    </div>
+    <div class="card-footer">
+      <h3>
+        <span class="placeholder">111</span> <small class="text-muted">${currency}</small>
+      </h3>
+      <div class="d-grid gap-2">
+        <a href="#" tabindex="-1" class="btn btn-success disabled placeholder"></a>
+        <a href="#" tabindex="-1" class="btn btn-primary disabled placeholder mt-2"></a>
       </div>
-      <div class="card-footer">
-        <h3>
-          <span class="placeholder">111</span> <small class="text-muted">${currency}</small>
-        </h3>
-        <div class="d-grid gap-2">
-          <a href="#" tabindex="-1" class="btn btn-success disabled placeholder"></a>
-          <a href="#" tabindex="-1" class="btn btn-primary disabled placeholder mt-2"></a>
-        </div>
-      </div>
-    </div>`;
-    // get product data
-    const productRes = await fetch(`/o/${sellerId}/p/${productId}`, {method: "POST"});
-    const product = await productRes.json();
-    const cardFooter = productModalEl.querySelector(".card-footer");
-    cardFooter.innerHTML = `
-            <h3>
-              ${product.price} <small class="text-muted">${currency}</small>
-            </h3>
-            <div class="d-grid gap-2">
-            <button type="button" class="btn ${product.qty ? "btn-success" : "btn-primary"}" data-bs-toggle="modal"
-              data-bs-target="#cartAddModal"
-              data-product-id="${product.id}"
-              data-product-name="${product.name}"
-              data-product-unit="${product.unit}"
-              data-product-qty="${product.qty ? product.qty : 0}"
-              data-seller-id="${sellerId}"
-              data-modal-close="true">
-              ${product.qty ? product.qty + " " + product.unit + " " + product.sum + " " + currency : i18n.btn_buy}
-            </button>
-            <a href="/o/${sellerId}/cart"  class="btn btn-primary position-relative mt-2" role="button">
-              ${i18n.btn_cart} <strong id="totalSumNavAlg">${product.cartInfo.totalSum} ${currency}</strong>
-              <span id="cartCountNavAlg" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                ${product.cartInfo.cartCount}
-                <span class="visually-hidden">count goods</span>
-              </span>
-            </a>
-          </div>`;
-  }
+    </div>
+  </div>`;
+  // get product data
+  const productRes = await fetch(`https://rzk.com.ru/o/${sellerId}/p/${productId}`, {method: "POST"});
+  const product = await productRes.json();
+  const cardFooter = productModalEl.querySelector(".card-footer");
+  cardFooter.innerHTML = `
+    <h3>
+      ${product.price} <small class="text-muted">${currency}</small>
+    </h3>
+    <div class="d-grid gap-2">
+    <button type="button" class="btn ${product.qty ? "btn-success" : "btn-primary"}" data-bs-toggle="modal"
+      data-bs-target="#cartAddModal"
+      data-product-id="${product.id}"
+      data-product-name="${product.name}"
+      data-product-unit="${product.unit}"
+      data-product-qty="${product.qty ? product.qty : 0}"
+      data-seller-id="${sellerId}"
+      data-modal-close="true">
+      ${product.qty ? product.qty + " " + product.unit + " " + product.sum + " " + currency : i18n.btn_buy}
+    </button>
+    <a href="/o/${sellerId}/cart"  class="btn btn-primary position-relative mt-2" role="button">
+      ${i18n.btn_cart} <strong id="totalSumNavAlg">${product.cartInfo.totalSum} ${currency}</strong>
+      <span id="cartCountNavAlg" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+        ${product.cartInfo.cartCount}
+        <span class="visually-hidden">count goods</span>
+      </span>
+    </a>
+  </div>`;
 });
 
 // fullscreen
@@ -128,18 +128,18 @@ const cartAddModal = new Modal(cartAddModalEl);
 const delButton = document.getElementById("deleteFromCart");
 const qtyInput = document.getElementById("qty");
 // show info after add prod in button
-let button = {};
+let buttonAddProduct;
 
 // show algolia form when close
 cartAddModalEl.addEventListener("hide.bs.modal", function(event) {
-  if (button.getAttribute("data-modal-close")) {
-    productModal.show();
+  if (buttonAddProduct.getAttribute("data-modal-close")) {
+    // productModal.show();
   }
 });
 
 cartAddModalEl.addEventListener("show.bs.modal", function(event) {
   // Button that triggered the modal
-  button = event.relatedTarget;
+  buttonAddProduct = event.relatedTarget;
   // Extract info from data-bs-* attributes
   // set default values
   qtyInput.value = "";
@@ -149,12 +149,12 @@ cartAddModalEl.addEventListener("show.bs.modal", function(event) {
   // Update the modal's content.
   const modalTitle = cartAddModalEl.querySelector(".modal-title");
   const modalUnit = cartAddModalEl.querySelector("#basic-addon2");
-  modalTitle.textContent = `${button.getAttribute("data-product-name")} (${button.getAttribute("data-product-id")})`;
-  modalUnit.textContent = button.getAttribute("data-product-unit");
+  modalTitle.textContent = `${buttonAddProduct.getAttribute("data-product-name")} (${buttonAddProduct.getAttribute("data-product-id")})`;
+  modalUnit.textContent = buttonAddProduct.getAttribute("data-product-unit");
 });
 // focus qty input when modal shown
 cartAddModalEl.addEventListener("shown.bs.modal", function(event) {
-  const productCartQty = + button.getAttribute("data-product-qty");
+  const productCartQty = + buttonAddProduct.getAttribute("data-product-qty");
   if (productCartQty) {
     qtyInput.value = productCartQty;
     delButton.classList.remove("d-none");
@@ -170,10 +170,10 @@ form.addEventListener("submit", async (event) => {
   addButton.disabled = true;
   delButton.disabled = true;
   const qty = + qtyInput.value;
-  const productId = button.getAttribute("data-product-id");
-  const added = + button.getAttribute("data-product-qty");
-  const sellerId = button.getAttribute("data-seller-id");
-  const response = await fetch(`/o/${sellerId}/cart/add`, {
+  const productId = buttonAddProduct.getAttribute("data-product-id");
+  const added = + buttonAddProduct.getAttribute("data-product-qty");
+  const sellerId = buttonAddProduct.getAttribute("data-seller-id");
+  const response = await fetch(`https://rzk.com.ru/o/${sellerId}/cart/add`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json;charset=utf-8",
@@ -192,15 +192,27 @@ form.addEventListener("submit", async (event) => {
     delButton.disabled = false;
   }
   if (qty) {
-    button.innerHTML = `${qty} ${button.dataset.productUnit} <span class="text-nowrap">${roundNumber(qty * resJson.price)} ${currency}</span>`;
-    button.setAttribute("data-product-qty", qty);
-    button.classList.remove("btn-primary");
-    button.classList.add("btn-success");
+    buttonAddProduct.innerHTML = `${qty} ${buttonAddProduct.dataset.productUnit} <span class="text-nowrap">${roundNumber(qty * resJson.price)} ${currency}</span>`;
+    buttonAddProduct.setAttribute("data-product-qty", qty);
+    buttonAddProduct.classList.remove("btn-primary");
+    buttonAddProduct.classList.add("btn-success");
+    // btn show add cart info
+    if (buttonShowProduct) {
+      buttonShowProduct.innerHTML = `${qty} ${buttonAddProduct.dataset.productUnit} <span class="text-nowrap">${roundNumber(qty * resJson.price)} ${currency}</span>`;
+      buttonShowProduct.classList.remove("btn-primary");
+      buttonShowProduct.classList.add("btn-success");
+    }
   } else {
-    button.innerText = "Купить";
-    button.classList.remove("btn-success");
-    button.classList.add("btn-primary");
-    button.removeAttribute("data-product-qty");
+    buttonAddProduct.innerText = i18n.btn_buy;
+    buttonAddProduct.classList.remove("btn-success");
+    buttonAddProduct.classList.add("btn-primary");
+    buttonAddProduct.removeAttribute("data-product-qty");
+    // btn show
+    if (buttonShowProduct) {
+      buttonShowProduct.innerText = i18n.btn_show;
+      buttonShowProduct.classList.remove("btn-success");
+      buttonShowProduct.classList.add("btn-primary");
+    }
   }
   const cartCountNav = document.getElementById("cartCountNav");
   const totalSumNav = document.getElementById("totalSumNav");
