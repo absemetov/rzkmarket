@@ -1,5 +1,5 @@
 import {startAutocomplete} from "./autocomplete";
-import {search, searchPanel} from "./instantsearch";
+import {search, searchPanel, getInstantSearchUiState} from "./instantsearch";
 // Import custom plugins
 import Modal from "bootstrap/js/dist/modal";
 import "bootstrap/js/dist/offcanvas";
@@ -14,6 +14,10 @@ const i18n = i18nContext[lang];
 
 search.start();
 startAutocomplete();
+const searchPageState = getInstantSearchUiState();
+if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0]) {
+  document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = searchPageState.query.substring(0, 15) + "...";
+}
 
 search.on("render", () => {
   if (window.location.pathname == "/search") {

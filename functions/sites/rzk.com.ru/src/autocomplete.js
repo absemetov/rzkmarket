@@ -16,9 +16,12 @@ const recentSearchesPlugin = createLocalStorageRecentSearchesPlugin({
       ...source,
       onSelect({item, setQuery}) {
         // for detachedmode use timer for set search input value
-        setTimeout(() => {
-          setQuery(item.label);
-        }, 3);
+        // setTimeout(() => {
+        //   setQuery(item.label);
+        // }, 3);
+        if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0]) {
+          document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = item.label.substring(0, 15) + "...";
+        }
         searchPanel("show");
         setInstantSearchUiState({
           query: item.label,
@@ -47,9 +50,12 @@ const querySuggestionsPlugin = createQuerySuggestionsPlugin({
       ...source,
       onSelect({item, setQuery}) {
         // for detachedmode use timer for set search input value
-        setTimeout(() => {
-          setQuery(item.query);
-        }, 3);
+        // setTimeout(() => {
+        //   setQuery(item.query);
+        // }, 3);
+        if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0]) {
+          document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = item.query.substring(0, 15) + "...";
+        }
         searchPanel("show");
         setInstantSearchUiState({
           query: item.query,
@@ -81,9 +87,12 @@ export function startAutocomplete() {
     plugins: [recentSearchesPlugin, querySuggestionsPlugin],
     onSubmit({state, setQuery}) {
       // for derachedmode save input value
-      setTimeout(() => {
-        setQuery(state.query);
-      }, 3);
+      // setTimeout(() => {
+      //   setQuery(state.query);
+      // }, 3);
+      if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0]) {
+        document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = state.query.substring(0, 15) + "...";
+      }
       searchPanel("show");
       setInstantSearchUiState({
         query: state.query,
@@ -97,6 +106,9 @@ export function startAutocomplete() {
       });
     },
     onReset() {
+      if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0]) {
+        document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = i18n.a_search;
+      }
       setInstantSearchUiState({
         query: "",
         hierarchicalMenu: {
@@ -131,9 +143,12 @@ export function startAutocomplete() {
           onSelect({item, setQuery}) {
             recentSearchesPlugin.data.addItem({id: item.objectID, label: item.name});
             // for detachedmode use timer for set search input value
-            setTimeout(() => {
-              setQuery(item.name);
-            }, 3);
+            // setTimeout(() => {
+            //   setQuery(item.name);
+            // }, 3);
+            if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0]) {
+              document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = item.name.substring(0, 15) + "...";
+            }
             searchPanel("show");
             setInstantSearchUiState({
               query: item.name,

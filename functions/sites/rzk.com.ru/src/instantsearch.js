@@ -5,7 +5,7 @@ import {connectSearchBox,
   connectHierarchicalMenu,
   connectRefinementList,
   connectBreadcrumb,
-  connectCurrentRefinements} from "instantsearch.js/es/connectors";
+  connectCurrentRefinements, connectStats} from "instantsearch.js/es/connectors";
 import {poweredBy} from "instantsearch.js/es/widgets";
 import historyRouter from "instantsearch.js/es/lib/routers/history";
 import {highlight} from "instantsearch.js/es/helpers";
@@ -329,13 +329,13 @@ const createDataAttribtues = (refinement) =>
 const renderListItem = (item) => `
   ${item.refinements.map((refinement) =>
     `<li class="nav-item"><span class="badge text-bg-success m-1">
-      ${refinement.label} (${refinement.count}) <button type="button" class="btn-close" aria-label="Close" ${createDataAttribtues(refinement)}></button>
+      ${refinement.label} <button type="button" class="btn-close" aria-label="Close" ${createDataAttribtues(refinement)}></button>
     </span></li>`).join("")}
 `;
 
 const renderCurrentRefinements = (renderOptions, isFirstRender) => {
   const {items, refine, widgetParams} = renderOptions;
-  items.length ? widgetParams.container.classList.add("pb-2") : widgetParams.container.classList.remove("pb-2");
+  items.length ? widgetParams.container.classList.add("mb-2") : widgetParams.container.classList.remove("mb-2");
   widgetParams.container.innerHTML = `
     ${items.map(renderListItem).join("")}
   `;
@@ -359,6 +359,54 @@ const renderCurrentRefinements = (renderOptions, isFirstRender) => {
 const customCurrentRefinements = connectCurrentRefinements(
     renderCurrentRefinements,
 );
+
+// Create the render function Stats
+const renderStats = (renderOptions, isFirstRender) => {
+  const {
+    nbHits,
+    areHitsSorted,
+    nbSortedHits,
+    query,
+    widgetParams,
+  } = renderOptions;
+
+  if (isFirstRender) {
+    return;
+  }
+
+  let count = "";
+
+  if (areHitsSorted) {
+    if (nbSortedHits > 1) {
+      count = `${nbSortedHits} relevant results`;
+    } else if (nbSortedHits === 1) {
+      count = "1 relevant result";
+    } else {
+      count = "No relevant result";
+    }
+    count += ` sorted out of ${nbHits}`;
+  } else {
+    if (nbHits >= 1) {
+      // pluralize
+      let pluralizeResult;
+      if (nbHits % 10 === 1 && nbHits % 100 !== 11) {
+        pluralizeResult = i18n.pluralize[0];
+      } else {
+        pluralizeResult = nbHits % 10 >= 2 && nbHits % 10 <= 4 && (nbHits % 100 < 10 || nbHits % 100 >= 20) ? i18n.pluralize[1] : i18n.pluralize[2];
+      }
+      count += `${i18n.searchFound} ${nbHits} ${pluralizeResult}`;
+    } else {
+      count += i18n.searchNotFound;
+    }
+  }
+  query ? widgetParams.container.classList.add("mb-2") : widgetParams.container.classList.remove("mb-2");
+  widgetParams.container.innerHTML = `
+    ${query ? `<b><q>${query}</q> ${count}</b>` : ""}
+  `;
+};
+
+// Create the custom widget
+const customStats = connectStats(renderStats);
 
 search.addWidgets([
   // Mount a virtual search box to manipulate InstantSearch"s `query` UI
@@ -431,6 +479,9 @@ search.addWidgets([
       "categories.lvl5",
       "query",
     ],
+  }),
+  customStats({
+    container: document.querySelector("#stats"),
   }),
 ]);
 

@@ -1,8 +1,8 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="/">Торговые объекты</a></li>
+    <li class="breadcrumb-item"><a href="/">{{envSite.i18n.aObjects}}</a></li>
     <li class="breadcrumb-item"><a href="/o/{{object.id}}">{{object.name}}</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Заказ #{{shareOrder.orderNumber}}</li>
+    <li class="breadcrumb-item active" aria-current="page">{{envSite.i18n.order}} #{{shareOrder.orderNumber}}</li>
   </ol>
 </nav>
 <h4>
@@ -10,15 +10,15 @@
 </h4>
 <div class="table-responsive">
   <table class="table table-striped table-hover">
-    <caption>Общее количество {{totalQty}}, Общая сумма <strong class="text-nowrap">{{totalSum}} {{envSite.currency}}</strong></caption>
+    <caption>{{envSite.i18n.tQty}} {{totalQty}}, {{envSite.i18n.tSum}} <strong class="text-nowrap">{{totalSum}} {{envSite.currency}}</strong></caption>
     <thead>
       <tr>
         <th scope="col">#</th>
-        <th scope="col">Код товара</th>
-        <th scope="col">Наименование</th>
-        <th scope="col">Количество</th>
-        <th scope="col">Цена</th>
-        <th scope="col">Сумма</th>
+        <th scope="col">>{{envSite.i18n.product.code}}</th>
+        <th scope="col">{{envSite.i18n.product.name}}</th>
+        <th scope="col">{{envSite.i18n.product.qty}}</th>
+        <th scope="col">{{envSite.i18n.product.price}}</th>
+        <th scope="col">{{envSite.i18n.product.sum}}</th>
       </tr>
     </thead>
     <tbody>

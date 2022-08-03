@@ -17,7 +17,10 @@
   "a_pag_last": "Последняя",
   "placehold_brand": "Поиск бренда",
   "placehold_cat": "Поиск категории",
-  "placehold_seller": "Поиск продавца"
+  "placehold_seller": "Поиск продавца",
+  "pluralize": ["товар", "товара", "товаров"],
+  "searchFound": "найдено",
+  "searchNotFound": "по Вашему запросу ничего не найдено."
 },
 "uk": {
   "ALGOLIA_ID": "YZIFWJVE7R",
@@ -37,6 +40,9 @@
   "a_pag_last": "Остання",
   "placehold_brand": "Пошук бренду",
   "placehold_cat": "Пошук категорії",
-  "placehold_seller": "Пошук продавця"
+  "placehold_seller": "Пошук продавця",
+  "pluralize": ["товар", "товари", "товарів"],
+  "searchFound": "знайдено",
+  "searchNotFound": "за Вашим запитом нічого не знайдено."
 }
 }

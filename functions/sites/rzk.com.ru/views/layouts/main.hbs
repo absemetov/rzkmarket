@@ -3,8 +3,8 @@
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
-      <link rel="stylesheet" href="/dist/index.93cf057c.css">
-      <script type="module" src="/dist/index.88017ed6.js"></script>
+      <link rel="stylesheet" href="/dist/index.4bb70a15.css">
+      <script type="module" src="/dist/index.81af0a65.js"></script>
       <title>{{#if title}}{{title}} - {{/if}}{{envSite.i18n.siteTitle}}</title>
       <link rel="icon" href="/favicon.ico">
       <link rel="icon" href="/logo/logo.svg" type="image/svg+xml">
@@ -80,6 +80,9 @@
           <button class="btn btn-primary d-block d-lg-none mb-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasResponsive" aria-controls="offcanvasResponsive">Фильтр</button>
         </div>
         <div class="row">
+          <div class="col fs-3" id="stats"></div>
+        </div>
+        <div class="row">
           <div class="col-lg-3">
             <div class="offcanvas-lg offcanvas-start" tabindex="-1" id="offcanvasResponsive" aria-labelledby="offcanvasResponsiveLabel">
               <div class="offcanvas-header">
@@ -103,7 +106,7 @@
                   <div class="accordion-item">
                     <h2 class="accordion-header" id="panelsStayOpen-heading3">
                       <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapse3" aria-expanded="true" aria-controls="panelsStayOpen-collapse3">
-                        Категория
+                        {{envSite.i18n.tCategory}}
                       </button>
                     </h2>
                     <div id="panelsStayOpen-collapse3" class="accordion-collapse collapse show" aria-labelledby="panelsStayOpen-heading3">
@@ -127,7 +130,7 @@
                   <div class="accordion-item">
                     <h2 class="accordion-header" id="panelsStayOpen-heading4">
                       <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapse4" aria-expanded="true" aria-controls="panelsStayOpen-collapse4">
-                        Продавец
+                        {{envSite.i18n.tSeller}}
                       </button>
                     </h2>
                     <div id="panelsStayOpen-collapse4" class="accordion-collapse collapse show" aria-labelledby="panelsStayOpen-heading4">
