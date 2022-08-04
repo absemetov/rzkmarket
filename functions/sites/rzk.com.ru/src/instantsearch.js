@@ -85,9 +85,11 @@ const renderPagination = (renderOptions, isFirstRender) => {
     refine,
     createURL,
   } = renderOptions;
-
   const container = document.querySelector("#pagination");
-
+  if (!nbPages) {
+    container.innerHTML = "";
+    return;
+  }
   container.innerHTML = `
     <ul class="pagination">
       <li class="page-item ${isFirstPage ? "disabled" : ""}">

@@ -22,7 +22,9 @@
   "placehold_seller": "Поиск продавца",
   "pluralize": ["товар", "товара", "товаров"],
   "searchFound": "найдено",
-  "searchNotFound": "по Вашему запросу ничего не найдено."
+  "searchNotFound": "по Вашему запросу ничего не найдено",
+  "added_to_cart": "добавлен в корзину",
+  "deleted_from_cart": "удален из корзины"
 },
 "uk": {
   "ALGOLIA_ID": "YZIFWJVE7R",
@@ -47,6 +49,8 @@
   "placehold_seller": "Пошук продавця",
   "pluralize": ["товар", "товари", "товарів"],
   "searchFound": "знайдено",
-  "searchNotFound": "за Вашим запитом нічого не знайдено."
+  "searchNotFound": "за Вашим запитом нічого не знайдено",
+  "added_to_cart": "доданий до кошика",
+  "deleted_from_cart": "видалено з кошика"
 }
 }

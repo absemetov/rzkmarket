@@ -2,6 +2,7 @@ import {startAutocomplete} from "./autocomplete";
 import {search, searchPanel, getInstantSearchUiState} from "./instantsearch";
 // Import custom plugins
 import Modal from "bootstrap/js/dist/modal";
+import Toast from "bootstrap/js/dist/toast";
 import "bootstrap/js/dist/offcanvas";
 import "bootstrap/js/dist/collapse";
 import "bootstrap/js/dist/dropdown";
@@ -88,6 +89,7 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
       data-product-unit="${product.unit}"
       data-product-qty="${product.qty ? product.qty : 0}"
       data-seller-id="${sellerId}"
+      data-seller="${seller}"
       data-modal-close="true">
       ${product.qty ? product.qty + " " + product.unit + " " + product.sum + " " + currency : i18n.btn_buy}
     </button>
@@ -162,10 +164,17 @@ cartAddModalEl.addEventListener("shown.bs.modal", function(event) {
   qtyInput.focus();
   qtyInput.select();
 });
-// add product to cart
 
-const form = document.getElementById("addToCartForm");
-form.addEventListener("submit", async (event) => {
+// Toast ins
+const toastLiveExample = document.getElementById("liveToast");
+const toastSeller = toastLiveExample.querySelector("#toast-seller");
+const toastBody = toastLiveExample.querySelector(".toast-body");
+
+const toast = new Toast(toastLiveExample);
+
+// add product to cart
+const addToCartform = document.getElementById("addToCartForm");
+addToCartform.addEventListener("submit", async (event) => {
   event.preventDefault();
   addButton.disabled = true;
   delButton.disabled = true;
@@ -191,6 +200,8 @@ form.addEventListener("submit", async (event) => {
     addButton.disabled = false;
     delButton.disabled = false;
   }
+  // set toast header
+  toastSeller.innerText = buttonAddProduct.dataset.seller;
   if (qty) {
     buttonAddProduct.innerHTML = `${qty} ${buttonAddProduct.dataset.productUnit} <span class="text-nowrap">${roundNumber(qty * resJson.price)} ${currency}</span>`;
     buttonAddProduct.setAttribute("data-product-qty", qty);
@@ -202,6 +213,14 @@ form.addEventListener("submit", async (event) => {
       buttonShowProduct.classList.remove("btn-primary");
       buttonShowProduct.classList.add("btn-success");
     }
+    // toast info
+    toastBody.innerHTML = `${buttonAddProduct.getAttribute("data-product-name")} (${buttonAddProduct.getAttribute("data-product-id")})
+    <span class="text-nowrap fw-bold">${qty} ${buttonAddProduct.dataset.productUnit}</span> ${i18n.added_to_cart}
+    <div class="mt-2 pt-2 border-top">
+      <a href="/o/${sellerId}/cart" class="btn btn-primary btn-sm" role="button">
+        <i class="bi bi-cart3"></i> ${resJson.cartInfo.totalSum} ${currency} (${resJson.cartInfo.cartCount})
+      </a>
+    </div>`;
   } else {
     buttonAddProduct.innerText = i18n.btn_buy;
     buttonAddProduct.classList.remove("btn-success");
@@ -213,7 +232,18 @@ form.addEventListener("submit", async (event) => {
       buttonShowProduct.classList.remove("btn-success");
       buttonShowProduct.classList.add("btn-primary");
     }
+    // toast
+    if (added) {
+      toastBody.innerHTML = `${buttonAddProduct.getAttribute("data-product-name")} (${buttonAddProduct.getAttribute("data-product-id")}) ${i18n.deleted_from_cart}
+      <div class="mt-2 pt-2 border-top">
+        <a href="/o/${sellerId}/cart" class="btn btn-primary btn-sm" role="button">
+          <i class="bi bi-cart3"></i> ${resJson.cartInfo.totalSum} ${currency} (${resJson.cartInfo.cartCount})
+        </a>
+      </div>`;
+    }
   }
+  // show toast
+  toast.show();
   const cartCountNav = document.getElementById("cartCountNav");
   const totalSumNav = document.getElementById("totalSumNav");
   // total cart data
@@ -242,3 +272,53 @@ delButton.addEventListener("click", async () => {
   qtyInput.value = "";
   addButton.click();
 });
+
+// purchase
+const purchaseForm = document.getElementById("purchase");
+if (purchaseForm) {
+  const createOrderButton = document.getElementById("createOrderButton");
+  // form submit
+  purchaseForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    createOrderButton.disabled = true;
+    const response = await fetch(purchaseForm.action, {
+      method: "POST",
+      body: new FormData(purchaseForm),
+    });
+    const order = await response.json();
+    if (response.ok) {
+      // redirect to order page
+      window.location.href = `/o/${order.objectId}/s/${order.orderId}`;
+    } else {
+      createOrderButton.disabled = false;
+      alert(order.error);
+      for (const [key, error] of Object.entries(order.error)) {
+        if (key === "carrierNumber") {
+          document.getElementById(key).classList.add("is-invalid");
+          document.getElementById(`${key}Feedback`).textContent = error[0];
+          document.getElementById(key).addEventListener("focus", (event) => {
+            event.target.classList.remove("is-invalid");
+          });
+        }
+      }
+    }
+  });
+  const option = document.getElementById("carrierId");
+  if (+option.options[option.selectedIndex].getAttribute("data-bs-reqnumber")) {
+    document.getElementById("carrierNumberDiv").classList.remove("d-none");
+    document.getElementById("carrierNumber").required = true;
+  } else {
+    document.getElementById("carrierNumberDiv").classList.add("d-none");
+    document.getElementById("carrierNumber").required = false;
+  }
+  document.getElementById("carrierId").addEventListener("change", (event) => {
+    const option = event.target;
+    if (+option.options[option.selectedIndex].getAttribute("data-bs-reqnumber")) {
+      document.getElementById("carrierNumberDiv").classList.remove("d-none");
+      document.getElementById("carrierNumber").required = true;
+    } else {
+      document.getElementById("carrierNumberDiv").classList.add("d-none");
+      document.getElementById("carrierNumber").required = false;
+    }
+  });
+}
