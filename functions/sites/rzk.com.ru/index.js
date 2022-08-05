@@ -505,7 +505,7 @@ app.get("/login/:objectId?", auth, async (req, res) => {
       httpOnly: true,
       // secure: true,
       maxAge: 30 * 24 * 60 * 60 * 1000,
-    }).redirect(objectId ? `/o/${objectId}/cart/purchase` : "/");
+    }).redirect(objectId ? `/o/${objectId}/cart` : "/");
   }
   // id: '94899148',
   // first_name: 'Nadir',

@@ -74,7 +74,7 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
     </div>
   </div>`;
   // get product data
-  const productRes = await fetch(`https://rzk.com.ru/o/${sellerId}/p/${productId}`, {method: "POST"});
+  const productRes = await fetch(`/o/${sellerId}/p/${productId}`, {method: "POST"});
   const product = await productRes.json();
   const cardFooter = productModalEl.querySelector(".card-footer");
   cardFooter.innerHTML = `
@@ -182,7 +182,7 @@ addToCartform.addEventListener("submit", async (event) => {
   const productId = buttonAddProduct.getAttribute("data-product-id");
   const added = + buttonAddProduct.getAttribute("data-product-qty");
   const sellerId = buttonAddProduct.getAttribute("data-seller-id");
-  const response = await fetch(`https://rzk.com.ru/o/${sellerId}/cart/add`, {
+  const response = await fetch(`/o/${sellerId}/cart/add`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json;charset=utf-8",
@@ -221,6 +221,8 @@ addToCartform.addEventListener("submit", async (event) => {
         <i class="bi bi-cart3"></i> ${resJson.cartInfo.totalSum} ${currency} (${resJson.cartInfo.cartCount})
       </a>
     </div>`;
+    // show toast
+    toast.show();
   } else {
     buttonAddProduct.innerText = i18n.btn_buy;
     buttonAddProduct.classList.remove("btn-success");
@@ -240,10 +242,10 @@ addToCartform.addEventListener("submit", async (event) => {
           <i class="bi bi-cart3"></i> ${resJson.cartInfo.totalSum} ${currency} (${resJson.cartInfo.cartCount})
         </a>
       </div>`;
+      // show toast
+      toast.show();
     }
   }
-  // show toast
-  toast.show();
   const cartCountNav = document.getElementById("cartCountNav");
   const totalSumNav = document.getElementById("totalSumNav");
   // total cart data
