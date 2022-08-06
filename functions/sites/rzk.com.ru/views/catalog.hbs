@@ -49,12 +49,14 @@
           <div class="card-body">
             <h6>
               <a href="{{catalog.url}}">{{catalog.name}}</a>
-              <a href="{{catalog.img2}}" class="js-smartphoto-single text-decoration-none" data-caption="{{catalog.name}}">
-                <img src="/icons/zoom-in.svg" width="24" height="24" class="m-2" alt="zoom img">
-              </a>
-              <a href="//t.me/{{../envSite.botName}}?start=o_{{../object.id}}_c_{{catalog.id}}" target="_blank" class="ms-2">
-                <i class="bi bi-telegram fs-3"></i>
-              </a>
+              <div class="mt-2">
+                <a href="{{catalog.img2}}" class="js-smartphoto-single text-decoration-none" data-caption="{{catalog.name}}">
+                  <img src="/icons/zoom-in.svg" width="28" height="28" class="me-2" alt="zoom img">
+                </a>
+                <a href="//t.me/{{../envSite.botName}}?start=o_{{../object.id}}_c_{{catalog.id}}" target="_blank">
+                  <i class="bi bi-telegram fs-4"></i>
+                </a>
+              </div>
             </h6>
           </div>
         </div>

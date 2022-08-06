@@ -396,7 +396,7 @@ app.get("/o/:objectId/s/:orderId", auth, async (req, res) => {
       totalSum += product.qty * product.price;
     });
     return res.render("share-order", {
-      title: `Заказ #${shareOrder.orderNumber} - ${object.name}`,
+      title: `${envSite.i18n.order()} #${shareOrder.orderNumber} - ${object.name}`,
       object,
       shareOrder,
       products,
@@ -435,7 +435,7 @@ app.get("/o/:objectId/share-cart/:orderId", auth, async (req, res) => {
     });
     // render
     return res.render("share-cart", {
-      title: `Корзина #${cartId} - ${object.name}`,
+      title: `${envSite.i18n.aCart} #${cartId} - ${object.name}`,
       object,
       cartId,
       products,
@@ -531,7 +531,6 @@ app.get("/logout", auth, (req, res) => {
 app.get("/o/:objectId/cart", auth, async (req, res) => {
   const objectId = req.params.objectId;
   const object = await store.findRecord(`objects/${objectId}`);
-  const title = `Корзина - ${object.name}`;
   const products = [];
   object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
   if (req.user.uid) {
@@ -578,7 +577,7 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
   }
   res.render("cart", {
     cart: true,
-    title,
+    title: `${envSite.i18n.aCart()} - ${object.name}`,
     object,
     products,
     carriers: Array.from(store.carriers(), ([id, obj]) => ({id, name: obj.name, reqNumber: obj.reqNumber ? 1 : 0})),

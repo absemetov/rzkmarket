@@ -35,7 +35,7 @@ modalPurchase:
   comment: Комментарий
 tCartEmpty: Корзина пуста
 tQty: Количество
-tSum: Cума
+tSum: Cумма
 tLoginAuth0: Для полного выхода, также нажмите кнопку «Завершить сеанс» в Telegram
 tLoginAuth1: Историю заказов можно просмотреть в боте
 tLoginAuth2: Можно войти прямо из приложения Telegram! Подписывайтесь на нашего бота
@@ -46,5 +46,4 @@ product:
   code: Код товара
   name: Наименование
   price: Цена
-  sum: Сумма
 order: Заказ

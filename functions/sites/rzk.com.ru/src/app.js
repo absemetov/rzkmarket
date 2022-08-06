@@ -133,11 +133,11 @@ const qtyInput = document.getElementById("qty");
 let buttonAddProduct;
 
 // show algolia form when close
-cartAddModalEl.addEventListener("hide.bs.modal", function(event) {
-  if (buttonAddProduct.getAttribute("data-modal-close")) {
-    // productModal.show();
-  }
-});
+// cartAddModalEl.addEventListener("hide.bs.modal", function(event) {
+//   if (buttonAddProduct.getAttribute("data-modal-close")) {
+//     productModal.show();
+//   }
+// });
 
 cartAddModalEl.addEventListener("show.bs.modal", function(event) {
   // Button that triggered the modal

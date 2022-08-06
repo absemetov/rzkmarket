@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="800" height="800" viewBox="0 0 800 800" xml:space="preserve">
+<desc>Created with Fabric.js 4.6.0</desc>
+<defs>
+</defs>
+<g transform="matrix(-1.6 0 0 1.6 400 400)" id="zk8GHJazUiABPRPuHnFoT"  >
+<path style="stroke: rgb(148,201,171); stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(255,215,0); fill-rule: nonzero; opacity: 1;" vector-effect="non-scaling-stroke"  transform=" translate(-250, -250)" d="M 0 0 L 500 0 L 500 500 L 0 500 z" stroke-linecap="round" />
+</g>
+<g transform="matrix(-1.6 0 0 1.6 400 200)" id="CWCfyfoE2JIBjJTpAembM"  >
+<path style="stroke: rgb(217,178,150); stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(0,87,184); fill-rule: nonzero; opacity: 1;" vector-effect="non-scaling-stroke"  transform=" translate(-250, -125)" d="M 0 0 L 500 0 L 500 250 L 0 250 z" stroke-linecap="round" />
+</g>
+<g transform="matrix(-1.6 0 0 -1.6 400 400)" id="kB5h7nKnwxCX8SmufwDWY"  >
+<path style="stroke: rgb(236,249,161); stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(255,255,255); fill-rule: nonzero; opacity: 1;" vector-effect="non-scaling-stroke"  transform=" translate(-160, -160)" d="M 0 0 L 320 0 L 320 320 L 0 320 z" stroke-linecap="round" />
+</g>
+<g transform="matrix(-1.6 0 0 -1.6 400 400)" id="G7pb5m-v_wdVhaaaMYpLD"  >
+<path style="stroke: rgb(58,204,31); stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(247,47,58); fill-rule: nonzero; opacity: 1;" vector-effect="non-scaling-stroke"  transform=" translate(-20, -90)" d="M 0 0 L 40 0 L 40 180 L 0 180 z" stroke-linecap="round" />
+</g>
+</svg>
