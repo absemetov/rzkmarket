@@ -54,14 +54,10 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
   modalBody.innerHTML = `<div class="card text-center h-100">
     <img src="${productImg2}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="${productName}">
     <div class="card-body">
-      ${productBrand !== "undefined" ? "<h6>" + productBrand + "</h6>" : ""}
       <h6>
-        <a href="/o/${sellerId}/p/${productId}">${productName}</a> <small class="text-muted">(${productId})</small>
-        <a href="//t.me/${i18n.bot_name}?start=o_${sellerId}_p_${productId}" target="_blank" class="ms-2">
-          <i class="bi bi-telegram fs-3"></i>
-        </a>
+        <a href="/o/${sellerId}/p/${productId}">
+        ${productBrand !== "undefined" ? productBrand : ""} - ${productName}</a> <small class="text-muted">(${productId})</small>
       </h6>
-      <h6>${seller}</h6>
     </div>
     <div class="card-footer">
       <h3>
@@ -71,6 +67,7 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
         <a href="#" tabindex="-1" class="btn btn-success disabled placeholder"></a>
         <a href="#" tabindex="-1" class="btn btn-primary disabled placeholder mt-2"></a>
       </div>
+      <h6 class="mt-3">${seller}</h6>
     </div>
   </div>`;
   // get product data
@@ -105,7 +102,8 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
 
 // fullscreen
 const fullscreen = document.getElementById("fullscreen");
-fullscreen.addEventListener("click", () => {
+fullscreen.addEventListener("click", (event) => {
+  event.preventDefault();
   productModalEl.querySelector(".modal-dialog").classList.toggle("modal-fullscreen");
 });
 

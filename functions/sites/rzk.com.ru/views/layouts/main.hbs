@@ -3,8 +3,8 @@
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
-      <link rel="stylesheet" href="/dist/index.4bb70a15.css">
-      <script type="module" src="/dist/index.44ca5714.js"></script>
+      <link rel="stylesheet" href="/dist/index.93cf057c.css">
+      <script type="module" src="/dist/index.c0ee4bc6.js"></script>
       <title>{{#if title}}{{title}} - {{/if}}{{envSite.i18n.siteTitle}}</title>
       <link rel="icon" href="/favicon-{{envSite.lang}}.ico">
       <link rel="icon" href="/logo/logo-{{envSite.lang}}.svg" type="image/svg+xml">
@@ -71,7 +71,7 @@
               @{{envSite.botName}}
             </a>
             <a class="nav-link" href="//absemetov.org.ua/">Nadir Absemetov</a>
-            <a class="nav-link disabled" href="https://github.com/absemetov/rzk-com-ua">RZK Market v.2.0.1 © 2022</a>
+            <a class="nav-link disabled" href="https://github.com/absemetov/rzk-com-ua">RZK Market 2.0.0 © 2022</a>
             </nav>
         </div>
       </div>
@@ -173,8 +173,8 @@
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title" id="productModalLabel">{{envSite.i18n.modalShowTitle}}</h5>
-              <button id="fullscreen" type="button" class="btn btn-outline-secondary ms-2"><i class="bi bi-arrows-fullscreen"></i></button>
+              <h6 class="modal-title" id="productModalLabel">{{envSite.i18n.modalShowTitle}}</h6>
+              <a id="fullscreen" href="#" class="ms-2"><i class="bi bi-arrows-fullscreen"></i></a>
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -209,7 +209,7 @@
       <div class="toast-container position-fixed bottom-0 end-0 p-3">
         <div id="liveToast" class="toast text-bg-light" data-bs-delay="3000" role="alert" aria-live="assertive" aria-atomic="true">
           <div class="toast-header">
-            <img src="//rzk.com.ru/logo/logo.svg" width="" height="30" class="me-2" alt="...">
+            <img src="/logo/logo-{{envSite.lang}}.svg" width="" height="30" class="me-2" alt="...">
             <strong class="me-auto" id="toast-seller">RZK Market UA</strong>
             <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
           </div>

@@ -47,7 +47,7 @@
     },
     {
       "target": "dev.rzk.com.ua",
-      "public": "sites/rzk.com.ua",
+      "public": "sites/rzk.com.ru",
       "ignore": [
         "firebase.json",
         "**/.*",
@@ -56,7 +56,7 @@
       "rewrites": [
         {
           "source": "**",
-          "function": "rzkComUa"
+          "function": "rzkComRu"
         }
       ]
     },
@@ -133,7 +133,7 @@
     },
     "hosting": {
       "port": 5000,
-      "host": "192.168.43.204"
+      "host": "192.168.87.68"
     },
     "ui": {
       "enabled": true

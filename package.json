@@ -11,6 +11,8 @@
     "deploy-site-ru":"firebase deploy --project=ru --only functions:rzkComRu &&  firebase deploy --project=ru --only hosting:rzk.com.ru",
     "deploy-bot-ru":"firebase deploy --project=ru --only functions:bot",
     "deploy-triggers-ru":"firebase deploy --project=ru --only functions:triggers",
+    "deploy-site-dev":"firebase deploy --project=dev --only functions:rzkComRu &&  firebase deploy --project=dev --only hosting:dev.rzk.com.ua",
+    "deploy-bot-dev":"firebase deploy --project=dev --only functions:bot",
     "pl": "firebase use",
     "s": "firebase emulators:start --only functions,hosting"
   },

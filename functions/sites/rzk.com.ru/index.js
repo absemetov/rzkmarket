@@ -374,7 +374,7 @@ app.get("/o/:objectId/s/:orderId", auth, async (req, res) => {
       orderNumber: store.formatOrderNumber(order.userId, order.orderNumber),
       lastName: order.lastName,
       firstName: order.firstName,
-      createdAt: moment.unix(order.createdAt).locale("ru").fromNow(),
+      createdAt: moment.unix(order.createdAt).locale(process.env.BOT_LANG).fromNow(),
       status: store.statuses().get(order.statusId),
     };
     // products
@@ -435,7 +435,7 @@ app.get("/o/:objectId/share-cart/:orderId", auth, async (req, res) => {
     });
     // render
     return res.render("share-cart", {
-      title: `${envSite.i18n.aCart} #${cartId} - ${object.name}`,
+      title: `${envSite.i18n.aCart()} #${cartId} - ${object.name}`,
       object,
       cartId,
       products,

@@ -48,9 +48,11 @@ const renderHits = async (renderOptions, isFirstRender) => {
                   ${item.brand ? "<h6>" + item.brand + "</h6>" : ""}
                   <h6>
                     <a href="/o/${item.sellerId}/p/${item.productId}">${highlight({attribute: "name", hit: item})}</a> <small class="text-muted">(${item.productId})</small>
-                    <a href="//t.me/${i18n.bot_name}?start=o_${item.sellerId}_p_${item.productId}" target="_blank" class="ms-2">
-                      <i class="bi bi-telegram fs-3"></i>
-                    </a>
+                    <div class="mt-2">
+                      <a href="//t.me/${i18n.bot_name}?start=o_${item.sellerId}_p_${item.productId}" target="_blank">
+                        <i class="bi bi-telegram fs-4"></i>
+                      </a>
+                    </div>
                   </h6>
                   <h6>${item.seller}</h6>
                 </div>
