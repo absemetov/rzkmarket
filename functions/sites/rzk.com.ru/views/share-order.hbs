@@ -2,11 +2,12 @@
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="/">{{envSite.i18n.aObjects}}</a></li>
     <li class="breadcrumb-item"><a href="/o/{{object.id}}">{{object.name}}</a></li>
-    <li class="breadcrumb-item active" aria-current="page">{{envSite.i18n.order}} #{{shareOrder.orderNumber}}</li>
+    <li class="breadcrumb-item active" aria-current="page">{{envSite.i18n.order}}</li>
   </ol>
 </nav>
 <h4>
-  {{shareOrder.lastName}} {{shareOrder.firstName}} {{shareOrder.createdAt}} {{shareOrder.status}}
+  {{envSite.i18n.order}} #{{shareOrder.orderNumber}}, {{shareOrder.lastName}} {{shareOrder.firstName}}, Статус: {{shareOrder.status}}
+  (<small ="text-muted">{{shareOrder.createdAt}}</small>)
 </h4>
 <div class="table-responsive">
   <table class="table table-striped table-hover">

@@ -3,8 +3,8 @@
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
-      <link rel="stylesheet" href="/dist/index.93cf057c.css">
-      <script type="module" src="/dist/index.c0ee4bc6.js"></script>
+      <link rel="stylesheet" href="/dist/index.4bb70a15.css">
+      <script type="module" src="/dist/index.05832235.js"></script>
       <title>{{#if title}}{{title}} - {{/if}}{{envSite.i18n.siteTitle}}</title>
       <link rel="icon" href="/favicon-{{envSite.lang}}.ico">
       <link rel="icon" href="/logo/logo-{{envSite.lang}}.svg" type="image/svg+xml">
@@ -28,10 +28,10 @@
             <span class="navbar-toggler-icon"></span>
           </button>
           <a class="d-none d-md-inline mx-2" href="/">
-            <img src="/logo/logo-long-{{envSite.lang}}.svg" alt="{{envSite.i18n.siteName}}" width="" height="40">
+            <img src="/logo/logo-long-{{envSite.lang}}.svg" alt="{{envSite.i18n.siteName}}" height="40">
           </a>
           <a class="d-inline d-md-none mx-2" href="/">
-            <img src="/logo/logo-{{envSite.lang}}.svg" alt="{{envSite.i18n.siteName}}" width="40" height="40">
+            <img src="/logo/logo-{{envSite.lang}}.svg" alt="{{envSite.i18n.siteName}}" height="40">
           </a>
           <div id="autocomplete" class="w-100"></div>
           {{#if object.id}}
@@ -65,7 +65,9 @@
             <a class="nav-link" href="/delivery-info">{{envSite.i18n.aDelivery}}</a>
             <a class="nav-link" href="/return-policy">{{envSite.i18n.aReturn}}</a>
             <a class="nav-link" href="{{envSite.gmaps}}">{{envSite.i18n.aReview}}</a>
-            <a class="nav-link" href="tel:{{envSite.phonetemplate}}">{{envSite.phonetemplate}}</a>
+            {{#each envSite.i18n.phones as |phone|}}
+              <a class="nav-link" href="tel:{{phone}}">{{phone}}</a>
+            {{/each}}
             <a class="nav-link" href="//t.me/{{envSite.botName}}?start=fromsite">
               <i class="bi bi-telegram"></i>
               @{{envSite.botName}}

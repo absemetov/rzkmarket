@@ -56,7 +56,7 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
     <div class="card-body">
       <h6>
         <a href="/o/${sellerId}/p/${productId}">
-        ${productBrand !== "undefined" ? productBrand : ""} - ${productName}</a> <small class="text-muted">(${productId})</small>
+        ${productBrand !== "undefined" ? `${productBrand} - ` : ""}${productName}</a> <small class="text-muted">(${productId})</small>
       </h6>
     </div>
     <div class="card-footer">
@@ -67,7 +67,6 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
         <a href="#" tabindex="-1" class="btn btn-success disabled placeholder"></a>
         <a href="#" tabindex="-1" class="btn btn-primary disabled placeholder mt-2"></a>
       </div>
-      <h6 class="mt-3">${seller}</h6>
     </div>
   </div>`;
   // get product data

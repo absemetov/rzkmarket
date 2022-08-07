@@ -73,7 +73,8 @@
   <nav aria-label="Page navigation example">
     <ul class="pagination mt-4">
       {{#each prevNextLinks as |prevNextLink|}}
-        <li class="page-item"><a class="page-link" href="{{prevNextLink.url}}" title="{{prevNextLink.text}}"><i class="bi {{prevNextLink.icon}}"></i></a></li>
+        <li class="page-item"><a class="page-link{{#if prevNextLink.show}} disabled{{/if}}" href="{{prevNextLink.url}}" title="{{prevNextLink.text}}">
+        <i class="bi {{prevNextLink.icon}}"></i></a></li>
       {{/each}}
     </ul>
   </nav>

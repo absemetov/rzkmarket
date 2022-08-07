@@ -240,39 +240,22 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
       // endBefore prev button e paaram
       const endBeforeSnap = productsSnapshot.docs[0];
       const ifBeforeProducts = await mainQuery.endBefore(endBeforeSnap).limitToLast(1).get();
-      if (!ifBeforeProducts.empty) {
-        if (currentCatalog) {
-          prevNextLinks.push({
-            text: envSite.i18n.aPagPrevious,
-            icon: "bi-chevron-left",
-            url: `/o/${object.id}/c/${currentCatalog.id}?endBefore=${endBeforeSnap.id}${tagUrl}`,
-          });
-        } else {
-          prevNextLinks.push({
-            text: envSite.i18n.aPagPrevious,
-            icon: "bi-chevron-left",
-            url: `/o/${object.id}/c?endBefore=${endBeforeSnap.id}${tagUrl}`,
-          });
-        }
-      }
+      prevNextLinks.push({
+        text: envSite.i18n.aPagPrevious,
+        icon: "bi-chevron-left",
+        show: ifBeforeProducts.empty,
+        url: `/o/${object.id}/c${currentCatalog ? `/${currentCatalog.id}` : ""}?endBefore=${endBeforeSnap.id}${tagUrl}`,
+      });
       // startAfter
       const startAfterSnap = productsSnapshot.docs[productsSnapshot.docs.length - 1];
       const ifAfterProducts = await mainQuery.startAfter(startAfterSnap).limit(1).get();
-      if (!ifAfterProducts.empty) {
-        if (currentCatalog) {
-          prevNextLinks.push({
-            text: envSite.i18n.aPagNext,
-            icon: "bi-chevron-right",
-            url: `/o/${object.id}/c/${currentCatalog.id}?startAfter=${startAfterSnap.id}${tagUrl}`,
-          });
-        } else {
-          prevNextLinks.push({
-            text: envSite.i18n.aPagNext,
-            icon: "bi-chevron-right",
-            url: `/o/${object.id}/c?startAfter=${startAfterSnap.id}${tagUrl}`,
-          });
-        }
-      }
+      console.log(ifBeforeProducts.empty, ifAfterProducts.empty);
+      prevNextLinks.push({
+        text: envSite.i18n.aPagNext,
+        icon: "bi-chevron-right",
+        show: ifAfterProducts.empty,
+        url: `/o/${object.id}/c${currentCatalog ? `/${currentCatalog.id}` : ""}?startAfter=${startAfterSnap.id}${tagUrl}`,
+      });
     }
   }
   // count cart items
