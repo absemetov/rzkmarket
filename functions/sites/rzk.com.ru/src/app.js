@@ -52,7 +52,7 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
   const modalBody = productModalEl.querySelector(".modal-body");
   // const modalFooter = productModalEl.querySelector(".modal-footer");
   modalBody.innerHTML = `<div class="card text-center h-100">
-    <img src="${productImg2}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="${productName}">
+    <img src="${productImg2}" onerror="this.src = '/icons/photo_error_${lang}.svg';" class="card-img-top" alt="${productName}">
     <div class="card-body">
       <h6>
         <a href="/o/${sellerId}/p/${productId}">
@@ -196,6 +196,7 @@ addToCartform.addEventListener("submit", async (event) => {
     alert(resJson.error);
     addButton.disabled = false;
     delButton.disabled = false;
+    return false;
   }
   // set toast header
   toastSeller.innerText = buttonAddProduct.dataset.seller;
@@ -290,8 +291,8 @@ if (purchaseForm) {
       window.location.href = `/o/${order.objectId}/s/${order.orderId}`;
     } else {
       createOrderButton.disabled = false;
-      alert(order.error);
       for (const [key, error] of Object.entries(order.error)) {
+        alert(`${key} => ${error}`);
         if (key === "carrierNumber") {
           document.getElementById(key).classList.add("is-invalid");
           document.getElementById(`${key}Feedback`).textContent = error[0];

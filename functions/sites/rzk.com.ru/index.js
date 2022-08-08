@@ -113,7 +113,8 @@ app.get("/o/:objectId", auth, async (req, res) => {
     // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
     res.render("object", {title: object.name, object, envSite});
   } else {
-    return res.redirect("/");
+    // return res.redirect("/");
+    return res.status(404).send("<h1>Object does not exist</h1>");
   }
 });
 
@@ -392,12 +393,13 @@ app.get("/o/:objectId/s/:orderId", auth, async (req, res) => {
 });
 
 // share cart
-app.get("/o/:objectId/share-cart/:orderId", auth, async (req, res) => {
+app.get("/o/:objectId/share-cart/:cartId", auth, async (req, res) => {
   const objectId = req.params.objectId;
-  const cartId = req.params.orderId;
+  const cartId = req.params.cartId;
   const object = await store.findRecord(`objects/${objectId}`);
   object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
-  const cartProducts = await cart.products(objectId, cartId);
+  const cartData = await store.findRecord(`objects/${objectId}/carts/${cartId}`);
+  const cartProducts = store.sort(cartData.products);
   if (cartProducts.length) {
     const products = [];
     let totalQty = 0;
@@ -421,6 +423,7 @@ app.get("/o/:objectId/share-cart/:orderId", auth, async (req, res) => {
       title: `${envSite.i18n.aCart()} #${cartId} - ${object.name}`,
       object,
       cartId,
+      updatedAt: moment.unix(cartData.updatedAt).locale(process.env.BOT_LANG).fromNow(),
       products,
       totalQty,
       totalSum: roundNumber(totalSum),
@@ -614,7 +617,7 @@ app.post("/o/:objectId/cart/purchase", auth, (req, res) => {
       "comment": "string",
     };
     // add carrier number
-    if (store.carriers().get(+ fields.carrierId).reqNumber) {
+    if (fields.carrierId && store.carriers().get(+ fields.carrierId).reqNumber) {
       rulesOrder.carrierNumber = "required|integer|min:0";
     }
     const validateOrder = new Validator(fields, rulesOrder, {
@@ -652,6 +655,7 @@ app.post("/o/:objectId/cart/purchase", auth, (req, res) => {
   });
   bb.end(req.rawBody);
 });
+
 // cart add product
 app.post("/o/:objectId/cart/add", auth, jsonParser, async (req, res) => {
   const objectId = req.params.objectId;
@@ -684,38 +688,9 @@ app.post("/o/:objectId/cart/add", auth, jsonParser, async (req, res) => {
   // get product data
   const object = await store.findRecord(`objects/${objectId}`);
   const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
-  const price = roundNumber(product.price * object.currencies[product.currency]);
+  const price = product.price = roundNumber(product.price * object.currencies[product.currency]);
   // add to cart
-  let products = {};
-  // add product
-  if (qty) {
-    if (added) {
-      products = {
-        [productId]: {
-          qty,
-        },
-      };
-    } else {
-      // get product price
-      products = {
-        [productId]: {
-          name: `${product.brand ? product.brand + " " : ""}${product.name}`,
-          price,
-          unit: product.unit,
-          qty,
-          createdAt: Math.floor(Date.now() / 1000),
-        },
-      };
-    }
-    await store.createRecord(`objects/${objectId}/carts/${req.user.uid}`, {products});
-  }
-  // remove product if be exist
-  if (added && !qty) {
-    await store.createRecord(`objects/${objectId}/carts/${req.user.uid}`,
-        {"products": {
-          [productId]: firebase.firestore.FieldValue.delete(),
-        }});
-  }
+  await cart.add(objectId, req.user.uid, added ? product.id : product, qty);
   const cartInfo = await cart.cartInfo(objectId, req.user.uid);
   return res.json({cartInfo, price});
 });
@@ -736,9 +711,8 @@ app.get("/return-policy", (req, res) => {
 });
 
 // not found route
-app.use(function(req, res, next) {
-  console.log("** HTTP Error - 404 for request: " + req.url);
-  res.redirect("/");
+app.get("*", (req, res) => {
+  res.status(404).send("<h1>404! Page not found</h1>");
 });
 
 // config GCP

@@ -11,7 +11,8 @@ const rzkComRu = require("./sites/rzk.com.ru");
 exports.rzkComUa = rzkComRu.express;
 exports.rzkComRu = rzkComRu.express;
 
-exports.bot = bot.bot;
+exports.botUa = bot.bot;
+exports.botRu = bot.bot;
 exports.triggers = require("./triggers");
 // // Create and Deploy Your First Cloud Functions
 // https://firebase.google.com/docs/functions/write-firebase-functions

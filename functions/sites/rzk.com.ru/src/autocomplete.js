@@ -174,6 +174,7 @@ export function startAutocomplete() {
                   <div class="aa-ItemIcon">
                     <img
                       src="${item.img1 ? item.img1 : "/icons/flower3.svg"}"
+                      onerror="this.src = '/icons/flower3.svg';"
                       alt="${item.name}"
                       width="100"
                       height="100"
@@ -246,6 +247,7 @@ export function startAutocomplete() {
                   <div class="aa-ItemIcon">
                     <img
                       src="${item.img1 ? item.img1 : "/icons/folder2.svg"}"
+                      onerror="this.src = '/icons/folder2.svg';"
                       alt="${item.name}"
                       width="100"
                       height="100"

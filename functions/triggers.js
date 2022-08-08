@@ -21,6 +21,7 @@ exports.notifyNewUser = functions.region("europe-central2").firestore
       await bot.telegram.sendMessage(94899148, `<b>New subsc! <a href="tg://user?id=${userId}">${userId}</a>\n`+
       `Message: ${user.message}</b>`,
       {parse_mode: "html"});
+      return null;
     });
 
 // notify admin when create order
@@ -36,6 +37,7 @@ exports.notifyNewOrder = functions.region("europe-central2").firestore
       `Order ${order.userId}-${order.orderNumber}\n` +
       `<a href="https://${process.env.BOT_SITE}/o/${order.objectId}/s/${orderId}">` +
       `https://${process.env.BOT_SITE}/o/${order.objectId}/s/${orderId}</a></b>`, {parse_mode: "html"});
+      return null;
     });
 
 // notify admin when create cart
@@ -49,6 +51,10 @@ exports.notifyNewCart = functions.region("europe-central2").firestore
       `<a href="https://${process.env.BOT_SITE}/o/${objectId}/share-cart/${cartId}">` +
       `https://${process.env.BOT_SITE}/o/${objectId}/share-cart/${cartId}</a></b>`,
       {parse_mode: "html"});
+      const cart = snap.data();
+      return snap.ref.set({
+        createdAt: cart.updatedAt,
+      }, {merge: true});
     });
 
 // add createdAt field to Products

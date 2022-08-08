@@ -176,7 +176,7 @@ const cart = {
       if (typeof product == "object") {
         products = {
           [product.id]: {
-            name: product.name,
+            name: `${product.brand ? product.brand + " " : ""}${product.name}`,
             price: product.price,
             unit: product.unit,
             qty: qty,
@@ -190,7 +190,10 @@ const cart = {
           },
         };
       }
-      await store.createRecord(`objects/${objectId}/carts/${userId}`, {products});
+      await store.createRecord(`objects/${objectId}/carts/${userId}`, {
+        updatedAt: Math.floor(Date.now() / 1000),
+        products,
+      });
     } else {
       // delete products
       if (typeof product !== "object") {
@@ -247,7 +250,7 @@ const cart = {
     let totalQty = 0;
     let totalSum = 0;
     if (userId) {
-      const cartProducts = await cart.products(objectId, userId);
+      const cartProducts = await this.products(objectId, userId);
       for (const cartProduct of cartProducts) {
         cartCount ++;
         totalQty += cartProduct.qty;

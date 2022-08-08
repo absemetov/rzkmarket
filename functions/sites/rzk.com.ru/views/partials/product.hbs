@@ -1,7 +1,7 @@
 <div class="col">
   <div class="card text-center h-100">
     <a {{#if smartPhoto}}href="{{product.img2}}" class="js-smartphoto" data-caption="{{product.name}}"{{else}}href="{{product.url}}"{{/if}}>
-      <img src="{{product.img1}}" onerror="this.src = '/icons/photo_error.svg';" class="card-img-top" alt="{{product.name}}">
+      <img src="{{product.img1}}" onerror="this.src = '/icons/photo_error_{{envSite.lang}}.svg';" class="card-img-top" alt="{{product.name}}">
     </a>
     <div class="card-body">
       {{#if product.brand}}<h6>{{product.brand}}</h6>{{/if}}
