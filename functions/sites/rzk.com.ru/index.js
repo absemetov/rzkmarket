@@ -35,6 +35,7 @@ const envSite = {
   phoneregexp: process.env.BOT_PHONEREGEXP,
   phonetemplate: process.env.BOT_PHONETEMPLATE,
   domain: process.env.BOT_SITE,
+  devPrefix: process.env.ALGOLIA_PREFIX,
 };
 const app = express();
 app.use(cors({origin: true}));

@@ -2,7 +2,7 @@ import {autocomplete, getAlgoliaResults} from "@algolia/autocomplete-js";
 import {createLocalStorageRecentSearchesPlugin} from "@algolia/autocomplete-plugin-recent-searches";
 import {createQuerySuggestionsPlugin} from "@algolia/autocomplete-plugin-query-suggestions";
 import {setInstantSearchUiState, getInstantSearchUiState, INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE, searchPanel} from "./instantsearch";
-import {searchClient} from "./searchClient";
+import {searchClient, devPrefix} from "./searchClient";
 
 import i18nContext from "./i18n";
 const lang = document.getElementById("addToCart").dataset.lang;
@@ -39,7 +39,7 @@ const recentSearchesPlugin = createLocalStorageRecentSearchesPlugin({
 });
 const querySuggestionsPlugin = createQuerySuggestionsPlugin({
   searchClient,
-  indexName: "dev_query_suggestions",
+  indexName: `${devPrefix}query_suggestions`,
   getSearchParams() {
     return recentSearchesPlugin.data.getAlgoliaSearchParams({
       hitsPerPage: 6,
@@ -79,7 +79,7 @@ export function startAutocomplete() {
     debug: false,
     container: "#autocomplete",
     openOnFocus: true,
-    placeholder: i18n.a_search,
+    placeholder: i18n.placeholder_search,
     initialState: {
       query: searchPageState.query || "",
     },
@@ -129,7 +129,7 @@ export function startAutocomplete() {
               searchClient,
               queries: [
                 {
-                  indexName: "dev_products",
+                  indexName: `${devPrefix}products`,
                   query,
                   params: {
                     hitsPerPage: 5,
@@ -210,7 +210,7 @@ export function startAutocomplete() {
               searchClient,
               queries: [
                 {
-                  indexName: "dev_catalogs",
+                  indexName: `${devPrefix}catalogs`,
                   query,
                   params: {
                     hitsPerPage: 5,

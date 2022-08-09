@@ -9,8 +9,8 @@ const bot = new Telegraf(process.env.BOT_TOKEN, {
 });
 const bucket = firebase.storage().bucket();
 const algoliaClient = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
-const productsIndex = algoliaClient.initIndex("products");
-const catalogsIndex = algoliaClient.initIndex("dev_catalogs");
+const productsIndex = algoliaClient.initIndex(`${process.env.ALGOLIA_PREFIX}products`);
+const catalogsIndex = algoliaClient.initIndex(`${process.env.ALGOLIA_PREFIX}catalogs`);
 // notify admin when new user
 exports.notifyNewUser = functions.region("europe-central2").firestore
     .document("users/{userId}")
@@ -21,7 +21,10 @@ exports.notifyNewUser = functions.region("europe-central2").firestore
       await bot.telegram.sendMessage(94899148, `<b>New subsc! <a href="tg://user?id=${userId}">${userId}</a>\n`+
       `Message: ${user.message}</b>`,
       {parse_mode: "html"});
-      return null;
+      // add timestamp
+      return snap.ref.set({
+        createdAt: Math.floor(Date.now() / 1000),
+      }, {merge: true});
     });
 
 // notify admin when create order

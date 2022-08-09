@@ -13,6 +13,7 @@
     "deploy-triggers-ru":"firebase deploy --project=ru --only functions:triggers",
     "deploy-site-dev-ua":"firebase deploy --project=dev --only functions:rzkComUa &&  firebase deploy --project=dev --only hosting:dev.rzk.com.ua",
     "deploy-site-dev-ru":"firebase deploy --project=dev --only functions:rzkComRu &&  firebase deploy --project=dev --only hosting:dev.rzk.com.ru",
+    "deploy-triggers-dev":"firebase deploy --project=dev --only functions:triggers",
     "deploy-bot-dev":"firebase deploy --project=dev --only functions:bot",
     "pl": "firebase use",
     "s": "firebase emulators:start --only functions,hosting"
