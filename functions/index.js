@@ -2,17 +2,13 @@ const admin = require("firebase-admin");
 // const functions = require("firebase-functions");
 // init firebase service
 admin.initializeApp();
-// const app = require("./app");
 const bot = require("./bot");
 const rzkComRu = require("./sites/rzk.com.ru");
-// const rzkComUa = require("./sites/rzk.com.ua");
 
-// exports.app = app.app;
 exports.rzkComUa = rzkComRu.express;
 exports.rzkComRu = rzkComRu.express;
-
-exports.botUa = bot.bot;
-exports.botRu = bot.bot;
+exports.botUa = bot.handle;
+exports.botRu = bot.handle;
 exports.triggers = require("./triggers");
 // // Create and Deploy Your First Cloud Functions
 // https://firebase.google.com/docs/functions/write-firebase-functions

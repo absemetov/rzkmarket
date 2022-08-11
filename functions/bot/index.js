@@ -20,9 +20,6 @@ bot.use(async (ctx, next) => {
   if (ctx.session === undefined) {
     ctx.session = {};
   }
-  // set bot name user name and project logo
-  // ctx.state.bot_first_name = bot.botInfo.first_name;
-  // ctx.state.bot_username = bot.botInfo.username;
   return next();
 });
 // route actions
@@ -196,7 +193,7 @@ const runtimeOpts = {
 // process.once("SIGINT", () => bot.stop("SIGINT"));
 // process.once("SIGTERM", () => bot.stop("SIGTERM"));
 // use warsaw region("europe-central2")
-exports.bot = functions.region("europe-central2").
+exports.handle = functions.region("europe-central2").
     runWith(runtimeOpts).https.onRequest(async (req, res) => {
       try {
         // launch local env
