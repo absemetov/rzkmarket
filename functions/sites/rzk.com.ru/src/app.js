@@ -72,6 +72,11 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
   // get product data
   const productRes = await fetch(`/o/${sellerId}/p/${productId}`, {method: "POST"});
   const product = await productRes.json();
+  if (!productRes.ok) {
+    // throw new Error(resJson.error);
+    alert(product.error);
+    return false;
+  }
   const cardFooter = productModalEl.querySelector(".card-footer");
   cardFooter.innerHTML = `
     <h3>

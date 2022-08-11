@@ -9,7 +9,7 @@ import {connectSearchBox,
 import {poweredBy} from "instantsearch.js/es/widgets";
 import historyRouter from "instantsearch.js/es/lib/routers/history";
 import {highlight} from "instantsearch.js/es/helpers";
-import {searchClient, devPrefix} from "../src/searchClient";
+import {searchClient, devPrefix} from "./searchClient";
 
 const INSTANT_SEARCH_INDEX_NAME = `${devPrefix}products`;
 export const INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE = "categories.lvl0";
