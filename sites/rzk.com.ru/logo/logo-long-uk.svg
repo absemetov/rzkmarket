@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="1350" height="200" viewBox="0 0 1350 200" xml:space="preserve">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="1346" height="200" viewBox="0 0 1346 200" xml:space="preserve">
 <desc>Created with Fabric.js 4.6.0</desc>
 <defs>
 </defs>
@@ -10,13 +10,13 @@
 <g transform="matrix(-1 0 0 -1 100 50)" id="CWCfyfoE2JIBjJTpAembM"  >
 <path style="stroke: rgb(217,178,150); stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(0,87,184); fill-rule: nonzero; opacity: 1;" vector-effect="non-scaling-stroke"  transform=" translate(-100, -50)" d="M 0 0 L 200 0 L 200 100 L 0 100 z" stroke-linecap="round" />
 </g>
-<g transform="matrix(-0.41 0 0 -0.4 101.91 100)" id="kB5h7nKnwxCX8SmufwDWY"  >
-<path style="stroke: rgb(236,249,161); stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(255,255,255); fill-rule: nonzero; opacity: 1;" vector-effect="non-scaling-stroke"  transform=" translate(-160, -160)" d="M 0 0 L 320 0 L 320 320 L 0 320 z" stroke-linecap="round" />
+<g transform="matrix(-1 0 0 -1 100 100)" id="kB5h7nKnwxCX8SmufwDWY"  >
+<path style="stroke: rgb(236,249,161); stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(255,255,255); fill-rule: nonzero; opacity: 1;" vector-effect="non-scaling-stroke"  transform=" translate(-65, -65)" d="M 0 0 L 130 0 L 130 130 L 0 130 z" stroke-linecap="round" />
 </g>
 <g transform="matrix(-1 0 0 -1 100 100)" id="G7pb5m-v_wdVhaaaMYpLD"  >
 <path style="stroke: rgb(58,204,31); stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(247,47,58); fill-rule: nonzero; opacity: 1;" vector-effect="non-scaling-stroke"  transform=" translate(-8, -36)" d="M 0 0 L 16 0 L 16 72 L 0 72 z" stroke-linecap="round" />
 </g>
-<g transform="matrix(1.02 0 0 1 778.56 94.52)" style="" id="56q0v7XfyAgTW7JgdI6K6"  >
-		<text xml:space="preserve" font-family="Ubuntu" font-size="120" font-style="normal" font-weight="300" line-height="1" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1; white-space: pre;" ><tspan x="-545.14" y="50.98" >RZK Маркет Україна</tspan></text>
+<g transform="matrix(1.02 0 0 1 783.56 94.52)" style="" id="56q0v7XfyAgTW7JgdI6K6"  >
+		<text xml:space="preserve" font-family="Ubuntu" font-size="120" font-style="normal" font-weight="300" line-height="1" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1; white-space: pre;" ><tspan x="-550.05" y="50.98" >RZK Маркет Україна</tspan></text>
 </g>
 </svg>

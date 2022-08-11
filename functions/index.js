@@ -1,19 +1,20 @@
-const admin = require("firebase-admin");
-// const functions = require("firebase-functions");
+// const admin = require("firebase-admin");
+import {initializeApp} from "firebase-admin/app";
+const functions = require("firebase-functions");
 // init firebase service
-admin.initializeApp();
+initializeApp();
 const bot = require("./bot");
 const rzkComRu = require("./sites/rzk.com.ru");
 
-exports.rzkComUa = rzkComRu.express;
-exports.rzkComRu = rzkComRu.express;
-exports.botUa = bot.handle;
-exports.botRu = bot.handle;
-exports.triggers = require("./triggers");
+export const rzkComUa = rzkComRu.express;
+export const rzkComRu1 = rzkComRu.express;
+export const botUa = bot.handle;
+export const botRu = bot.handle;
+export const triggers = require("./triggers");
 // // Create and Deploy Your First Cloud Functions
 // https://firebase.google.com/docs/functions/write-firebase-functions
 
-// exports.helloWorld = functions.https.onRequest((request, response) => {
-//   functions.logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+export const helloWorld = functions.https.onRequest((request, response) => {
+  functions.logger.info("Hello logs!", {structuredData: true});
+  response.send("Hello from Firebase!");
+});

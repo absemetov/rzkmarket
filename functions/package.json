@@ -1,9 +1,11 @@
 {
   "name": "functions",
+  "type": "module",
   "description": "Cloud Functions for Firebase",
   "scripts": {
     "parcel-s": "parcel --target web --cache-dir ../.parcel-cache --dist-dir ../dist",
     "parcel-b": "rm -rf ../sites/rzk.com.ru/dist && parcel build --target web --cache-dir ../.parcel-cache --no-cache --no-source-maps",
+    "parcel-m": "parcel build --target bundler",
     "lint": "eslint .",
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",
@@ -14,7 +16,7 @@
   "engines": {
     "node": "16"
   },
-  "main": "index.js",
+  "main": "bundler/index.js",
   "targets": {
     "main": false,
     "web": {
@@ -24,8 +26,8 @@
     },
     "bundler": {
       "context": "node",
-      "source": "sites/rzk.com.ru/src/app.js",
-      "distDir": "sites/rzk.com.ru/dist",
+      "source": "index.js",
+      "distDir": "bundler",
       "sourceMap": false
     }
   },
@@ -46,8 +48,8 @@
     "cyrillic-to-translit-js": "^3.1.0",
     "express": "^4.18.1",
     "express-handlebars": "^6.0.6",
-    "firebase": "^8.4.1",
-    "firebase-admin": "^10.0.2",
+    "firebase": "^9.9.2",
+    "firebase-admin": "^11.0.1",
     "firebase-functions": "^3.22.0",
     "google-spreadsheet": "^3.3.0",
     "googleapis": "^105.0.0",
