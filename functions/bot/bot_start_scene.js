@@ -37,7 +37,7 @@ const startHandler = async (ctx) => {
   inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
   inlineKeyboardArray.push([{text: "🧾 Поиск товаров", callback_data: "search"}]);
   inlineKeyboardArray.push([{text: `Войти на сайт ${process.env.BOT_SITE}`, login_url: {
-    url: `https://${process.env.BOT_SITE}/login`,
+    url: `${process.env.BOT_SITE}/login`,
     request_write_access: true,
   }}]);
   // add main photo
@@ -94,7 +94,7 @@ startActions.push(async (ctx, next) => {
       inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
       inlineKeyboardArray.push([{text: "🧾 Поиск товаров", callback_data: "search"}]);
       inlineKeyboardArray.push([{text: `Войти на сайт ${process.env.BOT_SITE}`, login_url: {
-        url: `https://${process.env.BOT_SITE}/login`,
+        url: `${process.env.BOT_SITE}/login`,
         request_write_access: true,
       }}]);
     }

@@ -1,5 +1,5 @@
 const functions = require("firebase-functions");
-const {Telegraf, session} = require("telegraf");
+const {Telegraf} = require("telegraf");
 const {startActions, startHandler, parseUrl, isAdmin, uploadPhotoObj} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
 const {uploadActions, uploadForm} = require("./bot_upload_scene");
@@ -10,21 +10,17 @@ const algoliasearch = require("algoliasearch");
 const bot = new Telegraf(process.env.BOT_TOKEN, {
   handlerTimeout: 540000,
 });
-bot.use(session());
+// midleware admin
 bot.use(isAdmin);
+// helper route
 bot.use(async (ctx, next) => {
   if (ctx.callbackQuery && "data" in ctx.callbackQuery && process.env.FUNCTIONS_EMULATOR) {
     console.log("=============callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
   }
-  // set session
-  if (ctx.session === undefined) {
-    ctx.session = {};
-  }
   return next();
 });
 // route actions
-// eslint-disable-next-line no-useless-escape
-bot.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/,
+bot.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&/:~+]+)?/,
     parseUrl, ...startActions, ...catalogsActions, ...ordersActions, ...monoActions, ...uploadActions);
 // start bot
 bot.start(async (ctx) => {

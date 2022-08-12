@@ -1,6 +1,5 @@
 {
   "name": "functions",
-  "type": "module",
   "description": "Cloud Functions for Firebase",
   "scripts": {
     "parcel-s": "parcel --target web --cache-dir ../.parcel-cache --dist-dir ../dist",
@@ -16,7 +15,7 @@
   "engines": {
     "node": "16"
   },
-  "main": "bundler/index.js",
+  "main": "index.js",
   "targets": {
     "main": false,
     "web": {
@@ -28,6 +27,7 @@
       "context": "node",
       "source": "index.js",
       "distDir": "bundler",
+      "outputFormat": "esmodule",
       "sourceMap": false
     }
   },
@@ -48,7 +48,6 @@
     "cyrillic-to-translit-js": "^3.1.0",
     "express": "^4.18.1",
     "express-handlebars": "^6.0.6",
-    "firebase": "^9.9.2",
     "firebase-admin": "^11.0.1",
     "firebase-functions": "^3.22.0",
     "google-spreadsheet": "^3.3.0",

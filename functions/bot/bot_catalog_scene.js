@@ -24,7 +24,9 @@ const showCatalog = async (ctx, next) => {
       uUrl += "&u=1";
     }
     const inlineKeyboardArray =[];
-    ctx.session.pathCatalog = ctx.callbackQuery.data;
+    // ctx.session.pathCatalog = ctx.callbackQuery.data;
+    // save to fire session
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {"pathCatalog": ctx.callbackQuery.data}});
     if (catalogId) {
       const currentCatalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
       // back button
@@ -165,8 +167,9 @@ const showProduct = async (ctx, next) => {
     product.price = roundNumber(product.price * object.currencies[product.currency]);
     const cartButtons = await cart.cartButtons(objectId, ctx.from.id);
     let catalogUrl = `c/${product.catalog.id}?o=${objectId}`;
-    if (ctx.session.pathCatalog) {
-      catalogUrl = ctx.session.pathCatalog;
+    const sessionPathCatalog = await store.findRecord(`users/${ctx.from.id}`, "session.pathCatalog");
+    if (sessionPathCatalog) {
+      catalogUrl = sessionPathCatalog;
     }
     const inlineKeyboardArray = [];
     inlineKeyboardArray.push([{text: `⤴️ ../${product.catalog.name}`, callback_data: catalogUrl}]);
@@ -258,7 +261,8 @@ catalogsActions.push( async (ctx, next) => {
     // add redirect param and clear path
     if (redirectToCart) {
       paramsUrl += "&r=1";
-      ctx.session.pathCatalog = null;
+      // ctx.session.pathCatalog = null;
+      await store.createRecord(`users/${ctx.from.id}`, {"session": {"pathCatalog": null}});
     }
     if (added) {
       paramsUrl += "&a=1";
@@ -268,8 +272,12 @@ catalogsActions.push( async (ctx, next) => {
     product.price = roundNumber(product.price * object.currencies[product.currency]);
     if (product) {
       let catalogUrl = `c/${product.catalog.id}?o=${objectId}`;
-      if (ctx.session.pathCatalog) {
-        catalogUrl = ctx.session.pathCatalog;
+      // if (ctx.session.pathCatalog) {
+      //   catalogUrl = ctx.session.pathCatalog;
+      // }
+      const sessionPathCatalog = await store.findRecord(`users/${ctx.from.id}`, "session.pathCatalog");
+      if (sessionPathCatalog) {
+        catalogUrl = sessionPathCatalog;
       }
       // add product to cart
       if (addValue) {
@@ -761,8 +769,12 @@ catalogsActions.push( async (ctx, next) => {
     const objectId = ctx.state.params.get("o");
     const catalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
     let catalogUrl = `c/${catalog.id}?o=${objectId}`;
-    if (ctx.session.pathCatalog) {
-      catalogUrl = ctx.session.pathCatalog;
+    // if (ctx.session.pathCatalog) {
+    //   catalogUrl = ctx.session.pathCatalog;
+    // }
+    const sessionPathCatalog = await store.findRecord(`users/${ctx.from.id}`, "session.pathCatalog");
+    if (sessionPathCatalog) {
+      catalogUrl = sessionPathCatalog;
     }
     inlineKeyboardArray.push([{text: `⤴️ ../${catalog.name}`,
       callback_data: catalogUrl}]);
@@ -965,8 +977,12 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
       }
       // get catalog url (path)
       let catalogUrl = `c/${product.catalog.id}?o=${objectId}&u=1`;
-      if (ctx.session.pathCatalog) {
-        catalogUrl = ctx.session.pathCatalog;
+      // if (ctx.session.pathCatalog) {
+      //   catalogUrl = ctx.session.pathCatalog;
+      // }
+      const sessionPathCatalog = await store.findRecord(`users/${ctx.from.id}`, "session.pathCatalog");
+      if (sessionPathCatalog) {
+        catalogUrl = sessionPathCatalog;
       }
       const media = await photoCheckUrl(`photos/o/${objectId}/p/${product.id}/${photoId}/2.jpg`);
       await ctx.replyWithPhoto(media,
