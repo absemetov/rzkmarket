@@ -99,9 +99,19 @@ bot.command("mono", async (ctx) => {
 });
 // check session vars
 bot.on(["text", "contact"], async (ctx) => {
+  // create object parce url
+  const sheetUrl = ctx.state.isAdmin && ctx.message.text && ctx.message.text.match(/d\/(.*)\//);
+  if (sheetUrl) {
+    // save sheetId to session
+    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"sheetId": sheetUrl[1]}});
+    await uploadForm(ctx, sheetUrl[1]);
+    return;
+  }
+  // get session scene
+  const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");
   // edit order wizard
-  if (ctx.session.scene === "editOrder") {
-    await orderWizard[ctx.session.cursor](ctx);
+  if (sessionFire && sessionFire.scene === "editOrder") {
+    await orderWizard[sessionFire.cursor](ctx);
     return;
   }
   if (ctx.message.text === "Отмена") {
@@ -110,18 +120,10 @@ bot.on(["text", "contact"], async (ctx) => {
         remove_keyboard: true,
       }});
     await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": null}});
-    ctx.session.scene = null;
+    // ctx.session.scene = null;
     return;
   }
-  // create object
-  const sheetUrl = ctx.state.isAdmin && ctx.message.text && ctx.message.text.match(/d\/(.*)\//);
-  if (sheetUrl) {
-    // save sheetId to session
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {"sheetId": sheetUrl[1]}});
-    await uploadForm(ctx, sheetUrl[1]);
-    return;
-  }
-  const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");
+  // wizard
   if (sessionFire && sessionFire.scene === "wizardOrder") {
     await cartWizard[sessionFire.cursor](ctx);
     return;

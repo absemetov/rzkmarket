@@ -30,6 +30,8 @@ const parseUrl = (ctx, next) => {
 const startHandler = async (ctx) => {
   const inlineKeyboardArray = [];
   // get all Objects
+  const sessionPathCatalog = await store.findRecord(`users/${ctx.from.id}`, "session.pathCatalog");
+  console.log({sessionPathCatalog});
   const objects = await store.findAll("objects");
   objects.forEach((object) => {
     inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);

@@ -313,7 +313,7 @@ const createObject = async (ctx, next) => {
         return;
       }
       // start upload
-      const doc = new GoogleSpreadsheet(sheetId);
+      const doc = new GoogleSpreadsheet(object.sheetId);
       await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
       await doc.loadInfo(); // loads document properties and worksheets
       const sheet = doc.sheetsByTitle["info"]; // doc.sheetsById[listId];
@@ -460,20 +460,19 @@ const uploadForm = async (ctx, sheetId) => {
     // check object
     const objectRzk = await store.findRecord(`objects/${id}`);
     const inlineKeyboardArray = [];
-    let txtBtn = "";
-    if (objectRzk) {
-      txtBtn = "Обновить";
-    } else {
-      txtBtn = "Создать";
+    if (!objectRzk) {
+      throw new Error(`object: ${id} не найден`);
     }
-    inlineKeyboardArray.push([{text: `${txtBtn} объект ${name}`, callback_data: `upload/${id}?todo=createObject`}]);
+    if (objectRzk && objectRzk.sheetId !== sheetId) {
+      throw new Error(`<b>sheetId</b>: ${sheetId} не совпадает`);
+    }
+    inlineKeyboardArray.push([{text: `Загрузить объект ${name}`, callback_data: `upload/${id}?todo=createObject`}]);
     await ctx.replyWithHTML(messageTxt, {
       reply_markup: {
         inline_keyboard: inlineKeyboardArray,
       }});
-    // get object data
   } catch (error) {
-    await ctx.replyWithMarkdown(`Sheet ${error}`);
+    await ctx.replyWithHTML(`Sheet ${error}`);
   }
 };
 uploadActions.push(createObject);

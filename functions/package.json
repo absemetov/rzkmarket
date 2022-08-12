@@ -21,7 +21,7 @@
     "web": {
       "context": "browser",
       "source": "sites/rzk.com.ru/src/index.html",
-      "distDir": "../sites/rzk.com.ru/dist"
+      "distDir": "../sites/rzk.com.ru/assets"
     },
     "bundler": {
       "context": "node",
