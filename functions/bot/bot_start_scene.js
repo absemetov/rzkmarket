@@ -2,10 +2,15 @@ const firebase = require("firebase-admin");
 const bucket = firebase.storage().bucket();
 const {store, cart, photoCheckUrl, savePhotoTelegram} = require("./bot_store_cart");
 const startActions = [];
-
+const TelegrafI18n = require("telegraf-i18n");
+const path = require("path");
+const i18n = new TelegrafI18n({
+  directory: path.resolve(__dirname, "locales"),
+});
 // admin midleware
 const isAdmin = (ctx, next) => {
   ctx.state.isAdmin = ctx.from.id === 94899148;
+  ctx.i18n = i18n.createContext(process.env.BOT_LANG);
   return next();
 };
 
@@ -30,14 +35,14 @@ const parseUrl = (ctx, next) => {
 const startHandler = async (ctx) => {
   const inlineKeyboardArray = [];
   // get all Objects
-  const sessionPathCatalog = await store.findRecord(`users/${ctx.from.id}`, "session.pathCatalog");
-  console.log({sessionPathCatalog});
   const objects = await store.findAll("objects");
   objects.forEach((object) => {
-    inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
+    if (object.open) {
+      inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
+    }
   });
   inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
-  inlineKeyboardArray.push([{text: "🧾 Поиск товаров", callback_data: "search"}]);
+  inlineKeyboardArray.push([{text: "🔍 Поиск товаров", callback_data: "search"}]);
   inlineKeyboardArray.push([{text: `Войти на сайт ${process.env.BOT_SITE}`, login_url: {
     url: `${process.env.BOT_SITE}/login`,
     request_write_access: true,
@@ -46,7 +51,7 @@ const startHandler = async (ctx) => {
   const projectImg = await photoCheckUrl();
   await ctx.replyWithPhoto(projectImg,
       {
-        caption: "<b>Выберите склад</b>",
+        caption: "<b>Выберите склад</b>" + ctx.i18n.t("test"),
         parse_mode: "html",
         reply_markup: {
           inline_keyboard: inlineKeyboardArray,
@@ -91,7 +96,9 @@ startActions.push(async (ctx, next) => {
       // show all objects
       const objects = await store.findAll("objects");
       objects.forEach((object) => {
-        inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
+        if (object.open) {
+          inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
+        }
       });
       inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
       inlineKeyboardArray.push([{text: "🧾 Поиск товаров", callback_data: "search"}]);
@@ -142,23 +149,6 @@ const uploadPhotoObj = async (ctx, objectId) => {
         prefix: `photos/o/${objectId}/logo`,
       });
     }
-    // zoom level 2 (800*800)
-    // const fileUniqueId = telegramPhotos[2].file_unique_id;
-    // const photoUrl = await ctx.telegram.getFileLink(telegramPhotos[2].file_id);
-    // try {
-    //   // download photos from telegram server
-    //   const photoPath = await download(photoUrl.href);
-    //   await bucket.upload(photoPath, {
-    //     destination: `photos/o/${objectId}/logo/${fileUniqueId}.jpg`,
-    //   });
-    //   // delete download file
-    //   fs.unlinkSync(photoPath);
-    // } catch (e) {
-    //   console.log("Download failed");
-    //   console.log(e.message);
-    //   await ctx.reply(`Error upload photos ${e.message}`);
-    //   return;
-    // }
     try {
       // download photos from telegram server
       const photoId = await savePhotoTelegram(ctx, `photos/o/${objectId}/logo`);
@@ -194,10 +184,14 @@ const uploadPhotoObj = async (ctx, objectId) => {
 
 // search products
 // upload object photo
+const searchHandler = async (ctx) => {
+  await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": "search"}});
+  await ctx.replyWithHTML("Введите поисковой запрос");
+};
+
 startActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "search") {
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": "search"}});
-    await ctx.replyWithHTML("Введите поисковой запрос");
+    await searchHandler(ctx);
     await ctx.answerCbQuery();
   } else {
     return next();
@@ -206,6 +200,7 @@ startActions.push( async (ctx, next) => {
 
 exports.startActions = startActions;
 exports.startHandler = startHandler;
+exports.searchHandler = searchHandler;
 exports.isAdmin = isAdmin;
 exports.parseUrl = parseUrl;
 exports.uploadPhotoObj = uploadPhotoObj;

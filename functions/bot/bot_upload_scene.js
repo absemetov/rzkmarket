@@ -57,11 +57,6 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
         TAGS: sheet.getCell(j, 7).value,
         BRAND: sheet.getCell(j, 8).value,
       };
-      // stop scan if ID = "stop"
-      // if (row.ID === "stop") {
-      //   rowCount = 0;
-      //   break;
-      // }
       // check if this products have ID and NAME
       if (row.ID && row.NAME) {
         // generate catalogs array
@@ -238,9 +233,6 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
     await batchCatalogsTags.commit();
   }
   // start delete trigger
-  // await store.createRecord(`objects/${objectId}`, {
-  //   uploadProductsUpdatedAt: updatedAtTimestamp,
-  // });
   try {
     await deleteProducts(telegram, objectId, updatedAtTimestamp);
   } catch (error) {
@@ -255,7 +247,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
   {parse_mode: "html"});
 };
 
-// upload from googleSheet
+// delete old products
 const deleteProducts = async (telegram, objectId, updatedAt) => {
   // delete old Products
   const batchProductsDelete = firebase.firestore().batch();
@@ -291,13 +283,6 @@ const createObject = async (ctx, next) => {
     const objectId = ctx.state.param;
     const todo = ctx.state.params.get("todo");
     const object = await store.findRecord(`objects/${objectId}`);
-    let sheetId = "";
-    if (todo === "updateObject" || todo === "uploadProducts") {
-      sheetId = object.sheetId;
-    } else {
-      const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");
-      sheetId =sessionFire.sheetId;
-    }
     try {
       // upload goods
       if (todo === "uploadProducts") {
@@ -312,66 +297,64 @@ const createObject = async (ctx, next) => {
         await ctx.answerCbQuery();
         return;
       }
-      // start upload
-      const doc = new GoogleSpreadsheet(object.sheetId);
-      await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
-      await doc.loadInfo(); // loads document properties and worksheets
-      const sheet = doc.sheetsByTitle["info"]; // doc.sheetsById[listId];
-      await sheet.loadCells("B1:B9"); // loads a range of cells
-      const id = sheet.getCellByA1("B1").value;
-      const name = sheet.getCellByA1("B2").value;
-      const description = sheet.getCellByA1("B3").value;
-      const phoneNumbers = sheet.getCellByA1("B4").value;
-      const phoneArray = phoneNumbers && phoneNumbers.toString().split("#").map((phone) => {
-        return `${process.env.BOT_PHONECODE}${phone.trim()}`;
-      });
-      const address = sheet.getCellByA1("B5").value;
-      const USD = roundNumber(sheet.getCellByA1("B6").value);
-      const EUR = roundNumber(sheet.getCellByA1("B7").value);
-      const UAH = roundNumber(sheet.getCellByA1("B8").value);
-      const RUB = roundNumber(sheet.getCellByA1("B9").value);
-      let messageTxt = "";
-      const objectCheck = {
-        id,
-        name,
-        description,
-        phoneArray,
-        address,
-        USD,
-        EUR,
-        UAH,
-        RUB,
-      };
-      const rulesObject = {
-        "id": "required|alpha_dash|max:9",
-        "name": "required|string",
-        "description": "required|string",
-        "phoneArray": "required",
-        "phoneArray.*": ["required", `regex:/${process.env.BOT_PHONEREGEXP}`],
-        "address": "required|string",
-        "USD": "required|numeric",
-        "EUR": "required|numeric",
-        "UAH": "required|numeric",
-        "RUB": "required|numeric",
-      };
-      const validateObject = new Validator(objectCheck, rulesObject, {
-        "regex": `The :attribute phone number is not in the format ${process.env.BOT_PHONETEMPLATE}`,
-      });
-      if (validateObject.fails()) {
-        let errorRow = "";
-        for (const [key, error] of Object.entries(validateObject.errors.all())) {
-          errorRow += `field <b>${key}</b> => <b>${error}</b>\n`;
+      // update object from link or main menu
+      if (todo === "updateObject") {
+        const doc = new GoogleSpreadsheet(object.sheetId);
+        await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
+        await doc.loadInfo(); // loads document properties and worksheets
+        const sheet = doc.sheetsByTitle["info"]; // doc.sheetsById[listId];
+        await sheet.loadCells("B1:B9"); // loads a range of cells
+        const id = sheet.getCellByA1("B1").value;
+        const name = sheet.getCellByA1("B2").value;
+        const description = sheet.getCellByA1("B3").value;
+        const phoneNumbers = sheet.getCellByA1("B4").value;
+        const phoneArray = phoneNumbers && phoneNumbers.toString().split("#").map((phone) => {
+          return `${process.env.BOT_PHONECODE}${phone.trim()}`;
+        });
+        const address = sheet.getCellByA1("B5").value;
+        const USD = roundNumber(sheet.getCellByA1("B6").value);
+        const EUR = roundNumber(sheet.getCellByA1("B7").value);
+        const UAH = roundNumber(sheet.getCellByA1("B8").value);
+        const RUB = roundNumber(sheet.getCellByA1("B9").value);
+        const objectCheck = {
+          id,
+          name,
+          description,
+          phoneArray,
+          address,
+          USD,
+          EUR,
+          UAH,
+          RUB,
+        };
+        const rulesObject = {
+          "id": "required|alpha_dash|max:9",
+          "name": "required|string",
+          "description": "required|string",
+          "phoneArray": "required",
+          "phoneArray.*": ["required", `regex:/${process.env.BOT_PHONEREGEXP}`],
+          "address": "required|string",
+          "USD": "required|numeric",
+          "EUR": "required|numeric",
+          "UAH": "required|numeric",
+          "RUB": "required|numeric",
+        };
+        const validateObject = new Validator(objectCheck, rulesObject, {
+          "regex": `The :attribute phone number is not in the format ${process.env.BOT_PHONETEMPLATE}`,
+        });
+        if (validateObject.fails()) {
+          let errorRow = "";
+          for (const [key, error] of Object.entries(validateObject.errors.all())) {
+            errorRow += `field <b>${key}</b> => <b>${error}</b>\n`;
+          }
+          throw new Error(errorRow);
         }
-        throw new Error(errorRow);
-      }
-      // actions
-      if (todo === "createObject" || todo === "updateObject") {
+        // actions
         await store.createRecord(`objects/${objectId}`, {
           name,
           description,
           phoneArray,
           address,
-          sheetId,
           currencies: {
             USD,
             EUR,
@@ -379,18 +362,12 @@ const createObject = async (ctx, next) => {
             RUB,
           },
         });
-        if (object) {
-          messageTxt = `Данные обновлены ${object.name} /objects`;
-        } else {
-          messageTxt = `Объект ${name} создан! /objects`;
-        }
+        await ctx.replyWithHTML(`Данные обновлены ${objectCheck.name} /objects`);
       }
-      await ctx.replyWithHTML(messageTxt);
-      // get object data
     } catch (error) {
-      await ctx.replyWithMarkdown(`Sheet ${error}`);
+      await ctx.replyWithHTML(`Sheet ${error}`);
     }
-    await ctx.answerCbQuery();
+    await ctx.answerCbQuery("Удачных продаж!");
   } else {
     return next();
   }
@@ -412,61 +389,23 @@ const uploadForm = async (ctx, sheetId) => {
       return `${process.env.BOT_PHONECODE}${phone.trim()}`;
     });
     const address = sheet.getCellByA1("B5").value;
-    const USD = roundNumber(sheet.getCellByA1("B6").value);
-    const EUR = roundNumber(sheet.getCellByA1("B7").value);
-    const UAH = roundNumber(sheet.getCellByA1("B8").value);
-    const RUB = roundNumber(sheet.getCellByA1("B9").value);
-    let messageTxt = "";
-    const object = {
-      id,
-      name,
-      description,
-      phoneArray,
-      address,
-      USD,
-      EUR,
-      UAH,
-      RUB,
-    };
-    const rulesObject = {
-      "id": "required|alpha_dash|max:9",
-      "name": "required|string",
-      "description": "required|string",
-      "phoneArray": "required",
-      "phoneArray.*": ["required", `regex:/${process.env.BOT_PHONEREGEXP}`],
-      "address": "required|string",
-      "USD": "required|numeric",
-      "EUR": "required|numeric",
-      "UAH": "required|numeric",
-      "RUB": "required|numeric",
-    };
-    const validateObject = new Validator(object, rulesObject, {
-      "regex": `The :attribute phone number is not in the format ${process.env.BOT_PHONETEMPLATE}`,
-    });
-    if (validateObject.fails()) {
-      let errorRow = "";
-      for (const [key, error] of Object.entries(validateObject.errors.all())) {
-        errorRow += `field <b>${key}</b> => <b>${error}</b> \n`;
-      }
-      throw new Error(errorRow);
-    }
-    // message confirmed
-    messageTxt = `Sheet name: <b>${doc.title}</b>\n` +
-    `id: <b>${id}</b>\n` +
-    `name: <b>${name}</b>\n` +
-    `description: <b>${description}</b>\n` +
-    `phoneArray: <b>${phoneArray.join()}</b>\n` +
-    `address: <b>${address}</b>\n`;
-    // check object
+    // check object and sheetId
     const objectRzk = await store.findRecord(`objects/${id}`);
-    const inlineKeyboardArray = [];
     if (!objectRzk) {
       throw new Error(`object: ${id} не найден`);
     }
     if (objectRzk && objectRzk.sheetId !== sheetId) {
       throw new Error(`<b>sheetId</b>: ${sheetId} не совпадает`);
     }
-    inlineKeyboardArray.push([{text: `Загрузить объект ${name}`, callback_data: `upload/${id}?todo=createObject`}]);
+    // message confirmed
+    const messageTxt = `Sheet name: <b>${doc.title}</b>\n` +
+    `id: <b>${id}</b>\n` +
+    `name: <b>${name}</b>\n` +
+    `description: <b>${description}</b>\n` +
+    `phoneArray: <b>${phoneArray.join()}</b>\n` +
+    `address: <b>${address}</b>\n`;
+    const inlineKeyboardArray = [];
+    inlineKeyboardArray.push([{text: `Загрузить объект ${name}`, callback_data: `upload/${id}?todo=updateObject`}]);
     await ctx.replyWithHTML(messageTxt, {
       reply_markup: {
         inline_keyboard: inlineKeyboardArray,

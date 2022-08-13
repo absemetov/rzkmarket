@@ -1,6 +1,6 @@
 const functions = require("firebase-functions");
 const {Telegraf} = require("telegraf");
-const {startActions, startHandler, parseUrl, isAdmin, uploadPhotoObj} = require("./bot_start_scene");
+const {startActions, startHandler, searchHandler, parseUrl, isAdmin, uploadPhotoObj} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
 const {uploadActions, uploadForm} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
@@ -92,6 +92,10 @@ bot.start(async (ctx) => {
 // rzk shop
 bot.command("objects", async (ctx) => {
   await startHandler(ctx);
+});
+// search products
+bot.command("search", async (ctx) => {
+  await searchHandler(ctx);
 });
 // monobank
 bot.command("mono", async (ctx) => {
