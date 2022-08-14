@@ -5,7 +5,7 @@ const {monoHandler, monoActions} = require("./bot_mono_scene");
 const {uploadActions, uploadForm} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
 const {uploadPhotoProduct, uploadPhotoCat, catalogsActions, cartWizard} = require("./bot_catalog_scene");
-const {store, photoCheckUrl} = require("./bot_store_cart");
+const {store} = require("./bot_store_cart");
 const algoliasearch = require("algoliasearch");
 const bot = new Telegraf(process.env.BOT_TOKEN, {
   handlerTimeout: 540000,
@@ -24,62 +24,7 @@ bot.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&/:~+]+)?/,
     parseUrl, ...startActions, ...catalogsActions, ...ordersActions, ...monoActions, ...uploadActions);
 // start bot
 bot.start(async (ctx) => {
-  // deep linking parsing
-  const pathProduct = ctx.message.text.match(/o_([a-zA-Z0-9-_]+)_p_([a-zA-Z0-9-_]+)/);
-  const pathCatalog = ctx.message.text.match(/o_([a-zA-Z0-9-_]+)_c_([a-zA-Z0-9-_]+)/);
-  const inlineKeyboardArray = [];
-  let caption = "";
-  if (pathProduct) {
-    const productId = pathProduct[2];
-    const objectId = pathProduct[1];
-    const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
-    const object = await store.findRecord(`objects/${objectId}`);
-    if (object) {
-      if (product) {
-        inlineKeyboardArray.push([{text: `📦 ${product.name} (${product.id})`,
-          callback_data: `p/${product.id}?o=${objectId}`}]);
-      } else {
-        inlineKeyboardArray.push([{text: "🗂 Каталог товаров",
-          callback_data: `c?o=${objectId}`}]);
-      }
-      caption = `<b>${object.name}\n` +
-        `Контакты: ${object.phoneArray.join()}\n` +
-        `Адрес: ${object.address}\n` +
-        `Описание: ${object.description}</b>`;
-    }
-  }
-  if (pathCatalog) {
-    const catalogId = pathCatalog[2];
-    const objectId = pathCatalog[1];
-    const catalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
-    const object = await store.findRecord(`objects/${objectId}`);
-    if (object) {
-      if (catalog) {
-        inlineKeyboardArray.push([{text: `🗂 ${catalog.name}`,
-          callback_data: `c/${catalogId}?o=${objectId}`}]);
-      } else {
-        inlineKeyboardArray.push([{text: "🗂 Каталог товаров",
-          callback_data: `c?o=${objectId}`}]);
-      }
-      caption = `<b>${object.name}\n` +
-        `Контакты: ${object.phoneArray.join()}\n` +
-        `Адрес: ${object.address}\n` +
-        `Описание: ${object.description}</b>`;
-    }
-  }
-  if (caption) {
-    const publicImgUrl = await photoCheckUrl();
-    await ctx.replyWithPhoto(publicImgUrl,
-        {
-          caption,
-          parse_mode: "html",
-          reply_markup: {
-            inline_keyboard: inlineKeyboardArray,
-          },
-        });
-  } else {
-    await startHandler(ctx);
-  }
+  await startHandler(ctx);
   // save user data
   const userData = await store.findRecord(`users/${ctx.from.id}`);
   if (!userData) {

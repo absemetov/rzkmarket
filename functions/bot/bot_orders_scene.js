@@ -15,7 +15,8 @@ const myOrders = async (ctx, next) => {
     const orderId = ctx.state.params.get("oId");
     const objectId = ctx.state.params.get("o");
     let caption = "<b>Мои заказы</b>";
-    if (ctx.session.pathOrderCurrent) {
+    const pathOrderCurrent = await store.findRecord(`users/${ctx.from.id}`, "session.pathOrderCurrent");
+    if (pathOrderCurrent) {
       caption = `Заказы от ${userId}`;
     }
     const limit = 10;
@@ -61,11 +62,13 @@ const myOrders = async (ctx, next) => {
       inlineKeyboardArray.push([
         {text: "Ссылка на заказ", url: `https://${process.env.BOT_SITE}/o/${objectId}/s/${order.id}`},
       ]);
+      const myPathOrder = await store.findRecord(`users/${ctx.from.id}`, "session.myPathOrder");
       inlineKeyboardArray.push([{text: "🧾 Мои заказы",
-        callback_data: `${ctx.session.myPathOrder ? ctx.session.myPathOrder : "myO/" + userId}`}]);
+        callback_data: `${myPathOrder ? myPathOrder : "myO/" + userId}`}]);
     } else {
       // show all orders
-      ctx.session.myPathOrder = ctx.callbackQuery.data;
+      // ctx.session.myPathOrder = ctx.callbackQuery.data;
+      await store.createRecord(`users/${ctx.from.id}`, {"session": {"myPathOrder": ctx.callbackQuery.data}});
       const mainQuery = firebase.firestore().collectionGroup("orders").where("userId", "==", userId)
           .orderBy("createdAt", "desc");
       let query = mainQuery;
@@ -112,9 +115,9 @@ const myOrders = async (ctx, next) => {
       } else {
         inlineKeyboardArray.push([{text: "У Вас пока нет заказов", callback_data: "objects"}]);
       }
-      if (ctx.session.pathOrderCurrent) {
+      if (pathOrderCurrent) {
         inlineKeyboardArray.push([{text: "🏠 Вернуться к заказу",
-          callback_data: `${ctx.session.pathOrderCurrent}`}]);
+          callback_data: `${pathOrderCurrent}`}]);
       }
       inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: "objects"}]);
     }
@@ -154,7 +157,8 @@ const showOrders = async (ctx, next) => {
       const order = await store.findRecord(`objects/${objectId}/orders/${orderId}`);
       if (order) {
         // show order
-        ctx.session.pathOrderCurrent = ctx.callbackQuery.data;
+        // ctx.session.pathOrderCurrent = ctx.callbackQuery.data;
+        await store.createRecord(`users/${ctx.from.id}`, {"session": {"pathOrderCurrent": ctx.callbackQuery.data}});
         const date = moment.unix(order.createdAt).locale("ru");
         caption = `<b>${order.objectName} >` +
         ` Заказ #${store.formatOrderNumber(order.userId, order.orderNumber)}` +
@@ -222,12 +226,17 @@ const showOrders = async (ctx, next) => {
       const rnd = Math.random().toFixed(2).substring(2);
       inlineKeyboardArray.push([{text: "🔄 Обновить",
         callback_data: `orders/${order.id}?o=${objectId}&${rnd}`}]);
+      const pathOrder = await store.findRecord(`users/${ctx.from.id}`, "session.pathOrder");
       inlineKeyboardArray.push([{text: "🧾 Заказы",
-        callback_data: `${ctx.session.pathOrder ? ctx.session.pathOrder : "orders?o=" + order.objectId}`}]);
+        callback_data: `${pathOrder ? pathOrder : "orders?o=" + order.objectId}`}]);
     } else {
       // show orders
-      ctx.session.pathOrderCurrent = null;
-      ctx.session.pathOrder = ctx.callbackQuery.data;
+      // ctx.session.pathOrderCurrent = null;
+      // ctx.session.pathOrder = ctx.callbackQuery.data;
+      await store.createRecord(`users/${ctx.from.id}`, {"session": {
+        "pathOrderCurrent": null,
+        "pathOrder": ctx.callbackQuery.data,
+      }});
       let mainQuery = firebase.firestore().collection("objects").doc(objectId)
           .collection("orders").orderBy("createdAt", "desc");
       // filter statusId
@@ -323,21 +332,28 @@ ordersActions.push(myOrders);
 // order wizard
 const orderWizard = [
   async (ctx) => {
-    await ctx.replyWithHTML(`Текущее значение ${ctx.session.fieldName}: <b>${ctx.session.fieldValue}</b>`, {
+    const fieldName = await store.findRecord(`users/${ctx.from.id}`, "session.fieldName");
+    const fieldValue = await store.findRecord(`users/${ctx.from.id}`, "session.fieldValue");
+    await ctx.replyWithHTML(`Текущее значение ${fieldName}: <b>${fieldValue}</b>`, {
       reply_markup: {
         keyboard: [["Отмена"]],
         resize_keyboard: true,
       }});
-    ctx.session.scene = "editOrder";
-    ctx.session.cursor = 1;
+    // ctx.session.scene = "editOrder";
+    // ctx.session.cursor = 1;
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {
+      "scene": "editOrder",
+      "cursor": 1,
+    }});
   },
   async (ctx) => {
     // save order field
-    if (ctx.session.fieldName === "lastName" && ctx.message.text.length < 2) {
+    const fieldName = await store.findRecord(`users/${ctx.from.id}`, "session.fieldName");
+    if (fieldName === "lastName" && ctx.message.text.length < 2) {
       await ctx.reply("Имя слишком короткое");
       return;
     }
-    if (ctx.session.fieldName === "phoneNumber") {
+    if (fieldName === "phoneNumber") {
       const regexpPhone = new RegExp(process.env.BOT_PHONEREGEXP);
       const checkPhone = ctx.message.text.match(regexpPhone);
       if (!checkPhone) {
@@ -346,14 +362,17 @@ const orderWizard = [
       }
       ctx.message.text = `${process.env.BOT_PHONECODE}${checkPhone[2]}`;
     }
-    await store.updateRecord(`objects/${ctx.session.objectId}/orders/${ctx.session.orderId}`,
-        {[ctx.session.fieldName]: ctx.message.text});
+    const objectId = await store.findRecord(`users/${ctx.from.id}`, "session.objectId");
+    const orderId = await store.findRecord(`users/${ctx.from.id}`, "session.orderId");
+    await store.updateRecord(`objects/${objectId}/orders/${orderId}`,
+        {[fieldName]: ctx.message.text});
     // exit scene
     await ctx.reply("Данные сохранены. Обновите заказ!🔄", {
       reply_markup: {
         remove_keyboard: true,
       }});
-    ctx.session.scene = null;
+    // ctx.session.scene = null;
+    await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": null}});
   },
 ];
 // edit order fields
@@ -375,8 +394,9 @@ ordersActions.push(async (ctx, next) => {
       const inlineKeyboardArray = [];
       inlineKeyboardArray.push([{text: `Заказы from User ${userId}`,
         callback_data: `myO/${userId}`}]);
+      const pathOrderCurrent = await store.findRecord(`users/${ctx.from.id}`, "session.pathOrderCurrent");
       inlineKeyboardArray.push([{text: "⬅️ Назад",
-        callback_data: `${ctx.session.pathOrderCurrent ? ctx.session.pathOrderCurrent : `orders?o=${objectId}`}`}]);
+        callback_data: `${pathOrderCurrent ? pathOrderCurrent : `orders?o=${objectId}`}`}]);
       await cartWizard[0](ctx, `User <a href="tg://user?id=${userId}">${userId}</a>`, inlineKeyboardArray);
     }
     // edit produc
@@ -424,16 +444,23 @@ ordersActions.push(async (ctx, next) => {
         }
         inlineKeyboardArray.push([{text: value, callback_data: `orders?statusId=${key}&o=${objectId}`}]);
       });
+      const pathOrder = await store.findRecord(`users/${ctx.from.id}`, "session.pathOrder");
       inlineKeyboardArray.push([{text: "⬅️ Назад",
-        callback_data: `${ctx.session.pathOrder ? ctx.session.pathOrder : `orders?o=${objectId}`}`}]);
+        callback_data: `${pathOrder ? pathOrder : `orders?o=${objectId}`}`}]);
       await cartWizard[0](ctx, "Статуc заказа", inlineKeyboardArray);
     }
     if (editField) {
       const order = await store.findRecord(`objects/${objectId}/orders/${orderId}`);
-      ctx.session.orderId = orderId;
-      ctx.session.objectId = objectId;
-      ctx.session.fieldName = editField;
-      ctx.session.fieldValue = order[editField];
+      // ctx.session.orderId = orderId;
+      // ctx.session.objectId = objectId;
+      // ctx.session.fieldName = editField;
+      // ctx.session.fieldValue = order[editField];
+      await store.createRecord(`users/${ctx.from.id}`, {"session": {
+        orderId,
+        objectId,
+        "fieldName": editField,
+        "fieldValue": order[editField],
+      }});
       await orderWizard[0](ctx);
     }
     // show payment

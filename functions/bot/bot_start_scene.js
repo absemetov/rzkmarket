@@ -34,29 +34,78 @@ const parseUrl = (ctx, next) => {
 // start handler show objects
 const startHandler = async (ctx) => {
   const inlineKeyboardArray = [];
-  // get all Objects
-  const objects = await store.findAll("objects");
-  objects.forEach((object) => {
-    if (object.open) {
-      inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
+  // start deep linking parsing
+  const path = ctx.message.text.match(/o_([a-zA-Z0-9-_]+)_(p|c)_([a-zA-Z0-9-_]+)/);
+  // const pathCatalog = ctx.message.text.match(/o_([a-zA-Z0-9-_]+)_c_([a-zA-Z0-9-_]+)/);
+  let caption = "";
+  if (path) {
+    const objectId = path[1];
+    const objectType = path[2];
+    const objectTypeId = path[3];
+    const object = await store.findRecord(`objects/${objectId}`);
+    // get product
+    if (objectType === "p") {
+      const product = await store.findRecord(`objects/${objectId}/products/${objectTypeId}`);
+      if (object && product) {
+        inlineKeyboardArray.push([{text: `📦 ${product.name} (${product.id})`,
+          callback_data: `p/${product.id}?o=${objectId}`}]);
+      }
     }
-  });
-  inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
-  inlineKeyboardArray.push([{text: "🔍 Поиск товаров", callback_data: "search"}]);
-  inlineKeyboardArray.push([{text: `Войти на сайт ${process.env.BOT_SITE}`, login_url: {
-    url: `${process.env.BOT_SITE}/login`,
-    request_write_access: true,
-  }}]);
-  // add main photo
-  const projectImg = await photoCheckUrl();
-  await ctx.replyWithPhoto(projectImg,
-      {
-        caption: "<b>Выберите склад</b>" + ctx.i18n.t("test"),
-        parse_mode: "html",
-        reply_markup: {
-          inline_keyboard: inlineKeyboardArray,
-        },
-      });
+    // get catalog
+    if (objectType === "c") {
+      const catalog = await store.findRecord(`objects/${objectId}/catalogs/${objectTypeId}`);
+      if (object && catalog) {
+        inlineKeyboardArray.push([{text: `🗂 ${catalog.name}`,
+          callback_data: `c/${objectTypeId}?o=${objectId}`}]);
+      }
+    }
+    if (object) {
+      caption = `<b>${object.name}\n` +
+          `Контакты: ${object.phoneArray.join()}\n` +
+          `Адрес: ${object.address}\n` +
+          `Описание: ${object.description}</b>`;
+      // default button
+      if (!inlineKeyboardArray.length) {
+        inlineKeyboardArray.push([{text: "🗂 Каталог товаров",
+          callback_data: `c?o=${objectId}`}]);
+      }
+    }
+  }
+  if (caption) {
+    const publicImgUrl = await photoCheckUrl();
+    await ctx.replyWithPhoto(publicImgUrl,
+        {
+          caption,
+          parse_mode: "html",
+          reply_markup: {
+            inline_keyboard: inlineKeyboardArray,
+          },
+        });
+  } else {
+    // get all Objects
+    const objects = await store.findAll("objects");
+    objects.forEach((object) => {
+      if (object.open) {
+        inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
+      }
+    });
+    inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
+    inlineKeyboardArray.push([{text: "🔍 Поиск товаров", callback_data: "search"}]);
+    inlineKeyboardArray.push([{text: `Войти на сайт ${process.env.BOT_SITE}`, login_url: {
+      url: `${process.env.BOT_SITE}/login`,
+      request_write_access: true,
+    }}]);
+    // add main photo
+    const projectImg = await photoCheckUrl();
+    await ctx.replyWithPhoto(projectImg,
+        {
+          caption: "<b>Выберите склад</b>" + ctx.i18n.t("test"),
+          parse_mode: "html",
+          reply_markup: {
+            inline_keyboard: inlineKeyboardArray,
+          },
+        });
+  }
 };
 // show objects
 startActions.push(async (ctx, next) => {
