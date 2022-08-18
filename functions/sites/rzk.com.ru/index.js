@@ -66,15 +66,13 @@ app.get("/", auth, async (req, res) => {
   const objects = await store.findAll("objects");
   // generate cart link
   for (const object of objects) {
-    if (object.open) {
-      object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
-      if (object.photoId) {
-        object.img1 = bucket.file(`photos/o/${object.id}/logo/${object.photoId}/1.jpg`).publicUrl();
-        object.img2 = bucket.file(`photos/o/${object.id}/logo/${object.photoId}/2.jpg`).publicUrl();
-      } else {
-        object.img1 = "/icons/shop.svg";
-        object.img2 = "/icons/shop.svg";
-      }
+    object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
+    if (object.photoId) {
+      object.img1 = bucket.file(`photos/o/${object.id}/logo/${object.photoId}/1.jpg`).publicUrl();
+      object.img2 = bucket.file(`photos/o/${object.id}/logo/${object.photoId}/2.jpg`).publicUrl();
+    } else {
+      object.img1 = "/icons/shop.svg";
+      object.img2 = "/icons/shop.svg";
     }
   }
   res.render("index", {objects, envSite});
@@ -97,7 +95,7 @@ app.get("/search", auth, async (req, res) => {
 // show object
 app.get("/o/:objectId", auth, async (req, res) => {
   const object = await store.findRecord(`objects/${req.params.objectId}`);
-  if (object && object.open) {
+  if (object) {
     // count cart items
     object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
     if (object.photoId) {

@@ -10,7 +10,8 @@ exports.rzkComUa = rzkComRu.express;
 exports.rzkComRu = rzkComRu.express;
 exports.botUa = bot.handle;
 exports.botRu = bot.handle;
-exports.triggers = require("./triggers");
+exports.triggersUa = require("./triggers");
+exports.triggersRu = require("./triggers");
 // Create and Deploy Your First Cloud Functions
 // https://firebase.google.com/docs/functions/write-firebase-functions
 // exports.helloWorld = functions.https.onRequest((request, response) => {

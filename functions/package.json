@@ -3,7 +3,7 @@
   "description": "Cloud Functions for Firebase",
   "scripts": {
     "parcel-s": "parcel --target web --cache-dir ../.parcel-cache --dist-dir ../dist",
-    "parcel-b": "rm -rf ../sites/rzk.com.ru/dist && parcel build --target web --cache-dir ../.parcel-cache --no-cache --no-source-maps",
+    "parcel-b": "rm -rf ../sites/rzk.com.ru/assets && parcel build --target web --cache-dir ../.parcel-cache --no-cache --no-source-maps",
     "parcel-m": "parcel build --target bundler",
     "lint": "eslint .",
     "serve": "firebase emulators:start --only functions",
