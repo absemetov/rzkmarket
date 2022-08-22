@@ -30,7 +30,6 @@ bot.start(async (ctx) => {
   if (!userData) {
     await store.createRecord(`users/${ctx.from.id}`, {
       firstName: ctx.from.first_name,
-      message: ctx.message.text,
     });
   }
 });

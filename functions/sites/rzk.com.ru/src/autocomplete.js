@@ -133,8 +133,6 @@ export function startAutocomplete() {
                   query,
                   params: {
                     hitsPerPage: 5,
-                    attributesToSnippet: ["name:1"],
-                    snippetEllipsisText: "…",
                   },
                 },
               ],
@@ -174,7 +172,9 @@ export function startAutocomplete() {
                   <div class="aa-ItemIcon">
                     <img
                       src="${item.img1 ? item.img1 : "/icons/flower3.svg"}"
-                      onerror="this.src = '/icons/flower3.svg';"
+                      onError="{()=>this.img.src = 'img/default.img'}"
+                      xcc="sdd"
+                      class="img-error"
                       alt="${item.name}"
                       width="100"
                       height="100"
@@ -182,7 +182,9 @@ export function startAutocomplete() {
                   </div>
                   <div class="aa-ItemContentBody">
                     <div class="aa-ItemContentTitle">
-                      ${components.Highlight({hit: item, attribute: "name"})}
+                      onerror="this.src = '/icons/flower3.svg';"
+                      ${item.brand ? html`${components.Highlight({hit: item, attribute: "brand"})} ` : ""}
+                      ${components.Highlight({hit: item, attribute: "name"})} (${components.Highlight({hit: item, attribute: "productId"})})
                     </div>
                   </div>
                 </div>
@@ -214,8 +216,6 @@ export function startAutocomplete() {
                   query,
                   params: {
                     hitsPerPage: 5,
-                    attributesToSnippet: ["name:10"],
-                    snippetEllipsisText: "…",
                   },
                 },
               ],

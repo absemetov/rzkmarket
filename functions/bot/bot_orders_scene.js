@@ -60,7 +60,7 @@ const myOrders = async (ctx, next) => {
       }
       // share link
       inlineKeyboardArray.push([
-        {text: "Ссылка на заказ", url: `https://${process.env.BOT_SITE}/o/${objectId}/s/${order.id}`},
+        {text: "Ссылка на заказ", url: `${process.env.BOT_SITE}/o/${objectId}/s/${order.id}`},
       ]);
       const myPathOrder = await store.findRecord(`users/${ctx.from.id}`, "session.myPathOrder");
       inlineKeyboardArray.push([{text: "🧾 Мои заказы",
@@ -194,7 +194,7 @@ const showOrders = async (ctx, next) => {
       }
       // share link
       inlineKeyboardArray.push([
-        {text: "Ссылка на заказ", url: `https://${process.env.BOT_SITE}/o/${objectId}/s/${order.id}`},
+        {text: "Ссылка на заказ", url: `${process.env.BOT_SITE}/o/${objectId}/s/${order.id}`},
       ]);
       // edit entries
       inlineKeyboardArray.push([{text: `📝 Статус: ${store.statuses().get(order.statusId)}`,

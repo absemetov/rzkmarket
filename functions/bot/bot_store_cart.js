@@ -57,24 +57,18 @@ const store = {
   async findRecord(path, field) {
     const modelSnap = await this.getQuery(path).get();
     if (modelSnap.exists) {
+      const model = modelSnap.data();
       if (field) {
         // find nested data
         const fields = field.split(".");
-        let fieldData = modelSnap.data();
-        let iteration = 0;
-        fields.forEach((fieldItem) => {
-          if (fieldData[fieldItem]) {
-            fieldData = fieldData[fieldItem];
-            iteration ++;
-          }
-        });
-        if (iteration === fields.length && Object.keys(fieldData).length) {
-          return {...fieldData};
-        } else {
-          return null;
+        if (fields.length === 1 && model[fields[0]]) {
+          return typeof model[fields[0]] === "object" ? {...model[fields[0]]} : model[fields[0]];
+        }
+        if (fields.length === 2 && model[fields[0]] && model[fields[0]][fields[1]]) {
+          return typeof model[fields[0]][fields[1]] === "object" ? {...model[fields[0]][fields[1]]} : model[fields[0]][fields[1]];
         }
       } else {
-        return {id: modelSnap.id, ...modelSnap.data()};
+        return {id: modelSnap.id, ...model};
       }
     }
     return null;

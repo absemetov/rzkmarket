@@ -26,6 +26,7 @@ const envSite = {
   currency: process.env.BOT_CURRENCY,
   gtag: process.env.SITE_GTAG,
   gmaps: process.env.BOT_GMAPS,
+  email: process.env.BOT_EMAIL,
   botName: process.env.BOT_NAME,
   phoneregexp: process.env.BOT_PHONEREGEXP,
   phonetemplate: process.env.BOT_PHONETEMPLATE,
@@ -476,7 +477,6 @@ app.get("/login/:objectId?", auth, async (req, res) => {
     if (!userData) {
       await store.createRecord(`users/${req.query.id}`, {
         firstName: req.query.first_name,
-        message: "Telegram Widget login",
       });
     }
     // create token

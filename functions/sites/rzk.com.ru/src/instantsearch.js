@@ -45,9 +45,9 @@ const renderHits = async (renderOptions, isFirstRender) => {
                   <img src="${item.img1 ? item.img1 : "/icons/flower3.svg"}" onerror="this.src = '/icons/photo_error_${lang}.svg';" class="card-img-top" alt="${item.name}">
                 </a>
                 <div class="card-body">
-                  ${item.brand ? "<h6>" + item.brand + "</h6>" : ""}
+                  ${item.brand ? `<h6>${highlight({attribute: "brand", hit: item})}</h6>` : ""}
                   <h6>
-                    <a href="/o/${item.sellerId}/p/${item.productId}">${highlight({attribute: "name", hit: item})}</a> <small class="text-muted">(${item.productId})</small>
+                    <a href="/o/${item.sellerId}/p/${item.productId}">${highlight({attribute: "name", hit: item})}</a> <small class="text-muted">(${highlight({attribute: "productId", hit: item})})</small>
                     <div class="mt-2">
                       <a href="//t.me/${i18n.bot_name}?start=o_${item.sellerId}_p_${item.productId}" target="_blank">
                         <i class="bi bi-telegram fs-4"></i>

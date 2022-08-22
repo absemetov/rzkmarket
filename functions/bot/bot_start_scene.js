@@ -85,9 +85,7 @@ const startHandler = async (ctx) => {
     // get all Objects
     const objects = await store.findAll("objects");
     objects.forEach((object) => {
-      if (object.open) {
-        inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
-      }
+      inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
     });
     inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
     inlineKeyboardArray.push([{text: "🔍 Поиск товаров", callback_data: "search"}]);
@@ -97,9 +95,10 @@ const startHandler = async (ctx) => {
     }}]);
     // add main photo
     const projectImg = await photoCheckUrl();
+    // locale ctx.i18n.t("test")
     await ctx.replyWithPhoto(projectImg,
         {
-          caption: "<b>Выберите склад</b>" + ctx.i18n.t("test"),
+          caption: "<b>Выберите склад</b>",
           parse_mode: "html",
           reply_markup: {
             inline_keyboard: inlineKeyboardArray,
@@ -145,9 +144,7 @@ startActions.push(async (ctx, next) => {
       // show all objects
       const objects = await store.findAll("objects");
       objects.forEach((object) => {
-        if (object.open) {
-          inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
-        }
+        inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
       });
       inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
       inlineKeyboardArray.push([{text: "🧾 Поиск товаров", callback_data: "search"}]);

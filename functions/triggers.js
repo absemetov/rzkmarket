@@ -15,12 +15,9 @@ const catalogsIndex = algoliaClient.initIndex(`${process.env.ALGOLIA_PREFIX}cata
 exports.notifyNewUser = functions.region("europe-central2").firestore
     .document("users/{userId}")
     .onCreate(async (snap, context) => {
-      const user = snap.data();
       const userId = context.params.userId;
       // admin notify
-      await bot.telegram.sendMessage(94899148, `<b>New subsc! <a href="tg://user?id=${userId}">${userId}</a>\n`+
-      `Message: ${user.message}</b>`,
-      {parse_mode: "html"});
+      await bot.telegram.sendMessage(94899148, `<b>New subsc! <a href="tg://user?id=${userId}">${userId}</a>`, {parse_mode: "html"});
       // add timestamp
       return snap.ref.set({
         createdAt: Math.floor(Date.now() / 1000),

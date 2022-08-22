@@ -145,7 +145,7 @@ const showCatalog = async (ctx, next) => {
       type: "photo",
       media: media,
       caption: `<b>${object.name} > Каталог</b>\n` +
-        `https://${process.env.BOT_SITE}/o/${objectId}/c${catalogId ? "/" + catalogId : ""}`,
+        `${process.env.BOT_SITE}/o/${objectId}/c${catalogId ? "/" + catalogId : ""}`,
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: inlineKeyboardArray,
@@ -211,7 +211,7 @@ const showProduct = async (ctx, next) => {
       caption: `<b>${object.name}\n` +
       `${product.name} (${product.id})\n` +
       `Цена ${product.price} ${process.env.BOT_CURRENCY}</b>\n` +
-      `https://${process.env.BOT_SITE}/o/${objectId}/p/${productId}`,
+      `${process.env.BOT_SITE}/o/${objectId}/p/${productId}`,
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: inlineKeyboardArray,
@@ -334,7 +334,7 @@ catalogsActions.push( async (ctx, next) => {
         `\nЦена ${product.price} ${process.env.BOT_CURRENCY}` +
         `\nСумма ${roundNumber(qty * product.price)} ${process.env.BOT_CURRENCY}` +
         `\n<b>Количетво: ${qty} ${product.unit}</b>` +
-        `\nhttps://${process.env.BOT_SITE}/o/${objectId}/p/${productId}`,
+        `\n${process.env.BOT_SITE}/o/${objectId}/p/${productId}`,
         parse_mode: "html",
       }, {reply_markup: {
         inline_keyboard: [
@@ -460,7 +460,7 @@ const showCart = async (ctx, next) => {
         callback_data: `cart?clear=1&o=${objectId}`}]);
       // share cart
       inlineKeyboardArray.push([
-        {text: "Ссылка на корзину", url: `https://${process.env.BOT_SITE}/o/${objectId}/share-cart/${ctx.from.id}`},
+        {text: "Ссылка на корзину", url: `${process.env.BOT_SITE}/o/${objectId}/share-cart/${ctx.from.id}`},
       ]);
     }
     // Set Main menu
