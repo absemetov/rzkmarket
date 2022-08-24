@@ -42,7 +42,7 @@ const renderHits = async (renderOptions, isFirstRender) => {
             `<div class="col">
               <div class="card text-center h-100">
                 <a href="/o/${item.sellerId}/p/${item.productId}">
-                  <img src="${item.img1 ? item.img1 : "/icons/flower3.svg"}" onerror="this.src = '/icons/photo_error_${lang}.svg';" class="card-img-top" alt="${item.name}">
+                  <img src="${item.img1 ? item.img1 : "/icons/flower3.svg"}" onerror="this.onerror=null;this.src = '/icons/photo_error_${lang}.svg';" class="card-img-top" alt="${item.name}">
                 </a>
                 <div class="card-body">
                   ${item.brand ? `<h6>${highlight({attribute: "brand", hit: item})}</h6>` : ""}

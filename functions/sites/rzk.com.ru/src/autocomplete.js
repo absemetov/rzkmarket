@@ -73,6 +73,7 @@ const querySuggestionsPlugin = createQuerySuggestionsPlugin({
 });
 // get searh query
 const searchPageState = getInstantSearchUiState();
+const imageOnErrorHandler = (event) => event.currentTarget.src = "/icons/photo_error.svg";
 
 export function startAutocomplete() {
   autocomplete({
@@ -163,29 +164,35 @@ export function startAutocomplete() {
             return item.name;
           },
           templates: {
-            header() {
-              return i18n.a_products;
+            header({html}) {
+              return html`<span className="aa-SourceHeaderTitle">${i18n.a_products}</span>
+                <div className="aa-SourceHeaderLine"/>`;
             },
             item({item, html, components}) {
+              // return createElement(
+              //     "div",
+              //     null,
+              //     createElement(
+              //         "img",
+              //         {class: "thumbnail", src: "/icons/flower3q.svg", onError: (event) => event.currentTarget.src = "/icons/flower3.svg"},
+              //         null,
+              //     ));
               return html`<div class="aa-ItemWrapper">
                 <div class="aa-ItemContent">
-                  <div class="aa-ItemIcon">
+                  <div className="aa-ItemIcon aa-ItemIcon--picture aa-ItemIcon--alignTop">
                     <img
                       src="${item.img1 ? item.img1 : "/icons/flower3.svg"}"
-                      onError="{()=>this.img.src = 'img/default.img'}"
-                      xcc="sdd"
-                      class="img-error"
+                      onerror=${imageOnErrorHandler}
                       alt="${item.name}"
-                      width="100"
-                      height="100"
+                      width="40"
+                      height="40"
                     />
                   </div>
                   <div class="aa-ItemContentBody">
-                    <div class="aa-ItemContentTitle">
-                      onerror="this.src = '/icons/flower3.svg';"
-                      ${item.brand ? html`${components.Highlight({hit: item, attribute: "brand"})} ` : ""}
+                    <div class="aa-ItemContentTitle text-wrap">
                       ${components.Highlight({hit: item, attribute: "name"})} (${components.Highlight({hit: item, attribute: "productId"})})
                     </div>
+                    ${item.brand ? html`<div className="aa-ItemContentDescription">Бренд <strong>${components.Highlight({hit: item, attribute: "brand"})}</strong></div>` : ""}
                   </div>
                 </div>
                 <div class="aa-ItemActions">
@@ -238,8 +245,9 @@ export function startAutocomplete() {
             // return item.name;
           },
           templates: {
-            header() {
-              return i18n.a_catalogs;
+            header({html}) {
+              return html`<span className="aa-SourceHeaderTitle">${i18n.a_catalogs}</span>
+                <div className="aa-SourceHeaderLine"/>`;
             },
             item({item, html, components}) {
               return html`<div class="aa-ItemWrapper">
@@ -247,7 +255,7 @@ export function startAutocomplete() {
                   <div class="aa-ItemIcon">
                     <img
                       src="${item.img1 ? item.img1 : "/icons/folder2.svg"}"
-                      onerror="this.src = '/icons/folder2.svg';"
+                      onerror=${imageOnErrorHandler}
                       alt="${item.name}"
                       width="100"
                       height="100"
