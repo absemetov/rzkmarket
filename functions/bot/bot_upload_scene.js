@@ -431,7 +431,7 @@ const uploadMerch = async (ctx, next) => {
     const content = google.content("v2.1");
     // add scope content in admin.google!!!
     const auth = new google.auth.JWT({
-      keyFile: "./rzk-com-ua-d1d3248b8410.json",
+      keyFile: "./bot/rzk-com-ua-d1d3248b8410.json",
       scopes: ["https://www.googleapis.com/auth/content"],
       subject: "nadir@absemetov.org.ua",
     });
@@ -444,7 +444,8 @@ const uploadMerch = async (ctx, next) => {
         "contentLanguage": "uk",
         "offerId": product.id,
         "targetCountry": "UA",
-        "title": product.name,
+        "title": `${product.brand ? product.brand + " - " : ""}${product.name}`,
+        "brand": `${product.brand ? product.brand : "RZK Маркет"}`,
         "description": "Rzk.com.ua - Каждая вторая розетка в Украине будет куплена у нас!",
         "link": `https://rzk.com.ua/o/${objectId}/p/${product.id}`,
         "imageLink": photoUrl,
@@ -457,7 +458,7 @@ const uploadMerch = async (ctx, next) => {
       },
     });
     console.log(res.data);
-    await ctx.answerCbQuery();
+    await ctx.answerCbQuery("Merch upload!");
   } else {
     return next();
   }
