@@ -133,7 +133,7 @@ export function startAutocomplete() {
                   indexName: `${devPrefix}products`,
                   query,
                   params: {
-                    hitsPerPage: 5,
+                    hitsPerPage: 3,
                   },
                 },
               ],
@@ -192,7 +192,7 @@ export function startAutocomplete() {
                     <div class="aa-ItemContentTitle text-wrap">
                       ${components.Highlight({hit: item, attribute: "name"})} (${components.Highlight({hit: item, attribute: "productId"})})
                     </div>
-                    ${item.brand ? html`<div className="aa-ItemContentDescription">Бренд <strong>${components.Highlight({hit: item, attribute: "brand"})}</strong></div>` : ""}
+                    ${item.brand ? html`<small>Бренд <strong>${components.Highlight({hit: item, attribute: "brand"})}</strong></small>` : ""}
                   </div>
                 </div>
                 <div class="aa-ItemActions">
@@ -222,7 +222,7 @@ export function startAutocomplete() {
                   indexName: `${devPrefix}catalogs`,
                   query,
                   params: {
-                    hitsPerPage: 5,
+                    hitsPerPage: 3,
                   },
                 },
               ],

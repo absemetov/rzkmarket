@@ -34,6 +34,20 @@ bot.start(async (ctx) => {
   }
 });
 // rzk shop
+// test force reply
+bot.command("force", async (ctx) => {
+  function signQuestion(sign, text) {
+    const signUrl = "http://t.me/";
+    const signTextLink = `[\u200c](${signUrl}${sign})`;
+    return signTextLink + text;
+  }
+  const finalQuestion = signQuestion("#sE1R2w", "What is your name?");
+  await ctx.replyWithMarkdownV2(`A Reply ${finalQuestion}`, {
+    reply_markup: {
+      force_reply: true,
+    },
+  });
+});
 bot.command("objects", async (ctx) => {
   await startHandler(ctx);
 });
@@ -47,6 +61,26 @@ bot.command("mono", async (ctx) => {
 });
 // check session vars
 bot.on(["text", "contact"], async (ctx) => {
+  // force repl
+  if (ctx.message.reply_to_message) {
+    console.log(ctx.message.reply_to_message);
+    const sign = getSignOfMessage(ctx.message.reply_to_message);
+    // Now here we check the sign of reply_to_message NOT the text of reply_to_message ;)
+    console.log(sign);
+  }
+
+  function getSignOfMessage(msg) {
+    const signUrl = "http://t.me/#sE1R2w";
+    let sign;
+    if (msg.entities) {
+      const e = msg.entities.find((i) => i.type=="text_link" && i.url && i.url.indexOf(signUrl)>0);
+      console.log(e);
+      if (e) {
+        sign=e.url.substr(e.url.indexOf("#"));
+      }
+    }
+    return sign;
+  }
   // create object parce url
   const sheetUrl = ctx.state.isAdmin && ctx.message.text && ctx.message.text.match(/d\/(.*)\//);
   if (sheetUrl) {
