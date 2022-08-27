@@ -5,18 +5,31 @@ const {monoHandler, monoActions} = require("./bot_mono_scene");
 const {uploadActions, uploadForm} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
 const {uploadPhotoProduct, uploadPhotoCat, catalogsActions, cartWizard} = require("./bot_catalog_scene");
-const {store} = require("./bot_store_cart");
+const {store, photoCheckUrl} = require("./bot_store_cart");
 const algoliasearch = require("algoliasearch");
+const {URL} = require("url");
 const bot = new Telegraf(process.env.BOT_TOKEN, {
   handlerTimeout: 540000,
 });
 // midleware admin
 bot.use(isAdmin);
-// helper route
+// session msg
 bot.use(async (ctx, next) => {
+  let urlMsq;
   if (ctx.callbackQuery && "data" in ctx.callbackQuery && process.env.FUNCTIONS_EMULATOR) {
     console.log("=============callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
+    // test msg session parse hidden url
+    urlMsq = ctx.callbackQuery.message.caption_entities && ctx.callbackQuery.message.caption_entities.at(-1).url;
+  } else {
+    urlMsq = ctx.message.entities && ctx.message.entities.at(-1).url;
   }
+  const url = new URL(urlMsq ? urlMsq : "http://t.me");
+  ctx.state.url = {
+    url,
+    html() {
+      return `<a href="${this.url.href}">\u200c</a>`;
+    },
+  };
   return next();
 });
 // route actions
@@ -36,17 +49,21 @@ bot.start(async (ctx) => {
 // rzk shop
 // test force reply
 bot.command("force", async (ctx) => {
-  function signQuestion(sign, text) {
-    const signUrl = "http://t.me/";
-    const signTextLink = `[\u200c](${signUrl}${sign})`;
-    return signTextLink + text;
-  }
-  const finalQuestion = signQuestion("#sE1R2w", "What is your name?");
-  await ctx.replyWithMarkdownV2(`A Reply ${finalQuestion}`, {
-    reply_markup: {
-      force_reply: true,
-    },
-  });
+  const inlineKeyboard = [];
+  const addButton = {text: "Test btn", callback_data: "objects"};
+  inlineKeyboard.push([addButton]);
+  const projectImg = await photoCheckUrl();
+  // locale ctx.i18n.t("test")
+  ctx.state.url.url.searchParams.set("message", "Nadir Genius");
+  ctx.state.url.url.searchParams.set("message1", "Nadir Genius!");
+  await ctx.replyWithPhoto(projectImg,
+      {
+        caption: "<b>Выберите склад</b>" + ctx.state.url.html(),
+        parse_mode: "html",
+        reply_markup: {
+          inline_keyboard: inlineKeyboard,
+        },
+      });
 });
 bot.command("objects", async (ctx) => {
   await startHandler(ctx);
