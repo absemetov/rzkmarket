@@ -192,7 +192,7 @@ export function startAutocomplete() {
                     <div class="aa-ItemContentTitle text-wrap">
                       ${components.Highlight({hit: item, attribute: "name"})} (${components.Highlight({hit: item, attribute: "productId"})})
                     </div>
-                    ${item.brand ? html`<small>Бренд <strong>${components.Highlight({hit: item, attribute: "brand"})}</strong></small>` : ""}
+                    ${item.brand ? html`<small>Бренд ${components.Highlight({hit: item, attribute: "brand"})}</small>` : ""}
                   </div>
                 </div>
                 <div class="aa-ItemActions">

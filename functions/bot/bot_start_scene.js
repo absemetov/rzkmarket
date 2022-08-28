@@ -109,13 +109,15 @@ const startHandler = async (ctx) => {
 // show objects
 startActions.push(async (ctx, next) => {
   if (ctx.state.routeName === "objects") {
-    ctx.state.url.url.searchParams.set("message", "Nadir Genius!");
+    ctx.state.sessionMsg.url.searchParams.set("message", "Nadir Genius!");
+    ctx.state.sessionMsg.url.searchParams.delete("message1");
+    ctx.state.sessionMsg.url.searchParams.delete("message");
     const objectId = ctx.state.param;
     let caption = "<b>Выберите склад</b>";
     const inlineKeyboardArray = [];
     let imgUrl = null;
     if (objectId) {
-      console.log(ctx.state.url.url.searchParams.toString());
+      console.log(ctx.state.sessionMsg.url.searchParams.get("message"));
       // get data obj
       const object = await store.findRecord(`objects/${objectId}`);
       caption = `<b>${object.name}\n` +
@@ -160,7 +162,7 @@ startActions.push(async (ctx, next) => {
     await ctx.editMessageMedia({
       type: "photo",
       media,
-      caption: caption + ctx.state.url.html(),
+      caption: caption + ctx.state.sessionMsg.linkHTML(),
       parse_mode: "html",
     }, {
       reply_markup: {

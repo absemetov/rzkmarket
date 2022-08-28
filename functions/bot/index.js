@@ -1,6 +1,6 @@
 const functions = require("firebase-functions");
 const {Telegraf} = require("telegraf");
-const {startActions, startHandler, searchHandler, parseUrl, isAdmin, uploadPhotoObj} = require("./bot_start_scene");
+const {startActions, startHandler, parseUrl, isAdmin, uploadPhotoObj} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
 const {uploadActions, uploadForm} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
@@ -21,12 +21,12 @@ bot.use(async (ctx, next) => {
     // test msg session parse hidden url
     urlMsq = ctx.callbackQuery.message.caption_entities && ctx.callbackQuery.message.caption_entities.at(-1).url;
   } else {
-    urlMsq = ctx.message.entities && ctx.message.entities.at(-1).url;
+    urlMsq = ctx.message.reply_to_message && ctx.message.reply_to_message.entities && ctx.message.reply_to_message.entities.at(-1).url;
   }
   const url = new URL(urlMsq ? urlMsq : "http://t.me");
-  ctx.state.url = {
+  ctx.state.sessionMsg = {
     url,
-    html() {
+    linkHTML() {
       return `<a href="${this.url.href}">\u200c</a>`;
     },
   };
@@ -54,14 +54,20 @@ bot.command("force", async (ctx) => {
   inlineKeyboard.push([addButton]);
   const projectImg = await photoCheckUrl();
   // locale ctx.i18n.t("test")
-  ctx.state.url.url.searchParams.set("message", "Nadir Genius");
-  ctx.state.url.url.searchParams.set("message1", "Nadir Genius!");
+  ctx.state.sessionMsg.url.searchParams.set("message", "Nadir Genius");
   await ctx.replyWithPhoto(projectImg,
       {
-        caption: "<b>Выберите склад</b>" + ctx.state.url.html(),
+        caption: "<b>Выберите склад</b>" + ctx.state.sessionMsg.linkHTML(),
         parse_mode: "html",
         reply_markup: {
           inline_keyboard: inlineKeyboard,
+        },
+      });
+  // ctx.state.sessionMsg.url.searchParams.set("search", true);
+  await ctx.replyWithHTML("<b>Что вы ищете?</b>" + ctx.state.sessionMsg.linkHTML(),
+      {
+        reply_markup: {
+          force_reply: true,
         },
       });
 });
@@ -70,7 +76,14 @@ bot.command("objects", async (ctx) => {
 });
 // search products
 bot.command("search", async (ctx) => {
-  await searchHandler(ctx);
+  // await searchHandler(ctx);
+  ctx.state.sessionMsg.url.searchParams.set("search", true);
+  await ctx.replyWithHTML("<b>Что вы ищете?</b>" + ctx.state.sessionMsg.linkHTML(),
+      {
+        reply_markup: {
+          force_reply: true,
+        },
+      });
 });
 // monobank
 bot.command("mono", async (ctx) => {
@@ -78,26 +91,8 @@ bot.command("mono", async (ctx) => {
 });
 // check session vars
 bot.on(["text", "contact"], async (ctx) => {
-  // force repl
-  if (ctx.message.reply_to_message) {
-    console.log(ctx.message.reply_to_message);
-    const sign = getSignOfMessage(ctx.message.reply_to_message);
-    // Now here we check the sign of reply_to_message NOT the text of reply_to_message ;)
-    console.log(sign);
-  }
-
-  function getSignOfMessage(msg) {
-    const signUrl = "http://t.me/#sE1R2w";
-    let sign;
-    if (msg.entities) {
-      const e = msg.entities.find((i) => i.type=="text_link" && i.url && i.url.indexOf(signUrl)>0);
-      console.log(e);
-      if (e) {
-        sign=e.url.substr(e.url.indexOf("#"));
-      }
-    }
-    return sign;
-  }
+  // sessionMsg
+  console.log(ctx.state.sessionMsg.url.searchParams.has("search"));
   // create object parce url
   const sheetUrl = ctx.state.isAdmin && ctx.message.text && ctx.message.text.match(/d\/(.*)\//);
   if (sheetUrl) {
@@ -128,7 +123,8 @@ bot.on(["text", "contact"], async (ctx) => {
     return;
   }
   // algolia search test
-  if (sessionFire && sessionFire.scene === "search") {
+  // if (sessionFire && sessionFire.scene === "search") {
+  if (ctx.state.sessionMsg.url.searchParams.has("search")) {
     const client = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
     const index = client.initIndex("products");
     const inlineKeyboard = [];
