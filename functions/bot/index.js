@@ -6,7 +6,7 @@ const {uploadActions, uploadForm} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
 const {uploadPhotoProduct, uploadPhotoCat, catalogsActions, cartWizard} = require("./bot_catalog_scene");
 const {store, photoCheckUrl} = require("./bot_store_cart");
-const algoliasearch = require("algoliasearch");
+const {searchHandle} = require("./bot_search");
 const {URL} = require("url");
 const bot = new Telegraf(process.env.BOT_TOKEN, {
   handlerTimeout: 540000,
@@ -21,7 +21,9 @@ bot.use(async (ctx, next) => {
     // test msg session parse hidden url
     urlMsq = ctx.callbackQuery.message.caption_entities && ctx.callbackQuery.message.caption_entities.at(-1).url;
   } else {
-    urlMsq = ctx.message.reply_to_message && ctx.message.reply_to_message.entities && ctx.message.reply_to_message.entities.at(-1).url;
+    // change ctx if edited
+    const msg = ctx.message || ctx.editedMessage;
+    urlMsq = msg && msg.reply_to_message && msg.reply_to_message.entities && msg.reply_to_message.entities.at(-1).url;
   }
   const url = new URL(urlMsq ? urlMsq : "http://t.me");
   ctx.state.sessionMsg = {
@@ -63,7 +65,7 @@ bot.command("force", async (ctx) => {
           inline_keyboard: inlineKeyboard,
         },
       });
-  // ctx.state.sessionMsg.url.searchParams.set("search", true);
+  ctx.state.sessionMsg.url.searchParams.set("search", true);
   await ctx.replyWithHTML("<b>Что вы ищете?</b>" + ctx.state.sessionMsg.linkHTML(),
       {
         reply_markup: {
@@ -89,10 +91,16 @@ bot.command("search", async (ctx) => {
 bot.command("mono", async (ctx) => {
   await monoHandler(ctx);
 });
+// edited message for search
+bot.on("edited_message", async (ctx) => {
+  if (ctx.state.sessionMsg.url.searchParams.has("search")) {
+    await searchHandle(ctx);
+    return;
+  }
+  await ctx.reply("Commands /objects /search");
+});
 // check session vars
 bot.on(["text", "contact"], async (ctx) => {
-  // sessionMsg
-  console.log(ctx.state.sessionMsg.url.searchParams.has("search"));
   // create object parce url
   const sheetUrl = ctx.state.isAdmin && ctx.message.text && ctx.message.text.match(/d\/(.*)\//);
   if (sheetUrl) {
@@ -125,27 +133,10 @@ bot.on(["text", "contact"], async (ctx) => {
   // algolia search test
   // if (sessionFire && sessionFire.scene === "search") {
   if (ctx.state.sessionMsg.url.searchParams.has("search")) {
-    const client = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
-    const index = client.initIndex("products");
-    const inlineKeyboard = [];
-    try {
-      const resalt = await index.search(ctx.message.text);
-      for (const product of resalt.hits) {
-        const addButton = {text: `${product.objectID} ${product.name} ${product.price} ${product.currency}`,
-          callback_data: `p/${product.objectID}?o=absemetov`};
-        inlineKeyboard.push([addButton]);
-      }
-      await ctx.reply(`Search resalts: ${resalt.nbHits}`, {
-        reply_markup: {
-          inline_keyboard: inlineKeyboard,
-        },
-      });
-    } catch (error) {
-      await ctx.reply(`Algolia error: ${error}`);
-    }
+    await searchHandle(ctx);
     return;
   }
-  await ctx.reply("session scene is null");
+  await ctx.reply("Commands /objects /search");
 });
 // upload photo
 bot.on("photo", async (ctx) => {
