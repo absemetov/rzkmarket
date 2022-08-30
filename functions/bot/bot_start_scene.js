@@ -109,15 +109,11 @@ const startHandler = async (ctx) => {
 // show objects
 startActions.push(async (ctx, next) => {
   if (ctx.state.routeName === "objects") {
-    ctx.state.sessionMsg.url.searchParams.set("message", "Nadir Genius!");
-    ctx.state.sessionMsg.url.searchParams.delete("message1");
-    ctx.state.sessionMsg.url.searchParams.delete("message");
     const objectId = ctx.state.param;
     let caption = "<b>Выберите склад</b>";
     const inlineKeyboardArray = [];
     let imgUrl = null;
     if (objectId) {
-      console.log(ctx.state.sessionMsg.url.searchParams.get("message"));
       // get data obj
       const object = await store.findRecord(`objects/${objectId}`);
       caption = `<b>${object.name}\n` +
@@ -232,25 +228,8 @@ const uploadPhotoObj = async (ctx, objectId) => {
   }
 };
 
-// search products
-// upload object photo
-const searchHandler = async (ctx) => {
-  await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": "search"}});
-  await ctx.replyWithHTML("Введите поисковой запрос");
-};
-
-startActions.push( async (ctx, next) => {
-  if (ctx.state.routeName === "search") {
-    await searchHandler(ctx);
-    await ctx.answerCbQuery();
-  } else {
-    return next();
-  }
-});
-
 exports.startActions = startActions;
 exports.startHandler = startHandler;
-exports.searchHandler = searchHandler;
 exports.isAdmin = isAdmin;
 exports.parseUrl = parseUrl;
 exports.uploadPhotoObj = uploadPhotoObj;

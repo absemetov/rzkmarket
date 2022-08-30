@@ -6,7 +6,7 @@ const {uploadActions, uploadForm} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
 const {uploadPhotoProduct, uploadPhotoCat, catalogsActions, cartWizard} = require("./bot_catalog_scene");
 const {store, photoCheckUrl} = require("./bot_store_cart");
-const {searchHandle} = require("./bot_search");
+const {searchIndex, searchHandle, searchActions} = require("./bot_search");
 const {URL} = require("url");
 const bot = new Telegraf(process.env.BOT_TOKEN, {
   handlerTimeout: 540000,
@@ -36,7 +36,7 @@ bot.use(async (ctx, next) => {
 });
 // route actions
 bot.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&/:~+]+)?/,
-    parseUrl, ...startActions, ...catalogsActions, ...ordersActions, ...monoActions, ...uploadActions);
+    parseUrl, ...startActions, ...catalogsActions, ...ordersActions, ...monoActions, ...uploadActions, ...searchActions);
 // start bot
 bot.start(async (ctx) => {
   await startHandler(ctx);
@@ -78,14 +78,7 @@ bot.command("objects", async (ctx) => {
 });
 // search products
 bot.command("search", async (ctx) => {
-  // await searchHandler(ctx);
-  ctx.state.sessionMsg.url.searchParams.set("search", true);
-  await ctx.replyWithHTML("<b>Что вы ищете?</b>" + ctx.state.sessionMsg.linkHTML(),
-      {
-        reply_markup: {
-          force_reply: true,
-        },
-      });
+  await searchIndex(ctx);
 });
 // monobank
 bot.command("mono", async (ctx) => {
