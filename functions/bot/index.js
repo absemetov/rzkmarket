@@ -87,7 +87,7 @@ bot.command("mono", async (ctx) => {
 // edited message for search
 bot.on("edited_message", async (ctx) => {
   if (ctx.state.sessionMsg.url.searchParams.has("search")) {
-    await searchHandle(ctx);
+    await searchHandle(ctx, ctx.editedMessage.text);
     return;
   }
   await ctx.reply("Commands /objects /search");
@@ -126,7 +126,7 @@ bot.on(["text", "contact"], async (ctx) => {
   // algolia search test
   // if (sessionFire && sessionFire.scene === "search") {
   if (ctx.state.sessionMsg.url.searchParams.has("search")) {
-    await searchHandle(ctx);
+    await searchHandle(ctx, ctx.message.text);
     return;
   }
   await ctx.reply("Commands /objects /search");

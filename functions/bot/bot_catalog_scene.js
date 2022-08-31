@@ -143,7 +143,7 @@ const showCatalog = async (ctx, next) => {
     const media = await photoCheckUrl(publicImgUrl);
     await ctx.editMessageMedia({
       type: "photo",
-      media: media,
+      media,
       caption: `<b>${object.name} > Каталог</b>\n` +
         `${process.env.BOT_SITE}/o/${objectId}/c${catalogId ? "/" + catalogId : ""}`,
       parse_mode: "html",

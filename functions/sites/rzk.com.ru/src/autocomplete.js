@@ -73,7 +73,7 @@ const querySuggestionsPlugin = createQuerySuggestionsPlugin({
 });
 // get searh query
 const searchPageState = getInstantSearchUiState();
-const imageOnErrorHandler = (event) => event.currentTarget.src = "/icons/photo_error.svg";
+const imageOnErrorHandler = (event) => event.currentTarget.src = `/icons/photo_error_${lang}.svg`;
 
 export function startAutocomplete() {
   autocomplete({
