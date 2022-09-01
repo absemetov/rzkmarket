@@ -8,7 +8,7 @@ const searchHandle = async (ctx, searchText, page = 0) => {
   const client = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
   const index = client.initIndex(`${process.env.ALGOLIA_PREFIX}products`);
   const inlineKeyboard = [];
-  inlineKeyboard.push([{text: "🔍 Поиск товаров", callback_data: "search"}]);
+  inlineKeyboard.push([{text: "⤴️ ../Главная", callback_data: "objects"}, {text: "🔍 Поиск товаров", callback_data: "search"}]);
   try {
     // get resalts from algolia
     const resalt = await index.search(searchText, {

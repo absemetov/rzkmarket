@@ -18,7 +18,8 @@
     "deploy-bot-dev-ua":"firebase deploy --project=dev --only functions:botUa",
     "deploy-bot-dev-ru":"firebase deploy --project=dev --only functions:botRu",
     "pl": "firebase use",
-    "s": "firebase emulators:start --only functions,hosting"
+    "s-fh": "firebase emulators:start --only functions,hosting",
+    "s-f": "firebase emulators:start --only functions"
   },
   "dependencies": {},
   "devDependencies": {}

@@ -1,6 +1,7 @@
 const firebase = require("firebase-admin");
 const bucket = firebase.storage().bucket();
 const {cart, store, roundNumber, photoCheckUrl, savePhotoTelegram} = require("./bot_store_cart");
+const {searchHandle} = require("./bot_search");
 // catalogs actions array
 const catalogsActions = [];
 // show catalogs and goods
@@ -279,9 +280,15 @@ catalogsActions.push( async (ctx, next) => {
       if (sessionPathCatalog) {
         catalogUrl = sessionPathCatalog;
       }
+      const page = ctx.state.sessionMsg.url.searchParams.get("page");
+      const searchText = ctx.state.sessionMsg.url.searchParams.get("search_text");
       // add product to cart
       if (addValue) {
         await cart.add(objectId, ctx.from.id, added ? product.id : product, addValue);
+        if (page) {
+          await searchHandle(ctx, searchText, + page);
+          return;
+        }
         if (!redirectToCart) {
           ctx.state.routeName = "c";
           // eslint-disable-next-line no-useless-escape
@@ -326,7 +333,6 @@ catalogsActions.push( async (ctx, next) => {
         uploadPhotoButton.push({text: "Загрузить в Merch",
           callback_data: `uploadMerch/${product.id}?o=${objectId}`});
       }
-      const page = ctx.state.sessionMsg.url.searchParams.get("page");
       const searchButton = [];
       if (page) {
         searchButton.push({text: "🔍 Ввернуться в поиск", callback_data: `search/${page}`});
