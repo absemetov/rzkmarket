@@ -8,19 +8,19 @@ const searchHandle = async (ctx, searchText, page = 0) => {
   const client = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
   const index = client.initIndex(`${process.env.ALGOLIA_PREFIX}products`);
   const inlineKeyboard = [];
+  inlineKeyboard.push([{text: "🔍 Поиск товаров", callback_data: "search"}]);
   try {
     // get resalts from algolia
     const resalt = await index.search(searchText, {
-      attributesToRetrieve: ["name", "productId", "brand"],
+      attributesToRetrieve: ["name", "productId", "brand", "seller", "sellerId"],
       hitsPerPage: 5,
       page,
     });
-    console.log(resalt);
     for (const product of resalt.hits) {
       inlineKeyboard.push([
         {
-          text: `${product.brand ? product.brand + " " : ""}${product.name} (${product.productId})`,
-          callback_data: `p/${product.productId}?o=absemetov`,
+          text: `${product.brand ? product.brand + " " : ""}${product.name} (${product.productId}) - ${product.seller}`,
+          callback_data: `aC/${product.productId}?o=${product.sellerId}`,
         },
       ]);
     }
@@ -28,15 +28,24 @@ const searchHandle = async (ctx, searchText, page = 0) => {
     const prevNext = [];
     if (resalt.page > 0) {
       prevNext.push({text: "⬅️ Назад",
-        callback_data: `search/${searchText}?p=${resalt.page - 1}`});
+        callback_data: `search/${resalt.page - 1}`});
     }
-    if (resalt.page + 1 !== resalt.nbPages) {
+    if (resalt.nbPages && (resalt.page + 1 !== resalt.nbPages)) {
       prevNext.push({text: "➡️ Вперед",
-        callback_data: `search/${searchText}?p=${resalt.page + 1}`});
+        callback_data: `search/${resalt.page + 1}`});
     }
     inlineKeyboard.push(prevNext);
     const media = await photoCheckUrl();
-    const caption = `<b>&#171;${searchText}&#187; знайдено ${resalt.nbHits} товарів Страница ${page + 1} из ${resalt.nbPages}</b>`;
+    ctx.state.sessionMsg.url.searchParams.delete("search");
+    ctx.state.sessionMsg.url.searchParams.set("search_text", searchText);
+    ctx.state.sessionMsg.url.searchParams.set("page", page);
+    console.log(ctx.state.sessionMsg.linkHTML());
+    let caption;
+    if (resalt.nbHits) {
+      caption = `<b>&#171;${searchText}&#187; знайдено ${resalt.nbHits} товарів Страница ${page + 1} из ${resalt.nbPages}</b>` + ctx.state.sessionMsg.linkHTML();
+    } else {
+      caption = `<b>&#171;${searchText}&#187; за Вашим запитом нічого не знайдено</b>` + ctx.state.sessionMsg.linkHTML();
+    }
     if (ctx.callbackQuery) {
       await ctx.editMessageMedia({
         type: "photo",
@@ -62,11 +71,13 @@ const searchHandle = async (ctx, searchText, page = 0) => {
 };
 
 const searchIndex = async (ctx) => {
-  ctx.state.sessionMsg.url.searchParams.set("search", true);
   if (ctx.state.param) {
-    await searchHandle(ctx, ctx.state.param, + ctx.state.params.get("p"));
+    const searchText = ctx.state.sessionMsg.url.searchParams.get("search_text");
+    await searchHandle(ctx, searchText, + ctx.state.param);
     return;
   }
+  // open search dialog
+  ctx.state.sessionMsg.url.searchParams.set("search", true);
   await ctx.replyWithHTML("<b>Что вы ищете?</b>" + ctx.state.sessionMsg.linkHTML(),
       {
         reply_markup: {

@@ -713,7 +713,6 @@ app.get("*", (req, res) => {
 
 // config GCP
 const runtimeOpts = {
-  timeoutSeconds: 540,
   memory: "1GB",
 };
 

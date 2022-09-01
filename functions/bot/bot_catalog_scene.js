@@ -326,6 +326,11 @@ catalogsActions.push( async (ctx, next) => {
         uploadPhotoButton.push({text: "Загрузить в Merch",
           callback_data: `uploadMerch/${product.id}?o=${objectId}`});
       }
+      const page = ctx.state.sessionMsg.url.searchParams.get("page");
+      const searchButton = [];
+      if (page) {
+        searchButton.push({text: "🔍 Ввернуться в поиск", callback_data: `search/${page}`});
+      }
       const media = await photoCheckUrl(publicImgUrl);
       await ctx.editMessageMedia({
         type: "photo",
@@ -334,7 +339,7 @@ catalogsActions.push( async (ctx, next) => {
         `\nЦена ${product.price} ${process.env.BOT_CURRENCY}` +
         `\nСумма ${roundNumber(qty * product.price)} ${process.env.BOT_CURRENCY}` +
         `\n<b>Количетво: ${qty} ${product.unit}</b>` +
-        `\n${process.env.BOT_SITE}/o/${objectId}/p/${productId}`,
+        `\n${process.env.BOT_SITE}/o/${objectId}/p/${productId}` + ctx.state.sessionMsg.linkHTML(),
         parse_mode: "html",
       }, {reply_markup: {
         inline_keyboard: [
@@ -361,6 +366,7 @@ catalogsActions.push( async (ctx, next) => {
           ],
           addButtonArray,
           uploadPhotoButton,
+          searchButton,
           [
             {text: `⤴️ ${product.name} (${product.id})`, callback_data: `p/${product.id}?o=${objectId}`},
           ],
