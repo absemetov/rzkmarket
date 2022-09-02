@@ -20,7 +20,7 @@ const searchHandle = async (ctx, searchText, page = 0) => {
       inlineKeyboard.push([
         {
           text: `${product.brand ? product.brand + " " : ""}${product.name} (${product.productId}) - ${product.seller}`,
-          callback_data: `aC/${product.productId}?o=${product.sellerId}`,
+          callback_data: `p/${product.productId}?o=${product.sellerId}`,
         },
       ]);
     }

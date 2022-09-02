@@ -15,7 +15,8 @@ const myOrders = async (ctx, next) => {
     const orderId = ctx.state.params.get("oId");
     const objectId = ctx.state.params.get("o");
     let caption = "<b>Мои заказы</b>";
-    const pathOrderCurrent = await store.findRecord(`users/${ctx.from.id}`, "session.pathOrderCurrent");
+    // const pathOrderCurrent = await store.findRecord(`users/${ctx.from.id}`, "session.pathOrderCurrent");
+    const pathOrderCurrent = ctx.state.sessionMsg.url.searchParams.get("pathOrderCurrent");
     if (pathOrderCurrent) {
       caption = `Заказы от ${userId}`;
     }
@@ -129,7 +130,7 @@ const myOrders = async (ctx, next) => {
     await ctx.editMessageMedia({
       type: "photo",
       media,
-      caption,
+      caption: caption + ctx.state.sessionMsg.linkHTML(),
       parse_mode: "html",
     }, {
       reply_markup: {
@@ -158,7 +159,8 @@ const showOrders = async (ctx, next) => {
       if (order) {
         // show order
         // ctx.session.pathOrderCurrent = ctx.callbackQuery.data;
-        await store.createRecord(`users/${ctx.from.id}`, {"session": {"pathOrderCurrent": ctx.callbackQuery.data}});
+        // await store.createRecord(`users/${ctx.from.id}`, {"session": {"pathOrderCurrent": ctx.callbackQuery.data}});
+        ctx.state.sessionMsg.url.searchParams.set("pathOrderCurrent", ctx.callbackQuery.data);
         const date = moment.unix(order.createdAt).locale("ru");
         caption = `<b>${order.objectName} >` +
         ` Заказ #${store.formatOrderNumber(order.userId, order.orderNumber)}` +
@@ -226,17 +228,20 @@ const showOrders = async (ctx, next) => {
       const rnd = Math.random().toFixed(2).substring(2);
       inlineKeyboardArray.push([{text: "🔄 Обновить",
         callback_data: `orders/${order.id}?o=${objectId}&${rnd}`}]);
-      const pathOrder = await store.findRecord(`users/${ctx.from.id}`, "session.pathOrder");
+      // const pathOrder = await store.findRecord(`users/${ctx.from.id}`, "session.pathOrder");
+      const pathOrder = ctx.state.sessionMsg.url.searchParams.get("pathOrder");
       inlineKeyboardArray.push([{text: "🧾 Заказы",
         callback_data: `${pathOrder ? pathOrder : "orders?o=" + order.objectId}`}]);
     } else {
       // show orders
       // ctx.session.pathOrderCurrent = null;
       // ctx.session.pathOrder = ctx.callbackQuery.data;
-      await store.createRecord(`users/${ctx.from.id}`, {"session": {
-        "pathOrderCurrent": null,
-        "pathOrder": ctx.callbackQuery.data,
-      }});
+      // await store.createRecord(`users/${ctx.from.id}`, {"session": {
+      //   "pathOrderCurrent": null,
+      //   "pathOrder": ctx.callbackQuery.data,
+      // }});
+      ctx.state.sessionMsg.url.searchParams.delete("pathOrderCurrent");
+      ctx.state.sessionMsg.url.searchParams.set("pathOrder", ctx.callbackQuery.data);
       let mainQuery = firebase.firestore().collection("objects").doc(objectId)
           .collection("orders").orderBy("createdAt", "desc");
       // filter statusId
@@ -314,7 +319,7 @@ const showOrders = async (ctx, next) => {
     await ctx.editMessageMedia({
       type: "photo",
       media,
-      caption,
+      caption: caption + ctx.state.sessionMsg.linkHTML(),
       parse_mode: "html",
     }, {
       reply_markup: {
@@ -394,7 +399,8 @@ ordersActions.push(async (ctx, next) => {
       const inlineKeyboardArray = [];
       inlineKeyboardArray.push([{text: `Заказы from User ${userId}`,
         callback_data: `myO/${userId}`}]);
-      const pathOrderCurrent = await store.findRecord(`users/${ctx.from.id}`, "session.pathOrderCurrent");
+      // const pathOrderCurrent = await store.findRecord(`users/${ctx.from.id}`, "session.pathOrderCurrent");
+      const pathOrderCurrent = ctx.state.sessionMsg.url.searchParams.get("pathOrderCurrent");
       inlineKeyboardArray.push([{text: "⬅️ Назад",
         callback_data: `${pathOrderCurrent ? pathOrderCurrent : `orders?o=${objectId}`}`}]);
       await cartWizard[0](ctx, `User <a href="tg://user?id=${userId}">${userId}</a>`, inlineKeyboardArray);
@@ -444,7 +450,8 @@ ordersActions.push(async (ctx, next) => {
         }
         inlineKeyboardArray.push([{text: value, callback_data: `orders?statusId=${key}&o=${objectId}`}]);
       });
-      const pathOrder = await store.findRecord(`users/${ctx.from.id}`, "session.pathOrder");
+      // const pathOrder = await store.findRecord(`users/${ctx.from.id}`, "session.pathOrder");
+      const pathOrder = ctx.state.sessionMsg.url.searchParams.get("pathOrder");
       inlineKeyboardArray.push([{text: "⬅️ Назад",
         callback_data: `${pathOrder ? pathOrder : `orders?o=${objectId}`}`}]);
       await cartWizard[0](ctx, "Статуc заказа", inlineKeyboardArray);

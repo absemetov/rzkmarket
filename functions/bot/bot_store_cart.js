@@ -1,4 +1,5 @@
 const firebase = require("firebase-admin");
+const firestore = require("firebase-admin/firestore");
 const bucket = firebase.storage().bucket();
 const {download} = require("./download");
 const fs = require("fs");
@@ -88,7 +89,7 @@ const store = {
   },
   async deleteRecord(path, field) {
     await this.getQuery(path).set({
-      [field]: firebase.firestore.FieldValue.delete(),
+      [field]: firestore.FieldValue.delete(),
     }, {merge: true});
   },
   async findAll(collectionName) {
@@ -193,7 +194,7 @@ const cart = {
       if (typeof product !== "object") {
         await store.createRecord(`objects/${objectId}/carts/${userId}`,
             {"products": {
-              [product]: firebase.firestore.FieldValue.delete(),
+              [product]: firestore.FieldValue.delete(),
             }});
       }
     }
@@ -207,7 +208,7 @@ const cart = {
   },
   async createOrder(ctx) {
     const userId = ctx.from.id;
-    await store.createRecord(`users/${userId}`, {orderCount: firebase.firestore.FieldValue.increment(1)});
+    await store.createRecord(`users/${userId}`, {orderCount: firestore.FieldValue.increment(1)});
     const userData = await store.findRecord(`users/${userId}`);
     const objectId = userData.session.objectId;
     const orderQuery = firebase.firestore().collection("objects").doc(objectId).collection("orders");

@@ -27,7 +27,9 @@ const showCatalog = async (ctx, next) => {
     const inlineKeyboardArray =[];
     // ctx.session.pathCatalog = ctx.callbackQuery.data;
     // save to fire session
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {"pathCatalog": ctx.callbackQuery.data}});
+    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"pathCatalog": ctx.callbackQuery.data}});
+    ctx.state.sessionMsg.url.searchParams.set("pathCatalog", ctx.callbackQuery.data);
+    ctx.state.sessionMsg.url.searchParams.delete("cart");
     if (catalogId) {
       const currentCatalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
       // back button
@@ -146,7 +148,7 @@ const showCatalog = async (ctx, next) => {
       type: "photo",
       media,
       caption: `<b>${object.name} > Каталог</b>\n` +
-        `${process.env.BOT_SITE}/o/${objectId}/c${catalogId ? "/" + catalogId : ""}`,
+        `${process.env.BOT_SITE}/o/${objectId}/c${catalogId ? "/" + catalogId : ""} ` + ctx.state.sessionMsg.linkHTML(),
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: inlineKeyboardArray,
@@ -168,7 +170,8 @@ const showProduct = async (ctx, next) => {
     product.price = roundNumber(product.price * object.currencies[product.currency]);
     const cartButtons = await cart.cartButtons(objectId, ctx.from.id);
     let catalogUrl = `c/${product.catalog.id}?o=${objectId}`;
-    const sessionPathCatalog = await store.findRecord(`users/${ctx.from.id}`, "session.pathCatalog");
+    // const sessionPathCatalog = await store.findRecord(`users/${ctx.from.id}`, "session.pathCatalog");
+    const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathCatalog");
     if (sessionPathCatalog) {
       catalogUrl = sessionPathCatalog;
     }
@@ -205,6 +208,10 @@ const showProduct = async (ctx, next) => {
     // footer buttons
     cartButtons[0].text = `🏪 ${object.name}`;
     inlineKeyboardArray.push(cartButtons);
+    const page = ctx.state.sessionMsg.url.searchParams.get("page");
+    if (page) {
+      inlineKeyboardArray.push([{text: "🔍 Ввернуться в поиск", callback_data: `search/${page}`}]);
+    }
     const media = await photoCheckUrl(publicImgUrl);
     await ctx.editMessageMedia({
       type: "photo",
@@ -212,7 +219,7 @@ const showProduct = async (ctx, next) => {
       caption: `<b>${object.name}\n` +
       `${product.name} (${product.id})\n` +
       `Цена ${product.price} ${process.env.BOT_CURRENCY}</b>\n` +
-      `${process.env.BOT_SITE}/o/${objectId}/p/${productId}`,
+      `${process.env.BOT_SITE}/o/${objectId}/p/${productId}` + ctx.state.sessionMsg.linkHTML(),
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: inlineKeyboardArray,
@@ -230,7 +237,8 @@ catalogsActions.push( async (ctx, next) => {
     let qty = ctx.state.params.get("qty");
     const number = ctx.state.params.get("number");
     const back = ctx.state.params.get("back");
-    const redirectToCart = ctx.state.params.get("r");
+    // const redirectToCart = ctx.state.params.get("r");
+    const redirectToCart = ctx.state.sessionMsg.url.searchParams.get("cart");
     const added = ctx.state.params.get("a");
     const productId = ctx.state.param;
     const addValue = ctx.state.params.get("addVal");
@@ -260,11 +268,12 @@ catalogsActions.push( async (ctx, next) => {
       qty = 0;
     }
     // add redirect param and clear path
-    if (redirectToCart) {
-      paramsUrl += "&r=1";
-      // ctx.session.pathCatalog = null;
-      await store.createRecord(`users/${ctx.from.id}`, {"session": {"pathCatalog": null}});
-    }
+    // if (redirectToCart) {
+    // paramsUrl += "&r=1";
+    // ctx.session.pathCatalog = null;
+    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"pathCatalog": null}});
+    // ctx.state.sessionMsg.url.searchParams.delete("pathCatalog");
+    // }
     if (added) {
       paramsUrl += "&a=1";
     }
@@ -276,7 +285,8 @@ catalogsActions.push( async (ctx, next) => {
       // if (ctx.session.pathCatalog) {
       //   catalogUrl = ctx.session.pathCatalog;
       // }
-      const sessionPathCatalog = await store.findRecord(`users/${ctx.from.id}`, "session.pathCatalog");
+      // const sessionPathCatalog = await store.findRecord(`users/${ctx.from.id}`, "session.pathCatalog");
+      const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathCatalog");
       if (sessionPathCatalog) {
         catalogUrl = sessionPathCatalog;
       }
@@ -289,7 +299,10 @@ catalogsActions.push( async (ctx, next) => {
           await searchHandle(ctx, searchText, + page);
           return;
         }
-        if (!redirectToCart) {
+        if (redirectToCart) {
+          ctx.state.routeName = "cart";
+          await showCart(ctx, next);
+        } else {
           ctx.state.routeName = "c";
           // eslint-disable-next-line no-useless-escape
           const regPath = catalogUrl.match(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/);
@@ -303,9 +316,6 @@ catalogsActions.push( async (ctx, next) => {
           }
           ctx.callbackQuery.data = catalogUrl;
           await showCatalog(ctx, next);
-        } else {
-          ctx.state.routeName = "cart";
-          await showCart(ctx, next);
         }
         return;
       }
@@ -391,6 +401,7 @@ const showCart = async (ctx, next) => {
     const clear = ctx.state.params.get("clear");
     const deleteOrderId = ctx.state.params.get("deleteOrderId");
     const objectId = ctx.state.params.get("o");
+    ctx.state.sessionMsg.url.searchParams.delete("pathCatalog");
     if (deleteOrderId) {
       await store.createRecord(`users/${ctx.from.id}`, {"session": {
         "orderData": null,
@@ -407,6 +418,8 @@ const showCart = async (ctx, next) => {
     let totalSum = 0;
     let itemShow = 0;
     const products = await cart.products(objectId, ctx.from.id);
+    // redirect to cart param
+    ctx.state.sessionMsg.url.searchParams.set("cart", true);
     for (const [index, cartProduct] of products.entries()) {
       // check cart products price exist...
       const product = await store.findRecord(`objects/${objectId}/products/${cartProduct.id}`);
@@ -425,7 +438,7 @@ const showCart = async (ctx, next) => {
           {text: `${index + 1}) ${cartProduct.qty}${product.unit}=` +
           `${roundNumber(cartProduct.qty * product.price)} ${process.env.BOT_CURRENCY} ` +
           `${product.name} (${product.id})`,
-          callback_data: `aC/${product.id}?qty=${cartProduct.qty}&r=1&a=1&o=${objectId}`},
+          callback_data: `aC/${product.id}?qty=${cartProduct.qty}&a=1&o=${objectId}`},
         ]);
         // update price in cart
         if (product.price !== cartProduct.price) {
@@ -487,7 +500,7 @@ const showCart = async (ctx, next) => {
     await ctx.editMessageMedia({
       type: "photo",
       media,
-      caption: msgTxt,
+      caption: msgTxt + ctx.state.sessionMsg.linkHTML(),
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: inlineKeyboardArray,
@@ -503,7 +516,7 @@ catalogsActions.push(showCart);
 const cartWizard = [
   // show carrier services
   async (ctx, caption, inlineKeyboardArray = []) => {
-    await ctx.editMessageCaption(`<b>${caption}:</b>`,
+    await ctx.editMessageCaption(`<b>${caption}:</b>` + ctx.state.sessionMsg.linkHTML(),
         {
           parse_mode: "html",
           reply_markup: {
@@ -583,7 +596,7 @@ const cartWizard = [
       `&cId=${carrierId}&${rnd}`}]);
     }
     await ctx.editMessageCaption(`Введите номер отделения:\n<b>${qty}</b>` +
-      `\n${error ? "Ошибка: введите номер отделения" : ""}`,
+      `\n${error ? "Ошибка: введите номер отделения" : ""}` + ctx.state.sessionMsg.linkHTML(),
     {
       parse_mode: "html",
       reply_markup: {
@@ -784,7 +797,8 @@ catalogsActions.push( async (ctx, next) => {
     // if (ctx.session.pathCatalog) {
     //   catalogUrl = ctx.session.pathCatalog;
     // }
-    const sessionPathCatalog = await store.findRecord(`users/${ctx.from.id}`, "session.pathCatalog");
+    // const sessionPathCatalog = await store.findRecord(`users/${ctx.from.id}`, "session.pathCatalog");
+    const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathCatalog");
     if (sessionPathCatalog) {
       catalogUrl = sessionPathCatalog;
     }
@@ -992,7 +1006,8 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
       // if (ctx.session.pathCatalog) {
       //   catalogUrl = ctx.session.pathCatalog;
       // }
-      const sessionPathCatalog = await store.findRecord(`users/${ctx.from.id}`, "session.pathCatalog");
+      // const sessionPathCatalog = await store.findRecord(`users/${ctx.from.id}`, "session.pathCatalog");
+      const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathCatalog");
       if (sessionPathCatalog) {
         catalogUrl = sessionPathCatalog;
       }
