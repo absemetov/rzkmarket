@@ -594,6 +594,9 @@ const cartWizard = [
     } else {
       inlineKeyboardArray.push([{text: "Выбрать отделение", callback_data: `cO/wizard?cN=${qty}` +
       `&cId=${carrierId}&${rnd}`}]);
+      // get msg session
+      const objectId = ctx.state.sessionMsg.url.searchParams.get("objectId");
+      inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: `cart?o=${objectId}`}]);
     }
     await ctx.editMessageCaption(`Введите номер отделения:\n<b>${qty}</b>` +
       `\n${error ? "Ошибка: введите номер отделения" : ""}` + ctx.state.sessionMsg.linkHTML(),
@@ -605,41 +608,40 @@ const cartWizard = [
     });
   },
   async (ctx) => {
-    await ctx.reply("Укажите адрес доставки (город)", {
+    await ctx.replyWithHTML("Укажите адрес доставки (город)" + ctx.state.sessionMsg.linkHTML(), {
       reply_markup: {
-        keyboard: [["Отмена"]],
-        resize_keyboard: true,
+        // keyboard: [["Отмена"]],
+        // resize_keyboard: true,
+        force_reply: true,
+        input_field_placeholder: "hello nadir!",
       }});
     await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": "wizardOrder", "cursor": 3}});
   },
   async (ctx) => {
-    if (ctx.message.text.length < 2) {
-      await ctx.reply("Адрес слишком короткий");
-      return;
-    }
     const address = ctx.message.text;
     await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {address}}});
+    ctx.state.sessionMsg.url.searchParams.set("address", address);
     // reply last name alert
     const lastName = ctx.from.last_name ? ctx.from.last_name : null;
-    const keyboard = lastName ? [[lastName], ["Отмена"]] : [["Отмена"]];
-    await ctx.reply(`Введите фамилию получателя ${lastName ? "или выберите свою" : ""}`, {
+    // const keyboard = lastName ? [[lastName], ["Отмена"]] : [["Отмена"]];
+    await ctx.replyWithHTML(`Введите фамилию получателя ${lastName ? "или выберите свою" : ""}` + ctx.state.sessionMsg.linkHTML(), {
       reply_markup: {
-        keyboard,
-        resize_keyboard: true,
+        // keyboard,
+        // resize_keyboard: true,
+        inline_keyboard: [[{text: "➡️ Вперед", callback_data: "search/1"}]],
+        force_reply: true,
+        input_field_placeholder: "hello nadir!",
       }});
     await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 4}});
   },
   async (ctx) => {
-    if (ctx.message.text.length < 2) {
-      await ctx.reply("Фамилия слишком короткая");
-      return;
-    }
     const lastName = ctx.message.text;
     await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {lastName}}});
+    ctx.state.sessionMsg.url.searchParams.set("lastName", lastName);
     // reply first name
     const firstName = ctx.from.first_name;
     const keyboard = [[firstName], ["Отмена"]];
-    await ctx.reply("Введите имя получателя или выберите свое", {
+    await ctx.replyWithHTML("Введите имя получателя или выберите свое" + ctx.state.sessionMsg.linkHTML(), {
       reply_markup: {
         keyboard,
         resize_keyboard: true,
@@ -647,13 +649,10 @@ const cartWizard = [
     await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 5}});
   },
   async (ctx) => {
-    if (ctx.message.text.length < 2) {
-      await ctx.reply("Имя слишком короткое");
-      return;
-    }
     const firstName = ctx.message.text;
     await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {firstName}}});
-    await ctx.reply("Введите номер телефона", {
+    ctx.state.sessionMsg.url.searchParams.set("firstName", firstName);
+    await ctx.replyWithHTML("Введите номер телефона" + ctx.state.sessionMsg.linkHTML(), {
       reply_markup: {
         keyboard: [
           [{
@@ -729,13 +728,28 @@ const cartWizard = [
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "cO") {
     const todo = ctx.state.param;
-    // first step carrier
+    // order payment method
+    if (todo === "payment") {
+      const objectId = ctx.state.params.get("o");
+      await store.createRecord(`users/${ctx.from.id}`, {session: {objectId}});
+      // show paymets service
+      const inlineKeyboardArray = [];
+      store.payments().forEach((value, key) => {
+        inlineKeyboardArray.push([{text: value, callback_data: `cO/carrier?payment_id=${key}&o=${objectId}`}]);
+      });
+      inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: `cart?o=${objectId}`}]);
+      await cartWizard[0](ctx, "Способ оплаты", inlineKeyboardArray);
+    }
+    // set carrier
     if (todo === "carrier") {
       // save payment and clear old data use updateRecord
       const paymentId = + ctx.state.params.get("payment_id");
       const objectId = ctx.state.params.get("o");
+      ctx.state.sessionMsg.url.searchParams.set("objectId", objectId);
       // clear and set data use update
       await store.updateRecord(`users/${ctx.from.id}`, {"session.wizardData": {paymentId}});
+      // test save msg session
+      ctx.state.sessionMsg.url.searchParams.set("paymentId", paymentId);
       const inlineKeyboardArray = [];
       store.carriers().forEach((obj, key) => {
         if (obj.reqNumber) {
@@ -751,22 +765,12 @@ catalogsActions.push( async (ctx, next) => {
     if (todo === "cN") {
       await cartWizard[1](ctx);
     }
-    // order payment method
-    if (todo === "payment") {
-      const objectId = ctx.state.params.get("o");
-      await store.createRecord(`users/${ctx.from.id}`, {session: {objectId}});
-      // show paymets service
-      const inlineKeyboardArray = [];
-      store.payments().forEach((value, key) => {
-        inlineKeyboardArray.push([{text: value, callback_data: `cO/carrier?payment_id=${key}&o=${objectId}`}]);
-      });
-      inlineKeyboardArray.push([{text: "🛒 Корзина", callback_data: `cart?o=${objectId}`}]);
-      await cartWizard[0](ctx, "Способ оплаты", inlineKeyboardArray);
-    }
     // save payment and goto wizard
     if (todo === "wizard") {
       const carrierId = + ctx.state.params.get("cId");
       await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {carrierId}}});
+      // test save msg session
+      ctx.state.sessionMsg.url.searchParams.set("carrierId", carrierId);
       // if user not chuse carrier number
       const carrierNumber = + ctx.state.params.get("cN");
       if (carrierId === 2 && !carrierNumber) {
@@ -777,6 +781,8 @@ catalogsActions.push( async (ctx, next) => {
       // save carrierNumber
       if (carrierNumber) {
         await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {carrierNumber}}});
+        // test save msg session
+        ctx.state.sessionMsg.url.searchParams.set("carrierNumber", carrierNumber);
       }
       await ctx.deleteMessage();
       cartWizard[2](ctx);

@@ -5,7 +5,7 @@ const {monoHandler, monoActions} = require("./bot_mono_scene");
 const {uploadActions, uploadForm} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
 const {uploadPhotoProduct, uploadPhotoCat, catalogsActions, cartWizard} = require("./bot_catalog_scene");
-const {store, photoCheckUrl} = require("./bot_store_cart");
+const {store} = require("./bot_store_cart");
 const {searchIndex, searchHandle, searchActions} = require("./bot_search");
 const {URL} = require("url");
 const bot = new Telegraf(process.env.BOT_TOKEN, {
@@ -49,31 +49,7 @@ bot.start(async (ctx) => {
     });
   }
 });
-// rzk shop
-// test force reply
-bot.command("force", async (ctx) => {
-  const inlineKeyboard = [];
-  const addButton = {text: "Test btn", callback_data: "objects"};
-  inlineKeyboard.push([addButton]);
-  const projectImg = await photoCheckUrl();
-  // locale ctx.i18n.t("test")
-  ctx.state.sessionMsg.url.searchParams.set("message", "Nadir Genius");
-  await ctx.replyWithPhoto(projectImg,
-      {
-        caption: "<b>Выберите склад</b>" + ctx.state.sessionMsg.linkHTML(),
-        parse_mode: "html",
-        reply_markup: {
-          inline_keyboard: inlineKeyboard,
-        },
-      });
-  ctx.state.sessionMsg.url.searchParams.set("search", true);
-  await ctx.replyWithHTML("<b>Что вы ищете?</b>" + ctx.state.sessionMsg.linkHTML(),
-      {
-        reply_markup: {
-          force_reply: true,
-        },
-      });
-});
+// show obj
 bot.command("objects", async (ctx) => {
   await startHandler(ctx);
 });
@@ -119,7 +95,7 @@ bot.on(["text", "contact"], async (ctx) => {
     // ctx.session.scene = null;
     return;
   }
-  // wizard
+  // wizard create order
   if (sessionFire && sessionFire.scene === "wizardOrder") {
     await cartWizard[sessionFire.cursor](ctx);
     return;
