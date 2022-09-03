@@ -20,6 +20,9 @@ bot.use(async (ctx, next) => {
     console.log("=============callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
     // test msg session parse hidden url
     urlMsq = ctx.callbackQuery.message.caption_entities && ctx.callbackQuery.message.caption_entities.at(-1).url;
+    if (!urlMsq) {
+      urlMsq = ctx.callbackQuery.message.entities && ctx.callbackQuery.message.entities.at(-1).url;
+    }
   } else {
     // change ctx if edited
     const msg = ctx.message || ctx.editedMessage;
@@ -67,10 +70,25 @@ bot.on("edited_message", async (ctx) => {
     await searchHandle(ctx, ctx.editedMessage.text);
     return;
   }
+  if (ctx.state.sessionMsg.url.searchParams.get("scene") === "wizardOrder") {
+    const cursor = ctx.state.sessionMsg.url.searchParams.get("cursor");
+    // await cartWizard[sessionFire.cursor](ctx);
+    await cartWizard[cursor](ctx, ctx.editedMessage.text);
+    return;
+  }
   await ctx.reply("Commands /objects /search");
 });
+// share phone number
+bot.on("contact", async (ctx) => {
+  if (ctx.state.sessionMsg.url.searchParams.get("scene") === "wizardOrder") {
+    const cursor = ctx.state.sessionMsg.url.searchParams.get("cursor");
+    // await cartWizard[sessionFire.cursor](ctx);
+    await cartWizard[cursor](ctx, ctx.message.contact.phone_number);
+    return;
+  }
+});
 // check session vars
-bot.on(["text", "contact"], async (ctx) => {
+bot.on("text", async (ctx) => {
   // create object parce url
   const sheetUrl = ctx.state.isAdmin && ctx.message.text && ctx.message.text.match(/d\/(.*)\//);
   if (sheetUrl) {
@@ -96,8 +114,11 @@ bot.on(["text", "contact"], async (ctx) => {
     return;
   }
   // wizard create order
-  if (sessionFire && sessionFire.scene === "wizardOrder") {
-    await cartWizard[sessionFire.cursor](ctx);
+  // if (sessionFire && sessionFire.scene === "wizardOrder") {
+  if (ctx.state.sessionMsg.url.searchParams.get("scene") === "wizardOrder") {
+    const cursor = ctx.state.sessionMsg.url.searchParams.get("cursor");
+    // await cartWizard[sessionFire.cursor](ctx);
+    await cartWizard[cursor](ctx, ctx.message.text);
     return;
   }
   // algolia search test

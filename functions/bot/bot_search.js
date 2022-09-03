@@ -90,7 +90,25 @@ const searchActions = [];
 
 searchActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "search") {
-    await searchIndex(ctx);
+    if (ctx.state.param == 1) {
+      ctx.state.sessionMsg.url.searchParams.set("lastName", ctx.from.last_name);
+      // reply first name
+      const firstName = ctx.from.first_name;
+      const keyboard = [[firstName], ["Отмена"]];
+      await ctx.replyWithHTML("Введите имя получателя или выберите свое" + ctx.state.sessionMsg.linkHTML(), {
+        reply_markup: {
+          keyboard,
+          resize_keyboard: true,
+        }});
+    } else {
+      await ctx.replyWithHTML("<b>Что вы ищете?</b>" + ctx.state.sessionMsg.linkHTML(),
+          {
+            reply_markup: {
+              force_reply: true,
+            },
+          });
+    }
+    // await searchIndex(ctx);
     await ctx.answerCbQuery();
   } else {
     return next();

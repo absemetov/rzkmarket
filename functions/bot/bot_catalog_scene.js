@@ -514,7 +514,7 @@ catalogsActions.push(showCart);
 
 // wizard scene
 const cartWizard = [
-  // show carrier services
+  // show carrier services 0
   async (ctx, caption, inlineKeyboardArray = []) => {
     await ctx.editMessageCaption(`<b>${caption}:</b>` + ctx.state.sessionMsg.linkHTML(),
         {
@@ -524,6 +524,7 @@ const cartWizard = [
           },
         });
   },
+  // 1
   async (ctx, error) => {
     const inlineKeyboardArray = [];
     let qty = ctx.state.params.get("q");
@@ -607,75 +608,92 @@ const cartWizard = [
       },
     });
   },
+  // 2
   async (ctx) => {
+    ctx.state.sessionMsg.url.searchParams.set("scene", "wizardOrder");
+    ctx.state.sessionMsg.url.searchParams.set("cursor", 3);
     await ctx.replyWithHTML("Укажите адрес доставки (город)" + ctx.state.sessionMsg.linkHTML(), {
       reply_markup: {
         // keyboard: [["Отмена"]],
         // resize_keyboard: true,
         force_reply: true,
-        input_field_placeholder: "hello nadir!",
+        input_field_placeholder: "Kyiv",
       }});
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": "wizardOrder", "cursor": 3}});
+    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": "wizardOrder", "cursor": 3}});
   },
-  async (ctx) => {
-    const address = ctx.message.text;
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {address}}});
+  // 3
+  async (ctx, address) => {
+    // const address = ctx.message.text;
+    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {address}}});
     ctx.state.sessionMsg.url.searchParams.set("address", address);
     // reply last name alert
-    const lastName = ctx.from.last_name ? ctx.from.last_name : null;
+    const inlineKeyboard = [];
+    inlineKeyboard.push([{text: "Ввести другую фамилию.", callback_data: "cO/setLastName"}]);
+    if (ctx.from.last_name) {
+      inlineKeyboard.push([{text: `Выбрать свою фамилию ${ctx.from.last_name}`, callback_data: "cO/setCurrentLastName"}]);
+    }
+    // const lastName = ctx.from.last_name ? ctx.from.last_name : null;
     // const keyboard = lastName ? [[lastName], ["Отмена"]] : [["Отмена"]];
-    await ctx.replyWithHTML(`Введите фамилию получателя ${lastName ? "или выберите свою" : ""}` + ctx.state.sessionMsg.linkHTML(), {
+    await ctx.replyWithHTML(`Введите фамилию получателя ${ctx.from.last_name ? "или выберите свою" : ""}` + ctx.state.sessionMsg.linkHTML(), {
       reply_markup: {
         // keyboard,
         // resize_keyboard: true,
-        inline_keyboard: [[{text: "➡️ Вперед", callback_data: "search/1"}]],
-        force_reply: true,
+        inline_keyboard: inlineKeyboard,
         input_field_placeholder: "hello nadir!",
       }});
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 4}});
+    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 4}});
   },
-  async (ctx) => {
-    const lastName = ctx.message.text;
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {lastName}}});
+  // 4
+  async (ctx, lastName) => {
     ctx.state.sessionMsg.url.searchParams.set("lastName", lastName);
     // reply first name
-    const firstName = ctx.from.first_name;
-    const keyboard = [[firstName], ["Отмена"]];
+    // const firstName = ctx.from.first_name;
+    const inlineKeyboard = [];
+    inlineKeyboard.push([{text: "Ввести другое имя.", callback_data: "cO/setFirstName"}]);
+    if (ctx.from.first_name) {
+      inlineKeyboard.push([{text: `Выбрать свое имя ${ctx.from.first_name}`, callback_data: "cO/setCurrentFirstName"}]);
+    }
+    // const keyboard = [[firstName], ["Отмена"]];
     await ctx.replyWithHTML("Введите имя получателя или выберите свое" + ctx.state.sessionMsg.linkHTML(), {
       reply_markup: {
-        keyboard,
-        resize_keyboard: true,
+        // keyboard,
+        // resize_keyboard: true,
+        inline_keyboard: inlineKeyboard,
+        input_field_placeholder: "hello Nadir!",
       }});
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 5}});
+    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 5}});
   },
-  async (ctx) => {
-    const firstName = ctx.message.text;
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {firstName}}});
+  async (ctx, firstName) => {
+    // const firstName = ctx.message.text;
+    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {firstName}}});
     ctx.state.sessionMsg.url.searchParams.set("firstName", firstName);
+    const inlineKeyboard = [];
+    inlineKeyboard.push([{text: "Отправить свой номер", callback_data: "cO/setCurrentPhoneNumber"}]);
+    inlineKeyboard.push([{text: "Ввести другой номер", callback_data: "cO/setPhoneNumber"}]);
     await ctx.replyWithHTML("Введите номер телефона" + ctx.state.sessionMsg.linkHTML(), {
       reply_markup: {
-        keyboard: [
-          [{
-            text: "Отправить свой номер",
-            request_contact: true,
-          }],
-          ["Отмена"],
-        ],
-        resize_keyboard: true,
-      },
-    });
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 6}});
+        // keyboard,
+        // resize_keyboard: true,
+        inline_keyboard: inlineKeyboard,
+        input_field_placeholder: "+7978 89 86 431",
+      }});
+    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 6}});
   },
-  async (ctx) => {
-    const phoneNumberText = (ctx.message.contact && ctx.message.contact.phone_number) || ctx.message.text;
+  async (ctx, phoneNumberText) => {
+    // const phoneNumberText = (ctx.message.contact && ctx.message.contact.phone_number) || ctx.message.text;
     const regexpPhoneRu = new RegExp(process.env.BOT_PHONEREGEXP);
     const checkPhone = phoneNumberText.match(regexpPhoneRu);
     if (!checkPhone) {
-      await ctx.reply(`Введите номер телефона в формате ${process.env.BOT_PHONETEMPLATE}`);
+      await ctx.replyWithHTML(`Введите номер телефона в формате ${process.env.BOT_PHONETEMPLATE}` + ctx.state.sessionMsg.linkHTML(), {
+        reply_markup: {
+          force_reply: true,
+        },
+      });
       return;
     }
     const phoneNumber = `${process.env.BOT_PHONECODE}${checkPhone[2]}`;
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {phoneNumber}}});
+    ctx.state.sessionMsg.url.searchParams.set("phoneNumber", phoneNumber);
+    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {phoneNumber}}});
     await ctx.replyWithHTML("Комментарий к заказу:",
         {
           reply_markup: {
@@ -768,7 +786,7 @@ catalogsActions.push( async (ctx, next) => {
     // save payment and goto wizard
     if (todo === "wizard") {
       const carrierId = + ctx.state.params.get("cId");
-      await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {carrierId}}});
+      // await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {carrierId}}});
       // test save msg session
       ctx.state.sessionMsg.url.searchParams.set("carrierId", carrierId);
       // if user not chuse carrier number
@@ -780,12 +798,64 @@ catalogsActions.push( async (ctx, next) => {
       }
       // save carrierNumber
       if (carrierNumber) {
-        await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {carrierNumber}}});
+        // await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {carrierNumber}}});
         // test save msg session
         ctx.state.sessionMsg.url.searchParams.set("carrierNumber", carrierNumber);
       }
       await ctx.deleteMessage();
-      cartWizard[2](ctx);
+      await cartWizard[2](ctx);
+    }
+    // save last name user
+    if (todo === "setCurrentLastName") {
+      await cartWizard[4](ctx, ctx.from.last_name);
+    }
+    // save custom last name
+    if (todo === "setLastName") {
+      ctx.state.sessionMsg.url.searchParams.set("cursor", 4);
+      await ctx.replyWithHTML("<b>Введите фамилию получателя</b>" + ctx.state.sessionMsg.linkHTML(),
+          {
+            reply_markup: {
+              force_reply: true,
+            },
+          });
+    }
+    // save last name user
+    if (todo === "setCurrentFirstName") {
+      await cartWizard[5](ctx, ctx.from.first_name);
+    }
+    // save custom last name
+    if (todo === "setFirstName") {
+      ctx.state.sessionMsg.url.searchParams.set("cursor", 5);
+      await ctx.replyWithHTML("<b>Введите имя получателя</b>" + ctx.state.sessionMsg.linkHTML(),
+          {
+            reply_markup: {
+              force_reply: true,
+            },
+          });
+    }
+    // save phone number
+    if (todo === "setCurrentPhoneNumber") {
+      ctx.state.sessionMsg.url.searchParams.set("cursor", 6);
+      await ctx.replyWithHTML("Нажмите кнопку Отправить свой номер" + ctx.state.sessionMsg.linkHTML(), {
+        reply_markup: {
+          keyboard: [
+            [{
+              text: "Отправить свой номер",
+              request_contact: true,
+            }],
+            ["Отмена"],
+          ],
+          resize_keyboard: true,
+        },
+      });
+    }
+    if (todo === "setPhoneNumber") {
+      ctx.state.sessionMsg.url.searchParams.set("cursor", 6);
+      await ctx.replyWithHTML("Введите номер телефона" + ctx.state.sessionMsg.linkHTML(), {
+        reply_markup: {
+          force_reply: true,
+        },
+      });
     }
     await ctx.answerCbQuery();
   } else {
