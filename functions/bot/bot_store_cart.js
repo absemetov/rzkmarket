@@ -206,16 +206,16 @@ const cart = {
   async clear(objectId, userId) {
     await store.createRecord(`objects/${objectId}/carts/${userId}`, {"products": null});
   },
-  async createOrder(ctx) {
+  async createOrder(ctx, wizardData) {
     const userId = ctx.from.id;
     await store.createRecord(`users/${userId}`, {orderCount: firestore.FieldValue.increment(1)});
     const userData = await store.findRecord(`users/${userId}`);
-    const objectId = userData.session.objectId;
+    const objectId = wizardData.objectId;
     const orderQuery = firebase.firestore().collection("objects").doc(objectId).collection("orders");
     const cartProducts = await store.findRecord(`objects/${objectId}/carts/${userId}`, "products");
     const object = await store.findRecord(`objects/${objectId}`);
     await orderQuery.add({
-      userId: + userData.id,
+      userId,
       objectId,
       objectName: object.name,
       orderNumber: userData.orderCount,
@@ -223,7 +223,7 @@ const cart = {
       fromBot: true,
       products: cartProducts,
       createdAt: Math.floor(Date.now() / 1000),
-      ...userData.session.wizardData,
+      ...wizardData,
     });
     await this.clear(objectId, userId);
     // notify admin now use triggers

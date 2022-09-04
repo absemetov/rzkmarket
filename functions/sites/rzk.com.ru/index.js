@@ -1,5 +1,6 @@
 const functions = require("firebase-functions");
 const firebase = require("firebase-admin");
+const firestore = require("firebase-admin/firestore");
 const bucket = firebase.storage().bucket();
 const express = require("express");
 const exphbs = require("express-handlebars");
@@ -630,7 +631,7 @@ app.post("/o/:objectId/cart/purchase", auth, (req, res) => {
       const newOrderRef = firebase.firestore().collection("objects").doc(objectId).collection("orders").doc();
       // if useer auth
       const userId = req.user.auth ? + req.user.uid : 94899148;
-      await store.createRecord(`users/${userId}`, {orderCount: firebase.firestore.FieldValue.increment(1)});
+      await store.createRecord(`users/${userId}`, {orderCount: firestore.FieldValue.increment(1)});
       const userData = await store.findRecord(`users/${userId}`);
       await newOrderRef.set({
         userId,

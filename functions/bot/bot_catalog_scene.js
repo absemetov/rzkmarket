@@ -639,7 +639,6 @@ const cartWizard = [
         // keyboard,
         // resize_keyboard: true,
         inline_keyboard: inlineKeyboard,
-        input_field_placeholder: "hello nadir!",
       }});
     // await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 4}});
   },
@@ -659,10 +658,10 @@ const cartWizard = [
         // keyboard,
         // resize_keyboard: true,
         inline_keyboard: inlineKeyboard,
-        input_field_placeholder: "hello Nadir!",
       }});
     // await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 5}});
   },
+  // 5
   async (ctx, firstName) => {
     // const firstName = ctx.message.text;
     // await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {firstName}}});
@@ -675,10 +674,10 @@ const cartWizard = [
         // keyboard,
         // resize_keyboard: true,
         inline_keyboard: inlineKeyboard,
-        input_field_placeholder: "+7978 89 86 431",
       }});
     // await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 6}});
   },
+  // 6
   async (ctx, phoneNumberText) => {
     // const phoneNumberText = (ctx.message.contact && ctx.message.contact.phone_number) || ctx.message.text;
     const regexpPhoneRu = new RegExp(process.env.BOT_PHONEREGEXP);
@@ -694,52 +693,43 @@ const cartWizard = [
     const phoneNumber = `${process.env.BOT_PHONECODE}${checkPhone[2]}`;
     ctx.state.sessionMsg.url.searchParams.set("phoneNumber", phoneNumber);
     // await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {phoneNumber}}});
-    await ctx.replyWithHTML("Комментарий к заказу:",
+    const inlineKeyboard = [];
+    inlineKeyboard.push([{text: "Без комментариев", callback_data: "cO/setNoComment"}]);
+    inlineKeyboard.push([{text: "Добавить комментарий", callback_data: "cO/setComment"}]);
+    await ctx.replyWithHTML("Комментарий к заказу:" + ctx.state.sessionMsg.linkHTML(),
         {
           reply_markup: {
-            keyboard: [
-              ["Без комментариев"],
-              ["Отмена"],
-            ],
-            resize_keyboard: true,
+            inline_keyboard: inlineKeyboard,
           }});
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 7}});
+    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 7}});
   },
-  async (ctx) => {
-    if (ctx.message.text && ctx.message.text !== "Без комментариев") {
-      const comment = ctx.message.text;
-      await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {comment}}});
+  // 7
+  async (ctx, comment) => {
+    // if (ctx.message.text && ctx.message.text !== "Без комментариев") {
+    //   const comment = ctx.message.text;
+    //   await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {comment}}});
+    // }
+    if (comment) {
+      ctx.state.sessionMsg.url.searchParams.set("comment", comment);
     }
     // get preorder data
-    const preOrderData = await store.findRecord(`users/${ctx.from.id}`, "session.wizardData");
+    // const preOrderData = await store.findRecord(`users/${ctx.from.id}`, "session.wizardData");
+    const inlineKeyboard = [];
+    inlineKeyboard.push([{text: "Оформить заказ", callback_data: "cO/createOrder"}]);
+    inlineKeyboard.push([{text: "Отмена", callback_data: "cO/cancelOrder"}]);
+    const preOrderData = ctx.state.sessionMsg.url.searchParams;
     await ctx.replyWithHTML("<b>Проверьте даные получателя:\n" +
-        `${preOrderData.lastName} ${preOrderData.firstName} ${preOrderData.phoneNumber}\n` +
-        `Адрес доставки: ${preOrderData.address}, ` +
-        `${store.carriers().get(preOrderData.carrierId).name} ` +
-        `${preOrderData.carrierNumber ? "#" + preOrderData.carrierNumber : ""}\n` +
-        `Оплата: ${store.payments().get(preOrderData.paymentId)}\n` +
-        `${preOrderData.comment ? "Комментарий: " + preOrderData.comment : ""}</b>`,
+        `${preOrderData.get("lastName")} ${preOrderData.get("firstName")} ${preOrderData.get("phoneNumber")}\n` +
+        `Адрес доставки: ${preOrderData.get("address")}, ` +
+        `${store.carriers().get(+ preOrderData.get("carrierId")).name} ` +
+        `${preOrderData.get("carrierNumber") ? "#" + preOrderData.get("carrierNumber") : ""}\n` +
+        `Оплата: ${store.payments().get(+ preOrderData.get("paymentId"))}\n` +
+        `${preOrderData.get("comment") ? "Комментарий: " + preOrderData.get("comment") : ""}</b>` + ctx.state.sessionMsg.linkHTML(),
     {
       reply_markup: {
-        keyboard: [
-          ["Оформить заказ"],
-          ["Отмена"],
-        ],
-        resize_keyboard: true,
+        inline_keyboard: inlineKeyboard,
       }});
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 8}});
-  },
-  async (ctx, next) => {
-    if (ctx.message.text === "Оформить заказ") {
-      // save order
-      await cart.createOrder(ctx);
-      await ctx.reply("Спасибо за заказ! Скоро мы с Вами свяжемся. /objects", {
-        reply_markup: {
-          remove_keyboard: true,
-        }});
-      // exit scene
-      await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": null}});
-    }
+    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 8}});
   },
 ];
 // save order final
@@ -749,7 +739,8 @@ catalogsActions.push( async (ctx, next) => {
     // order payment method
     if (todo === "payment") {
       const objectId = ctx.state.params.get("o");
-      await store.createRecord(`users/${ctx.from.id}`, {session: {objectId}});
+      ctx.state.sessionMsg.url.searchParams.set("objectId", objectId);
+      // await store.createRecord(`users/${ctx.from.id}`, {session: {objectId}});
       // show paymets service
       const inlineKeyboardArray = [];
       store.payments().forEach((value, key) => {
@@ -765,7 +756,7 @@ catalogsActions.push( async (ctx, next) => {
       const objectId = ctx.state.params.get("o");
       ctx.state.sessionMsg.url.searchParams.set("objectId", objectId);
       // clear and set data use update
-      await store.updateRecord(`users/${ctx.from.id}`, {"session.wizardData": {paymentId}});
+      // await store.updateRecord(`users/${ctx.from.id}`, {"session.wizardData": {paymentId}});
       // test save msg session
       ctx.state.sessionMsg.url.searchParams.set("paymentId", paymentId);
       const inlineKeyboardArray = [];
@@ -846,6 +837,7 @@ catalogsActions.push( async (ctx, next) => {
             ["Отмена"],
           ],
           resize_keyboard: true,
+          one_time_keyboard: true,
         },
       });
     }
@@ -856,6 +848,50 @@ catalogsActions.push( async (ctx, next) => {
           force_reply: true,
         },
       });
+    }
+    // set comment
+    if (todo === "setComment") {
+      ctx.state.sessionMsg.url.searchParams.set("cursor", 7);
+      await ctx.replyWithHTML("Введите комментарий" + ctx.state.sessionMsg.linkHTML(), {
+        reply_markup: {
+          force_reply: true,
+        },
+      });
+    }
+    if (todo === "setNoComment") {
+      await cartWizard[7](ctx);
+    }
+    // create order
+    if (todo === "createOrder") {
+      const preOrderData = ctx.state.sessionMsg.url.searchParams;
+      const wizardData = {
+        "objectId": preOrderData.get("objectId"),
+        "lastName": preOrderData.get("lastName"),
+        "firstName": preOrderData.get("firstName"),
+        "phoneNumber": preOrderData.get("phoneNumber"),
+        "address": preOrderData.get("address"),
+        "carrierId": + preOrderData.get("carrierId"),
+        "paymentId": + preOrderData.get("paymentId"),
+      };
+      if (preOrderData.get("carrierNumber")) {
+        wizardData["carrierNumber"] = + preOrderData.get("carrierNumber");
+      }
+      if (preOrderData.get("comment")) {
+        wizardData["comment"] = preOrderData.get("comment");
+      }
+      await cart.createOrder(ctx, wizardData);
+      await ctx.deleteMessage();
+      await ctx.reply("Спасибо за заказ! Скоро мы с Вами свяжемся. /objects", {
+        reply_markup: {
+          remove_keyboard: true,
+        }});
+    }
+    if (todo === "cancelOrder") {
+      await ctx.deleteMessage();
+      await ctx.reply("Commands /objects /search", {
+        reply_markup: {
+          remove_keyboard: true,
+        }});
     }
     await ctx.answerCbQuery();
   } else {
