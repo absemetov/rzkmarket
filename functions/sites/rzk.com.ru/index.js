@@ -26,6 +26,7 @@ const envSite = {
   lang: process.env.BOT_LANG,
   currency: process.env.BOT_CURRENCY,
   gtag: process.env.SITE_GTAG,
+  robots: process.env.SITE_ROBOTS,
   gmaps: process.env.BOT_GMAPS,
   email: process.env.BOT_EMAIL,
   botName: process.env.BOT_NAME,

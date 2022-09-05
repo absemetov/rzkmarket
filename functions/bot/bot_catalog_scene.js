@@ -401,6 +401,8 @@ const showCart = async (ctx, next) => {
     const clear = ctx.state.params.get("clear");
     const deleteOrderId = ctx.state.params.get("deleteOrderId");
     const objectId = ctx.state.params.get("o");
+    ctx.state.sessionMsg.url.searchParams.delete("page");
+    ctx.state.sessionMsg.url.searchParams.delete("search_text");
     ctx.state.sessionMsg.url.searchParams.delete("pathCatalog");
     if (deleteOrderId) {
       await store.createRecord(`users/${ctx.from.id}`, {"session": {
@@ -879,12 +881,16 @@ catalogsActions.push( async (ctx, next) => {
       if (preOrderData.get("comment")) {
         wizardData["comment"] = preOrderData.get("comment");
       }
-      await cart.createOrder(ctx, wizardData);
-      await ctx.deleteMessage();
-      await ctx.reply("Спасибо за заказ! Скоро мы с Вами свяжемся. /objects", {
-        reply_markup: {
-          remove_keyboard: true,
-        }});
+      try {
+        await cart.createOrder(ctx, wizardData);
+        await ctx.deleteMessage();
+        await ctx.reply("Спасибо за заказ! Скоро мы с Вами свяжемся. /objects", {
+          reply_markup: {
+            remove_keyboard: true,
+          }});
+      } catch (error) {
+        await ctx.reply(`${error}`);
+      }
     }
     if (todo === "cancelOrder") {
       await ctx.deleteMessage();

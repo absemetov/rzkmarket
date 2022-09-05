@@ -39,7 +39,6 @@ const searchHandle = async (ctx, searchText, page = 0) => {
     ctx.state.sessionMsg.url.searchParams.delete("search");
     ctx.state.sessionMsg.url.searchParams.set("search_text", searchText);
     ctx.state.sessionMsg.url.searchParams.set("page", page);
-    console.log(ctx.state.sessionMsg.linkHTML());
     let caption;
     if (resalt.nbHits) {
       caption = `<b>&#171;${searchText}&#187; знайдено ${resalt.nbHits} товарів Страница ${page + 1} из ${resalt.nbPages}</b>` + ctx.state.sessionMsg.linkHTML();

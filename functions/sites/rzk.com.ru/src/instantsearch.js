@@ -13,7 +13,84 @@ import {searchClient, devPrefix} from "./searchClient";
 
 const INSTANT_SEARCH_INDEX_NAME = `${devPrefix}products`;
 export const INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE = "categories.lvl0";
-const instantSearchRouter = historyRouter();
+function getCategorySlug(name) {
+  return name
+      .split(" ")
+      .map(encodeURIComponent)
+      .join("+");
+}
+
+// Returns a name from the category slug.
+// The "+" are replaced by spaces and other
+// characters are decoded.
+function getCategoryName(slug) {
+  return slug
+      .split("+")
+      .map(decodeURIComponent)
+      .join(" ");
+}
+
+const instantSearchRouter = historyRouter({
+  windowTitle({category, query}) {
+    const queryTitle = query ? `Results for "${query}"` : "Search";
+
+    if (category) {
+      return `${category} – ${queryTitle}`;
+    }
+
+    return queryTitle;
+  },
+  createURL({qsModule, routeState, location}) {
+    const urlParts = location.href.match(/^(.*?)\/search/);
+    const baseUrl = `${urlParts ? urlParts[1] : ""}/`;
+
+    const categoryPath = routeState.category ? `${getCategorySlug(routeState.category)}/` : "";
+    const queryParameters = {};
+
+    if (routeState.query) {
+      queryParameters.query = encodeURIComponent(routeState.query);
+    }
+    if (routeState.page !== 1) {
+      queryParameters.page = routeState.page;
+    }
+    if (routeState.brands) {
+      queryParameters.brands = routeState.brands.map(encodeURIComponent);
+    }
+    if (routeState.subCategories) {
+      queryParameters.subCategories = routeState.subCategories.map(encodeURIComponent);
+    }
+
+    const queryString = qsModule.stringify(queryParameters, {
+      addQueryPrefix: true,
+      arrayFormat: "comma",
+      encodeValuesOnly: true,
+    });
+
+    return `${baseUrl}search${categoryPath}${queryString}`;
+  },
+  parseURL({qsModule, location}) {
+    const pathnameMatches = location.pathname.match(/search(.*?)\/?$/);
+    const category = getCategoryName(
+        (pathnameMatches && pathnameMatches[1]) || "",
+    );
+    const {query = "", page, brands = [], subCategories = []} = qsModule.parse(
+        location.search.slice(1), {
+          comma: true,
+        },
+    );
+    // `qs` does not return an array when there's a single value.
+    const allBrands = Array.isArray(brands) ? brands : [brands].filter(Boolean);
+    console.log(allBrands.map(decodeURIComponent));
+    const allSubCategories = Array.isArray(subCategories) ? subCategories : [subCategories].filter(Boolean);
+    return {
+      query: decodeURIComponent(query),
+      page,
+      brands: allBrands.map(decodeURIComponent),
+      subCategories: allSubCategories.map(decodeURIComponent),
+      category,
+    };
+  },
+});
 
 import i18nContext from "./i18n";
 const lang = document.getElementById("addToCart").dataset.lang;
@@ -22,7 +99,36 @@ const i18n = i18nContext[lang];
 export const search = instantsearch({
   searchClient,
   indexName: INSTANT_SEARCH_INDEX_NAME,
-  routing: {router: instantSearchRouter},
+  routing: {
+    router: instantSearchRouter,
+    stateMapping: {
+      stateToRoute(uiState) {
+        const indexUiState = uiState["products"] || {};
+        return {
+          query: indexUiState.query,
+          page: indexUiState.page,
+          brands: indexUiState.refinementList && indexUiState.refinementList.brand,
+          subCategories: indexUiState.refinementList && indexUiState.refinementList.subCategory,
+          category: indexUiState.hierarchicalMenu && indexUiState.hierarchicalMenu.categories,
+        };
+      },
+      routeToState(routeState) {
+        return {
+          products: {
+            query: routeState.query,
+            page: routeState.page,
+            hierarchicalMenu: {
+              "categories.lvl0": routeState.category,
+            },
+            refinementList: {
+              brand: routeState.brands,
+              subCategory: routeState.subCategories,
+            },
+          },
+        };
+      },
+    },
+  },
 });
 const virtualSearchBox = connectSearchBox((renderOptions, isFirstRender) => {
   const {isSearchStalled} = renderOptions;

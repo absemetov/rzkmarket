@@ -204,7 +204,7 @@ const cart = {
     return store.sort(cartProducts);
   },
   async clear(objectId, userId) {
-    await store.createRecord(`objects/${objectId}/carts/${userId}`, {"products": null});
+    await store.createRecord(`objects/${objectId}/carts/${userId}`, {"products": firestore.FieldValue.delete()});
   },
   async createOrder(ctx, wizardData) {
     const userId = ctx.from.id;
@@ -213,6 +213,10 @@ const cart = {
     const objectId = wizardData.objectId;
     const orderQuery = firebase.firestore().collection("objects").doc(objectId).collection("orders");
     const cartProducts = await store.findRecord(`objects/${objectId}/carts/${userId}`, "products");
+    // if cart empty alert error
+    if (!cartProducts) {
+      throw new Error("Корзина пуста");
+    }
     const object = await store.findRecord(`objects/${objectId}`);
     await orderQuery.add({
       userId,
