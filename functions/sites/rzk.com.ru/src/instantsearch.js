@@ -12,38 +12,32 @@ import {highlight} from "instantsearch.js/es/helpers";
 import {searchClient, devPrefix} from "./searchClient";
 
 const INSTANT_SEARCH_INDEX_NAME = `${devPrefix}products`;
-export const INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE = "categories.lvl0";
+import i18nContext from "./i18n";
+const lang = document.getElementById("addToCart").dataset.lang;
+const i18n = i18nContext[lang];
+// export const INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE = "categories.lvl0";
 function getCategorySlug(name) {
-  return name
-      .split(" ")
-      .map(encodeURIComponent)
-      .join("+");
+  return name.map(encodeURIComponent).join("/");
 }
 
 // Returns a name from the category slug.
 // The "+" are replaced by spaces and other
 // characters are decoded.
 function getCategoryName(slug) {
-  return slug
-      .split("+")
-      .map(decodeURIComponent)
-      .join(" ");
+  return [slug.split("/").map(decodeURIComponent).join(" > ")];
 }
 
 const instantSearchRouter = historyRouter({
   windowTitle({category, query}) {
-    const queryTitle = query ? `Results for "${query}"` : "Search";
-
-    if (category) {
-      return `${category} – ${queryTitle}`;
+    const queryTitle = query ? `${i18n.a_search} "${query}"` : i18n.a_search;
+    if (category && category[0]) {
+      return `${category.join(" > ")} – ${queryTitle}`;
     }
-
     return queryTitle;
   },
   createURL({qsModule, routeState, location}) {
     const urlParts = location.href.match(/^(.*?)\/search/);
     const baseUrl = `${urlParts ? urlParts[1] : ""}/`;
-
     const categoryPath = routeState.category ? `${getCategorySlug(routeState.category)}/` : "";
     const queryParameters = {};
 
@@ -53,11 +47,14 @@ const instantSearchRouter = historyRouter({
     if (routeState.page !== 1) {
       queryParameters.page = routeState.page;
     }
-    if (routeState.brands) {
-      queryParameters.brands = routeState.brands.map(encodeURIComponent);
+    if (routeState.brand) {
+      queryParameters.brand = routeState.brand.map(encodeURIComponent);
     }
-    if (routeState.subCategories) {
-      queryParameters.subCategories = routeState.subCategories.map(encodeURIComponent);
+    if (routeState.seller) {
+      queryParameters.seller = routeState.seller.map(encodeURIComponent);
+    }
+    if (routeState.subCategory) {
+      queryParameters.subCategory = routeState.subCategory.map(encodeURIComponent);
     }
 
     const queryString = qsModule.stringify(queryParameters, {
@@ -66,35 +63,32 @@ const instantSearchRouter = historyRouter({
       encodeValuesOnly: true,
     });
 
-    return `${baseUrl}search${categoryPath}${queryString}`;
+    return `${baseUrl}search/${categoryPath}${queryString}`;
   },
   parseURL({qsModule, location}) {
-    const pathnameMatches = location.pathname.match(/search(.*?)\/?$/);
+    const pathnameMatches = location.pathname.match(/search\/(.*?)\/?$/);
     const category = getCategoryName(
         (pathnameMatches && pathnameMatches[1]) || "",
     );
-    const {query = "", page, brands = [], subCategories = []} = qsModule.parse(
+    const {query = "", page, brand = [], subCategory = [], seller = []} = qsModule.parse(
         location.search.slice(1), {
           comma: true,
         },
     );
     // `qs` does not return an array when there's a single value.
-    const allBrands = Array.isArray(brands) ? brands : [brands].filter(Boolean);
-    console.log(allBrands.map(decodeURIComponent));
-    const allSubCategories = Array.isArray(subCategories) ? subCategories : [subCategories].filter(Boolean);
+    const allBrands = Array.isArray(brand) ? brand : [brand].filter(Boolean);
+    const allSubCategories = Array.isArray(subCategory) ? subCategory : [subCategory].filter(Boolean);
+    const allSellers = Array.isArray(seller) ? seller : [seller].filter(Boolean);
     return {
       query: decodeURIComponent(query),
       page,
-      brands: allBrands.map(decodeURIComponent),
-      subCategories: allSubCategories.map(decodeURIComponent),
+      brand: allBrands.map(decodeURIComponent),
+      subCategory: allSubCategories.map(decodeURIComponent),
+      seller: allSellers.map(decodeURIComponent),
       category,
     };
   },
 });
-
-import i18nContext from "./i18n";
-const lang = document.getElementById("addToCart").dataset.lang;
-const i18n = i18nContext[lang];
 
 export const search = instantsearch({
   searchClient,
@@ -107,9 +101,10 @@ export const search = instantsearch({
         return {
           query: indexUiState.query,
           page: indexUiState.page,
-          brands: indexUiState.refinementList && indexUiState.refinementList.brand,
-          subCategories: indexUiState.refinementList && indexUiState.refinementList.subCategory,
-          category: indexUiState.hierarchicalMenu && indexUiState.hierarchicalMenu.categories,
+          brand: indexUiState.refinementList && indexUiState.refinementList.brand,
+          seller: indexUiState.refinementList && indexUiState.refinementList.seller,
+          subCategory: indexUiState.refinementList && indexUiState.refinementList.subCategory,
+          category: indexUiState.hierarchicalMenu && indexUiState.hierarchicalMenu["categories.lvl0"],
         };
       },
       routeToState(routeState) {
@@ -121,8 +116,9 @@ export const search = instantsearch({
               "categories.lvl0": routeState.category,
             },
             refinementList: {
-              brand: routeState.brands,
-              subCategory: routeState.subCategories,
+              brand: routeState.brand,
+              subCategory: routeState.subCategory,
+              seller: routeState.seller,
             },
           },
         };
@@ -616,8 +612,8 @@ export function getInstantSearchUrl(indexUiState) {
 // Return the InstantSearch index UI state.
 export function getInstantSearchUiState() {
   const uiState = instantSearchRouter.read();
-
-  return (uiState && uiState[INSTANT_SEARCH_INDEX_NAME]) || {};
+  // return (uiState && uiState[INSTANT_SEARCH_INDEX_NAME]) || {};
+  return uiState || {};
 }
 
 // Return the InstantSearch index UI state.
@@ -625,9 +621,9 @@ export function searchPanel(visible) {
   const searchPage = document.getElementById("search");
   const mainPage = document.getElementById("main");
   if (visible == "show") {
-    if (window.location.pathname !== "/search") {
-      history.pushState(null, "Search", "/search");
-    }
+    // if (window.location.pathname !== "/search") {
+    // history.pushState(null, "Search", "/search");
+    // }
     mainPage.classList.add("d-none");
     searchPage.classList.remove("d-none");
   } else if (visible == "hide") {

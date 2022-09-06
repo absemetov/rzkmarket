@@ -21,14 +21,16 @@ if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0] && 
 }
 
 search.on("render", () => {
-  if (window.location.pathname == "/search") {
+  // window.location.pathname == "/search/"
+  if (location.href.match(/^.*?\/search/)) {
     searchPanel("show");
   }
 });
 
 // back prev buttons trigger
 window.addEventListener("popstate", function() {
-  if (window.location.pathname !== "/search") {
+  // window.location.pathname !== "/search/"
+  if (!location.href.match(/^.*?\/search/)) {
     searchPanel("hide");
   }
 });

@@ -1,7 +1,7 @@
 import {autocomplete, getAlgoliaResults} from "@algolia/autocomplete-js";
 import {createLocalStorageRecentSearchesPlugin} from "@algolia/autocomplete-plugin-recent-searches";
 import {createQuerySuggestionsPlugin} from "@algolia/autocomplete-plugin-query-suggestions";
-import {setInstantSearchUiState, getInstantSearchUiState, INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE, searchPanel} from "./instantsearch";
+import {setInstantSearchUiState, getInstantSearchUiState, searchPanel} from "./instantsearch";
 import {searchClient, devPrefix} from "./searchClient";
 
 import i18nContext from "./i18n";
@@ -23,16 +23,7 @@ const recentSearchesPlugin = createLocalStorageRecentSearchesPlugin({
           document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = item.label.substring(0, 5) + "...";
         }
         searchPanel("show");
-        setInstantSearchUiState({
-          query: item.label,
-          hierarchicalMenu: {
-            [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [],
-          },
-          refinementList: {
-            brand: [],
-            subCategory: [],
-          },
-        });
+        setInstantSearchUiState({query: item.label, hierarchicalMenu: {}, refinementList: {}});
       },
     };
   },
@@ -57,16 +48,7 @@ const querySuggestionsPlugin = createQuerySuggestionsPlugin({
           document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = item.query.substring(0, 5) + "...";
         }
         searchPanel("show");
-        setInstantSearchUiState({
-          query: item.query,
-          hierarchicalMenu: {
-            [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [],
-          },
-          refinementList: {
-            brand: [],
-            subCategory: [],
-          },
-        });
+        setInstantSearchUiState({query: item.query, hierarchicalMenu: {}, refinementList: {}});
       },
     };
   },
@@ -95,31 +77,13 @@ export function startAutocomplete() {
         document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = state.query.substring(0, 5) + "...";
       }
       searchPanel("show");
-      setInstantSearchUiState({
-        query: state.query,
-        hierarchicalMenu: {
-          [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [],
-        },
-        refinementList: {
-          brand: [],
-          subCategory: [],
-        },
-      });
+      setInstantSearchUiState({query: state.query, hierarchicalMenu: {}, refinementList: {}});
     },
     onReset() {
       if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0]) {
         document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = i18n.a_search;
       }
-      setInstantSearchUiState({
-        query: "",
-        hierarchicalMenu: {
-          [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [],
-        },
-        refinementList: {
-          brand: [],
-          subCategory: [],
-        },
-      });
+      setInstantSearchUiState({query: "", hierarchicalMenu: {}, refinementList: {}});
     },
     getSources({query}) {
       return [
@@ -149,16 +113,7 @@ export function startAutocomplete() {
               document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = item.name.substring(0, 5) + "...";
             }
             searchPanel("show");
-            setInstantSearchUiState({
-              query: item.name,
-              hierarchicalMenu: {
-                [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [],
-              },
-              refinementList: {
-                brand: [],
-                subCategory: [],
-              },
-            });
+            setInstantSearchUiState({query: item.name, hierarchicalMenu: {}, refinementList: {}});
           },
           getItemInputValue({item}) {
             return item.name;
@@ -230,16 +185,7 @@ export function startAutocomplete() {
           },
           onSelect({item, setQuery}) {
             searchPanel("show");
-            setInstantSearchUiState({
-              query: "",
-              hierarchicalMenu: {
-                [INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE]: [item.hierarchicalUrl],
-              },
-              refinementList: {
-                brand: [],
-                subCategory: [],
-              },
-            });
+            setInstantSearchUiState({query: "", hierarchicalMenu: {"categories.lvl0": [item.hierarchicalUrl]}, refinementList: {}});
           },
           getItemInputValue({item}) {
             // return item.name;
