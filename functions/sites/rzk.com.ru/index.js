@@ -82,7 +82,7 @@ app.get("/", auth, async (req, res) => {
 });
 
 // search products
-app.get("/search/*", auth, async (req, res) => {
+app.get("/search*", auth, async (req, res) => {
   // const client = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
   // const index = client.initIndex("products");
   // const query = req.query.q;

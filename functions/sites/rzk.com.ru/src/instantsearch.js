@@ -24,21 +24,30 @@ function getCategorySlug(name) {
 // The "+" are replaced by spaces and other
 // characters are decoded.
 function getCategoryName(slug) {
-  return [slug.split("/").map(decodeURIComponent).join(" > ")];
+  return slug.split("/").map(decodeURIComponent);
 }
 
 const instantSearchRouter = historyRouter({
-  windowTitle({category, query}) {
-    const queryTitle = query ? `${i18n.a_search} "${query}"` : i18n.a_search;
-    if (category && category[0]) {
-      return `${category.join(" > ")} – ${queryTitle}`;
+  windowTitle({query, category, brand, subCategory}) {
+    let title = "";
+    if (query) {
+      title = query;
     }
-    return queryTitle;
+    if (category && category[0]) {
+      title = `${title ? `${title} – ` : ""}Каталог: ${category[category.length - 1]}`;
+    }
+    if (subCategory && subCategory[0]) {
+      title = `${title ? `${title} – ` : ""}${subCategory[0]}`;
+    }
+    if (brand && brand[0]) {
+      title = `${title ? `${title} – ` : ""}Бренд: ${brand[0]}`;
+    }
+    return title ? `${title} – ${i18n.a_search} ${i18n.bot_name}` : `${i18n.a_search} ${i18n.bot_name}`;
   },
   createURL({qsModule, routeState, location}) {
     const urlParts = location.href.match(/^(.*?)\/search/);
     const baseUrl = `${urlParts ? urlParts[1] : ""}/`;
-    const categoryPath = routeState.category ? `${getCategorySlug(routeState.category)}/` : "";
+    const categoryPath = routeState.category ? `/${getCategorySlug(routeState.category)}/` : "";
     const queryParameters = {};
 
     if (routeState.query) {
@@ -63,7 +72,7 @@ const instantSearchRouter = historyRouter({
       encodeValuesOnly: true,
     });
 
-    return `${baseUrl}search/${categoryPath}${queryString}`;
+    return `${baseUrl}search${categoryPath}${queryString}`;
   },
   parseURL({qsModule, location}) {
     const pathnameMatches = location.pathname.match(/search\/(.*?)\/?$/);
@@ -113,7 +122,7 @@ export const search = instantsearch({
             query: routeState.query,
             page: routeState.page,
             hierarchicalMenu: {
-              "categories.lvl0": routeState.category,
+              "categories.lvl0": [routeState.category.join(" > ")],
             },
             refinementList: {
               brand: routeState.brand,
@@ -402,7 +411,7 @@ const renderBreadcrumb = (renderOptions, isFirstRender) => {
   widgetParams.container.innerHTML = `
     <ol class="breadcrumb">
       <li class="breadcrumb-item">
-        <a href="/search" data-value="default">${i18n.a_search}</a>
+        <a href="/search"  id="home">${i18n.a_search}</a>
       </li>
       ${items.map((item) =>
     renderBreadcrumbItem({
@@ -413,12 +422,12 @@ const renderBreadcrumb = (renderOptions, isFirstRender) => {
   `;
 
   [...widgetParams.container.querySelectorAll("a")].forEach((element) => {
-    element.addEventListener("click", (event) => {
-      if (event.currentTarget.dataset.value !== "default") {
+    if (element.id !== "home") {
+      element.addEventListener("click", (event) => {
         event.preventDefault();
-      }
-      refine(event.currentTarget.dataset.value);
-    });
+        refine(event.currentTarget.dataset.value);
+      });
+    }
   });
 };
 
