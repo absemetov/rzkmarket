@@ -35,8 +35,8 @@ exports.notifyNewOrder = functions.region("europe-central2").firestore
       `<a href="tg://user?id=${order.userId}">${order.lastName} ${order.firstName}</a>\n` +
       `Object ${order.objectName} from ${order.fromBot ? "BOT" : "SITE"}\n` +
       `Order ${order.userId}-${order.orderNumber}\n` +
-      `<a href="https://${process.env.BOT_SITE}/o/${order.objectId}/s/${orderId}">` +
-      `https://${process.env.BOT_SITE}/o/${order.objectId}/s/${orderId}</a></b>`, {parse_mode: "html"});
+      `<a href="${process.env.BOT_SITE}/o/${order.objectId}/s/${orderId}">` +
+      `${process.env.BOT_SITE}/o/${order.objectId}/s/${orderId}</a></b>`, {parse_mode: "html"});
       return null;
     });
 
@@ -48,8 +48,8 @@ exports.notifyNewCart = functions.region("europe-central2").firestore
       const cartId = context.params.cartId;
       // admin notify
       await bot.telegram.sendMessage(94899148, "<b>New cart! " +
-      `<a href="https://${process.env.BOT_SITE}/o/${objectId}/share-cart/${cartId}">` +
-      `https://${process.env.BOT_SITE}/o/${objectId}/share-cart/${cartId}</a></b>`,
+      `<a href="${process.env.BOT_SITE}/o/${objectId}/share-cart/${cartId}">` +
+      `${process.env.BOT_SITE}/o/${objectId}/share-cart/${cartId}</a></b>`,
       {parse_mode: "html"});
       const cart = snap.data();
       return snap.ref.set({

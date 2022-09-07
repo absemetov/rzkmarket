@@ -42,12 +42,14 @@ const instantSearchRouter = historyRouter({
     if (brand && brand[0]) {
       title = `${title ? `${title} – ` : ""}Бренд: ${brand[0]}`;
     }
-    return title ? `${title} – ${i18n.a_search} ${i18n.bot_name}` : `${i18n.a_search} ${i18n.bot_name}`;
+    if (location.href.match(/^.*?\/search/)) {
+      return title ? `${title} – ${i18n.a_search} ${i18n.bot_name}` : `${i18n.a_search} ${i18n.bot_name}`;
+    }
   },
   createURL({qsModule, routeState, location}) {
     const urlParts = location.href.match(/^(.*?)\/search/);
     const baseUrl = `${urlParts ? urlParts[1] : ""}/`;
-    const categoryPath = routeState.category ? `/${getCategorySlug(routeState.category)}/` : "";
+    const categoryPath = routeState.category ? `/${getCategorySlug(routeState.category)}` : "";
     const queryParameters = {};
 
     if (routeState.query) {
@@ -71,7 +73,6 @@ const instantSearchRouter = historyRouter({
       arrayFormat: "comma",
       encodeValuesOnly: true,
     });
-
     return `${baseUrl}search${categoryPath}${queryString}`;
   },
   parseURL({qsModule, location}) {

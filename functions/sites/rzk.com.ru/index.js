@@ -25,6 +25,7 @@ const envSite = {
   i18n: i18nContext.repository[process.env.BOT_LANG],
   lang: process.env.BOT_LANG,
   currency: process.env.BOT_CURRENCY,
+  priceCurrency: process.env.SITE_CURRENCY,
   gtag: process.env.SITE_GTAG,
   robots: process.env.SITE_ROBOTS,
   gmaps: process.env.BOT_GMAPS,
@@ -305,8 +306,8 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
   const object = await store.findRecord(`objects/${objectId}`);
   const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
   product.price = roundNumber(product.price * object.currencies[product.currency]);
-  product.img1 = "/icons/flower3.svg";
-  product.img2 = "/icons/flower3.svg";
+  product.img1 = `${process.env.BOT_SITE}/icons/flower3.svg`;
+  product.img2 = `${process.env.BOT_SITE}/icons/flower3.svg`;
   product.sellerId = objectId;
   const photos = [];
   // get cart qty

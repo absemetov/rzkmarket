@@ -25,8 +25,8 @@
       ],
       "rewrites": [
         {
-          "source": "**",
-          "function": "rzkComUa"
+          "source": "/sitemap",
+          "destination": "sitemaps/sitemap-index.xml"
         }
       ]
     },

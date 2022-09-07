@@ -1,3 +1,23 @@
+<div>
+  <div itemtype="https://schema.org/Product" itemscope>
+    <meta itemprop="mpn" content="{{product.id}}" />
+    <meta itemprop="name" content="{{product.name}}" />
+    <link itemprop="image" href="{{product.img1}}" />
+    <link itemprop="image" href="{{product.img2}}" />
+    <meta itemprop="description" content="Маркетплейс розеток та вимикачів" />
+    <div itemprop="offers" itemtype="https://schema.org/Offer" itemscope>
+      <meta itemprop="price" content="{{product.price}}" />
+      <meta itemprop="priceCurrency" content="{{envSite.priceCurrency}}" />
+      <meta itemprop="availability" content="https://schema.org/InStock" />
+    </div>
+    <meta itemprop="sku" content="{{product.id}}" />
+    {{#if product.brand}}
+      <div itemprop="brand" itemtype="https://schema.org/Brand" itemscope>
+        <meta itemprop="name" content="{{product.brand}}" />
+      </div>
+    {{/if}}
+  </div>
+</div>
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="/">{{envSite.i18n.aObjects}}</a></li>
