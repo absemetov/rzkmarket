@@ -296,7 +296,7 @@ catalogsActions.push( async (ctx, next) => {
       if (addValue) {
         await cart.add(objectId, ctx.from.id, added ? product.id : product, addValue);
         if (page) {
-          await searchHandle(ctx, searchText, + page);
+          await searchHandle(ctx, searchText, + page, product.id, addValue);
           return;
         }
         if (redirectToCart) {

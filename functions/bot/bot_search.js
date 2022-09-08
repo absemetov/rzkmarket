@@ -4,7 +4,7 @@ const algoliasearch = require("algoliasearch");
 // ctx.state.sessionMsg.url.searchParams.set("message", "Nadir Genius!");
 // ctx.state.sessionMsg.url.searchParams.delete("message1");
 // ctx.state.sessionMsg.url.searchParams.delete("message");
-const searchHandle = async (ctx, searchText, page = 0) => {
+const searchHandle = async (ctx, searchText, page = 0, productAddedId = null, qty = 0) => {
   const client = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
   const index = client.initIndex(`${process.env.ALGOLIA_PREFIX}products`);
   const inlineKeyboard = [];
@@ -17,12 +17,19 @@ const searchHandle = async (ctx, searchText, page = 0) => {
       page,
     });
     for (const product of resalt.hits) {
-      inlineKeyboard.push([
-        {
-          text: `${product.brand ? product.brand + " " : ""}${product.name} (${product.productId}) - ${product.seller}`,
-          callback_data: `p/${product.productId}?o=${product.sellerId}`,
-        },
-      ]);
+      const btnSearch = [];
+      btnSearch.push({
+        text: `${product.brand ? product.brand + " " : ""}${product.name} (${product.productId}) - ${product.seller}`,
+        callback_data: `aC/${product.productId}?o=${product.sellerId}`,
+      });
+      // add cart btn
+      if (productAddedId === product.productId) {
+        btnSearch.push({
+          text: `🛒 ${qty}`,
+          callback_data: `cart?o=${product.sellerId}`,
+        });
+      }
+      inlineKeyboard.push(btnSearch);
     }
     // Set load more button
     const prevNext = [];
