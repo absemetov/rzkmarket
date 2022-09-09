@@ -619,7 +619,7 @@ const cartWizard = [
         // keyboard: [["Отмена"]],
         // resize_keyboard: true,
         force_reply: true,
-        input_field_placeholder: "Kyiv",
+        input_field_placeholder: "Адрес",
       }});
     // await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": "wizardOrder", "cursor": 3}});
   },

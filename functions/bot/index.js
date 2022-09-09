@@ -98,10 +98,11 @@ bot.on("text", async (ctx) => {
     return;
   }
   // get session scene
-  const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");
+  // const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");
   // edit order wizard
-  if (sessionFire && sessionFire.scene === "editOrder") {
-    await orderWizard[sessionFire.cursor](ctx);
+  if (ctx.state.sessionMsg.url.searchParams.get("scene") === "editOrder") {
+    const cursor = ctx.state.sessionMsg.url.searchParams.get("cursor");
+    await orderWizard[cursor](ctx, ctx.message.text);
     return;
   }
   if (ctx.message.text === "Отмена") {
@@ -109,7 +110,7 @@ bot.on("text", async (ctx) => {
       reply_markup: {
         remove_keyboard: true,
       }});
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": null}});
+    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": null}});
     // ctx.session.scene = null;
     return;
   }

@@ -339,33 +339,32 @@ const orderWizard = [
   async (ctx) => {
     const fieldName = await store.findRecord(`users/${ctx.from.id}`, "session.fieldName");
     const fieldValue = await store.findRecord(`users/${ctx.from.id}`, "session.fieldValue");
-    await ctx.replyWithHTML(`Текущее значение ${fieldName}: <b>${fieldValue}</b>`, {
+    ctx.state.sessionMsg.url.searchParams.set("scene", "editOrder");
+    ctx.state.sessionMsg.url.searchParams.set("cursor", 1);
+    await ctx.replyWithHTML(`Текущее значение ${fieldName}: <b>${fieldValue}</b>` + ctx.state.sessionMsg.linkHTML(), {
       reply_markup: {
-        keyboard: [["Отмена"]],
-        resize_keyboard: true,
+        // keyboard: [["Отмена"]],
+        // resize_keyboard: true,
+        force_reply: true,
       }});
     // ctx.session.scene = "editOrder";
     // ctx.session.cursor = 1;
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {
-      "scene": "editOrder",
-      "cursor": 1,
-    }});
+    // await store.createRecord(`users/${ctx.from.id}`, {"session": {
+    //   "scene": "editOrder",
+    //   "cursor": 1,
+    // }});
   },
-  async (ctx) => {
+  async (ctx, newValue) => {
     // save order field
     const fieldName = await store.findRecord(`users/${ctx.from.id}`, "session.fieldName");
-    if (fieldName === "lastName" && ctx.message.text.length < 2) {
-      await ctx.reply("Имя слишком короткое");
-      return;
-    }
     if (fieldName === "phoneNumber") {
       const regexpPhone = new RegExp(process.env.BOT_PHONEREGEXP);
-      const checkPhone = ctx.message.text.match(regexpPhone);
+      const checkPhone = newValue.match(regexpPhone);
       if (!checkPhone) {
         await ctx.reply(`Введите номер телефона в формате ${process.env.BOT_PHONETEMPLATE}`);
         return;
       }
-      ctx.message.text = `${process.env.BOT_PHONECODE}${checkPhone[2]}`;
+      newValue = `${process.env.BOT_PHONECODE}${checkPhone[2]}`;
     }
     const objectId = await store.findRecord(`users/${ctx.from.id}`, "session.objectId");
     const orderId = await store.findRecord(`users/${ctx.from.id}`, "session.orderId");
@@ -462,12 +461,16 @@ ordersActions.push(async (ctx, next) => {
       // ctx.session.objectId = objectId;
       // ctx.session.fieldName = editField;
       // ctx.session.fieldValue = order[editField];
-      await store.createRecord(`users/${ctx.from.id}`, {"session": {
-        orderId,
-        objectId,
-        "fieldName": editField,
-        "fieldValue": order[editField],
-      }});
+      // await store.createRecord(`users/${ctx.from.id}`, {"session": {
+      //   orderId,
+      //   objectId,
+      //   "fieldName": editField,
+      //   "fieldValue": order[editField],
+      // }});
+      ctx.state.sessionMsg.url.searchParams.set("orderId", orderId);
+      ctx.state.sessionMsg.url.searchParams.set("objectId", objectId);
+      ctx.state.sessionMsg.url.searchParams.set("fieldName", editField);
+      ctx.state.sessionMsg.url.searchParams.set("fieldValue", order[editField]);
       await orderWizard[0](ctx);
     }
     // show payment
