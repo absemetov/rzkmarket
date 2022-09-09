@@ -1,16 +1,35 @@
 const sitemap = require("algolia-sitemap");
-const path = require("path");
+require("dotenv").config({path: "./functions/.env.ua"});
 // You need an API key with `browse` permission
 const algoliaConfig = {
-  appId: "YSHMAC99ZS",
-  apiKey: "33c383b85b76ea888ae8e4c8d1fa26c4",
+  appId: process.env.ALGOLIA_ID,
+  apiKey: process.env.ALGOLIA_ADMIN_KEY,
   indexName: "products",
 };
 
-function hitToParams({productId, brand}) {
-  if (brand === "Gunsan") {
-    return {loc: `https://rzk.com.ua/o/dnipro/p/${productId}`};
+const alreadyAdded = {};
+
+function hitToParams(params) {
+  const catalog = params["categories.lvl5"] || params["categories.lvl4"] || params["categories.lvl3"] || params["categories.lvl2"] || params["categories.lvl1"] || params["categories.lvl0"];
+  const locs = [];
+  const category = `https://rzk.com.ua/search/${catalog.split(" > ").map(encodeURIComponent).join("/")}`;
+  const product = `https://rzk.com.ua/o/${params.sellerId}/p/${params.productId}`;
+  if (!alreadyAdded[category]) {
+    locs.push(
+        ...[
+          {loc: category},
+          {loc: product},
+        ],
+    );
+  } else {
+    locs.push(
+        ...[
+          {loc: product},
+        ],
+    );
   }
+  alreadyAdded[category] = category;
+  return locs;
 }
 
 sitemap({
@@ -19,5 +38,5 @@ sitemap({
   // The URL of the sitemaps directory
   sitemapLoc: "https://rzk.com.ua/sitemaps",
   // The directory with all sitemaps (default: `sitemaps`)
-  outputFolder: path.resolve("../../../sites/rzk.com.ru/sitemaps"),
+  outputFolder: "sites/rzk.com.ru/sitemaps",
 });

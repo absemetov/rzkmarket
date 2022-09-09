@@ -309,6 +309,7 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
   product.img1 = `${process.env.BOT_SITE}/icons/flower3.svg`;
   product.img2 = `${process.env.BOT_SITE}/icons/flower3.svg`;
   product.sellerId = objectId;
+  product.url = `${process.env.BOT_SITE}/o/${objectId}/p/${product.id}`;
   const photos = [];
   // get cart qty
   if (req.user.uid) {

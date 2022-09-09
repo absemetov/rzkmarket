@@ -1,4 +1,6 @@
-#service account
+#sitemaps
+sitemap-index.xml
+sitemap.*.xml
 rzk-com-ua-d1d3248b8410.json
 #firebase
 .firebase
@@ -62,7 +64,7 @@ typings/
 .yarn-integrity
 
 # dotenv environment variables file
-.env
+.env*
 
 # parcel-bundler cache (https://parceljs.org/)
 .parcel-cache

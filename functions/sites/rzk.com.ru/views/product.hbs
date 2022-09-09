@@ -7,6 +7,7 @@
     <meta itemprop="description" content="Маркетплейс розеток та вимикачів" />
     <div itemprop="offers" itemtype="https://schema.org/Offer" itemscope>
       <meta itemprop="price" content="{{product.price}}" />
+      <link itemprop="url" href="{{product.url}}" />
       <meta itemprop="priceCurrency" content="{{envSite.priceCurrency}}" />
       <meta itemprop="availability" content="https://schema.org/InStock" />
     </div>
@@ -19,15 +20,26 @@
   </div>
 </div>
 <nav aria-label="breadcrumb">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="/">{{envSite.i18n.aObjects}}</a></li>
-    <li class="breadcrumb-item"><a href="/o/{{object.id}}">{{object.name}}</a></li>
-    <li class="breadcrumb-item"><a href="/o/{{object.id}}/c">{{envSite.i18n.aCatGoods}}</a></li>
-    <li class="breadcrumb-item">
-      <a href="/o/{{object.id}}/c/{{product.catalog.parentId}}"><i class="bi bi-arrow-left"></i> ..</a>
+  <ol class="breadcrumb" itemscope itemtype="https://schema.org/BreadcrumbList">
+    <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+      <a itemprop="item" href="/"><span itemprop="name">{{envSite.i18n.aObjects}}</span></a>
+       <meta itemprop="position" content="1" />
     </li>
-    <li class="breadcrumb-item" aria-current="page">
-      <a href="/o/{{object.id}}/c/{{product.catalog.id}}">{{product.catalog.name}}</a>
+    <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+      <a itemprop="item" href="/o/{{object.id}}"><span itemprop="name">{{object.name}}</span></a>
+       <meta itemprop="position" content="2" />
+    </li>
+    <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+      <a itemprop="item" href="/o/{{object.id}}/c"><span itemprop="name">{{envSite.i18n.aCatGoods}}</span></a>
+       <meta itemprop="position" content="3" />
+    </li>
+    <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+      <a itemprop="item" href="/o/{{object.id}}/c/{{product.catalog.parentId}}"><span itemprop="name"><i class="bi bi-arrow-left"></i> ..</span></a>
+       <meta itemprop="position" content="4" />
+    </li>
+    <li class="breadcrumb-item" aria-current="page" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+      <a itemprop="item" href="/o/{{object.id}}/c/{{product.catalog.id}}"><span itemprop="name">{{product.catalog.name}}</span></a>
+       <meta itemprop="position" content="5" />
     </li>
   </ol>
 </nav>
