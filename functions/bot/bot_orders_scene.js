@@ -337,8 +337,8 @@ ordersActions.push(myOrders);
 // order wizard
 const orderWizard = [
   async (ctx) => {
-    const fieldName = await store.findRecord(`users/${ctx.from.id}`, "session.fieldName");
-    const fieldValue = await store.findRecord(`users/${ctx.from.id}`, "session.fieldValue");
+    const fieldName = ctx.state.sessionMsg.url.searchParams.get("fieldName");
+    const fieldValue = ctx.state.sessionMsg.url.searchParams.get("fieldValue");
     ctx.state.sessionMsg.url.searchParams.set("scene", "editOrder");
     ctx.state.sessionMsg.url.searchParams.set("cursor", 1);
     await ctx.replyWithHTML(`Текущее значение ${fieldName}: <b>${fieldValue}</b>` + ctx.state.sessionMsg.linkHTML(), {
@@ -356,7 +356,8 @@ const orderWizard = [
   },
   async (ctx, newValue) => {
     // save order field
-    const fieldName = await store.findRecord(`users/${ctx.from.id}`, "session.fieldName");
+    // const fieldName = await store.findRecord(`users/${ctx.from.id}`, "session.fieldName");
+    const fieldName = ctx.state.sessionMsg.url.searchParams.get("fieldName");
     if (fieldName === "phoneNumber") {
       const regexpPhone = new RegExp(process.env.BOT_PHONEREGEXP);
       const checkPhone = newValue.match(regexpPhone);
@@ -366,17 +367,19 @@ const orderWizard = [
       }
       newValue = `${process.env.BOT_PHONECODE}${checkPhone[2]}`;
     }
-    const objectId = await store.findRecord(`users/${ctx.from.id}`, "session.objectId");
-    const orderId = await store.findRecord(`users/${ctx.from.id}`, "session.orderId");
+    // const objectId = await store.findRecord(`users/${ctx.from.id}`, "session.objectId");
+    // const orderId = await store.findRecord(`users/${ctx.from.id}`, "session.orderId");
+    const objectId = ctx.state.sessionMsg.url.searchParams.get("objectId");
+    const orderId = ctx.state.sessionMsg.url.searchParams.get("orderId");
     await store.updateRecord(`objects/${objectId}/orders/${orderId}`,
-        {[fieldName]: ctx.message.text});
+        {[fieldName]: newValue});
     // exit scene
-    await ctx.reply("Данные сохранены. Обновите заказ!🔄", {
+    await ctx.reply(`Данные сохранены. Обновите заказ! ${fieldName}=>${newValue} 🔄`, {
       reply_markup: {
         remove_keyboard: true,
       }});
     // ctx.session.scene = null;
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": null}});
+    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": null}});
   },
 ];
 // edit order fields

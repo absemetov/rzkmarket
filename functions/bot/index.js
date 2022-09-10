@@ -65,19 +65,24 @@ bot.command("mono", async (ctx) => {
   await monoHandler(ctx);
 });
 // edited message for search
-bot.on("edited_message", async (ctx) => {
-  if (ctx.state.sessionMsg.url.searchParams.has("search")) {
-    await searchHandle(ctx, ctx.editedMessage.text);
-    return;
-  }
-  if (ctx.state.sessionMsg.url.searchParams.get("scene") === "wizardOrder") {
-    const cursor = ctx.state.sessionMsg.url.searchParams.get("cursor");
-    // await cartWizard[sessionFire.cursor](ctx);
-    await cartWizard[cursor](ctx, ctx.editedMessage.text);
-    return;
-  }
-  await ctx.reply("Commands /objects /search");
-});
+// bot.on("edited_message", async (ctx) => {
+//   if (ctx.state.sessionMsg.url.searchParams.has("search")) {
+//     await searchHandle(ctx, ctx.editedMessage.text);
+//     return;
+//   }
+//   if (ctx.state.sessionMsg.url.searchParams.get("scene") === "wizardOrder") {
+//     const cursor = ctx.state.sessionMsg.url.searchParams.get("cursor");
+//     // await cartWizard[sessionFire.cursor](ctx);
+//     await cartWizard[cursor](ctx, ctx.editedMessage.text);
+//     return;
+//   }
+//   if (ctx.state.sessionMsg.url.searchParams.get("scene") === "editOrder") {
+//     const cursor = ctx.state.sessionMsg.url.searchParams.get("cursor");
+//     await orderWizard[cursor](ctx, ctx.editedMessage.text);
+//     return;
+//   }
+//   await ctx.reply("Commands /objects /search");
+// });
 // share phone number
 bot.on("contact", async (ctx) => {
   if (ctx.state.sessionMsg.url.searchParams.get("scene") === "wizardOrder") {
@@ -88,9 +93,10 @@ bot.on("contact", async (ctx) => {
   }
 });
 // check session vars
-bot.on("text", async (ctx) => {
+bot.on(["text", "edited_message"], async (ctx) => {
   // create object parce url
-  const sheetUrl = ctx.state.isAdmin && ctx.message.text && ctx.message.text.match(/d\/(.*)\//);
+  const message = ctx.message || ctx.editedMessage;
+  const sheetUrl = ctx.state.isAdmin && message.text && message.text.match(/d\/(.*)\//);
   if (sheetUrl) {
     // save sheetId to session
     // await store.createRecord(`users/${ctx.from.id}`, {"session": {"sheetId": sheetUrl[1]}});
@@ -102,7 +108,7 @@ bot.on("text", async (ctx) => {
   // edit order wizard
   if (ctx.state.sessionMsg.url.searchParams.get("scene") === "editOrder") {
     const cursor = ctx.state.sessionMsg.url.searchParams.get("cursor");
-    await orderWizard[cursor](ctx, ctx.message.text);
+    await orderWizard[cursor](ctx, message.text);
     return;
   }
   if (ctx.message.text === "Отмена") {
@@ -119,13 +125,13 @@ bot.on("text", async (ctx) => {
   if (ctx.state.sessionMsg.url.searchParams.get("scene") === "wizardOrder") {
     const cursor = ctx.state.sessionMsg.url.searchParams.get("cursor");
     // await cartWizard[sessionFire.cursor](ctx);
-    await cartWizard[cursor](ctx, ctx.message.text);
+    await cartWizard[cursor](ctx, message.text);
     return;
   }
   // algolia search test
   // if (sessionFire && sessionFire.scene === "search") {
   if (ctx.state.sessionMsg.url.searchParams.has("search")) {
-    await searchHandle(ctx, ctx.message.text);
+    await searchHandle(ctx, message.text);
     return;
   }
   await ctx.reply("Commands /objects /search");
