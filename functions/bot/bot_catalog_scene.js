@@ -1,6 +1,6 @@
 const firebase = require("firebase-admin");
-const bucket = firebase.storage().bucket();
-const {cart, store, roundNumber, photoCheckUrl, savePhotoTelegram} = require("./bot_store_cart");
+const firestore = require("firebase-admin/firestore");
+const {cart, store, roundNumber, photoCheckUrl, deletePhotoStorage} = require("./bot_store_cart");
 const {searchHandle} = require("./bot_search");
 // catalogs actions array
 const catalogsActions = [];
@@ -405,9 +405,13 @@ const showCart = async (ctx, next) => {
     ctx.state.sessionMsg.url.searchParams.delete("search_text");
     ctx.state.sessionMsg.url.searchParams.delete("pathCatalog");
     if (deleteOrderId) {
-      await store.createRecord(`users/${ctx.from.id}`, {"session": {
-        "orderData": null,
-      }});
+      // await store.createRecord(`users/${ctx.from.id}`, {"session": {
+      //   "orderData": null,
+      // }});
+      ctx.state.sessionMsg.url.searchParams.delete("orderData_id");
+      ctx.state.sessionMsg.url.searchParams.delete("orderData_orderNumber");
+      ctx.state.sessionMsg.url.searchParams.delete("orderData_lastName");
+      ctx.state.sessionMsg.url.searchParams.delete("orderData_firstName");
     }
     // clear cart
     if (clear) {
@@ -470,14 +474,19 @@ const showCart = async (ctx, next) => {
       ]);
       msgTxt += "Корзина пуста";
     } else {
-      const orderData = await store.findRecord(`users/${ctx.from.id}`, "session.orderData");
-      if (orderData) {
-        const orderId = orderData.orderNumber;
-        inlineKeyboardArray.push([{text: `✅ Сохранить Заказ #${orderId} от ${orderData.lastName} ` +
-        `${orderData.firstName}`, callback_data: `eO/${orderData.id}?sP=1&o=${objectId}`}]);
+      // const orderData = await store.findRecord(`users/${ctx.from.id}`, "session.orderData");
+      const orderDataId = ctx.state.sessionMsg.url.searchParams.get("orderData_id");
+      const orderDataOrderNumber = ctx.state.sessionMsg.url.searchParams.get("orderData_orderNumber");
+      const orderDataLastName = ctx.state.sessionMsg.url.searchParams.get("orderData_lastName");
+      const orderDataFirstNme = ctx.state.sessionMsg.url.searchParams.get("orderData_firstName");
+      const pathOrderCurrent = ctx.state.sessionMsg.url.searchParams.get("pathOrderCurrent");
+      if (orderDataId) {
+        inlineKeyboardArray.push([{text: `✅ Сохранить Заказ #${orderDataOrderNumber} от ${orderDataLastName} ` +
+        `${orderDataFirstNme}`, callback_data: `eO/${orderDataId}?sP=1&o=${objectId}`}]);
+        inlineKeyboardArray.push([{text: "🏠 Вернуться к заказу", callback_data: `${pathOrderCurrent}`}]);
         // delete order from cart
-        inlineKeyboardArray.push([{text: `❎ Убрать Заказ #${orderId} от ${orderData.lastName} ` +
-        `${orderData.firstName}`, callback_data: `cart?deleteOrderId=${orderData.id}&o=${objectId}`}]);
+        inlineKeyboardArray.push([{text: `❎ Убрать Заказ #${orderDataOrderNumber} от ${orderDataLastName} ` +
+        `${orderDataFirstNme}`, callback_data: `cart?deleteOrderId=${orderDataId}&o=${objectId}`}]);
       }
       // create order
       inlineKeyboardArray.push([{text: "✅ Оформить заказ",
@@ -836,7 +845,6 @@ catalogsActions.push( async (ctx, next) => {
               text: "Отправить свой номер",
               request_contact: true,
             }],
-            ["Отмена"],
           ],
           resize_keyboard: true,
           one_time_keyboard: true,
@@ -889,7 +897,9 @@ catalogsActions.push( async (ctx, next) => {
             remove_keyboard: true,
           }});
       } catch (error) {
-        await ctx.reply(`${error}`);
+        // await ctx.reply(`${error}`);
+        await ctx.answerCbQuery(`${error}`);
+        return;
       }
     }
     if (todo === "cancelOrder") {
@@ -1034,26 +1044,27 @@ catalogsActions.push( async (ctx, next) => {
           if (photoId !== deleteFileId) {
             await productRef.update({
               mainPhoto: photoId,
-              photos: firebase.firestore.FieldValue.arrayRemove(deleteFileId),
+              photos: firestore.FieldValue.arrayRemove(deleteFileId),
             });
             break;
           }
         }
       } else {
         await productRef.update({
-          mainPhoto: firebase.firestore.FieldValue.delete(),
-          photos: firebase.firestore.FieldValue.arrayRemove(deleteFileId),
+          mainPhoto: firestore.FieldValue.delete(),
+          photos: firestore.FieldValue.arrayRemove(deleteFileId),
         });
       }
     } else {
       await productRef.update({
-        photos: firebase.firestore.FieldValue.arrayRemove(deleteFileId),
+        photos: firestore.FieldValue.arrayRemove(deleteFileId),
       });
     }
     // delete photos from bucket
-    await bucket.deleteFiles({
-      prefix: `photos/o/${objectId}/p/${productId}/${deleteFileId}`,
-    });
+    // await bucket.deleteFiles({
+    //   prefix: `photos/o/${objectId}/p/${productId}/${deleteFileId}`,
+    // });
+    await deletePhotoStorage(`photos/o/${objectId}/p/${productId}/${deleteFileId}`);
     await ctx.deleteMessage();
     await ctx.answerCbQuery();
   } else {
@@ -1066,13 +1077,19 @@ catalogsActions.push( async (ctx, next) => {
     const objectId = ctx.state.params.get("o");
     const productId = ctx.state.param;
     // firestore session
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {
-      "scene": "uploadPhotoProduct",
-      objectId,
-      productId,
-    }});
+    // await store.createRecord(`users/${ctx.from.id}`, {"session": {
+    //   "scene": "uploadPhotoProduct",
+    //   objectId,
+    //   productId,
+    // }});
+    ctx.state.sessionMsg.url.searchParams.set("scene", "uploadPhotoProduct");
+    ctx.state.sessionMsg.url.searchParams.set("objectId", objectId);
+    ctx.state.sessionMsg.url.searchParams.set("productId", productId);
     const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
-    await ctx.replyWithHTML(`Добавьте фото <b>${product.name} (${product.id})</b>`);
+    await ctx.replyWithHTML(`Добавьте фото <b>${product.name} (${product.id})</b>` + ctx.state.sessionMsg.linkHTML(), {
+      reply_markup: {
+        force_reply: true,
+      }});
     await ctx.answerCbQuery();
   } else {
     return next();
@@ -1083,142 +1100,25 @@ catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "uploadPhotoCat") {
     const objectId = ctx.state.params.get("o");
     const catalogId = ctx.state.param;
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {
-      "scene": "uploadPhotoCat",
-      objectId,
-      catalogId,
-    }});
+    // await store.createRecord(`users/${ctx.from.id}`, {"session": {
+    //   "scene": "uploadPhotoCat",
+    //   objectId,
+    //   catalogId,
+    // }});
+    ctx.state.sessionMsg.url.searchParams.set("scene", "uploadPhotoCat");
+    ctx.state.sessionMsg.url.searchParams.set("objectId", objectId);
+    ctx.state.sessionMsg.url.searchParams.set("catalogId", catalogId);
     const catalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
-    await ctx.replyWithHTML(`Добавьте фото <b>${catalog.name} (${catalog.id})</b>`);
+    await ctx.replyWithHTML(`Добавьте фото <b>${catalog.name} (${catalog.id})</b>` + ctx.state.sessionMsg.linkHTML(), {
+      reply_markup: {
+        force_reply: true,
+      }});
     await ctx.answerCbQuery();
   } else {
     return next();
   }
 });
-// upload product photos new
-const uploadPhotoProduct = async (ctx, objectId, productId) => {
-  if (productId && objectId) {
-    const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
-    // get count photos to check limits 5 photos
-    if (product.photos && product.photos.length > 4) {
-      await ctx.reply("Limit 5 photos");
-      return;
-    }
-    try {
-      // upload only one photo!!!
-      const photoId = await savePhotoTelegram(ctx, `photos/o/${objectId}/p/${product.id}`);
-      // save file id
-      if (!product.mainPhoto) {
-        // set main photo
-        await store.updateRecord(`objects/${objectId}/products/${productId}`, {
-          mainPhoto: photoId,
-          photos: firebase.firestore.FieldValue.arrayUnion(photoId),
-        });
-      } else {
-        await store.updateRecord(`objects/${objectId}/products/${productId}`, {
-          photos: firebase.firestore.FieldValue.arrayUnion(photoId),
-        });
-      }
-      // get catalog url (path)
-      let catalogUrl = `c/${product.catalog.id}?o=${objectId}&u=1`;
-      // if (ctx.session.pathCatalog) {
-      //   catalogUrl = ctx.session.pathCatalog;
-      // }
-      // const sessionPathCatalog = await store.findRecord(`users/${ctx.from.id}`, "session.pathCatalog");
-      const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathCatalog");
-      if (sessionPathCatalog) {
-        catalogUrl = sessionPathCatalog;
-      }
-      const media = await photoCheckUrl(`photos/o/${objectId}/p/${product.id}/${photoId}/2.jpg`);
-      await ctx.replyWithPhoto(media,
-          {
-            caption: `${product.name} (${product.id}) photo uploaded`,
-            reply_markup: {
-              inline_keyboard: [
-                [{text: "📸 Upload photo", callback_data: `uploadPhotoProduct/${product.id}?o=${objectId}`}],
-                [{text: `🖼 Show photos (${product.photos ? product.photos.length + 1 : 1})`,
-                  callback_data: `showPhotos/${product.id}?o=${objectId}`}],
-                [{text: "⤴️ Goto catalog",
-                  callback_data: catalogUrl}],
-              ],
-            },
-          });
-      // clear session
-      await store.createRecord(`users/${ctx.from.id}`, {"session": {
-        "scene": null,
-        "objectId": null,
-        "productId": null,
-      }});
-    } catch (e) {
-      await ctx.reply(`Error upload photos ${e.message}`);
-      return;
-    }
-  } else {
-    await ctx.reply("Please select a product to upload Photo");
-  }
-};
-// upload catalog photo new
-const uploadPhotoCat = async (ctx, objectId, catalogId) => {
-  if (catalogId && objectId) {
-    const catalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
-    // first delete old photos
-    if (catalog.photoId) {
-      await bucket.deleteFiles({
-        prefix: `photos/o/${objectId}/c/${catalogId}`,
-      });
-    }
-    // zoom level 2 (800*800)
-    // const photoId = telegramPhotos[2].file_unique_id;
-    // const photoUrl = await ctx.telegram.getFileLink(telegramPhotos[2].file_id);
-    // try {
-    //   // download photos from telegram server
-    //   const photoPath = await download(photoUrl.href);
-    //   await bucket.upload(photoPath, {
-    //     destination: `photos/o/${objectId}/c/${catalog.id}/${photoId}.jpg`,
-    //   });
-    //   // delete download file
-    //   fs.unlinkSync(photoPath);
-    // } catch (e) {
-    //   console.log("Download failed");
-    //   console.log(e.message);
-    //   await ctx.reply(`Error upload photos ${e.message}`);
-    //   return;
-    // }
-    try {
-      const photoId = await savePhotoTelegram(ctx, `photos/o/${objectId}/c/${catalog.id}`);
 
-      await store.updateRecord(`objects/${objectId}/catalogs/${catalog.id}`, {
-        photoId,
-      });
-      // get catalog url (path)
-      const catalogUrl = `c/${catalog.id}?o=${objectId}`;
-      const media = await photoCheckUrl(`photos/o/${objectId}/c/${catalog.id}/${photoId}/2.jpg`);
-      await ctx.replyWithPhoto(media,
-          {
-            caption: `${catalog.name} (${catalog.id}) photo uploaded`,
-            reply_markup: {
-              inline_keyboard: [
-                [{text: "⤴️ Goto catalog",
-                  callback_data: catalogUrl}],
-              ],
-            },
-          });
-      await store.createRecord(`users/${ctx.from.id}`, {"session": {
-        "scene": null,
-        "objectId": null,
-        "catalogId": null,
-      }});
-    } catch (e) {
-      await ctx.reply(`Error upload photos ${e.message}`);
-      return;
-    }
-  } else {
-    await ctx.reply("Please select a product to upload Photo");
-  }
-};
-
-exports.uploadPhotoProduct = uploadPhotoProduct;
-exports.uploadPhotoCat = uploadPhotoCat;
 exports.catalogsActions = catalogsActions;
 exports.cartWizard = cartWizard;
 exports.showCart = showCart;

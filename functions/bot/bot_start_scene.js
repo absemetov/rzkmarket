@@ -1,6 +1,4 @@
-const firebase = require("firebase-admin");
-const bucket = firebase.storage().bucket();
-const {store, cart, photoCheckUrl, savePhotoTelegram} = require("./bot_store_cart");
+const {store, cart, photoCheckUrl} = require("./bot_store_cart");
 const startActions = [];
 const TelegrafI18n = require("telegraf-i18n");
 const path = require("path");
@@ -158,7 +156,7 @@ startActions.push(async (ctx, next) => {
     await ctx.editMessageMedia({
       type: "photo",
       media,
-      caption: caption + ctx.state.sessionMsg.linkHTML(),
+      caption,
       parse_mode: "html",
     }, {
       reply_markup: {
@@ -174,62 +172,24 @@ startActions.push(async (ctx, next) => {
 startActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "uploadPhotoObj") {
     const objectId = ctx.state.param;
-    await store.createRecord(`users/${ctx.from.id}`, {"session": {
-      "scene": "uploadPhotoObj",
-      objectId,
-    }});
+    // await store.createRecord(`users/${ctx.from.id}`, {"session": {
+    //   "scene": "uploadPhotoObj",
+    //   objectId,
+    // }});
+    ctx.state.sessionMsg.url.searchParams.set("scene", "uploadPhotoObj");
+    ctx.state.sessionMsg.url.searchParams.set("objectId", objectId);
     const object = await store.findRecord(`objects/${objectId}`);
-    await ctx.replyWithHTML(`Добавьте фото <b>${object.name} (${object.id})</b>`);
+    await ctx.replyWithHTML(`Добавьте фото <b>${object.name} (${object.id})</b>` + ctx.state.sessionMsg.linkHTML(), {
+      reply_markup: {
+        force_reply: true,
+      }});
     await ctx.answerCbQuery();
   } else {
     return next();
   }
 });
-// upload photo obj new
-const uploadPhotoObj = async (ctx, objectId) => {
-  if (objectId) {
-    const object = await store.findRecord(`objects/${objectId}`);
-    // first delete old photos
-    if (object.photoId) {
-      await bucket.deleteFiles({
-        prefix: `photos/o/${objectId}/logo`,
-      });
-    }
-    try {
-      // download photos from telegram server
-      const photoId = await savePhotoTelegram(ctx, `photos/o/${objectId}/logo`);
-      // save fileID to Firestore
-      await store.updateRecord(`objects/${objectId}`, {
-        photoId,
-      });
-      // get catalog url (path)
-      const catalogUrl = `objects/${objectId}`;
-      const url = await photoCheckUrl(`photos/o/${objectId}/logo/${photoId}/2.jpg`);
-      await ctx.replyWithPhoto({url},
-          {
-            caption: `${object.name} (${object.id}) photo uploaded`,
-            reply_markup: {
-              inline_keyboard: [
-                [{text: "⤴️ Goto object",
-                  callback_data: catalogUrl}],
-              ],
-            },
-          });
-      await store.createRecord(`users/${ctx.from.id}`, {"session": {
-        "scene": null,
-        "objectId": null,
-      }});
-    } catch (e) {
-      await ctx.reply(`Error upload photos ${e.message}`);
-      return;
-    }
-  } else {
-    await ctx.reply("Please select a object to upload Photo");
-  }
-};
 
 exports.startActions = startActions;
 exports.startHandler = startHandler;
 exports.isAdmin = isAdmin;
 exports.parseUrl = parseUrl;
-exports.uploadPhotoObj = uploadPhotoObj;

@@ -1,13 +1,11 @@
 const functions = require("firebase-functions");
-const firebase = require("firebase-admin");
 const {uploadProducts} = require("./bot/bot_upload_scene");
-const {store, photoCheckUrl} = require("./bot/bot_store_cart");
+const {store, photoCheckUrl, deletePhotoStorage} = require("./bot/bot_store_cart");
 const {Telegraf} = require("telegraf");
 const algoliasearch = require("algoliasearch");
 const bot = new Telegraf(process.env.BOT_TOKEN, {
   handlerTimeout: 540000,
 });
-const bucket = firebase.storage().bucket();
 const algoliaClient = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
 const productsIndex = algoliaClient.initIndex(`${process.env.ALGOLIA_PREFIX}products`);
 const catalogsIndex = algoliaClient.initIndex(`${process.env.ALGOLIA_PREFIX}catalogs`);
@@ -159,9 +157,10 @@ exports.productDelete = functions.region("europe-central2").firestore
       // delete data in Algolia
       await productsIndex.deleteObject(`${objectId}-${productId}`);
       // delete photo from storage
-      await bucket.deleteFiles({
-        prefix: `photos/o/${objectId}/p/${productId}`,
-      });
+      // await bucket.deleteFiles({
+      //   prefix: `photos/o/${objectId}/p/${productId}`,
+      // });
+      await deletePhotoStorage(`photos/o/${objectId}/p/${productId}`);
       return null;
     });
 // add createdAt field to Catalogs
@@ -227,9 +226,10 @@ exports.catalogDelete = functions.region("europe-central2").firestore
       // delete from Algolia
       await catalogsIndex.deleteObject(catalogId);
       // delete photo catalog
-      await bucket.deleteFiles({
-        prefix: `photos/o/${objectId}/c/${catalogId}`,
-      });
+      // await bucket.deleteFiles({
+      //   prefix: `photos/o/${objectId}/c/${catalogId}`,
+      // });
+      await deletePhotoStorage(`photos/o/${objectId}/c/${catalogId}`);
       return null;
     });
 // upload products trigger

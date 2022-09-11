@@ -262,8 +262,134 @@ const cart = {
   },
 };
 
+// upload photo obj new
+const uploadPhotoObj = async (ctx, objectId) => {
+  if (objectId) {
+    const path = `objects/${objectId}`;
+    const object = await store.findRecord(path);
+    // first delete old photos
+    if (object.photoId) {
+      await deletePhotoStorage(`photos/o/${objectId}/logo`);
+    }
+    try {
+      // download photos from telegram server
+      const photoId = await savePhotoTelegram(ctx, `photos/o/${objectId}/logo`);
+      // save fileID to Firestore
+      await store.updateRecord(path, {
+        photoId,
+      });
+      await ctx.replyWithHTML(`<b>${object.name}</b> logo photo uploaded /objects ${object.id}`);
+    } catch (e) {
+      await ctx.reply(`Error upload photos ${e.message}`);
+      return;
+    }
+  } else {
+    await ctx.reply("Please select a object to upload Photo");
+  }
+};
+// upload product photos new
+const uploadPhotoProduct = async (ctx, objectId, productId) => {
+  if (productId && objectId) {
+    const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
+    // get count photos to check limits 5 photos
+    if (product.photos && product.photos.length > 4) {
+      await ctx.reply("Limit 5 photos");
+      return;
+    }
+    try {
+      // upload only one photo!!!
+      const photoId = await savePhotoTelegram(ctx, `photos/o/${objectId}/p/${product.id}`);
+      // save file id
+      if (!product.mainPhoto) {
+        // set main photo
+        await store.updateRecord(`objects/${objectId}/products/${productId}`, {
+          mainPhoto: photoId,
+          photos: firestore.FieldValue.arrayUnion(photoId),
+        });
+      } else {
+        await store.updateRecord(`objects/${objectId}/products/${productId}`, {
+          photos: firestore.FieldValue.arrayUnion(photoId),
+        });
+      }
+      // get catalog url (path)
+      let catalogUrl = `c/${product.catalog.id}?o=${objectId}&u=1`;
+      const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathCatalog");
+      if (sessionPathCatalog) {
+        catalogUrl = sessionPathCatalog;
+      }
+      const media = await photoCheckUrl(`photos/o/${objectId}/p/${product.id}/${photoId}/2.jpg`);
+      await ctx.replyWithPhoto(media,
+          {
+            caption: `${product.name} (${product.id}) photo uploaded`,
+            reply_markup: {
+              inline_keyboard: [
+                [{text: "📸 Upload photo", callback_data: `uploadPhotoProduct/${product.id}?o=${objectId}`}],
+                [{text: `🖼 Show photos (${product.photos ? product.photos.length + 1 : 1})`,
+                  callback_data: `showPhotos/${product.id}?o=${objectId}`}],
+                [{text: "⤴️ Goto catalog",
+                  callback_data: catalogUrl}],
+              ],
+            },
+          });
+    } catch (e) {
+      await ctx.reply(`Error upload photos ${e.message}`);
+      return;
+    }
+  } else {
+    await ctx.reply("Please select a product to upload Photo");
+  }
+};
+// upload catalog photo new
+const uploadPhotoCat = async (ctx, objectId, catalogId) => {
+  if (catalogId && objectId) {
+    const catalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
+    // first delete old photos
+    if (catalog.photoId) {
+      // await bucket.deleteFiles({
+      //   prefix: `photos/o/${objectId}/c/${catalogId}`,
+      // });
+      await deletePhotoStorage(`photos/o/${objectId}/c/${catalogId}`);
+    }
+    try {
+      const photoId = await savePhotoTelegram(ctx, `photos/o/${objectId}/c/${catalog.id}`);
+
+      await store.updateRecord(`objects/${objectId}/catalogs/${catalog.id}`, {
+        photoId,
+      });
+      // get catalog url (path)
+      const catalogUrl = `c/${catalog.id}?o=${objectId}`;
+      const media = await photoCheckUrl(`photos/o/${objectId}/c/${catalog.id}/${photoId}/2.jpg`);
+      await ctx.replyWithPhoto(media,
+          {
+            caption: `${catalog.name} (${catalog.id}) photo uploaded`,
+            reply_markup: {
+              inline_keyboard: [
+                [{text: "⤴️ Goto catalog",
+                  callback_data: catalogUrl}],
+              ],
+            },
+          });
+    } catch (e) {
+      await ctx.reply(`Error upload photos ${e.message}`);
+      return;
+    }
+  } else {
+    await ctx.reply("Please select a product to upload Photo");
+  }
+};
+// delete files from storage
+const deletePhotoStorage = async (prefix) => {
+  await bucket.deleteFiles({
+    prefix,
+  });
+};
+
 exports.store = store;
 exports.cart = cart;
 exports.roundNumber = roundNumber;
 exports.photoCheckUrl = photoCheckUrl;
 exports.savePhotoTelegram = savePhotoTelegram;
+exports.uploadPhotoObj = uploadPhotoObj;
+exports.uploadPhotoProduct = uploadPhotoProduct;
+exports.uploadPhotoCat = uploadPhotoCat;
+exports.deletePhotoStorage = deletePhotoStorage;

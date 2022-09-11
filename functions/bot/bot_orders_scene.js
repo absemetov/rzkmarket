@@ -63,13 +63,15 @@ const myOrders = async (ctx, next) => {
       inlineKeyboardArray.push([
         {text: "Ссылка на заказ", url: `${process.env.BOT_SITE}/o/${objectId}/s/${order.id}`},
       ]);
-      const myPathOrder = await store.findRecord(`users/${ctx.from.id}`, "session.myPathOrder");
+      // const myPathOrder = await store.findRecord(`users/${ctx.from.id}`, "session.myPathOrder");
+      const myPathOrder = ctx.state.sessionMsg.url.searchParams.get("myPathOrder");
       inlineKeyboardArray.push([{text: "🧾 Мои заказы",
         callback_data: `${myPathOrder ? myPathOrder : "myO/" + userId}`}]);
     } else {
       // show all orders
       // ctx.session.myPathOrder = ctx.callbackQuery.data;
-      await store.createRecord(`users/${ctx.from.id}`, {"session": {"myPathOrder": ctx.callbackQuery.data}});
+      // await store.createRecord(`users/${ctx.from.id}`, {"session": {"myPathOrder": ctx.callbackQuery.data}});
+      ctx.state.sessionMsg.url.searchParams.set("myPathOrder", ctx.callbackQuery.data);
       const mainQuery = firebase.firestore().collectionGroup("orders").where("userId", "==", userId)
           .orderBy("createdAt", "desc");
       let query = mainQuery;
@@ -413,11 +415,13 @@ ordersActions.push(async (ctx, next) => {
     // save products from cart
     if (saveProducts) {
       const products = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`, "products");
+      // clear cart
       await Promise.all([
-        store.createRecord(`users/${ctx.from.id}/`, {"session": {
-          "orderData": null,
-        }}),
-        store.createRecord(`objects/${objectId}/carts/${ctx.from.id}`, {"products": null}),
+        // store.createRecord(`users/${ctx.from.id}/`, {"session": {
+        //   "orderData": null,
+        // }}),
+        // store.createRecord(`objects/${objectId}/carts/${ctx.from.id}`, {"products": firestore.FieldValue.delete()}),
+        cart.clear(objectId, ctx.from.id),
         store.updateRecord(`objects/${objectId}/orders/${orderId}`, {products}),
       ]);
       // redirect to order
@@ -428,15 +432,19 @@ ordersActions.push(async (ctx, next) => {
     if (editProducts) {
       // clear cart then export!!!
       const order = await store.findRecord(`objects/${objectId}/orders/${orderId}`);
+      // await store.createRecord(`users/${ctx.from.id}`, {"session": {
+      //   "orderData": {
+      //     id: order.id,
+      //     orderNumber: order.orderNumber,
+      //     lastName: order.lastName,
+      //     firstName: order.firstName,
+      //   },
+      // }});
+      ctx.state.sessionMsg.url.searchParams.set("orderData_id", order.id);
+      ctx.state.sessionMsg.url.searchParams.set("orderData_orderNumber", order.orderNumber);
+      ctx.state.sessionMsg.url.searchParams.set("orderData_lastName", order.lastName);
+      ctx.state.sessionMsg.url.searchParams.set("orderData_firstName", order.firstName);
       await cart.clear(objectId, ctx.from.id);
-      await store.createRecord(`users/${ctx.from.id}`, {"session": {
-        "orderData": {
-          id: order.id,
-          orderNumber: order.orderNumber,
-          lastName: order.lastName,
-          firstName: order.firstName,
-        },
-      }});
       await store.createRecord(`objects/${objectId}/carts/${ctx.from.id}`, {products: order.products}),
       // set route name
       ctx.state.routeName = "cart";

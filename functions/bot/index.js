@@ -1,11 +1,11 @@
 const functions = require("firebase-functions");
 const {Telegraf} = require("telegraf");
-const {startActions, startHandler, parseUrl, isAdmin, uploadPhotoObj} = require("./bot_start_scene");
+const {startActions, startHandler, parseUrl, isAdmin} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
 const {uploadActions, uploadForm} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
-const {uploadPhotoProduct, uploadPhotoCat, catalogsActions, cartWizard} = require("./bot_catalog_scene");
-const {store} = require("./bot_store_cart");
+const {catalogsActions, cartWizard} = require("./bot_catalog_scene");
+const {store, uploadPhotoObj, uploadPhotoProduct, uploadPhotoCat} = require("./bot_store_cart");
 const {searchIndex, searchHandle, searchActions} = require("./bot_search");
 const {URL} = require("url");
 const bot = new Telegraf(process.env.BOT_TOKEN, {
@@ -54,6 +54,7 @@ bot.start(async (ctx) => {
 });
 // show obj
 bot.command("objects", async (ctx) => {
+  console.log(ctx.message.text);
   await startHandler(ctx);
 });
 // search products
@@ -103,21 +104,18 @@ bot.on(["text", "edited_message"], async (ctx) => {
     await uploadForm(ctx, sheetUrl[1]);
     return;
   }
+  // algolia search test
+  // if (sessionFire && sessionFire.scene === "search") {
+  if (ctx.state.sessionMsg.url.searchParams.has("search")) {
+    await searchHandle(ctx, message.text);
+    return;
+  }
   // get session scene
   // const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");
   // edit order wizard
   if (ctx.state.sessionMsg.url.searchParams.get("scene") === "editOrder") {
     const cursor = ctx.state.sessionMsg.url.searchParams.get("cursor");
     await orderWizard[cursor](ctx, message.text);
-    return;
-  }
-  if (ctx.message.text === "Отмена") {
-    await ctx.reply("Для продолжения нажмите /objects", {
-      reply_markup: {
-        remove_keyboard: true,
-      }});
-    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": null}});
-    // ctx.session.scene = null;
     return;
   }
   // wizard create order
@@ -128,30 +126,38 @@ bot.on(["text", "edited_message"], async (ctx) => {
     await cartWizard[cursor](ctx, message.text);
     return;
   }
-  // algolia search test
-  // if (sessionFire && sessionFire.scene === "search") {
-  if (ctx.state.sessionMsg.url.searchParams.has("search")) {
-    await searchHandle(ctx, message.text);
-    return;
-  }
+  // if (message.text === "Отмена") {
+  //   await ctx.reply("Для продолжения нажмите /objects", {
+  //     reply_markup: {
+  //       remove_keyboard: true,
+  //     }});
+  //   // await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": null}});
+  //   // ctx.session.scene = null;
+  //   return;
+  // }
   await ctx.reply("Commands /objects /search");
 });
 // upload photo
 bot.on("photo", async (ctx) => {
-  const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");
-  if (sessionFire && sessionFire.scene === "uploadPhotoProduct") {
+  // const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");
+  const scene = ctx.state.sessionMsg.url.searchParams.get("scene");
+  const objectId = ctx.state.sessionMsg.url.searchParams.get("objectId");
+  const productId = ctx.state.sessionMsg.url.searchParams.get("productId");
+  const catalogId = ctx.state.sessionMsg.url.searchParams.get("catalogId");
+
+  if (scene === "uploadPhotoProduct") {
     await ctx.reply("uploadPhotoProduct start");
-    await uploadPhotoProduct(ctx, sessionFire.objectId, sessionFire.productId);
+    await uploadPhotoProduct(ctx, objectId, productId);
     return;
   }
-  if (sessionFire && sessionFire.scene === "uploadPhotoCat") {
+  if (scene === "uploadPhotoCat") {
     await ctx.reply("uploadPhotoCat start");
-    await uploadPhotoCat(ctx, sessionFire.objectId, sessionFire.catalogId);
+    await uploadPhotoCat(ctx, objectId, catalogId);
     return;
   }
-  if (sessionFire && sessionFire.scene === "uploadPhotoObj") {
+  if (scene === "uploadPhotoObj") {
     await ctx.reply("uploadPhotoObj start");
-    await uploadPhotoObj(ctx, sessionFire.objectId);
+    await uploadPhotoObj(ctx, objectId);
     return;
   }
   await ctx.reply("session scene is null");
