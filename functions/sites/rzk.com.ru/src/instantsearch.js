@@ -539,6 +539,7 @@ search.addWidgets([
       "categories.lvl5",
     ],
     showParentLevel: false,
+    sortBy: ["isRefined", "count:desc", "name:asc"],
   }),
   customHits({
     container: document.querySelector("#hits"),

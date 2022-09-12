@@ -54,7 +54,6 @@ bot.start(async (ctx) => {
 });
 // show obj
 bot.command("objects", async (ctx) => {
-  console.log(ctx.message.text);
   await startHandler(ctx);
 });
 // search products
@@ -126,15 +125,15 @@ bot.on(["text", "edited_message"], async (ctx) => {
     await cartWizard[cursor](ctx, message.text);
     return;
   }
-  // if (message.text === "Отмена") {
-  //   await ctx.reply("Для продолжения нажмите /objects", {
-  //     reply_markup: {
-  //       remove_keyboard: true,
-  //     }});
-  //   // await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": null}});
-  //   // ctx.session.scene = null;
-  //   return;
-  // }
+  if (message.text === "Отмена") {
+    await ctx.reply("Для продолжения нажмите /objects", {
+      reply_markup: {
+        remove_keyboard: true,
+      }});
+    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": null}});
+    // ctx.session.scene = null;
+    return;
+  }
   await ctx.reply("Commands /objects /search");
 });
 // upload photo

@@ -278,7 +278,17 @@ const uploadPhotoObj = async (ctx, objectId) => {
       await store.updateRecord(path, {
         photoId,
       });
-      await ctx.replyWithHTML(`<b>${object.name}</b> logo photo uploaded /objects ${object.id}`);
+      const url = await photoCheckUrl(`photos/o/${objectId}/logo/${photoId}/2.jpg`);
+      await ctx.replyWithPhoto({url},
+          {
+            caption: `${object.name} (${object.id}) photo uploaded`,
+            reply_markup: {
+              inline_keyboard: [
+                [{text: "⤴️ Goto object",
+                  callback_data: path}],
+              ],
+            },
+          });
     } catch (e) {
       await ctx.reply(`Error upload photos ${e.message}`);
       return;

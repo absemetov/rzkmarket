@@ -845,6 +845,7 @@ catalogsActions.push( async (ctx, next) => {
               text: "Отправить свой номер",
               request_contact: true,
             }],
+            [{text: "Отмена"}],
           ],
           resize_keyboard: true,
           one_time_keyboard: true,
