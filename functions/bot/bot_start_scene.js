@@ -8,7 +8,7 @@ const i18n = new TelegrafI18n({
 // admin midleware
 const isAdmin = (ctx, next) => {
   ctx.state.isAdmin = ctx.from.id === 94899148;
-  ctx.i18n = i18n.createContext(process.env.BOT_LANG);
+  ctx.i18n = i18n.createContext(process.env.BOT_LANG).repository[process.env.BOT_LANG];
   return next();
 };
 
@@ -85,18 +85,17 @@ const startHandler = async (ctx) => {
     objects.forEach((object) => {
       inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
     });
-    inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
-    inlineKeyboardArray.push([{text: "🔍 Поиск товаров", callback_data: "search"}]);
-    inlineKeyboardArray.push([{text: `Войти на сайт ${process.env.BOT_SITE}`, login_url: {
+    inlineKeyboardArray.push([{text: ctx.i18n.btn.orders(), callback_data: `myO/${ctx.from.id}`}]);
+    inlineKeyboardArray.push([{text: ctx.i18n.btn.search(), callback_data: "search"}]);
+    inlineKeyboardArray.push([{text: ctx.i18n.btn.login(), login_url: {
       url: `${process.env.BOT_SITE}/login`,
       request_write_access: true,
     }}]);
     // add main photo
     const projectImg = await photoCheckUrl();
-    // locale ctx.i18n.t("test")
     await ctx.replyWithPhoto(projectImg,
         {
-          caption: "<b>Выберите склад</b>",
+          caption: `<b>${ctx.i18n.start.warehouse()}\n${ctx.i18n.phones.map((value) => value()).join("\n")}</b>`,
           parse_mode: "html",
           reply_markup: {
             inline_keyboard: inlineKeyboardArray,
