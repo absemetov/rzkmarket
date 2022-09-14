@@ -95,7 +95,7 @@ const startHandler = async (ctx) => {
     const projectImg = await photoCheckUrl();
     await ctx.replyWithPhoto(projectImg,
         {
-          caption: `<b>${ctx.i18n.start.warehouse()}\n${ctx.i18n.phones.map((value) => value()).join("\n")}</b>`,
+          caption: `<b>${ctx.i18n.start.chooseWarehouse()}\n${ctx.i18n.phones.map((value) => value()).join("\n")}</b>`,
           parse_mode: "html",
           reply_markup: {
             inline_keyboard: inlineKeyboardArray,
@@ -107,17 +107,17 @@ const startHandler = async (ctx) => {
 startActions.push(async (ctx, next) => {
   if (ctx.state.routeName === "objects") {
     const objectId = ctx.state.param;
-    let caption = "<b>Выберите склад</b>";
+    let caption = `<b>${ctx.i18n.start.chooseWarehouse()}\n${ctx.i18n.phones.map((value) => value()).join("\n")}</b>`;
     const inlineKeyboardArray = [];
     let imgUrl = null;
     if (objectId) {
       // get data obj
       const object = await store.findRecord(`objects/${objectId}`);
       caption = `<b>${object.name}\n` +
-        `Контакты: ${object.phoneArray.join()}\n` +
-        `Адрес: ${object.address}\n` +
-        `Описание: ${object.description}</b>\n`;
-      const cartButtons = await cart.cartButtons(objectId, ctx.from.id);
+        `${object.phoneArray.join()}\n` +
+        `${object.address}\n` +
+        `${object.description}</b>\n`;
+      const cartButtons = await cart.cartButtons(objectId, ctx);
       inlineKeyboardArray.push([{text: "📁 Каталог", callback_data: `c?o=${object.id}`}]);
       inlineKeyboardArray.push([cartButtons[1]]);
       if (ctx.state.isAdmin) {
@@ -132,7 +132,7 @@ startActions.push(async (ctx, next) => {
         caption += `<b>Курсы валют: USD = ${object.currencies.USD}${process.env.BOT_CURRENCY}, ` +
         `EUR = ${object.currencies.EUR}${process.env.BOT_CURRENCY}</b>\n`;
       }
-      inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: "objects"}]);
+      inlineKeyboardArray.push([{text: ctx.i18n.btn.main(), callback_data: "objects"}]);
       // set logo obj
       if (object.photoId) {
         imgUrl = `photos/o/${objectId}/logo/${object.photoId}/2.jpg`;
@@ -143,9 +143,9 @@ startActions.push(async (ctx, next) => {
       objects.forEach((object) => {
         inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
       });
-      inlineKeyboardArray.push([{text: "🧾 Мои заказы", callback_data: `myO/${ctx.from.id}`}]);
-      inlineKeyboardArray.push([{text: "🔍 Поиск товаров", callback_data: "search"}]);
-      inlineKeyboardArray.push([{text: `Войти на сайт ${process.env.BOT_SITE}`, login_url: {
+      inlineKeyboardArray.push([{text: ctx.i18n.btn.orders(), callback_data: `myO/${ctx.from.id}`}]);
+      inlineKeyboardArray.push([{text: ctx.i18n.btn.search(), callback_data: "search"}]);
+      inlineKeyboardArray.push([{text: ctx.i18n.btn.login(), login_url: {
         url: `${process.env.BOT_SITE}/login`,
         request_write_access: true,
       }}]);

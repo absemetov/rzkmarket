@@ -8,7 +8,7 @@ const catalogsActions = [];
 const showCatalog = async (ctx, next) => {
   if (ctx.state.routeName === "c") {
     const objectId = ctx.state.params.get("o");
-    const cartButtons = await cart.cartButtons(objectId, ctx.from.id);
+    const cartButtons = await cart.cartButtons(objectId, ctx);
     const catalogId = ctx.state.param;
     const tag = ctx.state.params.get("t");
     const startAfter = ctx.state.params.get("s");
@@ -168,7 +168,7 @@ const showProduct = async (ctx, next) => {
     const object = await store.findRecord(`objects/${objectId}`);
     const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
     product.price = roundNumber(product.price * object.currencies[product.currency]);
-    const cartButtons = await cart.cartButtons(objectId, ctx.from.id);
+    const cartButtons = await cart.cartButtons(objectId, ctx);
     let catalogUrl = `c/${product.catalog.id}?o=${objectId}`;
     // const sessionPathCatalog = await store.findRecord(`users/${ctx.from.id}`, "session.pathCatalog");
     const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathCatalog");

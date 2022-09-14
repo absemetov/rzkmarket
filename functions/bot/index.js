@@ -16,8 +16,8 @@ bot.use(isAdmin);
 // session msg
 bot.use(async (ctx, next) => {
   let urlMsq;
-  if (ctx.callbackQuery && "data" in ctx.callbackQuery && process.env.FUNCTIONS_EMULATOR) {
-    console.log("=============callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
+  if (ctx.callbackQuery) {
+    // console.log("=============callbackQuery happened", ctx.callbackQuery.data.length, ctx.callbackQuery.data);
     // test msg session parse hidden url
     urlMsq = ctx.callbackQuery.message.caption_entities && ctx.callbackQuery.message.caption_entities.at(-1).url;
     if (!urlMsq) {

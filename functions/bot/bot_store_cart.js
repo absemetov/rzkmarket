@@ -234,12 +234,12 @@ const cart = {
     // await ctx.telegram.sendMessage(94899148, `<b>New order from bot! Object ${object.name} ` +
     // `<a href="tg://user?id=${ctx.from.id}">User ${ctx.from.id}</a></b>`, {parse_mode: "html"});
   },
-  async cartButtons(objectId, userId) {
+  async cartButtons(objectId, ctx) {
     // get cart count
-    const cartProducts = await store.findRecord(`objects/${objectId}/carts/${userId}`, "products");
+    const cartProducts = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`, "products");
     return [
-      {text: "🏪 Главная", callback_data: `objects/${objectId}`},
-      {text: `🛒 Корзина (${cartProducts && Object.keys(cartProducts).length || 0})`,
+      {text: ctx.i18n.btn.main(), callback_data: `objects/${objectId}`},
+      {text: `${ctx.i18n.btn.cart()} (${cartProducts && Object.keys(cartProducts).length || 0})`,
         callback_data: `cart?o=${objectId}`},
     ];
   },

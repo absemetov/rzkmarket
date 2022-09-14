@@ -131,7 +131,7 @@ exports.productUpdate = functions.region("europe-central2").firestore
           if (imgUrl) {
             productAlgolia[`img${zoom}`] = imgUrl;
           } else {
-            await bot.telegram.sendMessage(94899148, `Photo load error productId: ${productId} zoom: ${zoom}`,
+            await bot.telegram.sendMessage(94899148, `Photo load error productId: ${productId} zoom: ${zoom} photoId ${product.mainPhoto}`,
                 {parse_mode: "html"});
           }
         }
