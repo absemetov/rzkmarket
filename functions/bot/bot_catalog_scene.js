@@ -30,8 +30,9 @@ const showCatalog = async (ctx, next) => {
     // await store.createRecord(`users/${ctx.from.id}`, {"session": {"pathCatalog": ctx.callbackQuery.data}});
     ctx.state.sessionMsg.url.searchParams.set("pathCatalog", ctx.callbackQuery.data);
     ctx.state.sessionMsg.url.searchParams.delete("cart");
+    let currentCatalog;
     if (catalogId) {
-      const currentCatalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
+      currentCatalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
       // back button
       inlineKeyboardArray.push([{text: `⤴️ ../${currentCatalog.name}`,
         callback_data: currentCatalog.parentId ? `c/${currentCatalog.parentId}?o=${objectId}${uUrl}` :
@@ -53,7 +54,7 @@ const showCatalog = async (ctx, next) => {
       // add tags button
       if (currentCatalog.tags) {
         const tagsArray = [];
-        tagsArray.push({text: "📌 Фильтр",
+        tagsArray.push({text: ctx.i18n.btn.filter(),
           callback_data: `t/${currentCatalog.id}?o=${objectId}`});
         // Delete or close selected tag
         if (tag) {
@@ -92,7 +93,7 @@ const showCatalog = async (ctx, next) => {
       const cartProductsArray = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`, "products");
       // generate products array
       for (const product of productsSnapshot.docs) {
-        const addButton = {text: `📦 ${roundNumber(product.data().price * object.currencies[product.data().currency])}` +
+        const addButton = {text: `🚲 ${roundNumber(product.data().price * object.currencies[product.data().currency])}` +
         `${process.env.BOT_CURRENCY} ${product.data().name} (${product.id})`,
         callback_data: `aC/${product.id}?o=${objectId}`};
         // get cart products
@@ -112,14 +113,14 @@ const showCatalog = async (ctx, next) => {
         const endBeforeSnap = productsSnapshot.docs[0];
         const ifBeforeProducts = await mainQuery.endBefore(endBeforeSnap).limitToLast(1).get();
         if (!ifBeforeProducts.empty) {
-          prevNext.push({text: "⬅️ Назад",
+          prevNext.push({text: ctx.i18n.btn.previous(),
             callback_data: `c/${currentCatalog.id}?e=${endBeforeSnap.id}${tagUrl}&o=${objectId}`});
         }
         // startAfter
         const startAfterSnap = productsSnapshot.docs[productsSnapshot.docs.length - 1];
         const ifAfterProducts = await mainQuery.startAfter(startAfterSnap).limit(1).get();
         if (!ifAfterProducts.empty) {
-          prevNext.push({text: "➡️ Вперед",
+          prevNext.push({text: ctx.i18n.btn.next(),
             callback_data: `c/${currentCatalog.id}?s=${startAfterSnap.id}${tagUrl}&o=${objectId}`});
         }
         inlineKeyboardArray.push(prevNext);
@@ -130,7 +131,7 @@ const showCatalog = async (ctx, next) => {
       }
     } else {
       // back button
-      inlineKeyboardArray.push([{text: "⤴️ ../Главная", callback_data: `objects/${objectId}`}]);
+      inlineKeyboardArray.push([{text: `⤴️ ../${object.name}`, callback_data: `objects/${objectId}`}]);
       // show catalog siblings, get catalogs snap index or siblings
       const catalogsSnapshot = await firebase.firestore().collection("objects").doc(objectId)
           .collection("catalogs")
@@ -147,7 +148,7 @@ const showCatalog = async (ctx, next) => {
     await ctx.editMessageMedia({
       type: "photo",
       media,
-      caption: `<b>${object.name} > Каталог</b>\n` +
+      caption: `<b>${object.name} > Каталог${currentCatalog ? ` > ${currentCatalog.name}` : ""}</b>\n` +
         `${process.env.BOT_SITE}/o/${objectId}/c${catalogId ? "/" + catalogId : ""} ` + ctx.state.sessionMsg.linkHTML(),
       parse_mode: "html",
     }, {reply_markup: {
@@ -178,7 +179,7 @@ const showProduct = async (ctx, next) => {
     const inlineKeyboardArray = [];
     inlineKeyboardArray.push([{text: `⤴️ ../${product.catalog.name}`, callback_data: catalogUrl}]);
     // default add button
-    const addButton = {text: "🛒 Добавить в корзину", callback_data: `aC/${product.id}?o=${objectId}`};
+    const addButton = {text: ctx.i18n.btn.buy(), callback_data: `aC/${product.id}?o=${objectId}`};
     // get cart products
     const cartProduct = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`,
         `products.${productId}`);
@@ -194,7 +195,7 @@ const showProduct = async (ctx, next) => {
     }
     // chck photos
     if (product.photos && product.photos.length) {
-      inlineKeyboardArray.push([{text: `🖼 Показать фото (${product.photos.length})`,
+      inlineKeyboardArray.push([{text: `🖼 Фото (${product.photos.length})`,
         callback_data: `showPhotos/${product.id}?o=${objectId}`}]);
     }
     // Get main photo url.
@@ -210,16 +211,15 @@ const showProduct = async (ctx, next) => {
     inlineKeyboardArray.push(cartButtons);
     const page = ctx.state.sessionMsg.url.searchParams.get("page");
     if (page) {
-      inlineKeyboardArray.push([{text: "🔍 Ввернуться в поиск", callback_data: `search/${page}`}]);
+      inlineKeyboardArray.push([{text: ctx.i18n.btn.backToSearch(), callback_data: `search/${page}`}]);
     }
     const media = await photoCheckUrl(publicImgUrl);
     await ctx.editMessageMedia({
       type: "photo",
       media,
-      caption: `<b>${object.name}\n` +
-      `${product.name} (${product.id})\n` +
-      `Цена ${product.price} ${process.env.BOT_CURRENCY}</b>\n` +
-      `${process.env.BOT_SITE}/o/${objectId}/p/${productId}` + ctx.state.sessionMsg.linkHTML(),
+      caption: `<b>${object.name} > ${product.name} (${product.id})\n` +
+      `${product.price} ${process.env.BOT_CURRENCY}</b>\n` +
+      `${process.env.BOT_SITE}/o/${objectId}/p/${productId} ` + ctx.state.sessionMsg.linkHTML(),
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: inlineKeyboardArray,
@@ -937,7 +937,7 @@ catalogsActions.push( async (ctx, next) => {
       if (tag.id === ctx.state.params.get("tagSelected")) {
         inlineKeyboardArray.push([{text: `✅ ${tag.name}`, callback_data: `c/${catalog.id}?t=${tag.id}&o=${objectId}`}]);
       } else {
-        inlineKeyboardArray.push([{text: `📌 ${tag.name}`, callback_data: `c/${catalog.id}?t=${tag.id}&o=${objectId}`}]);
+        inlineKeyboardArray.push([{text: `🎚 ${tag.name}`, callback_data: `c/${catalog.id}?t=${tag.id}&o=${objectId}`}]);
       }
     }
     const object = await store.findRecord(`objects/${objectId}`);
@@ -949,7 +949,7 @@ catalogsActions.push( async (ctx, next) => {
     await ctx.editMessageMedia({
       type: "photo",
       media,
-      caption: `<b>${object.name} > Фильтр</b>`,
+      caption: `<b>${object.name} > ${ctx.i18n.btn.filter()}</b>`,
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: inlineKeyboardArray,

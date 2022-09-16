@@ -32,8 +32,7 @@ bot.use(async (ctx, next) => {
   ctx.state.sessionMsg = {
     url,
     linkHTML() {
-      return `<a href="${this.url.href}">${this.url.href}</a>`;
-      // return `<a href="${this.url.href}">\u200c</a>`;
+      return `<a href="${this.url.href}">\u200c</a>`;
     },
   };
   return next();
@@ -64,25 +63,6 @@ bot.command("search", async (ctx) => {
 bot.command("mono", async (ctx) => {
   await monoHandler(ctx);
 });
-// edited message for search
-// bot.on("edited_message", async (ctx) => {
-//   if (ctx.state.sessionMsg.url.searchParams.has("search")) {
-//     await searchHandle(ctx, ctx.editedMessage.text);
-//     return;
-//   }
-//   if (ctx.state.sessionMsg.url.searchParams.get("scene") === "wizardOrder") {
-//     const cursor = ctx.state.sessionMsg.url.searchParams.get("cursor");
-//     // await cartWizard[sessionFire.cursor](ctx);
-//     await cartWizard[cursor](ctx, ctx.editedMessage.text);
-//     return;
-//   }
-//   if (ctx.state.sessionMsg.url.searchParams.get("scene") === "editOrder") {
-//     const cursor = ctx.state.sessionMsg.url.searchParams.get("cursor");
-//     await orderWizard[cursor](ctx, ctx.editedMessage.text);
-//     return;
-//   }
-//   await ctx.reply("Commands /objects /search");
-// });
 // share phone number
 bot.on("contact", async (ctx) => {
   if (ctx.state.sessionMsg.url.searchParams.get("scene") === "wizardOrder") {
@@ -176,10 +156,7 @@ const runtimeOpts = {
   timeoutSeconds: 540,
   memory: "1GB",
 };
-// Enable graceful stop
-// process.once("SIGINT", () => bot.stop("SIGINT"));
-// process.once("SIGTERM", () => bot.stop("SIGTERM"));
-// use warsaw region("europe-central2")
+// run bot in Warsaw
 exports.handle = functions.region("europe-central2").
     runWith(runtimeOpts).https.onRequest(async (req, res) => {
       try {

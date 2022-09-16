@@ -8,13 +8,14 @@ const i18n = new TelegrafI18n({
 // admin midleware
 const isAdmin = (ctx, next) => {
   ctx.state.isAdmin = ctx.from.id === 94899148;
+  process.env.BOT_LANG = "uk";
   ctx.i18n = i18n.createContext(process.env.BOT_LANG).repository[process.env.BOT_LANG];
   return next();
 };
 
 // parse callback data, add Cart instance
 const parseUrl = (ctx, next) => {
-  if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
+  if (ctx.callbackQuery) {
     ctx.state.routeName = ctx.match[1];
     ctx.state.param = ctx.match[2];
     const args = ctx.match[3];
@@ -45,7 +46,7 @@ const startHandler = async (ctx) => {
     if (objectType === "p") {
       const product = await store.findRecord(`objects/${objectId}/products/${objectTypeId}`);
       if (object && product) {
-        inlineKeyboardArray.push([{text: `📦 ${product.name} (${product.id})`,
+        inlineKeyboardArray.push([{text: `🚲 ${product.name} (${product.id})`,
           callback_data: `p/${product.id}?o=${objectId}`}]);
       }
     }
@@ -59,7 +60,7 @@ const startHandler = async (ctx) => {
     }
     if (object) {
       caption = `<b>${object.name}\n` +
-          `Контакты: ${object.phoneArray.join()}\n` +
+          `Контакты: ${object.phoneArray.join("📞 ")}\n` +
           `Адрес: ${object.address}\n` +
           `Описание: ${object.description}</b>`;
       // default button
@@ -95,7 +96,7 @@ const startHandler = async (ctx) => {
     const projectImg = await photoCheckUrl();
     await ctx.replyWithPhoto(projectImg,
         {
-          caption: `<b>${ctx.i18n.start.chooseWarehouse()}\n${ctx.i18n.phones.map((value) => value()).join("\n")}</b>`,
+          caption: `<b>${ctx.i18n.start.chooseWarehouse()}\n${ctx.i18n.phones.map((value) => `📞 ${value()}`).join("\n")}</b>`,
           parse_mode: "html",
           reply_markup: {
             inline_keyboard: inlineKeyboardArray,
@@ -107,7 +108,7 @@ const startHandler = async (ctx) => {
 startActions.push(async (ctx, next) => {
   if (ctx.state.routeName === "objects") {
     const objectId = ctx.state.param;
-    let caption = `<b>${ctx.i18n.start.chooseWarehouse()}\n${ctx.i18n.phones.map((value) => value()).join("\n")}</b>`;
+    let caption = `<b>${ctx.i18n.start.chooseWarehouse()}\n${ctx.i18n.phones.map((value) => `📞 ${value()}`).join("\n")}</b>`;
     const inlineKeyboardArray = [];
     let imgUrl = null;
     if (objectId) {
