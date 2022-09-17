@@ -88,6 +88,10 @@ const startHandler = async (ctx) => {
     });
     inlineKeyboardArray.push([{text: ctx.i18n.btn.orders(), callback_data: `myO/${ctx.from.id}`}]);
     inlineKeyboardArray.push([{text: ctx.i18n.btn.search(), callback_data: "search"}]);
+    if (ctx.state.isAdmin) {
+      inlineKeyboardArray.push([{text: "📝 Включить Режим редактирования",
+        callback_data: "editMode/1"}]);
+    }
     inlineKeyboardArray.push([{text: ctx.i18n.btn.login(), login_url: {
       url: `${process.env.BOT_SITE}/login`,
       request_write_access: true,
@@ -104,65 +108,95 @@ const startHandler = async (ctx) => {
         });
   }
 };
-// show objects
+// enable edit mode
 startActions.push(async (ctx, next) => {
-  if (ctx.state.routeName === "objects") {
-    const objectId = ctx.state.param;
-    let caption = `<b>${ctx.i18n.start.chooseWarehouse()}\n${ctx.i18n.phones.map((value) => `📞 ${value()}`).join("\n")}</b>`;
-    const inlineKeyboardArray = [];
-    let imgUrl = null;
-    if (objectId) {
-      // get data obj
-      const object = await store.findRecord(`objects/${objectId}`);
-      caption = `<b>${object.name}\n` +
-        `${object.phoneArray.join()}\n` +
-        `${object.address}\n` +
-        `${object.description}</b>\n`;
-      const cartButtons = await cart.cartButtons(objectId, ctx);
-      inlineKeyboardArray.push([{text: "📁 Каталог", callback_data: `c?o=${object.id}`}]);
-      inlineKeyboardArray.push([cartButtons[1]]);
-      if (ctx.state.isAdmin) {
-        inlineKeyboardArray.push([{text: `🧾 Заказы ${object.name}`, callback_data: `orders?o=${object.id}`}]);
-        inlineKeyboardArray.push([{text: "Обновить данные", callback_data: `upload/${object.id}?todo=updateObject`}]);
-        inlineKeyboardArray.push([{text: "Загрузить товары",
+  if (ctx.state.routeName === "editMode") {
+    const enable = ctx.state.param;
+    if (enable) {
+      // uUrl += "&u=1";
+      ctx.state.sessionMsg.url.searchParams.set("editMode", true);
+      await ctx.answerCbQuery("Edit Mode Enable");
+    } else {
+      ctx.state.sessionMsg.url.searchParams.delete("editMode");
+      await ctx.answerCbQuery("Edit Mode disable");
+    }
+    await showObjects(ctx);
+  } else {
+    return next();
+  }
+});
+// show objects
+const showObjects = async (ctx, objectId) => {
+  let caption = `<b>${ctx.i18n.start.chooseWarehouse()}\n${ctx.i18n.phones.map((value) => `📞 ${value()}`).join("\n")}</b>`;
+  const inlineKeyboardArray = [];
+  let imgUrl = null;
+  if (objectId) {
+    // get data obj
+    const object = await store.findRecord(`objects/${objectId}`);
+    caption = `<b>${object.name}\n` +
+      `${object.phoneArray.join()}\n` +
+      `${object.address}\n` +
+      `${object.description}</b>\n`;
+    const cartButtons = await cart.cartButtons(objectId, ctx);
+    inlineKeyboardArray.push([{text: "📁 Каталог", callback_data: `c?o=${object.id}`}]);
+    inlineKeyboardArray.push([cartButtons[1]]);
+    if (ctx.state.isAdmin) {
+      inlineKeyboardArray.push([{text: "💰 Заказы", callback_data: `orders?o=${object.id}`}]);
+      if (ctx.state.sessionMsg.url.searchParams.get("editMode")) {
+        inlineKeyboardArray.push([{text: "🔄 Обновить данные", callback_data: `upload/${object.id}?todo=updateObject`}]);
+        inlineKeyboardArray.push([{text: "🚲 Загрузить товары",
           callback_data: `upload/${object.id}?todo=uploadProducts`}]);
-        inlineKeyboardArray.push([{text: "📸 Загрузить фото каталогов",
-          callback_data: `c?o=${object.id}&u=1`}]);
         inlineKeyboardArray.push([{text: "📸 Загрузить фото объекта",
           callback_data: `uploadPhotoObj/${object.id}`}]);
         caption += `<b>Курсы валют: USD = ${object.currencies.USD}${process.env.BOT_CURRENCY}, ` +
         `EUR = ${object.currencies.EUR}${process.env.BOT_CURRENCY}</b>\n`;
       }
-      inlineKeyboardArray.push([{text: ctx.i18n.btn.main(), callback_data: "objects"}]);
-      // set logo obj
-      if (object.photoId) {
-        imgUrl = `photos/o/${objectId}/logo/${object.photoId}/2.jpg`;
-      }
-    } else {
-      // show all objects
-      const objects = await store.findAll("objects");
-      objects.forEach((object) => {
-        inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
-      });
-      inlineKeyboardArray.push([{text: ctx.i18n.btn.orders(), callback_data: `myO/${ctx.from.id}`}]);
-      inlineKeyboardArray.push([{text: ctx.i18n.btn.search(), callback_data: "search"}]);
-      inlineKeyboardArray.push([{text: ctx.i18n.btn.login(), login_url: {
-        url: `${process.env.BOT_SITE}/login`,
-        request_write_access: true,
-      }}]);
     }
-    // render data
-    const media = await photoCheckUrl(imgUrl);
-    await ctx.editMessageMedia({
-      type: "photo",
-      media,
-      caption,
-      parse_mode: "html",
-    }, {
-      reply_markup: {
-        inline_keyboard: inlineKeyboardArray,
-      },
+    inlineKeyboardArray.push([{text: ctx.i18n.btn.main(), callback_data: "objects"}]);
+    // set logo obj
+    if (object.photoId) {
+      imgUrl = `photos/o/${objectId}/logo/${object.photoId}/2.jpg`;
+    }
+  } else {
+    // show all objects
+    const objects = await store.findAll("objects");
+    objects.forEach((object) => {
+      inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `objects/${object.id}`}]);
     });
+    inlineKeyboardArray.push([{text: ctx.i18n.btn.orders(), callback_data: `myO/${ctx.from.id}`}]);
+    inlineKeyboardArray.push([{text: ctx.i18n.btn.search(), callback_data: "search"}]);
+    if (ctx.state.isAdmin) {
+      if (ctx.state.sessionMsg.url.searchParams.get("editMode")) {
+        inlineKeyboardArray.push([{text: "🔒 Отключить Режим редактирования",
+          callback_data: "editMode"}]);
+      } else {
+        inlineKeyboardArray.push([{text: "📝 Включить Режим редактирования",
+          callback_data: "editMode/1"}]);
+      }
+    }
+    inlineKeyboardArray.push([{text: ctx.i18n.btn.login(), login_url: {
+      url: `${process.env.BOT_SITE}/login`,
+      request_write_access: true,
+    }}]);
+  }
+  // render data
+  const media = await photoCheckUrl(imgUrl);
+  await ctx.editMessageMedia({
+    type: "photo",
+    media,
+    caption: `${caption} ` + ctx.state.sessionMsg.linkHTML(),
+    parse_mode: "html",
+  }, {
+    reply_markup: {
+      inline_keyboard: inlineKeyboardArray,
+    },
+  });
+};
+
+startActions.push(async (ctx, next) => {
+  if (ctx.state.routeName === "objects") {
+    const objectId = ctx.state.param;
+    await showObjects(ctx, objectId);
     await ctx.answerCbQuery();
   } else {
     return next();

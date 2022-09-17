@@ -13,17 +13,13 @@ const showCatalog = async (ctx, next) => {
     const tag = ctx.state.params.get("t");
     const startAfter = ctx.state.params.get("s");
     const endBefore = ctx.state.params.get("e");
-    const uploadPhotoCat = ctx.state.params.get("u");
     let publicImgUrl = null;
     const object = await store.findRecord(`objects/${objectId}`);
     if (object.photoId) {
       publicImgUrl = `photos/o/${objectId}/logo/${object.photoId}/2.jpg`;
     }
     // and show upload catalog photo
-    let uUrl = "";
-    if (uploadPhotoCat) {
-      uUrl += "&u=1";
-    }
+    // let uUrl = "";
     const inlineKeyboardArray =[];
     // ctx.session.pathCatalog = ctx.callbackQuery.data;
     // save to fire session
@@ -35,9 +31,9 @@ const showCatalog = async (ctx, next) => {
       currentCatalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
       // back button
       inlineKeyboardArray.push([{text: `⤴️ ../${currentCatalog.name}`,
-        callback_data: currentCatalog.parentId ? `c/${currentCatalog.parentId}?o=${objectId}${uUrl}` :
-        `c?o=${objectId}${uUrl}`}]);
-      if (ctx.state.isAdmin && uploadPhotoCat) {
+        callback_data: currentCatalog.parentId ? `c/${currentCatalog.parentId}?o=${objectId}` :
+        `c?o=${objectId}`}]);
+      if (ctx.state.isAdmin && ctx.state.sessionMsg.url.searchParams.get("editMode")) {
         inlineKeyboardArray.push([{text: `📸 Загрузить фото каталога ${currentCatalog.name}`,
           callback_data: `uploadPhotoCat/${currentCatalog.id}?o=${objectId}`}]);
       }
@@ -68,7 +64,7 @@ const showCatalog = async (ctx, next) => {
           .collection("catalogs")
           .where("parentId", "==", catalogId).orderBy("orderNumber").get();
       catalogsSnapshot.docs.forEach((doc) => {
-        inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}?o=${objectId}${uUrl}`}]);
+        inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}?o=${objectId}`}]);
       });
       // paginate goods, copy main query
       let query = mainQuery;
@@ -137,7 +133,7 @@ const showCatalog = async (ctx, next) => {
           .collection("catalogs")
           .where("parentId", "==", null).orderBy("orderNumber").get();
       catalogsSnapshot.docs.forEach((doc) => {
-        inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}?o=${objectId}${uUrl}`}]);
+        inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}?o=${objectId}`}]);
       });
     }
     // cart buttons
@@ -189,7 +185,7 @@ const showProduct = async (ctx, next) => {
       addButton.callback_data = `aC/${product.id}?qty=${cartProduct.qty}&a=1&o=${objectId}`;
     }
     inlineKeyboardArray.push([addButton]);
-    if (ctx.state.isAdmin) {
+    if (ctx.state.isAdmin && ctx.state.sessionMsg.url.searchParams.get("editMode")) {
       inlineKeyboardArray.push([{text: "📸 Загрузить фото",
         callback_data: `uploadPhotoProduct/${product.id}?o=${objectId}`}]);
     }
@@ -337,7 +333,7 @@ catalogsActions.push( async (ctx, next) => {
         publicImgUrl = `photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/2.jpg`;
       }
       const uploadPhotoButton =[];
-      if (ctx.state.isAdmin) {
+      if (ctx.state.isAdmin && ctx.state.sessionMsg.url.searchParams.get("editMode")) {
         uploadPhotoButton.push({text: "📸 Загрузить фото",
           callback_data: `uploadPhotoProduct/${product.id}?o=${objectId}`});
         uploadPhotoButton.push({text: "Загрузить в Merch",

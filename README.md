@@ -9,10 +9,12 @@ $ yarn pl
 # serve frontend
 $ yarn --cwd functions/ parcel-s
 
+# serve functions
+$ yarn s-f
 # serve functions, hosting
-$ yarn s
+$ yarn s-fh
 
-#generate sitemap file
+# generate sitemap file
 $ node functions/sites/rzk.com.ru/sitemap.js
 # build for production and launch server
 $ yarn --cwd functions/ parcel-b

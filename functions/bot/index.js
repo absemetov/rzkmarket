@@ -32,7 +32,8 @@ bot.use(async (ctx, next) => {
   ctx.state.sessionMsg = {
     url,
     linkHTML() {
-      return `<a href="${this.url.href}">\u200c</a>`;
+      // return `<a href="${this.url.href}">\u200c</a>`;
+      return `<a href="${this.url.href}">${this.url.href}</a>`;
     },
   };
   return next();
@@ -116,7 +117,7 @@ bot.on(["text", "edited_message"], async (ctx) => {
   }
   await ctx.reply("Commands /objects /search");
 });
-// upload photo
+// upload photos
 bot.on("photo", async (ctx) => {
   // const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");
   const scene = ctx.state.sessionMsg.url.searchParams.get("scene");
@@ -125,16 +126,24 @@ bot.on("photo", async (ctx) => {
   const catalogId = ctx.state.sessionMsg.url.searchParams.get("catalogId");
 
   if (scene === "uploadPhotoProduct") {
+    ctx.state.sessionMsg.url.searchParams.delete("scene");
+    ctx.state.sessionMsg.url.searchParams.delete("objectId");
+    ctx.state.sessionMsg.url.searchParams.delete("productId");
     await ctx.reply("uploadPhotoProduct start");
     await uploadPhotoProduct(ctx, objectId, productId);
     return;
   }
   if (scene === "uploadPhotoCat") {
+    ctx.state.sessionMsg.url.searchParams.delete("scene");
+    ctx.state.sessionMsg.url.searchParams.delete("objectId");
+    ctx.state.sessionMsg.url.searchParams.delete("catalogId");
     await ctx.reply("uploadPhotoCat start");
     await uploadPhotoCat(ctx, objectId, catalogId);
     return;
   }
   if (scene === "uploadPhotoObj") {
+    ctx.state.sessionMsg.url.searchParams.delete("scene");
+    ctx.state.sessionMsg.url.searchParams.delete("objectId");
     await ctx.reply("uploadPhotoObj start");
     await uploadPhotoObj(ctx, objectId);
     return;

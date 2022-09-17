@@ -281,13 +281,14 @@ const uploadPhotoObj = async (ctx, objectId) => {
       const url = await photoCheckUrl(`photos/o/${objectId}/logo/${photoId}/2.jpg`);
       await ctx.replyWithPhoto({url},
           {
-            caption: `${object.name} (${object.id}) photo uploaded`,
+            caption: `${object.name} (${object.id}) photo uploaded` + ctx.state.sessionMsg.linkHTML(),
             reply_markup: {
               inline_keyboard: [
                 [{text: "⤴️ Goto object",
                   callback_data: path}],
               ],
             },
+            parse_mode: "html",
           });
     } catch (e) {
       await ctx.reply(`Error upload photos ${e.message}`);
@@ -330,7 +331,7 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
       const media = await photoCheckUrl(`photos/o/${objectId}/p/${product.id}/${photoId}/2.jpg`);
       await ctx.replyWithPhoto(media,
           {
-            caption: `${product.name} (${product.id}) photo uploaded`,
+            caption: `${product.name} (${product.id}) photo uploaded` + ctx.state.sessionMsg.linkHTML(),
             reply_markup: {
               inline_keyboard: [
                 [{text: "📸 Upload photo", callback_data: `uploadPhotoProduct/${product.id}?o=${objectId}`}],
@@ -340,6 +341,7 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
                   callback_data: catalogUrl}],
               ],
             },
+            parse_mode: "html",
           });
     } catch (e) {
       await ctx.reply(`Error upload photos ${e.message}`);
@@ -371,13 +373,14 @@ const uploadPhotoCat = async (ctx, objectId, catalogId) => {
       const media = await photoCheckUrl(`photos/o/${objectId}/c/${catalog.id}/${photoId}/2.jpg`);
       await ctx.replyWithPhoto(media,
           {
-            caption: `${catalog.name} (${catalog.id}) photo uploaded`,
+            caption: `${catalog.name} (${catalog.id}) photo uploaded` + ctx.state.sessionMsg.linkHTML(),
             reply_markup: {
               inline_keyboard: [
                 [{text: "⤴️ Goto catalog",
                   callback_data: catalogUrl}],
               ],
             },
+            parse_mode: "html",
           });
     } catch (e) {
       await ctx.reply(`Error upload photos ${e.message}`);
