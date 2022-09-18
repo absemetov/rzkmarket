@@ -166,7 +166,7 @@ const runtimeOpts = {
   memory: "1GB",
 };
 // run bot in Warsaw
-exports.handle = functions.region("europe-central2").
+exports.botFunction = functions.region("europe-central2").
     runWith(runtimeOpts).https.onRequest(async (req, res) => {
       try {
         // launch local env

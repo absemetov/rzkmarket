@@ -3,13 +3,16 @@ const {initializeApp} = require("firebase-admin/app");
 // const functions = require("firebase-functions");
 // init firebase service
 initializeApp();
-const bot = require("./bot");
-const rzkComRu = require("./sites/rzk.com.ru");
+const {botFunction} = require("./bot");
+const {siteFunction} = require("./sites/rzk.com.ru");
+const {productsUploadFunction} = require("./bot/bot_upload_scene");
 
-exports.rzkComUa = rzkComRu.express;
-exports.rzkComRu = rzkComRu.express;
-exports.botUa = bot.handle;
-exports.botRu = bot.handle;
+exports.rzkComUa = siteFunction;
+exports.rzkComRu = siteFunction;
+exports.botUa = botFunction;
+exports.botRu = botFunction;
+exports.productsUploadUa = productsUploadFunction;
+exports.productsUploadRu = productsUploadFunction;
 exports.triggersUa = require("./triggers");
 exports.triggersRu = require("./triggers");
 // Create and Deploy Your First Cloud Functions

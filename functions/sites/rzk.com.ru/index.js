@@ -720,4 +720,4 @@ const runtimeOpts = {
   memory: "1GB",
 };
 
-exports.express = functions.runWith(runtimeOpts).https.onRequest(app);
+exports.siteFunction = functions.runWith(runtimeOpts).https.onRequest(app);

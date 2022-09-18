@@ -1,6 +1,5 @@
 const functions = require("firebase-functions");
-const {uploadProducts} = require("./bot/bot_upload_scene");
-const {store, photoCheckUrl, deletePhotoStorage} = require("./bot/bot_store_cart");
+const {photoCheckUrl, deletePhotoStorage} = require("./bot/bot_store_cart");
 const {Telegraf} = require("telegraf");
 const algoliasearch = require("algoliasearch");
 const bot = new Telegraf(process.env.BOT_TOKEN, {
@@ -230,44 +229,5 @@ exports.catalogDelete = functions.region("europe-central2").firestore
       //   prefix: `photos/o/${objectId}/c/${catalogId}`,
       // });
       await deletePhotoStorage(`photos/o/${objectId}/c/${catalogId}`);
-      return null;
-    });
-// upload products trigger
-const runtimeOpts = {
-  timeoutSeconds: 540,
-  memory: "1GB",
-};
-exports.productsUpload = functions.region("europe-central2")
-    .runWith(runtimeOpts).firestore
-    .document("objects/{objectId}")
-    .onUpdate(async (change, context) => {
-      const objectId = context.params.objectId;
-      // Retrieve the current and previous value
-      const data = change.after.data();
-      const previousData = change.before.data();
-
-      // We'll only update if the upload start has changed.
-      // This is crucial to prevent infinite loops.
-      if (data.uploadProductsStart == previousData.uploadProductsStart) {
-        return null;
-      }
-      // start uploading
-      const sessionFire = await store.findRecord("users/94899148", "session");
-      const timeSeconds = Math.floor(new Date() / 1000);
-      const uploading = sessionFire.uploading && (Math.floor(new Date() / 1000) - sessionFire.uploadStartAt) < 540;
-      if (!uploading) {
-        await store.createRecord("users/94899148", {"session": {"uploading": true, "uploadStartAt": timeSeconds}});
-        try {
-          await uploadProducts(bot.telegram, objectId, data.sheetId);
-        } catch (error) {
-          await store.createRecord("users/94899148", {"session": {"uploading": false}});
-          await bot.telegram.sendMessage(94899148, `Sheet ${error}`,
-              {parse_mode: "html"});
-        }
-        await store.createRecord("users/94899148", {"session": {"uploading": false}});
-      } else {
-        await bot.telegram.sendMessage(94899148, "<b>Products loading...</b>",
-            {parse_mode: "html"});
-      }
       return null;
     });
