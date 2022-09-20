@@ -1,5 +1,6 @@
 const sitemap = require("algolia-sitemap");
-require("dotenv").config({path: "./functions/.env.ua"});
+// get current param
+require("dotenv").config({path: `./functions/.env.${process.argv[2]}`});
 // You need an API key with `browse` permission
 const algoliaConfig = {
   appId: process.env.ALGOLIA_ID,

@@ -17,7 +17,8 @@
     "pl": "firebase use",
     "s-fh": "firebase emulators:start --only functions,hosting",
     "s-f": "firebase emulators:start --only functions",
-    "sitemap": "node functions/sites/rzk.com.ru/sitemap.js"
+    "sitemap-ua": "node functions/sites/rzk.com.ru/sitemap.js ua",
+    "sitemap-ru": "node functions/sites/rzk.com.ru/sitemap.js ru"
   },
   "dependencies": {},
   "devDependencies": {}
