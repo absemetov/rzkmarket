@@ -78,11 +78,6 @@ exports.productCreate = functions.region("europe-central2").firestore
       if (product.tagsNames) {
         productAlgolia.subCategory = product.tagsNames.map((item) => item.name);
       }
-      // add default photo
-      // for (const zoom of [1, 2]) {
-      //   const imgUrl = await photoCheckUrl();
-      //   productAlgolia[`img${zoom}`] = imgUrl;
-      // }
       // create HierarchicalMenu
       const groupString = product.catalogsNamePath.split("#");
       const helpArray = [];
@@ -94,9 +89,11 @@ exports.productCreate = functions.region("europe-central2").firestore
       // const productAlgoliaHierarchicalMenu = Object.assign(productAlgolia, objProp);
       await productsIndex.saveObject(productAlgolia);
       // return a promise of a set operation to update the count
-      return snap.ref.set({
-        createdAt: product.updatedAt,
-      }, {merge: true});
+      //  delete this code!!! if this set trigger update run!!!
+      // return snap.ref.set({
+      //   createdAt: product.updatedAt,
+      // }, {merge: true});
+      return null;
     });
 // update product data
 exports.productUpdate = functions.region("europe-central2").firestore
@@ -174,17 +171,13 @@ exports.catalogCreate = functions.region("europe-central2").firestore
         orderNumber: catalog.orderNumber,
         hierarchicalUrl: catalog.hierarchicalUrl,
       };
-      // add default photo
-      // for (const zoom of [1, 2]) {
-      //   const imgUrl = await photoCheckUrl();
-      //   catalogAlgolia[`img${zoom}`] = imgUrl;
-      // }
       // add data to Algolia
       await catalogsIndex.saveObject(catalogAlgolia);
       // add created value
-      return snap.ref.set({
-        createdAt: catalog.updatedAt,
-      }, {merge: true});
+      // return snap.ref.set({
+      //   createdAt: catalog.updatedAt,
+      // }, {merge: true});
+      return null;
     });
 // update catalog event
 exports.catalogUpdate = functions.region("europe-central2").firestore
