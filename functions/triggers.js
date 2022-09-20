@@ -30,10 +30,10 @@ exports.notifyNewOrder = functions.region("europe-central2").firestore
       // admin notify
       await bot.telegram.sendMessage(94899148, "<b>New order from " +
       `<a href="tg://user?id=${order.userId}">${order.lastName} ${order.firstName}</a>\n` +
-      `Object ${order.objectName} from ${order.fromBot ? "BOT" : "SITE"}\n` +
+      `Object ${order.objectName}\n` +
       `Order ${order.userId}-${order.orderNumber}\n` +
       `<a href="${process.env.BOT_SITE}/o/${order.objectId}/s/${orderId}">` +
-      `${process.env.BOT_SITE}/o/${order.objectId}/s/${orderId}</a></b>`, {parse_mode: "html"});
+      `${process.env.BOT_SITE}/o/${order.objectId}/s/${orderId}</a>\nfrom ${order.fromBot ? "BOT" : "SITE"}</b>`, {parse_mode: "html"});
       return null;
     });
 

@@ -162,7 +162,6 @@ bot.catch((error) => {
 
 // memory value 128MB 256MB 512MB 1GB 2GB 4GB 8GB
 const runtimeOpts = {
-  timeoutSeconds: 540,
   memory: "1GB",
 };
 // run bot in Warsaw

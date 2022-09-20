@@ -290,9 +290,6 @@ const createObject = async (ctx, next) => {
     try {
       // upload goods
       if (todo === "uploadProducts") {
-        // await uploadProducts(ctx, object.id, sheetId);
-        // await ctx.replyWithHTML(`Товары загружены ${object.name}, удачных продаж!\n`);
-        // the current timestamp
         const uploading = uploads && uploads.uploadProductsStart && (Math.floor(new Date() / 1000) - uploads.uploadProductsStart) < 540;
         if (!uploading) {
           await ctx.replyWithHTML(`Начинаем загрузку товаров ${object.name}\n`);
@@ -489,42 +486,16 @@ exports.productsUploadFunction = functions.region("europe-central2")
     .document("objects/{objectId}/uploads/start")
     .onCreate(async (snap, context) => {
       const objectId = context.params.objectId;
-      // const uploadProductsStart = context.params.uploadProductsStart;
       const uploads = snap.data();
-      // Retrieve the current and previous value
-      // const data = change.after.data();
-      // const previousData = change.before.data();
-
-      // We'll only update if the upload start has changed.
-      // This is crucial to prevent infinite loops.
-      // if (data.uploadProductsStart == previousData.uploadProductsStart) {
-      //   return null;
-      // }
-      // start uploading
-      // const sessionFire = await store.findRecord("users/94899148", "session");
-      // const timeSeconds = Math.floor(new Date() / 1000);
-      // const uploading = sessionFire && sessionFire.uploading && (Math.floor(new Date() / 1000) - sessionFire.uploadStartAt) < 540;
-      // if (!uploading) {
-      // await store.createRecord("users/94899148", {"session": {"uploading": true, "uploadStartAt": timeSeconds}});
       try {
         await uploadProducts(bot.telegram, objectId, uploads.sheetId);
       } catch (error) {
-        // await store.createRecord("users/94899148", {"session": {"uploading": false}});
-        // await store.deleteRecord(`objects/${objectId}/uploads/${sheetId}`, "uploadProductsStart");
         await snap.ref.delete();
         await bot.telegram.sendMessage(94899148, `Sheet ${error}`,
             {parse_mode: "html"});
       }
-      // await store.createRecord("users/94899148", {"session": {"uploading": false}});
-      // await store.deleteRecord(`objects/${objectId}/uploads/${sheetId}`, "uploadProductsStart");
       await snap.ref.delete();
-      // } else {
-      //   await bot.telegram.sendMessage(94899148, "<b>Products loading...</b>",
-      //       {parse_mode: "html"});
-      // }
       return null;
     });
 exports.uploadForm = uploadForm;
 exports.uploadActions = uploadActions;
-// exports.uploadProducts = uploadProducts;
-// exports.deleteProducts = deleteProducts;
