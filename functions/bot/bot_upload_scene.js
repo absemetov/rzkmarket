@@ -67,12 +67,15 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
           let id = null;
           let parentId = null;
           let name = catalogName.trim();
-          // set parentId
+          let parentName = null;
+          // set parentId and parentName
           if (index !== 0) {
             const parentCatalog = groupArrayOrigin[index - 1].trim();
+            parentName = parentCatalog;
             // Parent exist
             const url = parentCatalog.match(/(.+)\[([[a-zA-Z0-9-_]+)\]$/);
             if (url) {
+              parentName = url[1].trim();
               parentId = url[2].trim();
             } else {
               parentId = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(parentCatalog, "-")).toLowerCase();
@@ -90,6 +93,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
             id,
             name,
             parentId,
+            parentName,
           };
         }) : [];
         // generate tags array
@@ -172,6 +176,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
               batchCatalogs.set(catalogRef, {
                 "name": catalog.name,
                 "parentId": catalog.parentId,
+                "parentName": catalog.parentName,
                 "orderNumber": catalogsIsSet.size,
                 "updatedAt": updatedAtTimestamp,
                 "tags": firestore.FieldValue.delete(),

@@ -43,15 +43,21 @@ exports.notifyNewCart = functions.region("europe-central2").firestore
     .onCreate(async (snap, context) => {
       const objectId = context.params.objectId;
       const cartId = context.params.cartId;
-      // admin notify
-      await bot.telegram.sendMessage(94899148, "<b>New cart! " +
-      `<a href="${process.env.BOT_SITE}/o/${objectId}/share-cart/${cartId}">` +
-      `${process.env.BOT_SITE}/o/${objectId}/share-cart/${cartId}</a></b>`,
+      let user;
+      if (!isNaN(cartId)) {
+        user = `<a href="tg://user?id=${cartId}">${cartId}</a>`;
+      } else {
+        user = "anonim";
+      }
+      await bot.telegram.sendMessage(94899148, `<b>New cart from ${user}\n` +
+        `<a href="${process.env.BOT_SITE}/o/${objectId}/share-cart/${cartId}">` +
+        `${process.env.BOT_SITE}/o/${objectId}/share-cart/${cartId}</a></b>`,
       {parse_mode: "html"});
-      const cart = snap.data();
-      return snap.ref.set({
-        createdAt: cart.updatedAt,
-      }, {merge: true});
+      // const cart = snap.data();
+      // return snap.ref.set({
+      //   createdAt: cart.updatedAt,
+      // }, {merge: true});
+      return null;
     });
 
 // add createdAt field to Products

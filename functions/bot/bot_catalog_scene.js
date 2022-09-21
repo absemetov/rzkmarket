@@ -30,7 +30,7 @@ const showCatalog = async (ctx, next) => {
     if (catalogId) {
       currentCatalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
       // back button
-      inlineKeyboardArray.push([{text: `⤴️ ../${currentCatalog.name}`,
+      inlineKeyboardArray.push([{text: `⤴️ ${currentCatalog.parentName ? currentCatalog.parentName : "Каталог" }`,
         callback_data: currentCatalog.parentId ? `c/${currentCatalog.parentId}?o=${objectId}` :
         `c?o=${objectId}`}]);
       if (ctx.state.isAdmin && ctx.state.sessionMsg.url.searchParams.get("editMode")) {
@@ -127,7 +127,7 @@ const showCatalog = async (ctx, next) => {
       }
     } else {
       // back button
-      inlineKeyboardArray.push([{text: `⤴️ ../${object.name}`, callback_data: `objects/${objectId}`}]);
+      // inlineKeyboardArray.push([{text: `⤴️ ../${object.name}`, callback_data: `objects/${objectId}`}]);
       // show catalog siblings, get catalogs snap index or siblings
       const catalogsSnapshot = await firebase.firestore().collection("objects").doc(objectId)
           .collection("catalogs")
@@ -173,7 +173,7 @@ const showProduct = async (ctx, next) => {
       catalogUrl = sessionPathCatalog;
     }
     const inlineKeyboardArray = [];
-    inlineKeyboardArray.push([{text: `⤴️ ../${product.catalog.name}`, callback_data: catalogUrl}]);
+    inlineKeyboardArray.push([{text: `⤴️ ${product.catalog.name}`, callback_data: catalogUrl}]);
     // default add button
     const addButton = {text: ctx.i18n.btn.buy(), callback_data: `aC/${product.id}?o=${objectId}`};
     // get cart products
@@ -355,7 +355,7 @@ catalogsActions.push( async (ctx, next) => {
         parse_mode: "html",
       }, {reply_markup: {
         inline_keyboard: [
-          [{text: `⤴️ ../${product.catalog.name}`, callback_data: catalogUrl}],
+          [{text: `⤴️ ${product.catalog.name}`, callback_data: catalogUrl}],
           [
             {text: "7", callback_data: `aC/${product.id}?number=7${qtyUrl}${paramsUrl}&o=${objectId}`},
             {text: "8", callback_data: `aC/${product.id}?number=8${qtyUrl}${paramsUrl}&o=${objectId}`},
@@ -927,7 +927,7 @@ catalogsActions.push( async (ctx, next) => {
     if (sessionPathCatalog) {
       catalogUrl = sessionPathCatalog;
     }
-    inlineKeyboardArray.push([{text: `⤴️ ../${catalog.name}`,
+    inlineKeyboardArray.push([{text: `⤴️ ${catalog.name}`,
       callback_data: catalogUrl}]);
     for (const tag of catalog.tags) {
       if (tag.id === ctx.state.params.get("tagSelected")) {

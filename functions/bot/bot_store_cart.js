@@ -204,7 +204,11 @@ const cart = {
     return store.sort(cartProducts);
   },
   async clear(objectId, userId) {
-    await store.createRecord(`objects/${objectId}/carts/${userId}`, {"products": firestore.FieldValue.delete()});
+    if (parseInt(userId) === 94899148) {
+      await store.createRecord(`objects/${objectId}/carts/${userId}`, {"products": firestore.FieldValue.delete()});
+    } else {
+      await store.getQuery(`objects/${objectId}/carts/${userId}`).delete();
+    }
   },
   async createOrder(ctx, wizardData) {
     const userId = ctx.from.id;
