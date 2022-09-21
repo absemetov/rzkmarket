@@ -299,7 +299,10 @@ const createObject = async (ctx, next) => {
         if (!uploading) {
           await ctx.replyWithHTML(`Начинаем загрузку товаров ${object.name}\n`);
           const uploadProductsStart = Math.floor(Date.now() / 1000);
-          // run trigger event
+          // run trigger event, delete doc if it exist
+          if (uploads) {
+            await store.getQuery(`objects/${objectId}/uploads/start`).delete();
+          }
           await store.createRecord(`objects/${objectId}/uploads/start`, {
             uploadProductsStart,
             sheetId: object.sheetId,
