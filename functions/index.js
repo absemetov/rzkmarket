@@ -7,13 +7,13 @@ const {siteFunction} = require("./sites/rzk.com.ru");
 const {botFunction} = require("./bot");
 const {productsUploadFunction} = require("./bot/bot_upload_scene");
 
-exports.site = siteFunction;
+// exports.site = siteFunction;
 // exports.rzkComRu = siteFunction;
 exports.bot = botFunction;
 // exports.botRu = botFunction;
 exports.productsUpload = productsUploadFunction;
 // exports.productsUploadRu = productsUploadFunction;
-exports.triggers = require("./triggers");
+// exports.triggers = require("./triggers");
 // exports.triggersRu = require("./triggers");
 // Create and Deploy Your First Cloud Functions
 // https://firebase.google.com/docs/functions/write-firebase-functions

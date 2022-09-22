@@ -85,11 +85,11 @@ exports.productCreate = functions.region("europe-central2").firestore
         productAlgolia.subCategory = product.tagsNames.map((item) => item.name);
       }
       // create HierarchicalMenu
-      const groupString = product.catalogsNamePath.split("#");
+      // const groupString = product.catalogsNamePath.split("#");
       const helpArray = [];
       // add first object name
-      groupString.forEach((item, index) => {
-        helpArray.push(item);
+      product.pathArray.map((catalog) => catalog.name).forEach((catalogName, index) => {
+        helpArray.push(catalogName);
         productAlgolia[`categories.lvl${index}`] = helpArray.join(" > ");
       });
       // const productAlgoliaHierarchicalMenu = Object.assign(productAlgolia, objProp);
@@ -139,10 +139,10 @@ exports.productUpdate = functions.region("europe-central2").firestore
         }
       }
       // create HierarchicalMenu
-      const groupString = product.catalogsNamePath.split("#");
+      // const groupString = product.catalogsNamePath.split("#");
       const helpArray = [];
-      groupString.forEach((item, index) => {
-        helpArray.push(item);
+      product.pathArray.map((catalog) => catalog.name).forEach((catalogName, index) => {
+        helpArray.push(catalogName);
         productAlgolia[`categories.lvl${index}`] = helpArray.join(" > ");
       });
       // const productAlgoliaHierarchicalMenu = Object.assign(productAlgolia, objProp);
@@ -175,7 +175,8 @@ exports.catalogCreate = functions.region("europe-central2").firestore
         objectID: catalogId,
         name: catalog.name,
         orderNumber: catalog.orderNumber,
-        hierarchicalUrl: catalog.hierarchicalUrl,
+        // hierarchicalUrl: catalog.hierarchicalUrl,
+        hierarchicalUrl: catalog.pathArray.map((catalog) => catalog.name).join(" > "),
       };
       // add data to Algolia
       await catalogsIndex.saveObject(catalogAlgolia);
@@ -196,7 +197,7 @@ exports.catalogUpdate = functions.region("europe-central2").firestore
         objectID: catalogId,
         name: catalog.name,
         orderNumber: catalog.orderNumber,
-        hierarchicalUrl: catalog.hierarchicalUrl,
+        hierarchicalUrl: catalog.pathArray.map((catalog) => catalog.name).join(" > "),
       };
       // add photos if changed
       if (catalog.photoId) {
