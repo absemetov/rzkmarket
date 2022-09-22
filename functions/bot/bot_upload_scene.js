@@ -63,6 +63,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
       // check if this products have ID and NAME
       if (row.ID && row.NAME) {
         // generate catalogs array
+        const pathArrayHelper = [];
         const groupArray = row.GROUP ? row.GROUP.split("#").map((catalogName, index, groupArrayOrigin) => {
           let id = null;
           // let parentId = null;
@@ -89,9 +90,11 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
           } else {
             id = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name, "-")).toLowerCase();
           }
+          pathArrayHelper.push(id);
           return {
             id,
             name,
+            url: pathArrayHelper.join("/"),
             // parentId,
             // parentName,
           };
@@ -157,7 +160,9 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
             "orderNumber": productIsSet.size,
             // "catalog": groupArray[groupArray.length - 1],
             // "catalogsNamePath": groupArray.map((item) => item.name).join("#"),
-            "pathArray": groupArray,
+            "pathArray": groupArray.map((catalog) => {
+              return {name: catalog.name, url: catalog.url};
+            }),
             "path": groupArray.map((catalog) => catalog.id).join("/"),
             "tags": tags.length ? tags.map((tag) => tag.id) : firestore.FieldValue.delete(),
             "tagsNames": tags.length ? tags : firestore.FieldValue.delete(),
@@ -167,17 +172,21 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
           }, {merge: true});
           // save catalogs to batch
           const pathArray = [];
+          const catUrlArray = [];
           for (const catalog of groupArray) {
             // helper url for algolia
             // helpArray.push(catalog.name);
-            pathArray.push(catalog);
+            pathArray.push(catalog.id);
+            catUrlArray.push({
+              name: catalog.name,
+              url: pathArray.join("/"),
+            });
             // check if catalog added to batch
             if (!catalogsIsSet.has(pathArray.map((catalog) => catalog.id).join("/"))) {
               // catalogsIsSet.set(catalog.id, {parentId: catalog.parentId});
               catalogsIsSet.set(pathArray.map((catalog) => catalog.id).join("/"));
               const catalogRef = firebase.firestore().collection("objects").doc(objectId)
                   .collection("catalogs").doc(catalog.id);
-              console.log(pathArray);
               batchCatalogs.set(catalogRef, {
                 "name": catalog.name,
                 // "parentId": catalog.parentId,
@@ -186,8 +195,8 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
                 "updatedAt": updatedAtTimestamp,
                 "tags": firestore.FieldValue.delete(),
                 // "hierarchicalUrl": pathArray.join(" > "),
-                "pathArray": [...pathArray],
-                "path": pathArray.map((catalog) => catalog.id).join("/"),
+                "pathArray": [...catUrlArray],
+                "path": pathArray.join("/"),
                 "main": pathArray.length == 1 ? true : firestore.FieldValue.delete(),
               }, {merge: true});
               // if 500 items commit

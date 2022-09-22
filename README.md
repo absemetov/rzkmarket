@@ -11,7 +11,9 @@ $ yarn --cwd functions/ parcel-s
 
 # serve functions
 $ yarn s-f
-# serve functions, hosting
+# serve functions and firestore
+$ yarn s-ff
+# serve functions and hosting
 $ yarn s-fh
 
 # generate sitemap file

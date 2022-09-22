@@ -15,8 +15,9 @@
     "deploy-triggers-dev":"firebase deploy --project=dev --only functions:triggers,functions:productsUpload",
     "deploy-bot-dev":"firebase deploy --project=dev --only functions:bot",
     "pl": "firebase use",
-    "s-fh": "firebase emulators:start --only functions,hosting",
     "s-f": "firebase emulators:start --only functions",
+    "s-ff": "firebase emulators:start --only functions,firestore",
+    "s-fh": "firebase emulators:start --only functions,hosting",
     "sitemap-ua": "node functions/sites/rzk.com.ru/sitemap.js ua",
     "sitemap-ru": "node functions/sites/rzk.com.ru/sitemap.js ru"
   },
