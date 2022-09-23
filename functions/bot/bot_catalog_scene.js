@@ -62,7 +62,7 @@ const showCatalog = async (ctx, next) => {
       // show catalog siblings, get catalogs snap index or siblings
       const catalogsSnapshot = await firebase.firestore().collection("objects").doc(objectId)
           .collection("catalogs")
-          .where("parentId", "==", catalogId).orderBy("orderNumber").get();
+          .where("path", "==", `${currentCatalog.path ? currentCatalog.path + "/" }${currentCatalog.id}`).orderBy("orderNumber").get();
       catalogsSnapshot.docs.forEach((doc) => {
         inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}?o=${objectId}`}]);
       });
@@ -131,7 +131,7 @@ const showCatalog = async (ctx, next) => {
       // show catalog siblings, get catalogs snap index or siblings
       const catalogsSnapshot = await firebase.firestore().collection("objects").doc(objectId)
           .collection("catalogs")
-          .where("parentId", "==", null).orderBy("orderNumber").get();
+          .where("path", "==", null).orderBy("orderNumber").get();
       catalogsSnapshot.docs.forEach((doc) => {
         inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}?o=${objectId}`}]);
       });

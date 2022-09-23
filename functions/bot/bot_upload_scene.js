@@ -66,22 +66,22 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
         const pathArrayHelper = [];
         const groupArray = row.GROUP ? row.GROUP.split("#").map((catalogName, index, groupArrayOrigin) => {
           let id = null;
-          // let parentId = null;
+          let parentId = null;
           let name = catalogName.trim();
           // let parentName = null;
           // set parentId and parentName
-          // if (index !== 0) {
-          //   const parentCatalog = groupArrayOrigin[index - 1].trim();
-          //   parentName = parentCatalog;
-          //   // Parent exist
-          //   const url = parentCatalog.match(/(.+)\[([[a-zA-Z0-9-_]+)\]$/);
-          //   if (url) {
-          //     parentName = url[1].trim();
-          //     parentId = url[2].trim();
-          //   } else {
-          //     parentId = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(parentCatalog, "-")).toLowerCase();
-          //   }
-          // }
+          if (index !== 0) {
+            const parentCatalog = groupArrayOrigin[index - 1].trim();
+            // parentName = parentCatalog;
+            // Parent exist
+            const url = parentCatalog.match(/(.+)\[([[a-zA-Z0-9-_]+)\]$/);
+            if (url) {
+              // parentName = url[1].trim();
+              parentId = url[2].trim();
+            } else {
+              parentId = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(parentCatalog, "-")).toLowerCase();
+            }
+          }
           const url = catalogName.match(/(.+)\[([[a-zA-Z0-9-_]+)\]$/);
           // url exist
           if (url) {
@@ -95,7 +95,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
             id,
             name,
             url: pathArrayHelper.join("/"),
-            // parentId,
+            parentId,
             // parentName,
           };
         }) : [];
@@ -176,15 +176,10 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
           for (const catalog of groupArray) {
             // helper url for algolia
             // helpArray.push(catalog.name);
-            pathArray.push(catalog.id);
-            catUrlArray.push({
-              name: catalog.name,
-              url: pathArray.join("/"),
-            });
             // check if catalog added to batch
-            if (!catalogsIsSet.has(pathArray.map((catalog) => catalog.id).join("/"))) {
-              // catalogsIsSet.set(catalog.id, {parentId: catalog.parentId});
-              catalogsIsSet.set(pathArray.map((catalog) => catalog.id).join("/"));
+            if (!catalogsIsSet.has(catalog.id)) {
+              catalogsIsSet.set(catalog.id, {parentId: catalog.parentId});
+              // catalogsIsSet.set(pathArray.join("-"));
               const catalogRef = firebase.firestore().collection("objects").doc(objectId)
                   .collection("catalogs").doc(catalog.id);
               batchCatalogs.set(catalogRef, {
@@ -196,9 +191,14 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
                 "tags": firestore.FieldValue.delete(),
                 // "hierarchicalUrl": pathArray.join(" > "),
                 "pathArray": [...catUrlArray],
-                "path": pathArray.join("/"),
-                "main": pathArray.length == 1 ? true : firestore.FieldValue.delete(),
+                "path": pathArray.length ? pathArray.join("/") : null,
               }, {merge: true});
+              // helper arrays
+              pathArray.push(catalog.id);
+              catUrlArray.push({
+                name: catalog.name,
+                url: pathArray.join("/"),
+              });
               // if 500 items commit
               if (++batchCatalogsCount === perPage) {
                 await batchCatalogs.commit();
@@ -207,10 +207,10 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
               }
             }
             // check if catalog moved
-            //           if (catalogsIsSet.get(catalog.id).parentId !== catalog.parentId) {
-            //             throw new Error(`Goods <b>${product.name}</b> in row <b>${j + 1}</b>,
-            // Catalog <b>${catalog.name}</b> moved from  <b>${catalogsIsSet.get(catalog.id).parentId}</b> to  <b>${catalog.parentId}</b>, `);
-            //           }
+            if (catalogsIsSet.get(catalog.id).parentId !== catalog.parentId) {
+              throw new Error(`Goods <b>${product.name}</b> in row <b>${j + 1}</b>,
+              Catalog <b>${catalog.name}</b> moved from  <b>${catalogsIsSet.get(catalog.id).parentId}</b> to  <b>${catalog.parentId}</b>, `);
+            }
           }
           // generate tags Map for last catalog
           for (const tagsRow of tags) {
