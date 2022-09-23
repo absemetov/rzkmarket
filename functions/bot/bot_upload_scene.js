@@ -158,12 +158,13 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
             "currency": product.currency,
             "unit": product.unit,
             "orderNumber": productIsSet.size,
+            "catalogId": groupArray[groupArray.length - 1].id,
             // "catalog": groupArray[groupArray.length - 1],
             // "catalogsNamePath": groupArray.map((item) => item.name).join("#"),
             "pathArray": groupArray.map((catalog) => {
               return {name: catalog.name, url: catalog.url};
             }),
-            "path": groupArray.map((catalog) => catalog.id).join("/"),
+            // "path": groupArray.map((catalog) => catalog.id).join("/"),
             "tags": tags.length ? tags.map((tag) => tag.id) : firestore.FieldValue.delete(),
             "tagsNames": tags.length ? tags : firestore.FieldValue.delete(),
             "brand": product.brand ? product.brand : firestore.FieldValue.delete(),
@@ -184,14 +185,14 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
                   .collection("catalogs").doc(catalog.id);
               batchCatalogs.set(catalogRef, {
                 "name": catalog.name,
-                // "parentId": catalog.parentId,
+                "parentId": catalog.parentId,
                 // "parentName": catalog.parentName,
                 "orderNumber": catalogsIsSet.size,
                 "updatedAt": updatedAtTimestamp,
                 "tags": firestore.FieldValue.delete(),
                 // "hierarchicalUrl": pathArray.join(" > "),
                 "pathArray": [...catUrlArray],
-                "path": pathArray.length ? pathArray.join("/") : null,
+                // "path": pathArray.length ? pathArray.join("/") : null,
               }, {merge: true});
               // helper arrays
               pathArray.push(catalog.id);

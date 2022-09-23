@@ -30,7 +30,7 @@ const showCatalog = async (ctx, next) => {
     if (catalogId) {
       currentCatalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
       // back button
-      inlineKeyboardArray.push([{text: `⤴️ ${currentCatalog.parentName ? currentCatalog.parentName : "Каталог" }`,
+      inlineKeyboardArray.push([{text: `⤴️ ${currentCatalog.pathArray.length ? currentCatalog.pathArray[currentCatalog.pathArray.length - 1].name : "Каталог"}`,
         callback_data: currentCatalog.parentId ? `c/${currentCatalog.parentId}?o=${objectId}` :
         `c?o=${objectId}`}]);
       if (ctx.state.isAdmin && ctx.state.sessionMsg.url.searchParams.get("editMode")) {
@@ -39,7 +39,7 @@ const showCatalog = async (ctx, next) => {
       }
       // products query
       let mainQuery = firebase.firestore().collection("objects").doc(objectId)
-          .collection("products").where("catalog.id", "==", currentCatalog.id)
+          .collection("products").where("catalogId", "==", currentCatalog.id)
           .orderBy("orderNumber");
       // Filter by tag
       let tagUrl = "";
@@ -62,7 +62,7 @@ const showCatalog = async (ctx, next) => {
       // show catalog siblings, get catalogs snap index or siblings
       const catalogsSnapshot = await firebase.firestore().collection("objects").doc(objectId)
           .collection("catalogs")
-          .where("path", "==", `${currentCatalog.path ? currentCatalog.path + "/" }${currentCatalog.id}`).orderBy("orderNumber").get();
+          .where("parentId", "==", catalogId).orderBy("orderNumber").get();
       catalogsSnapshot.docs.forEach((doc) => {
         inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}?o=${objectId}`}]);
       });
@@ -131,7 +131,7 @@ const showCatalog = async (ctx, next) => {
       // show catalog siblings, get catalogs snap index or siblings
       const catalogsSnapshot = await firebase.firestore().collection("objects").doc(objectId)
           .collection("catalogs")
-          .where("path", "==", null).orderBy("orderNumber").get();
+          .where("parentId", "==", null).orderBy("orderNumber").get();
       catalogsSnapshot.docs.forEach((doc) => {
         inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}?o=${objectId}`}]);
       });
@@ -166,14 +166,14 @@ const showProduct = async (ctx, next) => {
     const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
     product.price = roundNumber(product.price * object.currencies[product.currency]);
     const cartButtons = await cart.cartButtons(objectId, ctx);
-    let catalogUrl = `c/${product.catalog.id}?o=${objectId}`;
+    let catalogUrl = `c/${product.catalogId}?o=${objectId}`;
     // const sessionPathCatalog = await store.findRecord(`users/${ctx.from.id}`, "session.pathCatalog");
     const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathCatalog");
     if (sessionPathCatalog) {
       catalogUrl = sessionPathCatalog;
     }
     const inlineKeyboardArray = [];
-    inlineKeyboardArray.push([{text: `⤴️ ${product.catalog.name}`, callback_data: catalogUrl}]);
+    inlineKeyboardArray.push([{text: `⤴️ ${product.pathArray[product.pathArray.length - 1].name}`, callback_data: catalogUrl}]);
     // default add button
     const addButton = {text: ctx.i18n.btn.buy(), callback_data: `aC/${product.id}?o=${objectId}`};
     // get cart products
@@ -277,7 +277,7 @@ catalogsActions.push( async (ctx, next) => {
     const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
     product.price = roundNumber(product.price * object.currencies[product.currency]);
     if (product) {
-      let catalogUrl = `c/${product.catalog.id}?o=${objectId}`;
+      let catalogUrl = `c/${product.catalogId}?o=${objectId}`;
       // if (ctx.session.pathCatalog) {
       //   catalogUrl = ctx.session.pathCatalog;
       // }
@@ -355,7 +355,7 @@ catalogsActions.push( async (ctx, next) => {
         parse_mode: "html",
       }, {reply_markup: {
         inline_keyboard: [
-          [{text: `⤴️ ${product.catalog.name}`, callback_data: catalogUrl}],
+          [{text: `⤴️ ${product.pathArray[product.pathArray.length - 1].name}`, callback_data: catalogUrl}],
           [
             {text: "7", callback_data: `aC/${product.id}?number=7${qtyUrl}${paramsUrl}&o=${objectId}`},
             {text: "8", callback_data: `aC/${product.id}?number=8${qtyUrl}${paramsUrl}&o=${objectId}`},
