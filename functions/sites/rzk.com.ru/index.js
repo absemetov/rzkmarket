@@ -119,9 +119,9 @@ app.get("/o/:objectId", auth, async (req, res) => {
 });
 
 // show catalogs
-app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
+app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
   const objectId = req.params.objectId;
-  const catalogId = req.params.catalogId;
+  const catalogId = req.params.catalogPath ? req.params.catalogPath.replace(/\/$/, "").split("/")[req.params.catalogPath.replace(/\/$/, "").split("/").length - 1] : null;
   const selectedTag = req.query.tag;
   const startAfter = req.query.startAfter;
   const endBefore = req.query.endBefore;
@@ -137,7 +137,7 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
       const catalogSibl = {
         id: doc.id,
         name: doc.data().name,
-        url: `/o/${object.id}/c/${doc.id}`,
+        url: `${req.path.replace(/\/$/, "")}/${doc.id}`,
       };
       if (doc.data().photoId) {
         catalogSibl.img1 = bucket.file(`photos/o/${object.id}/c/${doc.id}/${doc.data().photoId}/1.jpg`).publicUrl();
@@ -157,15 +157,16 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
     // query catalog
     if (currentCatalog) {
       title = `${currentCatalog.name} - ${object.name}`;
-      mainQuery = mainQuery.where("catalog.id", "==", currentCatalog.id);
+      mainQuery = mainQuery.where("catalogId", "==", currentCatalog.id);
       for (const tag of currentCatalog.tags || []) {
         const tagObj = {
           text: `${tag.name}`,
-          url: `/o/${object.id}/c/${currentCatalog.id}?tag=${tag.id}`,
+          url: `${req.path.replace(/\/$/, "")}?tag=${tag.id}`,
         };
         if (tag.id === selectedTag) {
           title = `${currentCatalog.name} - ${tag.name} - ${object.name}`;
           tagObj.active = true;
+          tagObj.path = req.path.replace(/\/$/, "");
         }
         tags.push(tagObj);
       }
@@ -245,17 +246,16 @@ app.get("/o/:objectId/c/:catalogId?", auth, async (req, res) => {
         text: envSite.i18n.aPagPrevious,
         icon: "bi-chevron-left",
         show: ifBeforeProducts.empty,
-        url: `/o/${object.id}/c${currentCatalog ? `/${currentCatalog.id}` : ""}?endBefore=${endBeforeSnap.id}${tagUrl}`,
+        url: `${req.path.replace(/\/$/, "")}?endBefore=${endBeforeSnap.id}${tagUrl}`,
       });
       // startAfter
       const startAfterSnap = productsSnapshot.docs[productsSnapshot.docs.length - 1];
       const ifAfterProducts = await mainQuery.startAfter(startAfterSnap).limit(1).get();
-      console.log(ifBeforeProducts.empty, ifAfterProducts.empty);
       prevNextLinks.push({
         text: envSite.i18n.aPagNext,
         icon: "bi-chevron-right",
         show: ifAfterProducts.empty,
-        url: `/o/${object.id}/c${currentCatalog ? `/${currentCatalog.id}` : ""}?startAfter=${startAfterSnap.id}${tagUrl}`,
+        url: `${req.path.replace(/\/$/, "")}?startAfter=${startAfterSnap.id}${tagUrl}`,
       });
     }
   }

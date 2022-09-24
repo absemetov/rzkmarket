@@ -18,6 +18,7 @@
     "s-f": "firebase emulators:start --only functions",
     "s-ff": "firebase emulators:start --only functions,firestore",
     "s-fh": "firebase emulators:start --only functions,hosting",
+    "s-ffh": "firebase emulators:start --only functions,firestore,hosting",
     "sitemap-ua": "node functions/sites/rzk.com.ru/sitemap.js ua",
     "sitemap-ru": "node functions/sites/rzk.com.ru/sitemap.js ru"
   },

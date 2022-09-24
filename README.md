@@ -15,6 +15,8 @@ $ yarn s-f
 $ yarn s-ff
 # serve functions and hosting
 $ yarn s-fh
+# serve functions firestore and hosting
+$ yarn s-ffh
 
 # generate sitemap file
 $ node functions/sites/rzk.com.ru/sitemap.js

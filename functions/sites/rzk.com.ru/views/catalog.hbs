@@ -4,14 +4,11 @@
     <li class="breadcrumb-item"><a href="/o/{{object.id}}">{{object.name}}</a></li>
     {{#if currentCatalog}}
       <li class="breadcrumb-item"><a href="/o/{{object.id}}/c">{{envSite.i18n.aCatGoods}}</a></li>
-      {{#if currentCatalog.parentId}}
-        <li class="breadcrumb-item active" aria-current="page">
-         ..
-        </li>
+      {{#each currentCatalog.pathArray as |item|}}
         <li class="breadcrumb-item">
-          <a href="/o/{{object.id}}/c/{{currentCatalog.parentId}}">{{currentCatalog.parentName}}</a>
+          <a href="{{item.url}}">{{item.name}}</a>
         </li>
-      {{/if}}
+      {{/each}}
       <li class="breadcrumb-item active" aria-current="page">
         {{currentCatalog.name}}
       </li>
@@ -35,7 +32,7 @@
       {{#each tags as |tag|}}
         {{#if tag.active}}
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/o/{{../object.id}}/c/{{../currentCatalog.id}}">{{../envSite.i18n.aAllGoods}}</a></li>
+          <li><a class="dropdown-item" href="{{tag.path}}">{{../envSite.i18n.aAllGoods}}</a></li>
         {{/if}}
       {{/each}}
     </ul>

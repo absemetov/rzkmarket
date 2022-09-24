@@ -7,7 +7,7 @@ const {siteFunction} = require("./sites/rzk.com.ru");
 const {botFunction} = require("./bot");
 const {productsUploadFunction} = require("./bot/bot_upload_scene");
 
-// exports.site = siteFunction;
+exports.site = siteFunction;
 // exports.rzkComRu = siteFunction;
 exports.bot = botFunction;
 // exports.botRu = botFunction;
