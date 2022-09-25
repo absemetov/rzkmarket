@@ -42,6 +42,11 @@ app.use(cookieParser());
 // Configure template Engine and Main Template File
 const hbs = exphbs.create({
   extname: ".hbs",
+  helpers: {
+    inc(value) {
+      return parseInt(value) + 4;
+    },
+  },
 });
 app.engine("hbs", hbs.engine);
 // Setting template Engine

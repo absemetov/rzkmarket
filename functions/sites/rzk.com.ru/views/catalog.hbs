@@ -6,7 +6,7 @@
       <li class="breadcrumb-item"><a href="/o/{{object.id}}/c">{{envSite.i18n.aCatGoods}}</a></li>
       {{#each currentCatalog.pathArray as |item|}}
         <li class="breadcrumb-item">
-          <a href="{{item.url}}">{{item.name}}</a>
+          <a href="/o/{{../object.id}}/c/{{item.url}}">{{item.name}}</a>
         </li>
       {{/each}}
       <li class="breadcrumb-item active" aria-current="page">

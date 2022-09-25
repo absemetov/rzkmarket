@@ -209,8 +209,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
             }
             // check if catalog moved
             if (catalogsIsSet.get(catalog.id).parentId !== catalog.parentId) {
-              throw new Error(`Goods <b>${product.name}</b> in row <b>${j + 1}</b>,
-              Catalog <b>${catalog.name}</b> moved from  <b>${catalogsIsSet.get(catalog.id).parentId}</b> to  <b>${catalog.parentId}</b>, `);
+              throw new Error(`Catalog <b>${catalog.name}</b> moved from  <b>${catalogsIsSet.get(catalog.id).parentId}</b> to  <b>${catalog.parentId}</b> in row <b>${j + 1}</b>`);
             }
           }
           // generate tags Map for last catalog

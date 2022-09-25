@@ -3,6 +3,7 @@
     {
       "target": "rzk.com.ru",
       "public": "sites/rzk.com.ru",
+      "trailingSlash": false,
       "ignore": [
         "firebase.json",
         "**/.*",
@@ -133,7 +134,7 @@
     },
     "hosting": {
       "port": 5000,
-      "host": "192.168.2.68"
+      "host": "192.168.43.204"
     },
     "ui": {
       "enabled": true
