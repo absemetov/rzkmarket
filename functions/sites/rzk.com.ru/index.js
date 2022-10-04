@@ -268,6 +268,10 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
   object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
   // Set Cache-Control
   // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
+  // create filer sear
+  if (products.length) {
+    currentCatalog.filterLink = `/o/${object.id}/c/` + [...currentCatalog.pathArray.map((catalog) => catalog.name), currentCatalog.name].map(encodeURIComponent).join("/");
+  }
   res.render("catalog", {
     title,
     object,

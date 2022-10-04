@@ -194,12 +194,6 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
                 "pathArray": [...catUrlArray],
                 // "path": pathArray.length ? pathArray.join("/") : null,
               }, {merge: true});
-              // helper arrays
-              pathArray.push(catalog.id);
-              catUrlArray.push({
-                name: catalog.name,
-                url: pathArray.join("/"),
-              });
               // if 500 items commit
               if (++batchCatalogsCount === perPage) {
                 await batchCatalogs.commit();
@@ -207,6 +201,12 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
                 batchCatalogsCount = 0;
               }
             }
+            // helper arrays
+            pathArray.push(catalog.id);
+            catUrlArray.push({
+              name: catalog.name,
+              url: pathArray.join("/"),
+            });
             // check if catalog moved
             if (catalogsIsSet.get(catalog.id).parentId !== catalog.parentId) {
               throw new Error(`Catalog <b>${catalog.name}</b> moved from  <b>${catalogsIsSet.get(catalog.id).parentId}</b> to  <b>${catalog.parentId}</b> in row <b>${j + 1}</b>`);

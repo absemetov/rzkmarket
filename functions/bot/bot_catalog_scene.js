@@ -1,7 +1,7 @@
 const firebase = require("firebase-admin");
 const firestore = require("firebase-admin/firestore");
 const {cart, store, roundNumber, photoCheckUrl, deletePhotoStorage} = require("./bot_store_cart");
-const {searchHandle} = require("./bot_search");
+const {searchHandle, algolia} = require("./bot_search");
 // catalogs actions array
 const catalogsActions = [];
 // show catalogs and goods
@@ -929,11 +929,21 @@ catalogsActions.push( async (ctx, next) => {
     }
     inlineKeyboardArray.push([{text: `⤴️ ${catalog.name}`,
       callback_data: catalogUrl}]);
-    for (const tag of catalog.tags) {
-      if (tag.id === ctx.state.params.get("tagSelected")) {
-        inlineKeyboardArray.push([{text: `✅ ${tag.name}`, callback_data: `c/${catalog.id}?t=${tag.id}&o=${objectId}`}]);
-      } else {
-        inlineKeyboardArray.push([{text: `🎚 ${tag.name}`, callback_data: `c/${catalog.id}?t=${tag.id}&o=${objectId}`}]);
+    // get algolia tags
+    const pathNames = [...catalog.pathArray.map((catalog) => catalog.name), catalog.name];
+    const tags = await algolia.search("", {
+      hitsPerPage: 0,
+      facets: ["subCategory"],
+      facetFilters: [`categories.lvl${pathNames.length - 1}:${pathNames.join(" > ")}`],
+    });
+    console.log(`categories.lvl${pathNames.length - 1}:${pathNames.join(" > ")}`);
+    if (tags.facets.subCategory) {
+      for (const [tagName, tagCount] of Object.entries(tags.facets.subCategory)) {
+        if (tagName === ctx.state.params.get("tagSelected")) {
+          inlineKeyboardArray.push([{text: `✅ ${tagName} (${tagCount})`, callback_data: `c/${catalog.id}?t=${tagName}&o=${objectId}`}]);
+        } else {
+          inlineKeyboardArray.push([{text: `🎚 ${tagName} (${tagCount})`, callback_data: `c/${catalog.id}?t=${tagName}&o=${objectId}`}]);
+        }
       }
     }
     const object = await store.findRecord(`objects/${objectId}`);

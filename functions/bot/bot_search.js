@@ -1,21 +1,34 @@
 const {photoCheckUrl} = require("./bot_store_cart");
 const algoliasearch = require("algoliasearch");
+const client = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
+const algolia = client.initIndex(`${process.env.ALGOLIA_PREFIX}products`);
 // const {highlight} = require("instantsearch.js/cjs/helpers");
 // ctx.state.sessionMsg.url.searchParams.set("message", "Nadir Genius!");
 // ctx.state.sessionMsg.url.searchParams.delete("message1");
 // ctx.state.sessionMsg.url.searchParams.delete("message");
 const searchHandle = async (ctx, searchText, page = 0, productAddedId = null, qty = 0) => {
-  const client = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
-  const index = client.initIndex(`${process.env.ALGOLIA_PREFIX}products`);
   const inlineKeyboard = [];
   inlineKeyboard.push([{text: "⤴️ ../Главная", callback_data: "objects"}, {text: "🔍 Поиск товаров", callback_data: "search"}]);
   try {
     // get resalts from algolia
-    const resalt = await index.search(searchText, {
+    const resalt = await algolia.search(searchText, {
       attributesToRetrieve: ["name", "productId", "brand", "seller", "sellerId"],
       hitsPerPage: 5,
       page,
     });
+    // test tags
+    const tags = await algolia.search("", {
+      hitsPerPage: 0,
+      facets: ["subCategory"],
+      facetFilters: ["categories.lvl4:Cat1 > Cat2 > Cat3 > Cat4 >"],
+    });
+    console.log(tags);
+    if (tags.facets.subCategory) {
+      for (const [key, value] of Object.entries(tags.facets.subCategory)) {
+        console.log(`${key}: ${value}`);
+      }
+    }
+    // test tags
     for (const product of resalt.hits) {
       const btnSearch = [];
       btnSearch.push({
@@ -105,4 +118,5 @@ searchActions.push( async (ctx, next) => {
 
 exports.searchIndex = searchIndex;
 exports.searchHandle = searchHandle;
+exports.algolia = algolia;
 exports.searchActions = searchActions;
