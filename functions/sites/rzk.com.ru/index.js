@@ -5,6 +5,7 @@ const bucket = firebase.storage().bucket();
 const express = require("express");
 const exphbs = require("express-handlebars");
 const {store, cart, roundNumber} = require("../.././bot/bot_store_cart.js");
+const {algoliaIndexProducts} = require("../.././bot/bot_search");
 const {createHash, createHmac} = require("crypto");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
@@ -15,6 +16,9 @@ const moment = require("moment");
 const cors = require("cors");
 const TelegrafI18n = require("telegraf-i18n");
 const path = require("path");
+const Translit = require("cyrillic-to-translit-js");
+const cyrillicToTranslit = new Translit();
+const cyrillicToTranslitUk = new Translit({preset: "uk"});
 // locale
 const i18n = new TelegrafI18n({
   directory: path.resolve(__dirname, "locales"),
@@ -40,11 +44,17 @@ const app = express();
 app.use(cors({origin: true}));
 app.use(cookieParser());
 // Configure template Engine and Main Template File
+function cyrillicUrl(value) {
+  return cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(value, "-")).toLowerCase();
+}
 const hbs = exphbs.create({
   extname: ".hbs",
   helpers: {
     inc(value) {
       return parseInt(value) + 4;
+    },
+    url(value) {
+      return cyrillicUrl(value);
     },
   },
 });
@@ -122,6 +132,7 @@ app.get("/o/:objectId", auth, async (req, res) => {
     return res.status(404).send("<h1>Object does not exist</h1>");
   }
 });
+// show
 
 // show catalogs
 app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
@@ -131,53 +142,38 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
   const startAfter = req.query.startAfter;
   const endBefore = req.query.endBefore;
   const object = await store.findRecord(`objects/${objectId}`);
-  const currentCatalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
+  let currentCatalog = null;
   let title = `Каталог - ${object.name}`;
   const catalogs = [];
   const tags = [];
-  if (!selectedTag) {
-    const catalogsSiblingsSnapshot = await firebase.firestore().collection("objects").doc(objectId)
-        .collection("catalogs").where("parentId", "==", catalogId ? catalogId : null).orderBy("orderNumber").get();
-    catalogsSiblingsSnapshot.docs.forEach((doc) => {
-      const catalogSibl = {
-        id: doc.id,
-        name: doc.data().name,
-        url: `${req.path.replace(/\/$/, "")}/${doc.id}`,
-      };
-      if (doc.data().photoId) {
-        catalogSibl.img1 = bucket.file(`photos/o/${object.id}/c/${doc.id}/${doc.data().photoId}/1.jpg`).publicUrl();
-        catalogSibl.img2 = bucket.file(`photos/o/${object.id}/c/${doc.id}/${doc.data().photoId}/2.jpg`).publicUrl();
-      } else {
-        catalogSibl.img1 = "/icons/folder2.svg";
-        catalogSibl.img2 = "/icons/folder2.svg";
-      }
-      catalogs.push(catalogSibl);
-    });
-  }
+  // get catalog sibl
+  const catalogsSiblingsSnapshot = await firebase.firestore().collection("objects").doc(objectId)
+      .collection("catalogs").where("parentId", "==", catalogId).orderBy("orderNumber").get();
+  catalogsSiblingsSnapshot.docs.forEach((doc) => {
+    const catalogSibl = {
+      id: doc.id,
+      name: doc.data().name,
+      url: `${req.path.replace(/\/$/, "")}/${doc.id}`,
+    };
+    if (doc.data().photoId) {
+      catalogSibl.img1 = bucket.file(`photos/o/${object.id}/c/${doc.id}/${doc.data().photoId}/1.jpg`).publicUrl();
+      catalogSibl.img2 = bucket.file(`photos/o/${object.id}/c/${doc.id}/${doc.data().photoId}/2.jpg`).publicUrl();
+    } else {
+      catalogSibl.img1 = "/icons/folder2.svg";
+      catalogSibl.img2 = "/icons/folder2.svg";
+    }
+    catalogs.push(catalogSibl);
+  });
   // products query
   const products = [];
   const prevNextLinks = [];
-  if (currentCatalog || selectedTag) {
-    let mainQuery = firebase.firestore().collection("objects").doc(objectId).collection("products");
-    // query catalog
-    if (currentCatalog) {
-      title = `${currentCatalog.name} - ${object.name}`;
-      mainQuery = mainQuery.where("catalogId", "==", currentCatalog.id);
-      for (const tag of currentCatalog.tags || []) {
-        const tagObj = {
-          text: `${tag.name}`,
-          url: `${req.path.replace(/\/$/, "")}?tag=${tag.id}`,
-        };
-        if (tag.id === selectedTag) {
-          title = `${currentCatalog.name} - ${tag.name} - ${object.name}`;
-          tagObj.active = true;
-          tagObj.path = req.path.replace(/\/$/, "");
-        }
-        tags.push(tagObj);
-      }
-    }
-    // order products
-    mainQuery = mainQuery.orderBy("orderNumber");
+  const tagActive = {};
+  if (catalogId) {
+    currentCatalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
+    title = `${currentCatalog.name} - ${object.name}`;
+    let mainQuery = firebase.firestore().collection("objects").doc(objectId).collection("products")
+        .where("catalogId", "==", catalogId)
+        .orderBy("orderNumber");
     // Filter by tag
     let tagUrl = "";
     if (selectedTag) {
@@ -230,20 +226,33 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
       }
       // add to array
       products.push(productObj);
-      // get tag name for global search
-      if (!tags.length && selectedTag) {
-        const tagObj = {
-          text: `Global ${product.data().tagsNames.find((tag) => tag.id === selectedTag).name}`,
-          url: `/o/${object.id}/c?tag=${selectedTag}`,
-          global: true,
-        };
-        title = `Каталог - ${product.data().tagsNames.find((tag) => tag.id === selectedTag).name} - ${object.name}`;
-        tagObj.active = true;
-        tags.push(tagObj);
-      }
     }
-    // Set load more button
+    // Set load more button and tags Algolia
     if (!productsSnapshot.empty) {
+      // get algolia tags if siblings empty
+      if (catalogsSiblingsSnapshot.empty) {
+        const pathNames = currentCatalog.pathArray.map((catalog) => catalog.name);
+        const tagsAlgolia = await algoliaIndexProducts.search("", {
+          hitsPerPage: 0,
+          facets: ["subCategory"],
+          facetFilters: [[`seller:${object.name}`], [`categories.lvl${pathNames.length - 1}:${pathNames.join(" > ")}`]],
+        });
+        for (const [tagName, tagCount] of Object.entries(tagsAlgolia.facets.subCategory || {})) {
+          const tagId = cyrillicUrl(tagName);
+          const tagObj = {
+            text: `${tagName} (${tagCount})`,
+            url: `${req.path.replace(/\/$/, "")}?tag=${tagId}`,
+          };
+          // close tag
+          if (tagId === selectedTag) {
+            title = `${currentCatalog.name} - ${tagName} - ${object.name}`;
+            tagObj.active = true;
+            tagActive.name = `${tagName} (${tagCount})`;
+            tagActive.path = req.path.replace(/\/$/, "");
+          }
+          tags.push(tagObj);
+        }
+      }
       // endBefore prev button e paaram
       const endBeforeSnap = productsSnapshot.docs[0];
       const ifBeforeProducts = await mainQuery.endBefore(endBeforeSnap).limitToLast(1).get();
@@ -269,9 +278,9 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
   // Set Cache-Control
   // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
   // create filer sear
-  if (products.length) {
-    currentCatalog.filterLink = `/o/${object.id}/c/` + [...currentCatalog.pathArray.map((catalog) => catalog.name), currentCatalog.name].map(encodeURIComponent).join("/");
-  }
+  // if (products.length) {
+  //   currentCatalog.filterLink = `/o/${object.id}/c/` + [...currentCatalog.pathArray.map((catalog) => catalog.name), currentCatalog.name].map(encodeURIComponent).join("/");
+  // }
   res.render("catalog", {
     title,
     object,
@@ -279,6 +288,7 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
     catalogs,
     products,
     tags,
+    tagActive,
     prevNextLinks,
     envSite,
   });
@@ -319,6 +329,7 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
   product.img2 = `${process.env.BOT_SITE}/icons/flower3.svg`;
   product.sellerId = objectId;
   product.url = `${process.env.BOT_SITE}/o/${objectId}/p/${product.id}`;
+  product.tagPath = product.pathArray[product.pathArray.length - 1].url;
   const photos = [];
   // get cart qty
   if (req.user.uid) {
@@ -486,12 +497,10 @@ app.get("/login/:objectId?", auth, async (req, res) => {
       }
     }
     // save user data
-    const userData = await store.findRecord(`users/${req.query.id}`);
-    if (!userData) {
-      await store.createRecord(`users/${req.query.id}`, {
-        firstName: req.query.first_name,
-      });
-    }
+    // const userData = await store.findRecord(`users/${req.query.id}`);
+    await store.createRecord(`users/${req.query.id}`, {
+      from: {...req.query},
+    });
     // create token
     const token = jwt.sign({uid: req.query.id, auth: true, firstName: req.query.first_name}, process.env.BOT_TOKEN);
     // save token to cookie
@@ -582,22 +591,22 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
 });
 
 // create order
-app.get("/o/:objectId/cart/purchase", auth, async (req, res) => {
-  const objectId = req.params.objectId;
-  const object = await store.findRecord(`objects/${objectId}`);
-  const title = `Оформление заказа - ${object.name}`;
-  // count cart items
-  object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
-  res.render("purchase", {
-    title,
-    object,
-    phoneregexp: process.env.BOT_PHONEREGEXP,
-    phonetemplate: process.env.BOT_PHONETEMPLATE,
-    carriers: Array.from(store.carriers(), ([id, obj]) => ({id, name: obj.name, reqNumber: obj.reqNumber ? 1 : 0})),
-    payments: Array.from(store.payments(), ([id, name]) => ({id, name})),
-    envSite,
-  });
-});
+// app.get("/o/:objectId/cart/purchase", auth, async (req, res) => {
+//   const objectId = req.params.objectId;
+//   const object = await store.findRecord(`objects/${objectId}`);
+//   const title = `Оформление заказа - ${object.name}`;
+//   // count cart items
+//   object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
+//   res.render("purchase", {
+//     title,
+//     object,
+//     phoneregexp: process.env.BOT_PHONEREGEXP,
+//     phonetemplate: process.env.BOT_PHONETEMPLATE,
+//     carriers: Array.from(store.carriers(), ([id, obj]) => ({id, name: obj.name, reqNumber: obj.reqNumber ? 1 : 0})),
+//     payments: Array.from(store.payments(), ([id, name]) => ({id, name})),
+//     envSite,
+//   });
+// });
 
 // save order
 app.post("/o/:objectId/cart/purchase", auth, (req, res) => {
@@ -621,13 +630,13 @@ app.post("/o/:objectId/cart/purchase", auth, (req, res) => {
       "firstName": "required|string",
       "phoneNumber": ["required", `regex:/${process.env.BOT_PHONEREGEXP}`],
       "address": "required|string",
-      "carrierId": "required|integer|min:0",
-      "paymentId": "required|integer|min:0",
+      "carrierId": "required|integer",
+      "paymentId": "required|integer",
       "comment": "string",
     };
     // add carrier number
     if (fields.carrierId && store.carriers().get(+ fields.carrierId).reqNumber) {
-      rulesOrder.carrierNumber = "required|integer|min:0";
+      rulesOrder.carrierNumber = "required|integer|min:1";
     }
     const validateOrder = new Validator(fields, rulesOrder, {
       "regex": `The :attribute phone number is not in the format ${process.env.BOT_PHONETEMPLATE}`,
@@ -635,9 +644,12 @@ app.post("/o/:objectId/cart/purchase", auth, (req, res) => {
     if (validateOrder.fails()) {
       return res.status(422).json({error: {...validateOrder.errors.all()}});
     }
+    // add phone code
+    const checkPhone = fields.phoneNumber.match(process.env.BOT_PHONEREGEXP);
+    fields.phoneNumber = `${process.env.BOT_PHONECODE}${checkPhone[2]}`;
     const objectId = req.params.objectId;
     const cartProducts = await store.findRecord(`objects/${objectId}/carts/${req.user.uid}`, "products");
-    if (cartProducts) {
+    if (cartProducts && Object.keys(cartProducts).length) {
       const objectId = req.params.objectId;
       const object = await store.findRecord(`objects/${objectId}`);
       const newOrderRef = firebase.firestore().collection("objects").doc(objectId).collection("orders").doc();
@@ -659,7 +671,7 @@ app.post("/o/:objectId/cart/purchase", auth, (req, res) => {
       await cart.clear(objectId, req.user.uid);
       return res.json({orderId: newOrderRef.id, objectId});
     } else {
-      return res.status(422).json({error: "Cart empty!"});
+      return res.status(422).json({error: {0: "Cart empty!"}});
     }
   });
   bb.end(req.rawBody);
@@ -671,7 +683,7 @@ app.post("/o/:objectId/cart/add", auth, jsonParser, async (req, res) => {
   const {productId, qty, added} = req.body;
   // validate data
   const rulesProductRow = {
-    "qty": "required|integer|min:0",
+    "qty": "required|integer|min:0|max:10000",
   };
   const validateProductRow = new Validator(req.body, rulesProductRow);
   if (validateProductRow.fails()) {
@@ -699,7 +711,45 @@ app.post("/o/:objectId/cart/add", auth, jsonParser, async (req, res) => {
   const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
   const price = product.price = roundNumber(product.price * object.currencies[product.currency]);
   // add to cart
-  await cart.add(objectId, req.user.uid, added ? product.id : product, qty);
+  // await cart.add({objectId, userId: req.user.uid, added ? product.id : product, qty});
+  if (added) {
+    if (qty) {
+      // new cart ins
+      await cart.update({
+        objectId,
+        userId: req.user.uid,
+        product: {
+          [productId]: {
+            qty,
+          },
+        },
+      });
+    } else {
+      await cart.delete({
+        objectId,
+        userId: req.user.uid,
+        id: productId,
+      });
+    }
+  } else {
+    // add new product
+    if (qty) {
+      await cart.add({
+        objectId,
+        userId: req.user.uid,
+        fromBot: false,
+        product: {
+          [productId]: {
+            name: `${product.brand ? product.brand + " - " : ""}${product.name}`,
+            price,
+            unit: product.unit,
+            qty,
+            createdAt: Math.floor(Date.now() / 1000),
+          },
+        },
+      });
+    }
+  }
   const cartInfo = await cart.cartInfo(objectId, req.user.uid);
   return res.json({cartInfo, price});
 });

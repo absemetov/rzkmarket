@@ -63,10 +63,12 @@ const store = {
         // find nested data
         const fields = field.split(".");
         if (fields.length === 1 && model[fields[0]]) {
-          return typeof model[fields[0]] === "object" ? {...model[fields[0]]} : model[fields[0]];
+          return model[fields[0]];
+          // return typeof model[fields[0]] === "object" ? {...model[fields[0]]} : model[fields[0]];
         }
         if (fields.length === 2 && model[fields[0]] && model[fields[0]][fields[1]]) {
-          return typeof model[fields[0]][fields[1]] === "object" ? {...model[fields[0]][fields[1]]} : model[fields[0]][fields[1]];
+          return model[fields[0]][fields[1]];
+          // return typeof model[fields[0]][fields[1]] === "object" ? {...model[fields[0]][fields[1]]} : model[fields[0]][fields[1]];
         }
       } else {
         return {id: modelSnap.id, ...model};
@@ -163,7 +165,26 @@ const store = {
 
 // cart instance
 const cart = {
-  async add(objectId, userId, product, qty) {
+  async add(value) {
+    await store.createRecord(`objects/${value.objectId}/carts/${value.userId}`, {
+      updatedAt: Math.floor(Date.now() / 1000),
+      fromBot: value.fromBot,
+      products: value.product,
+    });
+  },
+  async update(value) {
+    await store.createRecord(`objects/${value.objectId}/carts/${value.userId}`, {
+      updatedAt: Math.floor(Date.now() / 1000),
+      products: value.product,
+    });
+  },
+  async delete(value) {
+    await store.createRecord(`objects/${value.objectId}/carts/${value.userId}`, {
+      "products": {
+        [value.id]: firestore.FieldValue.delete(),
+      }});
+  },
+  async addOld(objectId, userId, product, qty) {
     qty = Number(qty);
     let products = {};
     if (qty) {
@@ -218,33 +239,31 @@ const cart = {
     const orderQuery = firebase.firestore().collection("objects").doc(objectId).collection("orders");
     const cartProducts = await store.findRecord(`objects/${objectId}/carts/${userId}`, "products");
     // if cart empty alert error
-    if (!cartProducts) {
-      throw new Error("Корзина пуста");
+    if (cartProducts && Object.keys(cartProducts).length) {
+      const object = await store.findRecord(`objects/${objectId}`);
+      await orderQuery.add({
+        userId,
+        objectId,
+        objectName: object.name,
+        orderNumber: userData.orderCount,
+        statusId: 1,
+        fromBot: true,
+        products: cartProducts,
+        createdAt: Math.floor(Date.now() / 1000),
+        ...wizardData,
+      });
+      await this.clear(objectId, userId);
+    } else {
+      throw new Error(ctx.i18n.txt.cartEmpty());
     }
-    const object = await store.findRecord(`objects/${objectId}`);
-    await orderQuery.add({
-      userId,
-      objectId,
-      objectName: object.name,
-      orderNumber: userData.orderCount,
-      statusId: 1,
-      fromBot: true,
-      products: cartProducts,
-      createdAt: Math.floor(Date.now() / 1000),
-      ...wizardData,
-    });
-    await this.clear(objectId, userId);
-    // notify admin now use triggers
-    // await ctx.telegram.sendMessage(94899148, `<b>New order from bot! Object ${object.name} ` +
-    // `<a href="tg://user?id=${ctx.from.id}">User ${ctx.from.id}</a></b>`, {parse_mode: "html"});
   },
   async cartButtons(objectId, ctx) {
     // get cart count
     const cartProducts = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`, "products");
     return [
-      {text: ctx.i18n.btn.main(), callback_data: `objects/${objectId}`},
+      {text: ctx.i18n.btn.main(), callback_data: `o/${objectId}`},
       {text: `${ctx.i18n.btn.cart()} (${cartProducts && Object.keys(cartProducts).length || 0})`,
-        callback_data: `cart?o=${objectId}`},
+        callback_data: "cart"},
     ];
   },
   async cartInfo(objectId, userId) {
@@ -289,7 +308,7 @@ const uploadPhotoObj = async (ctx, objectId) => {
             reply_markup: {
               inline_keyboard: [
                 [{text: "⤴️ Goto object",
-                  callback_data: path}],
+                  callback_data: `o/${objectId}`}],
               ],
             },
             parse_mode: "html",
@@ -313,7 +332,7 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
     }
     try {
       // upload only one photo!!!
-      const photoId = await savePhotoTelegram(ctx, `photos/o/${objectId}/p/${product.id}`);
+      const photoId = await savePhotoTelegram(ctx, `photos/o/${objectId}/p/${productId}`);
       // save file id
       if (!product.mainPhoto) {
         // set main photo
@@ -327,7 +346,7 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
         });
       }
       // get catalog url (path)
-      let catalogUrl = `c/${product.catalog.id}?o=${objectId}&u=1`;
+      let catalogUrl = `c/${product.catalogId}`;
       const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathCatalog");
       if (sessionPathCatalog) {
         catalogUrl = sessionPathCatalog;
@@ -338,9 +357,9 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
             caption: `${product.name} (${product.id}) photo uploaded` + ctx.state.sessionMsg.linkHTML(),
             reply_markup: {
               inline_keyboard: [
-                [{text: "📸 Upload photo", callback_data: `uploadPhotoProduct/${product.id}?o=${objectId}`}],
+                [{text: "📸 Upload photo", callback_data: `u/${product.id}?todo=prod`}],
                 [{text: `🖼 Show photos (${product.photos ? product.photos.length + 1 : 1})`,
-                  callback_data: `showPhotos/${product.id}?o=${objectId}`}],
+                  callback_data: `s/${product.id}`}],
                 [{text: "⤴️ Goto catalog",
                   callback_data: catalogUrl}],
               ],
@@ -373,7 +392,7 @@ const uploadPhotoCat = async (ctx, objectId, catalogId) => {
         photoId,
       });
       // get catalog url (path)
-      const catalogUrl = `c/${catalog.id}?o=${objectId}`;
+      const catalogUrl = `c/${catalog.id}`;
       const media = await photoCheckUrl(`photos/o/${objectId}/c/${catalog.id}/${photoId}/2.jpg`);
       await ctx.replyWithPhoto(media,
           {

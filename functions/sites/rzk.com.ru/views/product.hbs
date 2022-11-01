@@ -51,12 +51,7 @@
       <div class="col">
         <div class="card text-center h-100">
           <ul class="list-group list-group-flush">
-            {{#if tag.hidden}}
-              <li class="list-group-item"><a href="/o/{{../object.id}}/c?tag={{tag.id}}">{{tag.name}} Global</a></li>
-            {{else}}
-              <li class="list-group-item"><a href="/o/{{../object.id}}/c/{{../product.catalog.id}}?tag={{tag.id}}">{{tag.name}}</a></li>
-              <li class="list-group-item"><a href="/o/{{../object.id}}/c?tag={{tag.id}}">{{tag.name}} Global</a></li>
-            {{/if}}
+            <li class="list-group-item"><a href="/o/{{../object.id}}/c/{{../product.tagPath}}?tag={{url tag}}">{{tag}}</a></li>
           </ul>
         </div>
       </div>

@@ -1,28 +1,28 @@
 const functions = require("firebase-functions");
-const {photoCheckUrl, deletePhotoStorage} = require("./bot/bot_store_cart");
+const {photoCheckUrl, deletePhotoStorage, store} = require("./bot/bot_store_cart");
 const {Telegraf} = require("telegraf");
 const algoliasearch = require("algoliasearch");
-const bot = new Telegraf(process.env.BOT_TOKEN, {
-  handlerTimeout: 540000,
-});
+const bot = new Telegraf(process.env.BOT_TOKEN);
 const algoliaClient = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
 const productsIndex = algoliaClient.initIndex(`${process.env.ALGOLIA_PREFIX}products`);
 const catalogsIndex = algoliaClient.initIndex(`${process.env.ALGOLIA_PREFIX}catalogs`);
+const ordersIndex = algoliaClient.initIndex(`${process.env.ALGOLIA_PREFIX}orders`);
 // notify admin when new user
-exports.notifyNewUser = functions.region("europe-central2").firestore
+exports.userCreate = functions.region("europe-central2").firestore
     .document("users/{userId}")
     .onCreate(async (snap, context) => {
       const userId = context.params.userId;
       // admin notify
       await bot.telegram.sendMessage(94899148, `<b>New subsc! <a href="tg://user?id=${userId}">${userId}</a>`, {parse_mode: "html"});
-      // add timestamp
-      return snap.ref.set({
-        createdAt: Math.floor(Date.now() / 1000),
-      }, {merge: true});
+      // add createdAt timestamp
+      // return snap.ref.set({
+      //   createdAt: Math.floor(Date.now() / 1000),
+      // }, {merge: true});
+      return null;
     });
 
 // notify admin when create order
-exports.notifyNewOrder = functions.region("europe-central2").firestore
+exports.orderCreate = functions.region("europe-central2").firestore
     .document("objects/{objectId}/orders/{orderId}")
     .onCreate(async (snap, context) => {
       const order = snap.data();
@@ -31,18 +31,58 @@ exports.notifyNewOrder = functions.region("europe-central2").firestore
       await bot.telegram.sendMessage(94899148, "<b>New order from " +
       `<a href="tg://user?id=${order.userId}">${order.lastName} ${order.firstName}</a>\n` +
       `Object ${order.objectName}\n` +
-      `Order ${order.userId}-${order.orderNumber}\n` +
+      `Order ${store.formatOrderNumber(order.userId, order.orderNumber)}\n` +
       `<a href="${process.env.BOT_SITE}/o/${order.objectId}/s/${orderId}">` +
       `${process.env.BOT_SITE}/o/${order.objectId}/s/${orderId}</a>\nfrom ${order.fromBot ? "BOT" : "SITE"}</b>`, {parse_mode: "html"});
+      // algolia order index
+      const orderAlgolia = {
+        objectID: orderId,
+        createdAt: order.createdAt,
+        orderNumber: store.formatOrderNumber(order.userId, order.orderNumber),
+        firstName: order.firstName,
+        lastName: order.lastName,
+        objectId: order.objectId,
+        objectName: order.objectName,
+        phoneNumber: order.phoneNumber,
+        address: order.address,
+        comment: order.comment,
+        status: store.statuses().get(order.statusId),
+      };
+      await ordersIndex.saveObject(orderAlgolia);
+      return null;
+    });
+
+// update order
+exports.orderUpdate = functions.region("europe-central2").firestore
+    .document("objects/{objectId}/orders/{orderId}")
+    .onUpdate(async (change, context) => {
+      const order = change.after.data();
+      const orderId = context.params.orderId;
+      // algolia order index
+      const orderAlgolia = {
+        objectID: orderId,
+        createdAt: order.createdAt,
+        orderNumber: store.formatOrderNumber(order.userId, order.orderNumber),
+        firstName: order.firstName,
+        lastName: order.lastName,
+        objectId: order.objectId,
+        objectName: order.objectName,
+        phoneNumber: order.phoneNumber,
+        address: order.address,
+        comment: order.comment,
+        status: store.statuses().get(order.statusId),
+      };
+      await ordersIndex.saveObject(orderAlgolia);
       return null;
     });
 
 // notify admin when create cart
-exports.notifyNewCart = functions.region("europe-central2").firestore
+exports.cartCreate = functions.region("europe-central2").firestore
     .document("objects/{objectId}/carts/{cartId}")
     .onCreate(async (snap, context) => {
       const objectId = context.params.objectId;
       const cartId = context.params.cartId;
+      const cart = snap.data();
       let user;
       if (!isNaN(cartId)) {
         user = `<a href="tg://user?id=${cartId}">${cartId}</a>`;
@@ -51,7 +91,7 @@ exports.notifyNewCart = functions.region("europe-central2").firestore
       }
       await bot.telegram.sendMessage(94899148, `<b>New cart from ${user}\n` +
         `<a href="${process.env.BOT_SITE}/o/${objectId}/share-cart/${cartId}">` +
-        `${process.env.BOT_SITE}/o/${objectId}/share-cart/${cartId}</a></b>`,
+        `${process.env.BOT_SITE}/o/${objectId}/share-cart/${cartId}</a>\nChannel ${cart.fromBot ? "BOT" : "SITE"}</b>`,
       {parse_mode: "html"});
       // const cart = snap.data();
       // return snap.ref.set({
@@ -82,7 +122,8 @@ exports.productCreate = functions.region("europe-central2").firestore
       }
       // add subCategory
       if (product.tagsNames) {
-        productAlgolia.subCategory = product.tagsNames.map((item) => item.name);
+        // productAlgolia.subCategory = product.tagsNames.map((item) => item.name);
+        productAlgolia.subCategory = product.tagsNames;
       }
       // create HierarchicalMenu
       // const groupString = product.catalogsNamePath.split("#");
@@ -123,7 +164,8 @@ exports.productUpdate = functions.region("europe-central2").firestore
       }
       // add subCategory
       if (product.tagsNames) {
-        productAlgolia.subCategory = product.tagsNames.map((item) => item.name);
+        // productAlgolia.subCategory = product.tagsNames.map((item) => item.name);
+        productAlgolia.subCategory = product.tagsNames;
       }
       // add photos if changed
       if (product.mainPhoto) {

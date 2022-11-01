@@ -9,37 +9,27 @@
           <a href="/o/{{../object.id}}/c/{{item.url}}">{{item.name}}</a>
         </li>
       {{/each}}
-      <li class="breadcrumb-item active" aria-current="page">
-        {{currentCatalog.name}}
-      </li>
     {{else}}
       <li class="breadcrumb-item active">{{envSite.i18n.aCatGoods}}</li>  
     {{/if}}
   </ol>
 </nav>
-{{#if currentCatalog}}
-  {{#if currentCatalog.filterLink}}
-    <a href="{{currentCatalog.filterLink}}">{{currentCatalog.filterLink}}</a>
-  {{/if}}
-{{/if}}
 {{#if tags}}
   <div class="dropdown mb-3">
     <button class="btn btn-success dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
       {{envSite.i18n.btnFilter}}
-      {{#each tags as |tag|}}
-        {{#if tag.active}}[{{tag.text}}]{{/if}}
-      {{/each}}
+      {{#if tagActive.name}}
+        [{{tagActive.name}}]
+      {{/if}}
     </button>
     <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
       {{#each tags as |tag|}}
         <li><a class="dropdown-item{{#if tag.active}} active{{/if}}" href="{{tag.url}}">{{tag.text}}</a></li>
       {{/each}}
-      {{#each tags as |tag|}}
-        {{#if tag.active}}
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="{{tag.path}}">{{../envSite.i18n.aAllGoods}}</a></li>
-        {{/if}}
-      {{/each}}
+      {{#if tagActive.name}}
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="{{tagActive.path}}">{{envSite.i18n.aAllGoods}}</a></li>
+      {{/if}}
     </ul>
   </div>
 {{/if}}

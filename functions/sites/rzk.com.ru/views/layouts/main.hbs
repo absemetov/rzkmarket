@@ -3,8 +3,8 @@
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
-      <link rel="stylesheet" href="/assets/index.dcbeaa69.css">
-      <script type="module" src="/assets/index.790f8d30.js"></script>
+      <link rel="stylesheet" href="/assets/index.6a22e6b9.css">
+      <script type="module" src="/assets/index.8ec6a3c5.js"></script>
       <title>{{#if title}}{{title}} - {{/if}}{{envSite.i18n.siteTitle}}</title>
       <link rel="icon" href="/favicon-{{envSite.lang}}.ico">
       <link rel="icon" href="/logo/logo-{{envSite.lang}}.svg" type="image/svg+xml">
@@ -19,6 +19,17 @@
         function gtag(){dataLayer.push(arguments);}
         gtag("js", new Date());
         gtag("config", "{{envSite.gtag}}");
+      </script>
+      <script>
+        // set canonical url
+        console.log(location.href.split("?")[0]);
+        const linkTag = document.createElement("link");
+        linkTag.setAttribute("rel", "canonical");
+        linkTag.href = location.href.split("?")[0];
+        document.head.appendChild(linkTag);
+        window.addEventListener("locationchange", function (event) {
+          console.log(location.href.split("?")[0]);
+        });
       </script>
     </head>
     <body>

@@ -6,11 +6,9 @@ const {uploadActions, uploadForm} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
 const {catalogsActions, cartWizard} = require("./bot_catalog_scene");
 const {store, uploadPhotoObj, uploadPhotoProduct, uploadPhotoCat} = require("./bot_store_cart");
-const {searchIndex, searchHandle, searchActions} = require("./bot_search");
+const {searchFormProduct, searchProductHandle, searchProductAction, searchOrderHandle, searchOrderAction} = require("./bot_search");
 const {URL} = require("url");
-const bot = new Telegraf(process.env.BOT_TOKEN, {
-  handlerTimeout: 540000,
-});
+const bot = new Telegraf(process.env.BOT_TOKEN);
 // midleware admin
 bot.use(isAdmin);
 // session msg
@@ -29,28 +27,34 @@ bot.use(async (ctx, next) => {
     urlMsq = msg && msg.reply_to_message && msg.reply_to_message.entities && msg.reply_to_message.entities.at(-1).url;
   }
   const url = new URL(urlMsq ? urlMsq : "http://t.me");
+  // rnd error message is not modified not show
+  const rnd = Math.random().toFixed(4).substring(2);
+  url.searchParams.set("rnd", rnd);
   ctx.state.sessionMsg = {
     url,
     linkHTML() {
-      // return `<a href="${this.url.href}">\u200c</a>`;
-      return `<a href="${this.url.href}">${this.url.href}</a>`;
+      return `<a href="${this.url.href}">\u200c</a>`;
+      // return `<a href="${this.url.href}">${this.url.href}</a>`;
     },
   };
   return next();
 });
 // route actions
-bot.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&/:~+]+)?/,
-    parseUrl, ...startActions, ...catalogsActions, ...ordersActions, ...monoActions, ...uploadActions, ...searchActions);
+// bot.action(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&/:~+]+)?/,
+//     parseUrl, ...startActions, ...catalogsActions, ...ordersActions, ...monoActions, ...uploadActions, ...searchActions);
+bot.on("callback_query",
+    parseUrl, ...startActions, ...catalogsActions, ...ordersActions, ...monoActions, ...uploadActions, searchProductAction, searchOrderAction);
 // start bot
 bot.start(async (ctx) => {
   await startHandler(ctx);
   // save user data
-  const userData = await store.findRecord(`users/${ctx.from.id}`);
-  if (!userData) {
-    await store.createRecord(`users/${ctx.from.id}`, {
-      firstName: ctx.from.first_name,
-    });
-  }
+  // const userData = await store.findRecord(`users/${ctx.from.id}`);
+  // if (!userData) {
+  await store.createRecord(`users/${ctx.from.id}`, {
+    from: {...ctx.from},
+    createdAt: Math.floor(Date.now() / 1000),
+  });
+  // }
 });
 // show obj
 bot.command("objects", async (ctx) => {
@@ -58,7 +62,7 @@ bot.command("objects", async (ctx) => {
 });
 // search products
 bot.command("search", async (ctx) => {
-  await searchIndex(ctx);
+  await searchFormProduct(ctx);
 });
 // monobank
 bot.command("mono", async (ctx) => {
@@ -86,8 +90,17 @@ bot.on(["text", "edited_message"], async (ctx) => {
   }
   // algolia search test
   // if (sessionFire && sessionFire.scene === "search") {
-  if (ctx.state.sessionMsg.url.searchParams.has("search")) {
-    await searchHandle(ctx, message.text);
+  if (ctx.state.sessionMsg.url.searchParams.get("scene") === "search") {
+    // ctx.state.routeName = "search";
+    // parseUrl(ctx, "search");
+    ctx.state.sessionMsg.url.searchParams.set("search_text", message.text);
+    await searchProductHandle(ctx);
+    return;
+  }
+  // search orders
+  if (ctx.state.sessionMsg.url.searchParams.get("scene") === "searchOrder") {
+    ctx.state.sessionMsg.url.searchParams.set("search_order_text", message.text);
+    await searchOrderHandle(ctx);
     return;
   }
   // get session scene
@@ -122,40 +135,37 @@ bot.on("photo", async (ctx) => {
   // const sessionFire = await store.findRecord(`users/${ctx.from.id}`, "session");
   const scene = ctx.state.sessionMsg.url.searchParams.get("scene");
   const objectId = ctx.state.sessionMsg.url.searchParams.get("objectId");
-  const productId = ctx.state.sessionMsg.url.searchParams.get("productId");
-  const catalogId = ctx.state.sessionMsg.url.searchParams.get("catalogId");
+  const productId = ctx.state.sessionMsg.url.searchParams.get("upload-productId");
+  const catalogId = ctx.state.sessionMsg.url.searchParams.get("upload-catalogId");
 
-  if (scene === "uploadPhotoProduct") {
-    ctx.state.sessionMsg.url.searchParams.delete("scene");
-    ctx.state.sessionMsg.url.searchParams.delete("objectId");
-    ctx.state.sessionMsg.url.searchParams.delete("productId");
+  if (scene === "upload-prod") {
     await ctx.reply("uploadPhotoProduct start");
     await uploadPhotoProduct(ctx, objectId, productId);
+    ctx.state.sessionMsg.url.searchParams.delete("scene");
+    ctx.state.sessionMsg.url.searchParams.delete("upload-productId");
     return;
   }
-  if (scene === "uploadPhotoCat") {
-    ctx.state.sessionMsg.url.searchParams.delete("scene");
-    ctx.state.sessionMsg.url.searchParams.delete("objectId");
-    ctx.state.sessionMsg.url.searchParams.delete("catalogId");
+  if (scene === "upload-cat") {
     await ctx.reply("uploadPhotoCat start");
     await uploadPhotoCat(ctx, objectId, catalogId);
+    ctx.state.sessionMsg.url.searchParams.delete("scene");
+    ctx.state.sessionMsg.url.searchParams.delete("upload-catalogId");
     return;
   }
-  if (scene === "uploadPhotoObj") {
-    ctx.state.sessionMsg.url.searchParams.delete("scene");
-    ctx.state.sessionMsg.url.searchParams.delete("objectId");
+  if (scene === "upload-obj") {
     await ctx.reply("uploadPhotoObj start");
     await uploadPhotoObj(ctx, objectId);
+    ctx.state.sessionMsg.url.searchParams.delete("scene");
     return;
   }
   await ctx.reply("session scene is null");
 });
 // error handler
 bot.catch((error) => {
-  if (error instanceof Error && error.message.includes("message is not modified")) {
-    // ignore
-    return false;
-  }
+  // if (error instanceof Error && error.message.includes("message is not modified")) {
+  //   // ignore
+  //   return false;
+  // }
   // throw error;
   console.log("Telegraf error", error);
 });

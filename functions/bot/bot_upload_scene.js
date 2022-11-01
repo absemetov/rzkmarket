@@ -6,10 +6,10 @@ const {GoogleSpreadsheet} = require("google-spreadsheet");
 const creds = require("./rzk-com-ua-d1d3248b8410.json");
 const Validator = require("validatorjs");
 const {google} = require("googleapis");
-const CyrillicToTranslit = require("cyrillic-to-translit-js");
 const {store, roundNumber, photoCheckUrl} = require("./bot_store_cart");
-const cyrillicToTranslit = new CyrillicToTranslit();
-const cyrillicToTranslitUk = new CyrillicToTranslit({preset: "uk"});
+const Translit = require("cyrillic-to-translit-js");
+const cyrillicToTranslit = new Translit();
+const cyrillicToTranslitUk = new Translit({preset: "uk"});
 // upload from googleSheet
 const uploadProducts = async (telegram, objectId, sheetId) => {
   const object = await store.findRecord(`objects/${objectId}`);
@@ -25,7 +25,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
   // Products set array
   const productIsSet = new Set();
   // array for save tags
-  const catalogsTagsMap = new Map();
+  // const catalogsTagsMap = new Map();
   // batch catalogs
   let batchCatalogs = firebase.firestore().batch();
   let batchCatalogsCount = 0;
@@ -104,6 +104,8 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
           const name = tag.trim();
           const id = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name, "-")).toLowerCase();
           return {id, name};
+          // return {cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(tag.trim(), "-")).toLowerCase();
+          // return name;
         }) : [];
         // product data
         const product = {
@@ -125,7 +127,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
           "price": "required|numeric",
           "groupLength": "required|max:5",
           "group.*.id": "alpha_dash|max:16",
-          "tags.*": "alpha_dash|max:12",
+          "tags.*": "alpha_dash:max:12",
           "currency": "required|in:USD,EUR,RUB,UAH",
           "unit": "required|in:м,шт",
         };
@@ -166,7 +168,8 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
             }),
             // "path": groupArray.map((catalog) => catalog.id).join("/"),
             "tags": tags.length ? tags.map((tag) => tag.id) : firestore.FieldValue.delete(),
-            "tagsNames": tags.length ? tags : firestore.FieldValue.delete(),
+            // "tags": tags.length ? tags : firestore.FieldValue.delete(),
+            "tagsNames": tags.length ? tags.map((tag) => tag.name) : firestore.FieldValue.delete(),
             "brand": product.brand ? product.brand : firestore.FieldValue.delete(),
             "updatedAt": updatedAtTimestamp,
             "objectName": object.name,
@@ -178,6 +181,12 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
             // helper url for algolia
             // helpArray.push(catalog.name);
             // check if catalog added to batch
+            // helper arrays
+            pathArray.push(catalog.id);
+            catUrlArray.push({
+              name: catalog.name,
+              url: pathArray.join("/"),
+            });
             if (!catalogsIsSet.has(catalog.id)) {
               catalogsIsSet.set(catalog.id, {parentId: catalog.parentId});
               // catalogsIsSet.set(pathArray.join("-"));
@@ -189,7 +198,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
                 // "parentName": catalog.parentName,
                 "orderNumber": catalogsIsSet.size,
                 "updatedAt": updatedAtTimestamp,
-                "tags": firestore.FieldValue.delete(),
+                // "tags": firestore.FieldValue.delete(),
                 // "hierarchicalUrl": pathArray.join(" > "),
                 "pathArray": [...catUrlArray],
                 // "path": pathArray.length ? pathArray.join("/") : null,
@@ -201,28 +210,22 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
                 batchCatalogsCount = 0;
               }
             }
-            // helper arrays
-            pathArray.push(catalog.id);
-            catUrlArray.push({
-              name: catalog.name,
-              url: pathArray.join("/"),
-            });
             // check if catalog moved
             if (catalogsIsSet.get(catalog.id).parentId !== catalog.parentId) {
               throw new Error(`Catalog <b>${catalog.name}</b> moved from  <b>${catalogsIsSet.get(catalog.id).parentId}</b> to  <b>${catalog.parentId}</b> in row <b>${j + 1}</b>`);
             }
           }
           // generate tags Map for last catalog
-          for (const tagsRow of tags) {
-            if (catalogsTagsMap.has(groupArray[groupArray.length - 1].id)) {
-              if (!catalogsTagsMap.get(groupArray[groupArray.length - 1].id).has(tagsRow.id)) {
-                catalogsTagsMap.get(groupArray[groupArray.length - 1].id).set(tagsRow.id, tagsRow.name);
-              }
-            } else {
-              catalogsTagsMap.set(groupArray[groupArray.length - 1].id, new Map());
-              catalogsTagsMap.get(groupArray[groupArray.length - 1].id).set(tagsRow.id, tagsRow.name);
-            }
-          }
+          // for (const tagsRow of tags) {
+          //   if (catalogsTagsMap.has(groupArray[groupArray.length - 1].id)) {
+          //     if (!catalogsTagsMap.get(groupArray[groupArray.length - 1].id).has(tagsRow.id)) {
+          //       catalogsTagsMap.get(groupArray[groupArray.length - 1].id).set(tagsRow.id, tagsRow.name);
+          //     }
+          //   } else {
+          //     catalogsTagsMap.set(groupArray[groupArray.length - 1].id, new Map());
+          //     catalogsTagsMap.get(groupArray[groupArray.length - 1].id).set(tagsRow.id, tagsRow.name);
+          //   }
+          // }
         }
       }
     }
@@ -239,24 +242,24 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
     await batchCatalogs.commit();
   }
   // save catalogs tags
-  let batchCatalogsTags = firebase.firestore().batch();
-  let batchCatalogsTagsCount = 0;
-  for (const catalog of catalogsTagsMap) {
-    const catalogRef = firebase.firestore().collection("objects").doc(objectId)
-        .collection("catalogs").doc(catalog[0]);
-    batchCatalogsTags.set(catalogRef, {
-      "tags": Array.from(catalog[1], ([id, name]) => ({id, name})),
-    }, {merge: true});
-    // by 500 catalogs commit batch
-    if (++batchCatalogsTagsCount === perPage) {
-      await batchCatalogsTags.commit();
-      batchCatalogsTags = firebase.firestore().batch();
-      batchCatalogsTagsCount = 0;
-    }
-  }
-  if (batchCatalogsTagsCount !== perPage) {
-    await batchCatalogsTags.commit();
-  }
+  // let batchCatalogsTags = firebase.firestore().batch();
+  // let batchCatalogsTagsCount = 0;
+  // for (const catalog of catalogsTagsMap) {
+  //   const catalogRef = firebase.firestore().collection("objects").doc(objectId)
+  //       .collection("catalogs").doc(catalog[0]);
+  //   batchCatalogsTags.set(catalogRef, {
+  //     "tags": Array.from(catalog[1], ([id, name]) => ({id, name})),
+  //   }, {merge: true});
+  //   // by 500 catalogs commit batch
+  //   if (++batchCatalogsTagsCount === perPage) {
+  //     await batchCatalogsTags.commit();
+  //     batchCatalogsTags = firebase.firestore().batch();
+  //     batchCatalogsTagsCount = 0;
+  //   }
+  // }
+  // if (batchCatalogsTagsCount !== perPage) {
+  //   await batchCatalogsTags.commit();
+  // }
   // start delete trigger
   try {
     await deleteProducts(telegram, objectId, updatedAtTimestamp);
@@ -453,7 +456,7 @@ uploadActions.push(createObject);
 const uploadMerch = async (ctx, next) => {
   if (ctx.state.routeName === "uploadMerch") {
     const productId = ctx.state.param;
-    const objectId = ctx.state.params.get("o");
+    const objectId = ctx.state.sessionMsg.url.searchParams.get("objectId");
     const object = await store.findRecord(`objects/${objectId}`);
     const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
     let publicImgUrl = null;
@@ -470,7 +473,8 @@ const uploadMerch = async (ctx, next) => {
     });
     google.options({auth: auth});
     // Do the magic
-    const res = await content.products.insert({
+    // const res = await content.products.insert({
+    await content.products.insert({
       merchantId: "120890507",
       resource: {
         "channel": "online",
@@ -490,7 +494,7 @@ const uploadMerch = async (ctx, next) => {
         },
       },
     });
-    console.log(res.data);
+    // console.log(res.data);
     await ctx.answerCbQuery("Merch upload!");
   } else {
     return next();

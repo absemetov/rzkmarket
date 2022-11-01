@@ -1,20 +1,22 @@
 const firebase = require("firebase-admin");
 const {showCart, cartWizard} = require("./bot_catalog_scene");
 const {store, cart, roundNumber, photoCheckUrl} = require("./bot_store_cart");
+const {parseUrl} = require("./bot_start_scene");
 const moment = require("moment");
 // require("moment/locale/ru");
 // moment.locale("ru");
 const ordersActions = [];
 // user orders
-const myOrders = async (ctx, next) => {
-  if (ctx.state.routeName === "myO") {
+const userOrders = async (ctx, next) => {
+  if (ctx.state.routeName === "m") {
     const startAfter = ctx.state.params.get("s");
     const endBefore = ctx.state.params.get("e");
     const userId = + ctx.state.param;
     const inlineKeyboardArray = [];
     const orderId = ctx.state.params.get("oId");
+    // const objectId = ctx.state.sessionMsg.url.searchParams.get("objectId");
     const objectId = ctx.state.params.get("o");
-    let caption = "<b>Мои заказы</b>";
+    let caption = `<b>${ctx.i18n.btn.orders()}</b>`;
     // const pathOrderCurrent = await store.findRecord(`users/${ctx.from.id}`, "session.pathOrderCurrent");
     const pathOrderCurrent = ctx.state.sessionMsg.url.searchParams.get("pathOrderCurrent");
     if (pathOrderCurrent) {
@@ -25,17 +27,17 @@ const myOrders = async (ctx, next) => {
       const order = await store.findRecord(`objects/${objectId}/orders/${orderId}`);
       if (order) {
         // show order
-        const date = moment.unix(order.createdAt).locale("ru");
+        const date = moment.unix(order.createdAt).locale(process.env.BOT_LANG);
         caption += "<b> > " +
-        `Заказ #${store.formatOrderNumber(order.userId, order.orderNumber)} (${date.fromNow()})\n` +
-        `Склад: ${order.objectName}\n` +
+        `${ctx.i18n.txt.order()} #${store.formatOrderNumber(order.userId, order.orderNumber)} (${date.fromNow()})\n` +
+        `${order.objectName}\n` +
         `Статус: ${store.statuses().get(order.statusId)}\n` +
         `${order.lastName} ${order.firstName} ${order.phoneNumber}\n` +
-        `Адрес доставки: ${order.address}, ` +
-        `${store.carriers().get(order.carrierId).name} ` +
+        `${order.address}\n` +
+        `Доставка: ${store.carriers().get(order.carrierId).name} ` +
         `${order.carrierNumber ? "#" + order.carrierNumber : ""}\n` +
         `Оплата: ${store.payments().get(order.paymentId)}\n` +
-        `${order.comment ? "Комментарий: " + order.comment + "\n" : ""}</b>`;
+        `${order.comment ? order.comment + "\n" : ""}</b>`;
         let totalQty = 0;
         let totalSum = 0;
         let itemShow = 0;
@@ -54,26 +56,25 @@ const myOrders = async (ctx, next) => {
           totalSum += product.qty * product.price;
         });
         if (itemShow !== orderProductsSorted.length) {
-          caption += "⬇️Весь список нажмите на ссылку ⬇️\n";
+          caption += `${ctx.i18n.txt.orderFuel()}\n`;
         }
-        caption += `<b>Количество товара: ${totalQty}\n` +
-          `Сумма: ${roundNumber(totalSum)} ${process.env.BOT_CURRENCY}</b>`;
+        caption += `<b>${ctx.i18n.product.qty()}: ${totalQty}\n` +
+          `${ctx.i18n.product.sum()}: ${roundNumber(totalSum)} ${process.env.BOT_CURRENCY}</b>`;
       }
       // share link
       inlineKeyboardArray.push([
-        {text: "Ссылка на заказ", url: `${process.env.BOT_SITE}/o/${objectId}/s/${order.id}`},
+        {text: ctx.i18n.btn.linkOrder(), url: `${process.env.BOT_SITE}/o/${objectId}/s/${order.id}`},
       ]);
       // const myPathOrder = await store.findRecord(`users/${ctx.from.id}`, "session.myPathOrder");
       const myPathOrder = ctx.state.sessionMsg.url.searchParams.get("myPathOrder");
-      inlineKeyboardArray.push([{text: "🧾 Мои заказы",
-        callback_data: `${myPathOrder ? myPathOrder : "myO/" + userId}`}]);
+      inlineKeyboardArray.push([{text: ctx.i18n.btn.orders(),
+        callback_data: `${myPathOrder ? myPathOrder : "m/" + userId}`}]);
     } else {
       // show all orders
       // ctx.session.myPathOrder = ctx.callbackQuery.data;
       // await store.createRecord(`users/${ctx.from.id}`, {"session": {"myPathOrder": ctx.callbackQuery.data}});
       ctx.state.sessionMsg.url.searchParams.set("myPathOrder", ctx.callbackQuery.data);
-      const mainQuery = firebase.firestore().collectionGroup("orders").where("userId", "==", userId)
-          .orderBy("createdAt", "desc");
+      const mainQuery = firebase.firestore().collectionGroup("orders").where("userId", "==", userId).orderBy("createdAt", "desc");
       let query = mainQuery;
       if (startAfter) {
         const startAfterProduct = await store.getQuery(`objects/${objectId}/orders/${startAfter}`).get();
@@ -93,10 +94,10 @@ const myOrders = async (ctx, next) => {
       // render orders
       ordersSnapshot.docs.forEach((doc) => {
         const order = {id: doc.id, ...doc.data()};
-        const date = moment.unix(order.createdAt).locale("ru");
-        inlineKeyboardArray.push([{text: `🧾 Заказ #${store.formatOrderNumber(order.userId, order.orderNumber)},` +
+        const date = moment.unix(order.createdAt).locale(process.env.BOT_LANG);
+        inlineKeyboardArray.push([{text: `${ctx.i18n.txt.order()} #${store.formatOrderNumber(order.userId, order.orderNumber)},` +
           `${store.statuses().get(order.statusId)}, ${date.fromNow()}`,
-        callback_data: `myO/${userId}?oId=${order.id}&o=${order.objectId}`}]);
+        callback_data: `m/${userId}?oId=${order.id}&o=${order.objectId}`}]);
       });
       // load more button
       if (!ordersSnapshot.empty) {
@@ -104,25 +105,25 @@ const myOrders = async (ctx, next) => {
         const endBeforeSnap = ordersSnapshot.docs[0];
         const ifBeforeProducts = await mainQuery.endBefore(endBeforeSnap).limitToLast(1).get();
         if (!ifBeforeProducts.empty) {
-          prevNext.push({text: "⬅️ Назад",
-            callback_data: `myO/${userId}?e=${endBeforeSnap.id}&o=${endBeforeSnap.data().objectId}`});
+          prevNext.push({text: ctx.i18n.btn.previous(),
+            callback_data: `m/${userId}?e=${endBeforeSnap.id}&o=${endBeforeSnap.data().objectId}`});
         }
         // startAfter
         const startAfterSnap = ordersSnapshot.docs[ordersSnapshot.docs.length - 1];
         const ifAfterProducts = await mainQuery.startAfter(startAfterSnap).limit(1).get();
         if (!ifAfterProducts.empty) {
-          prevNext.push({text: "➡️ Вперед",
-            callback_data: `myO/${userId}?s=${startAfterSnap.id}&o=${startAfterSnap.data().objectId}`});
+          prevNext.push({text: ctx.i18n.btn.next(),
+            callback_data: `m/${userId}?s=${startAfterSnap.id}&o=${startAfterSnap.data().objectId}`});
         }
         inlineKeyboardArray.push(prevNext);
       } else {
-        inlineKeyboardArray.push([{text: "У Вас пока нет заказов", callback_data: "objects"}]);
+        inlineKeyboardArray.push([{text: ctx.i18n.txt.noOrder(), callback_data: "o"}]);
       }
       if (pathOrderCurrent) {
         inlineKeyboardArray.push([{text: "🏠 Вернуться к заказу",
           callback_data: `${pathOrderCurrent}`}]);
       }
-      inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: "objects"}]);
+      inlineKeyboardArray.push([{text: ctx.i18n.btn.main(), callback_data: "o"}]);
     }
     // truncate long string
     // if (caption.length > 1024) {
@@ -145,16 +146,38 @@ const myOrders = async (ctx, next) => {
   }
 };
 // admin orders
-const showOrders = async (ctx, next) => {
-  if (ctx.state.routeName === "orders") {
+const adminOrders = async (ctx, next) => {
+  if (ctx.state.routeName === "r") {
     const startAfter = ctx.state.params.get("s");
     const endBefore = ctx.state.params.get("e");
-    const objectId = ctx.state.params.get("o");
+    const todo = ctx.state.params.get("todo");
+    const objectId = ctx.state.params.get("o") || ctx.state.sessionMsg.url.searchParams.get("objectId");
+    if (ctx.state.params.get("o")) {
+      ctx.state.sessionMsg.url.searchParams.set("objectId", objectId);
+    }
+    const page = ctx.state.sessionMsg.url.searchParams.get("page_order");
     const inlineKeyboardArray = [];
     const orderId = ctx.state.param;
     const limit = 10;
     const object = await store.findRecord(`objects/${objectId}`);
     let caption = `<b>Заказы ${object.name}</b>`;
+    // todo
+    // show statuses
+    if (todo === "showStatuses") {
+      const selectedStatus = + ctx.state.params.get("selectedStatus");
+      const inlineKeyboardArray = [];
+      store.statuses().forEach((value, key) => {
+        if (key === selectedStatus) {
+          value = "✅ " + value;
+        }
+        inlineKeyboardArray.push([{text: value, callback_data: `r?statusId=${key}`}]);
+      });
+      const pathOrder = ctx.state.sessionMsg.url.searchParams.get("pathOrder");
+      inlineKeyboardArray.push([{text: "⬅️ Назад",
+        callback_data: `${pathOrder ? pathOrder : "r"}`}]);
+      await cartWizard[0](ctx, "Статуc заказа", inlineKeyboardArray);
+      return;
+    }
     if (orderId) {
       // show order
       const order = await store.findRecord(`objects/${objectId}/orders/${orderId}`);
@@ -202,38 +225,40 @@ const showOrders = async (ctx, next) => {
       ]);
       // edit entries
       inlineKeyboardArray.push([{text: `📝 Статус: ${store.statuses().get(order.statusId)}`,
-        callback_data: `eO/${order.id}?sSI=${order.statusId}&o=${objectId}`}]);
+        callback_data: `e/${order.id}?showStatus=${order.statusId}`}]);
       inlineKeyboardArray.push([{text: `📝 Фамилия получателя: ${order.lastName}`,
-        callback_data: `eO/${order.id}?e=lastName&o=${objectId}`}]);
+        callback_data: `e/${order.id}?e=lastName`}]);
       inlineKeyboardArray.push([{text: `📝 Имя получателя: ${order.firstName}`,
-        callback_data: `eO/${order.id}?e=firstName&o=${objectId}`}]);
+        callback_data: `e/${order.id}?e=firstName`}]);
       inlineKeyboardArray.push([{text: `📝 Номер тел.: ${order.phoneNumber}`,
-        callback_data: `eO/${order.id}?e=phoneNumber&o=${objectId}`}]);
+        callback_data: `e/${order.id}?e=phoneNumber`}]);
       inlineKeyboardArray.push([{text: `📝 Оплата: ${store.payments().get(order.paymentId)}`,
-        callback_data: `eO/${order.id}?showPay=${order.paymentId}&o=${objectId}`}]);
+        callback_data: `e/${order.id}?showPay=${order.paymentId}`}]);
       if (order.carrierNumber) {
         inlineKeyboardArray.push([{text: `📝 Доставка: ${store.carriers().get(order.carrierId).name} ` +
         `#${order.carrierNumber}`,
-        callback_data: `eO/${order.id}?cId=${order.carrierId}&n=${order.carrierNumber}&o=${objectId}`}]);
+        callback_data: `e/${order.id}?showCarrier=${order.carrierId}`}]);
       } else {
         inlineKeyboardArray.push([{text: `📝 Доставка: ${store.carriers().get(order.carrierId).name}`,
-          callback_data: `eO/${order.id}?cId=${order.carrierId}&o=${objectId}`}]);
+          callback_data: `e/${order.id}?showCarrier=${order.carrierId}`}]);
       }
       inlineKeyboardArray.push([{text: `📝 Адрес: ${order.address}`,
-        callback_data: `eO/${order.id}?e=address&o=${objectId}`}]);
+        callback_data: `e/${order.id}?e=address`}]);
       inlineKeyboardArray.push([{text: `📝 Комментарий: ${order.comment ? order.comment : ""}`,
-        callback_data: `eO/${order.id}?e=comment&o=${objectId}`}]);
+        callback_data: `e/${order.id}?e=comment`}]);
       inlineKeyboardArray.push([{text: "📝 Редактировать товары",
-        callback_data: `eO/${orderId}?eP=1&o=${objectId}`}]);
+        callback_data: `e/${orderId}?editProd=1`}]);
       inlineKeyboardArray.push([{text: "📝 Информация о покупателе",
-        callback_data: `eO?userId=${order.userId}&o=${order.objectId}`}]);
-      const rnd = Math.random().toFixed(2).substring(2);
+        callback_data: `e?userId=${order.userId}`}]);
       inlineKeyboardArray.push([{text: "🔄 Обновить",
-        callback_data: `orders/${order.id}?o=${objectId}&${rnd}`}]);
+        callback_data: `r/${order.id}`}]);
       // const pathOrder = await store.findRecord(`users/${ctx.from.id}`, "session.pathOrder");
       const pathOrder = ctx.state.sessionMsg.url.searchParams.get("pathOrder");
       inlineKeyboardArray.push([{text: "🧾 Заказы",
-        callback_data: `${pathOrder ? pathOrder : "orders?o=" + order.objectId}`}]);
+        callback_data: `${pathOrder ? pathOrder : "r"}`}]);
+      if (page) {
+        inlineKeyboardArray.push([{text: "🔍 Вернуться к поиску", callback_data: `searchOrder/${page}`}]);
+      }
     } else {
       // show orders
       // ctx.session.pathOrderCurrent = null;
@@ -242,7 +267,7 @@ const showOrders = async (ctx, next) => {
       //   "pathOrderCurrent": null,
       //   "pathOrder": ctx.callbackQuery.data,
       // }});
-      ctx.state.sessionMsg.url.searchParams.delete("pathOrderCurrent");
+      // ctx.state.sessionMsg.url.searchParams.delete("pathOrderCurrent");
       ctx.state.sessionMsg.url.searchParams.set("pathOrder", ctx.callbackQuery.data);
       let mainQuery = firebase.firestore().collection("objects").doc(objectId)
           .collection("orders").orderBy("createdAt", "desc");
@@ -271,20 +296,20 @@ const showOrders = async (ctx, next) => {
       const ordersSnapshot = await query.get();
       const tagsArray = [];
       tagsArray.push({text: "📌 Статус заказа",
-        callback_data: `eO/showStatuses?o=${objectId}`});
+        callback_data: "r?todo=showStatuses"});
       // delete or close selected tag
       if (statusId) {
-        tagsArray[0].callback_data = `eO/showStatuses?selectedStatus=${statusId}&o=${objectId}`;
-        tagsArray.push({text: `❎ ${store.statuses().get(statusId)}`, callback_data: `orders?o=${objectId}`});
+        tagsArray[0].callback_data = `r?todo=showStatuses&selectedStatus=${statusId}`;
+        tagsArray.push({text: `❎ ${store.statuses().get(statusId)}`, callback_data: "r"});
       }
       inlineKeyboardArray.push(tagsArray);
       // render orders
       ordersSnapshot.docs.forEach((doc) => {
         const order = {id: doc.id, ...doc.data()};
         const date = moment.unix(order.createdAt).locale("ru");
-        inlineKeyboardArray.push([{text: `🧾 Заказ #${store.formatOrderNumber(order.userId, order.orderNumber)},` +
-          `${store.statuses().get(order.statusId)}, ${date.fromNow()}`,
-        callback_data: `orders/${order.id}?o=${objectId}`}]);
+        inlineKeyboardArray.push([{text: `🧾 ${order.lastName} ${order.firstName} ${store.statuses().get(order.statusId)} ` +
+        `#${store.formatOrderNumber(order.userId, order.orderNumber)}, ${date.fromNow()}`,
+        callback_data: `r/${order.id}`}]);
       });
       // set load more button
       if (!ordersSnapshot.empty) {
@@ -294,20 +319,20 @@ const showOrders = async (ctx, next) => {
         const ifBeforeProducts = await mainQuery.endBefore(endBeforeSnap).limitToLast(1).get();
         if (!ifBeforeProducts.empty) {
           prevNext.push({text: "⬅️ Назад",
-            callback_data: `orders?e=${endBeforeSnap.id}${statusUrl}&o=${endBeforeSnap.data().objectId}`});
+            callback_data: `r?e=${endBeforeSnap.id}${statusUrl}`});
         }
         // startAfter
         const startAfterSnap = ordersSnapshot.docs[ordersSnapshot.docs.length - 1];
         const ifAfterProducts = await mainQuery.startAfter(startAfterSnap).limit(1).get();
         if (!ifAfterProducts.empty) {
           prevNext.push({text: "➡️ Вперед",
-            callback_data: `orders?s=${startAfterSnap.id}${statusUrl}&o=${startAfterSnap.data().objectId}`});
+            callback_data: `r?s=${startAfterSnap.id}${statusUrl}`});
         }
         inlineKeyboardArray.push(prevNext);
       } else {
-        inlineKeyboardArray.push([{text: "Заказов нет", callback_data: `objects/${objectId}`}]);
+        inlineKeyboardArray.push([{text: "Заказов нет", callback_data: `o/${objectId}`}]);
       }
-      inlineKeyboardArray.push([{text: "🏠 Главная", callback_data: "objects"}]);
+      inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `o/${objectId}`}]);
     }
     // truncate long string
     // if (caption.length > 1024) {
@@ -333,44 +358,36 @@ const showOrders = async (ctx, next) => {
     return next();
   }
 };
-ordersActions.push(showOrders);
-ordersActions.push(myOrders);
+ordersActions.push(adminOrders);
+ordersActions.push(userOrders);
 
 // order wizard
 const orderWizard = [
   async (ctx) => {
-    const fieldName = ctx.state.sessionMsg.url.searchParams.get("fieldName");
-    const fieldValue = ctx.state.sessionMsg.url.searchParams.get("fieldValue");
     ctx.state.sessionMsg.url.searchParams.set("scene", "editOrder");
     ctx.state.sessionMsg.url.searchParams.set("cursor", 1);
+    const fieldName = ctx.state.sessionMsg.url.searchParams.get("fieldName");
+    const fieldValue = ctx.state.sessionMsg.url.searchParams.get("fieldValue");
     await ctx.replyWithHTML(`Текущее значение ${fieldName}: <b>${fieldValue}</b>` + ctx.state.sessionMsg.linkHTML(), {
       reply_markup: {
-        // keyboard: [["Отмена"]],
-        // resize_keyboard: true,
         force_reply: true,
       }});
-    // ctx.session.scene = "editOrder";
-    // ctx.session.cursor = 1;
-    // await store.createRecord(`users/${ctx.from.id}`, {"session": {
-    //   "scene": "editOrder",
-    //   "cursor": 1,
-    // }});
   },
   async (ctx, newValue) => {
     // save order field
-    // const fieldName = await store.findRecord(`users/${ctx.from.id}`, "session.fieldName");
     const fieldName = ctx.state.sessionMsg.url.searchParams.get("fieldName");
     if (fieldName === "phoneNumber") {
       const regexpPhone = new RegExp(process.env.BOT_PHONEREGEXP);
       const checkPhone = newValue.match(regexpPhone);
       if (!checkPhone) {
-        await ctx.reply(`Введите номер телефона в формате ${process.env.BOT_PHONETEMPLATE}`);
+        await ctx.replyWithHTML(`Введите номер телефона в формате ${process.env.BOT_PHONETEMPLATE}` + ctx.state.sessionMsg.linkHTML(), {
+          reply_markup: {
+            force_reply: true,
+          }});
         return;
       }
       newValue = `${process.env.BOT_PHONECODE}${checkPhone[2]}`;
     }
-    // const objectId = await store.findRecord(`users/${ctx.from.id}`, "session.objectId");
-    // const orderId = await store.findRecord(`users/${ctx.from.id}`, "session.orderId");
     const objectId = ctx.state.sessionMsg.url.searchParams.get("objectId");
     const orderId = ctx.state.sessionMsg.url.searchParams.get("orderId");
     await store.updateRecord(`objects/${objectId}/orders/${orderId}`,
@@ -380,38 +397,38 @@ const orderWizard = [
       reply_markup: {
         remove_keyboard: true,
       }});
-    // ctx.session.scene = null;
-    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": null}});
   },
 ];
 // edit order fields
 ordersActions.push(async (ctx, next) => {
-  if (ctx.state.routeName === "eO") {
+  if (ctx.state.routeName === "e") {
     const orderId = ctx.state.param;
     const editField = ctx.state.params.get("e");
-    const cId = + ctx.state.params.get("cId");
-    const carrierNumber = + ctx.state.params.get("n");
-    const sCid = + ctx.state.params.get("sCid");
+    const showCarrier = + ctx.state.params.get("showCarrier");
+    const carrierNumber = + ctx.state.params.get("cN") || 0;
+    const carrierId = + ctx.state.params.get("saveCarrier");
     const showPaymentId = + ctx.state.params.get("showPay");
     const paymentId = + ctx.state.params.get("paymentId");
-    const showStatusId = + ctx.state.params.get("sSI");
-    const statusId = + ctx.state.params.get("sId");
-    const objectId = ctx.state.params.get("o");
+    const showStatus = + ctx.state.params.get("showStatus");
+    const statusId = + ctx.state.params.get("saveStatus");
+    const objectId = ctx.state.sessionMsg.url.searchParams.get("objectId");
     const userId = ctx.state.params.get("userId");
     // show user info creator
     if (userId) {
       const inlineKeyboardArray = [];
       inlineKeyboardArray.push([{text: `Заказы from User ${userId}`,
-        callback_data: `myO/${userId}`}]);
+        callback_data: `m/${userId}`}]);
       // const pathOrderCurrent = await store.findRecord(`users/${ctx.from.id}`, "session.pathOrderCurrent");
       const pathOrderCurrent = ctx.state.sessionMsg.url.searchParams.get("pathOrderCurrent");
       inlineKeyboardArray.push([{text: "⬅️ Назад",
-        callback_data: `${pathOrderCurrent ? pathOrderCurrent : `orders?o=${objectId}`}`}]);
-      await cartWizard[0](ctx, `User <a href="tg://user?id=${userId}">${userId}</a>`, inlineKeyboardArray);
+        callback_data: `${pathOrderCurrent}`}]);
+      const userData = await store.findRecord(`users/${userId}`);
+      await cartWizard[0](ctx, `User <a href="tg://user?id=${userId}">${userId}</a>\n` +
+      `${userData.from ? JSON.stringify(userData.from) : ""}\nCount orders: ${userData.orderCount || 0}`, inlineKeyboardArray);
     }
     // edit produc
-    const editProducts = ctx.state.params.get("eP");
-    const saveProducts = ctx.state.params.get("sP");
+    const editProducts = ctx.state.params.get("editProd");
+    const saveProducts = ctx.state.params.get("saveProd");
     // save products from cart
     if (saveProducts) {
       const products = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`, "products");
@@ -425,9 +442,10 @@ ordersActions.push(async (ctx, next) => {
         store.updateRecord(`objects/${objectId}/orders/${orderId}`, {products}),
       ]);
       // redirect to order
-      ctx.state.routeName = "orders";
-      ctx.state.param = orderId;
-      await showOrders(ctx, next);
+      // ctx.state.routeName = "r";
+      // ctx.state.param = orderId;
+      parseUrl(ctx, `r/${orderId}`);
+      await adminOrders(ctx);
     }
     if (editProducts) {
       // clear cart then export!!!
@@ -447,40 +465,14 @@ ordersActions.push(async (ctx, next) => {
       await cart.clear(objectId, ctx.from.id);
       await store.createRecord(`objects/${objectId}/carts/${ctx.from.id}`, {products: order.products}),
       // set route name
-      ctx.state.routeName = "cart";
+      // ctx.state.routeName = "cart";
+      parseUrl(ctx, "cart");
       await showCart(ctx, next);
     }
-    // show statuses
-    if (orderId === "showStatuses") {
-      const selectedStatus = + ctx.state.params.get("selectedStatus");
-      const inlineKeyboardArray = [];
-      store.statuses().forEach((value, key) => {
-        if (key === selectedStatus) {
-          value = "✅ " + value;
-        }
-        inlineKeyboardArray.push([{text: value, callback_data: `orders?statusId=${key}&o=${objectId}`}]);
-      });
-      // const pathOrder = await store.findRecord(`users/${ctx.from.id}`, "session.pathOrder");
-      const pathOrder = ctx.state.sessionMsg.url.searchParams.get("pathOrder");
-      inlineKeyboardArray.push([{text: "⬅️ Назад",
-        callback_data: `${pathOrder ? pathOrder : `orders?o=${objectId}`}`}]);
-      await cartWizard[0](ctx, "Статуc заказа", inlineKeyboardArray);
-    }
     if (editField) {
-      const order = await store.findRecord(`objects/${objectId}/orders/${orderId}`);
-      // ctx.session.orderId = orderId;
-      // ctx.session.objectId = objectId;
-      // ctx.session.fieldName = editField;
-      // ctx.session.fieldValue = order[editField];
-      // await store.createRecord(`users/${ctx.from.id}`, {"session": {
-      //   orderId,
-      //   objectId,
-      //   "fieldName": editField,
-      //   "fieldValue": order[editField],
-      // }});
       ctx.state.sessionMsg.url.searchParams.set("orderId", orderId);
-      ctx.state.sessionMsg.url.searchParams.set("objectId", objectId);
       ctx.state.sessionMsg.url.searchParams.set("fieldName", editField);
+      const order = await store.findRecord(`objects/${objectId}/orders/${orderId}`);
       ctx.state.sessionMsg.url.searchParams.set("fieldValue", order[editField]);
       await orderWizard[0](ctx);
     }
@@ -491,79 +483,73 @@ ordersActions.push(async (ctx, next) => {
         if (key === showPaymentId) {
           value = "✅ " + value;
         }
-        inlineKeyboardArray.push([{text: value, callback_data: `eO/${orderId}?paymentId=${key}&o=${objectId}`}]);
+        inlineKeyboardArray.push([{text: value, callback_data: `e/${orderId}?paymentId=${key}`}]);
       });
       inlineKeyboardArray.push([{text: "⬅️ Назад",
-        callback_data: `orders/${orderId}?o=${objectId}`}]);
+        callback_data: `r/${orderId}`}]);
       await cartWizard[0](ctx, "Способ оплаты", inlineKeyboardArray);
     }
     // save payment
     if (paymentId) {
       await store.updateRecord(`objects/${objectId}/orders/${orderId}`, {paymentId});
-      ctx.state.routeName = "orders";
+      // ctx.state.routeName = "r";
       // ctx.state.param = orderId;
-      await showOrders(ctx, next);
+      parseUrl(ctx, `r/${orderId}`);
+      await adminOrders(ctx);
     }
     // show carrier
-    if (cId) {
+    if (showCarrier) {
       const inlineKeyboardArray = [];
       store.carriers().forEach((obj, key) => {
-        if (key === cId) {
+        if (key === showCarrier) {
           obj.name = "✅ " + obj.name;
         }
         if (obj.reqNumber) {
           inlineKeyboardArray.push([{text: obj.name,
-            callback_data: `cO/cN?cId=${key}&oId=${orderId}&o=${objectId}` +
-            `${carrierNumber ? "&q=" + carrierNumber : ""}`}]);
+            callback_data: `w/k?cId=${key}&oId=${orderId}`}]);
         } else {
-          inlineKeyboardArray.push([{text: obj.name, callback_data: `eO/${orderId}?sCid=${key}&o=${objectId}`}]);
+          inlineKeyboardArray.push([{text: obj.name, callback_data: `e/${orderId}?saveCarrier=${key}`}]);
         }
       });
       inlineKeyboardArray.push([{text: "⬅️ Назад",
-        callback_data: `orders/${orderId}?o=${objectId}`}]);
+        callback_data: `r/${orderId}`}]);
       await cartWizard[0](ctx, "Способ доставки", inlineKeyboardArray);
     }
     // save carrier
-    if (sCid) {
+    if (carrierId) {
       // await ctx.state.cart.saveOrder(orderId, {
       //   carrierId: sCid,
       // });
-      await store.updateRecord(`objects/${objectId}/orders/${orderId}`, {carrierId: sCid});
       // carrierNumber = Number(carrierNumber);
-      if (store.carriers().get(sCid).reqNumber && !carrierNumber) {
+      if (store.carriers().get(carrierId).reqNumber && !carrierNumber) {
         // return first step error
-        ctx.state.params.set("oId", orderId);
-        ctx.state.params.set("cId", sCid);
+        // ctx.state.params.set("oId", orderId);
+        // ctx.state.params.set("cId", carrierId);
+        parseUrl(ctx, `w/k?cId=${carrierId}&oId=${orderId}`);
         await cartWizard[1](ctx, "errorCurrierNumber");
         return;
       }
-      if (carrierNumber) {
-        // await ctx.state.cart.saveOrder(orderId, {
-        //   carrierNumber,
-        // });
-        await store.updateRecord(`objects/${objectId}/orders/${orderId}`, {carrierNumber});
-      } else {
-        // await ctx.state.cart.saveOrder(orderId, {
-        //   carrierNumber: null,
-        // });
-        await store.updateRecord(`objects/${objectId}/orders/${orderId}`, {carrierNumber: null});
-      }
+      await store.updateRecord(`objects/${objectId}/orders/${orderId}`, {
+        carrierId,
+        carrierNumber,
+      });
       // redirect to order
-      ctx.state.routeName = "orders";
+      // ctx.state.routeName = "r";
       // ctx.state.param = orderId;
-      await showOrders(ctx, next);
+      parseUrl(ctx, `r/${orderId}`);
+      await adminOrders(ctx);
     }
     // show status
-    if (showStatusId) {
+    if (showStatus) {
       const inlineKeyboardArray = [];
       store.statuses().forEach((value, key) => {
-        if (key === showStatusId) {
+        if (key === showStatus) {
           value = "✅ " + value;
         }
-        inlineKeyboardArray.push([{text: value, callback_data: `eO/${orderId}?sId=${key}&o=${objectId}`}]);
+        inlineKeyboardArray.push([{text: value, callback_data: `e/${orderId}?saveStatus=${key}`}]);
       });
       inlineKeyboardArray.push([{text: "⬅️ Назад",
-        callback_data: `orders/${orderId}?o=${objectId}`}]);
+        callback_data: `r/${orderId}`}]);
       await cartWizard[0](ctx, "Статус заказа", inlineKeyboardArray);
     }
     // save status
@@ -573,10 +559,11 @@ ordersActions.push(async (ctx, next) => {
       // });
       await store.updateRecord(`objects/${objectId}/orders/${orderId}`, {statusId});
       // redirect to order
-      ctx.state.routeName = "orders";
+      // ctx.state.routeName = "r";
       // ctx.state.param = orderId;
       // ctx.state.params.set("o") = objectId;
-      await showOrders(ctx, next);
+      parseUrl(ctx, `r/${orderId}`);
+      await adminOrders(ctx);
     }
     await ctx.answerCbQuery();
   } else {

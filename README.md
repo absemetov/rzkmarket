@@ -17,9 +17,10 @@ $ yarn s-ff
 $ yarn s-fh
 # serve functions firestore and hosting
 $ yarn s-ffh
-
+# start bot
+$ curl http://localhost:5001/rzk-warsaw-dev/europe-central2/bot
 # generate sitemap file
-$ node functions/sites/rzk.com.ru/sitemap.js
+$ node functions/sites/rzk.com.ru/sitemap.js env
 # build for production and launch server
 $ yarn --cwd functions/ parcel-b
 $ yarn deploy-site-*
