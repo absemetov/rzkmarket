@@ -283,6 +283,7 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
   // }
   res.render("catalog", {
     title,
+    description: `${currentCatalog ? currentCatalog.name : "Каталог"} - ${object.name} - `,
     object,
     currentCatalog,
     catalogs,
@@ -357,9 +358,9 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
   // count cart items
   object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
   res.render("product", {
-    title: `${product.name} - ${object.name}`,
-    description: `${product.name} - ${object.name}`,
-    keywords: `${product.name}, ${object.name}`,
+    title: `${product.brand ? `${product.brand} - ` : ""}${product.name} - ${object.name}`,
+    description: `${product.brand ? `${product.brand} - ` : ""}${product.name} - ${object.name} - `,
+    keywords: product.tagsNames && product.tagsNames.join() + ", ",
     object,
     product,
     photos,

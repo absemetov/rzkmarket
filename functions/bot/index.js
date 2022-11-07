@@ -2,7 +2,7 @@ const functions = require("firebase-functions");
 const {Telegraf} = require("telegraf");
 const {startActions, startHandler, parseUrl, isAdmin} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
-const {uploadActions, uploadForm} = require("./bot_upload_scene");
+const {uploadActions, uploadForm, changeProduct} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
 const {catalogsActions, cartWizard} = require("./bot_catalog_scene");
 const {store, uploadPhotoObj, uploadPhotoProduct, uploadPhotoCat} = require("./bot_store_cart");
@@ -86,6 +86,11 @@ bot.on(["text", "edited_message"], async (ctx) => {
     // save sheetId to session
     // await store.createRecord(`users/${ctx.from.id}`, {"session": {"sheetId": sheetUrl[1]}});
     await uploadForm(ctx, sheetUrl[1]);
+    return;
+  }
+  // change name and price
+  if (ctx.state.sessionMsg.url.searchParams.get("scene") === "changeProduct") {
+    await changeProduct(ctx, message.text);
     return;
   }
   // algolia search test

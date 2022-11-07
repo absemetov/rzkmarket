@@ -8,8 +8,8 @@
       <title>{{#if title}}{{title}} - {{/if}}{{envSite.i18n.siteTitle}}</title>
       <link rel="icon" href="/favicon-{{envSite.lang}}.ico">
       <link rel="icon" href="/logo/logo-{{envSite.lang}}.svg" type="image/svg+xml">
-      <meta name="description" content="{{#if description}}{{description}}{{else}}{{envSite.i18n.siteDesc}}{{/if}}">
-      <meta name="keywords" content="{{keywords}}, {{envSite.i18n.siteKeywords}}">
+      <meta name="description" content="{{description}}{{envSite.i18n.siteDesc}}">
+      <meta name="keywords" content="{{keywords}}{{envSite.i18n.siteKeywords}}">
       <meta name="robots" content="{{envSite.robots}}">
       <meta name="author" content="Nadir Absemetov - absemetov.org.ua">
       <!-- Global site tag (gtag.js) - Google Analytics -->
@@ -22,14 +22,10 @@
       </script>
       <script>
         // set canonical url
-        console.log(location.href.split("?")[0]);
         const linkTag = document.createElement("link");
         linkTag.setAttribute("rel", "canonical");
         linkTag.href = location.href.split("?")[0];
         document.head.appendChild(linkTag);
-        window.addEventListener("locationchange", function (event) {
-          console.log(location.href.split("?")[0]);
-        });
       </script>
     </head>
     <body>

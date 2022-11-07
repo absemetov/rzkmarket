@@ -145,10 +145,10 @@ startActions.push(async (ctx, next) => {
         inlineKeyboardArray.push([{text: "💰 Заказы", callback_data: "r"}]);
         if (ctx.state.sessionMsg.url.searchParams.get("editMode")) {
           inlineKeyboardArray.push([{text: "🔄 Обновить данные", callback_data: `upload/${object.id}?todo=updateObject`}]);
-          inlineKeyboardArray.push([{text: "🚲 Загрузить товары",
-            callback_data: `upload/${object.id}?todo=uploadProducts`}]);
           inlineKeyboardArray.push([{text: "📸 Загрузить фото объекта",
             callback_data: `u/${object.id}?todo=obj`}]);
+          inlineKeyboardArray.push([{text: "📥 Загрузить товары",
+            callback_data: `upload/${object.id}?todo=uploadProducts`}]);
           caption += `<b>Курсы валют: USD = ${object.currencies.USD}${process.env.BOT_CURRENCY}, ` +
           `EUR = ${object.currencies.EUR}${process.env.BOT_CURRENCY}</b>\n`;
         }

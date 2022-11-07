@@ -176,6 +176,7 @@ const adminOrders = async (ctx, next) => {
       inlineKeyboardArray.push([{text: "⬅️ Назад",
         callback_data: `${pathOrder ? pathOrder : "r"}`}]);
       await cartWizard[0](ctx, "Статуc заказа", inlineKeyboardArray);
+      await ctx.answerCbQuery();
       return;
     }
     if (orderId) {
