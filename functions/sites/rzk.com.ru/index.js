@@ -129,7 +129,7 @@ app.get("/o/:objectId", auth, async (req, res) => {
     res.render("object", {title: object.name, object, envSite});
   } else {
     // return res.redirect("/");
-    return res.status(404).send("<h1>Object does not exist</h1>");
+    return res.status(404).send(`<h1>404! Page not found <a href="${envSite.domain}">${envSite.domain}</a></h1>`);
   }
 });
 // show
@@ -325,47 +325,51 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
   const productId = req.params.productId;
   const object = await store.findRecord(`objects/${objectId}`);
   const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
-  product.price = roundNumber(product.price * object.currencies[product.currency]);
-  product.img1 = `${process.env.BOT_SITE}/icons/flower3.svg`;
-  product.img2 = `${process.env.BOT_SITE}/icons/flower3.svg`;
-  product.sellerId = objectId;
-  product.url = `${process.env.BOT_SITE}/o/${objectId}/p/${product.id}`;
-  product.tagPath = product.pathArray[product.pathArray.length - 1].url;
-  const photos = [];
-  // get cart qty
-  if (req.user.uid) {
-    const cartProduct = await store.findRecord(`objects/${objectId}/carts/${req.user.uid}`,
-        `products.${product.id}`);
-    if (cartProduct) {
-      product.qty = cartProduct.qty;
-      product.sum = roundNumber(cartProduct.qty * product.price);
-    }
-  }
-  if (product.mainPhoto) {
-    product.img1 = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/1.jpg`).publicUrl();
-    product.img2 = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/2.jpg`).publicUrl();
-    for (const imageId of product.photos) {
-      if (product.mainPhoto !== imageId) {
-        const img1 = bucket.file(`photos/o/${objectId}/p/${product.id}/${imageId}/1.jpg`).publicUrl();
-        const img2 = bucket.file(`photos/o/${objectId}/p/${product.id}/${imageId}/2.jpg`).publicUrl();
-        photos.push({
-          img1,
-          img2,
-        });
+  if (object && product) {
+    product.price = roundNumber(product.price * object.currencies[product.currency]);
+    product.img1 = `${process.env.BOT_SITE}/icons/flower3.svg`;
+    product.img2 = `${process.env.BOT_SITE}/icons/flower3.svg`;
+    product.sellerId = objectId;
+    product.url = `${process.env.BOT_SITE}/o/${objectId}/p/${product.id}`;
+    product.tagPath = product.pathArray[product.pathArray.length - 1].url;
+    const photos = [];
+    // get cart qty
+    if (req.user.uid) {
+      const cartProduct = await store.findRecord(`objects/${objectId}/carts/${req.user.uid}`,
+          `products.${product.id}`);
+      if (cartProduct) {
+        product.qty = cartProduct.qty;
+        product.sum = roundNumber(cartProduct.qty * product.price);
       }
     }
+    if (product.mainPhoto) {
+      product.img1 = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/1.jpg`).publicUrl();
+      product.img2 = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/2.jpg`).publicUrl();
+      for (const imageId of product.photos) {
+        if (product.mainPhoto !== imageId) {
+          const img1 = bucket.file(`photos/o/${objectId}/p/${product.id}/${imageId}/1.jpg`).publicUrl();
+          const img2 = bucket.file(`photos/o/${objectId}/p/${product.id}/${imageId}/2.jpg`).publicUrl();
+          photos.push({
+            img1,
+            img2,
+          });
+        }
+      }
+    }
+    // count cart items
+    object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
+    res.render("product", {
+      title: `${product.brand ? `${product.brand} - ` : ""}${product.name} - ${object.name}`,
+      description: `${product.brand ? `${product.brand} - ` : ""}${product.name} - ${object.name} - `,
+      keywords: product.tagsNames && product.tagsNames.join() + ", ",
+      object,
+      product,
+      photos,
+      envSite,
+    });
+  } else {
+    return res.status(404).send(`<h1>404! Page not found <a href="${envSite.domain}">${envSite.domain}</a></h1>`);
   }
-  // count cart items
-  object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
-  res.render("product", {
-    title: `${product.brand ? `${product.brand} - ` : ""}${product.name} - ${object.name}`,
-    description: `${product.brand ? `${product.brand} - ` : ""}${product.name} - ${object.name} - `,
-    keywords: product.tagsNames && product.tagsNames.join() + ", ",
-    object,
-    product,
-    photos,
-    envSite,
-  });
 });
 
 // share order
@@ -544,39 +548,48 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
     for (const cartProduct of cartProducts) {
       // check cart products price exist...
       const product = await store.findRecord(`objects/${objectId}/products/${cartProduct.id}`);
-      product.price = roundNumber(product.price * object.currencies[product.currency]);
       if (product) {
-        product.img1 = "/icons/flower3.svg";
-        product.img2 = "/icons/flower3.svg";
-        if (product.mainPhoto) {
-          product.img1 = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/1.jpg`)
-              .publicUrl();
-          product.img2 = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/2.jpg`)
-              .publicUrl();
+        product.price = roundNumber(product.price * object.currencies[product.currency]);
+        if (product) {
+          product.img1 = "/icons/flower3.svg";
+          product.img2 = "/icons/flower3.svg";
+          if (product.mainPhoto) {
+            product.img1 = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/1.jpg`)
+                .publicUrl();
+            product.img2 = bucket.file(`photos/o/${objectId}/p/${product.id}/${product.mainPhoto}/2.jpg`)
+                .publicUrl();
+          }
+          products.push({
+            id: product.id,
+            brand: product.brand ? product.brand : null,
+            name: product.name,
+            price: product.price,
+            unit: product.unit,
+            qty: cartProduct.qty,
+            sum: roundNumber(cartProduct.qty * product.price),
+            url: `/o/${objectId}/p/${product.id}`,
+            img1: product.img1,
+            img2: product.img2,
+            sellerId: objectId,
+          });
+          // update price in cart
+          if (product.price !== cartProduct.price) {
+            // products this is name field!!!
+            const products = {
+              [product.id]: {
+                price: product.price,
+              },
+            };
+            await store.createRecord(`objects/${objectId}/carts/${req.user.uid}`, {products});
+          }
         }
-        products.push({
-          id: product.id,
-          brand: product.brand ? product.brand : null,
-          name: product.name,
-          price: product.price,
-          unit: product.unit,
-          qty: cartProduct.qty,
-          sum: roundNumber(cartProduct.qty * product.price),
-          url: `/o/${objectId}/p/${product.id}`,
-          img1: product.img1,
-          img2: product.img2,
-          sellerId: objectId,
+      } else {
+        // delete product
+        await cart.delete({
+          objectId,
+          userId: req.user.uid,
+          id: cartProduct.id,
         });
-        // update price in cart
-        if (product.price !== cartProduct.price) {
-          // products this is name field!!!
-          const products = {
-            [product.id]: {
-              price: product.price,
-            },
-          };
-          await store.createRecord(`objects/${objectId}/carts/${req.user.uid}`, {products});
-        }
       }
     }
   }
@@ -772,7 +785,7 @@ app.get("/return-policy", (req, res) => {
 
 // not found route
 app.get("*", (req, res) => {
-  res.status(404).send("<h1>404! Page not found</h1>");
+  return res.status(404).send(`<h1>404! Page not found <a href="${envSite.domain}">${envSite.domain}</a></h1>`);
 });
 
 // config GCP
