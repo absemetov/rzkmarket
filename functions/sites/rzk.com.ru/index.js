@@ -541,7 +541,6 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
   const objectId = req.params.objectId;
   const object = await store.findRecord(`objects/${objectId}`);
   const products = [];
-  object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
   if (req.user.uid) {
     // get cart products
     const cartProducts = await cart.products(objectId, req.user.uid);
@@ -593,6 +592,7 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
       }
     }
   }
+  object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
   res.render("cart", {
     cart: true,
     title: `${envSite.i18n.aCart()} - ${object.name}`,
