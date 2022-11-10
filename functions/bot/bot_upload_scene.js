@@ -405,7 +405,7 @@ const createObject = async (ctx, next) => {
     const object = await store.findRecord(`objects/${objectId}`);
     const uploads = await store.findRecord(`objects/${objectId}/uploads/start`);
     // test upload local
-    // await uploadProducts(ctx.telegram, objectId, "1Jb188UuxIGT9FiSzRJcgpVBqOapihqFNrNmH0xs1cAU");
+    // await uploadProducts(ctx.telegram, objectId, "1NdlYGQb3qUiS5D7rkouhZZ8Q7KvoJ6kTpKMtF2o5oVM");
     try {
       // upload goods
       if (todo === "uploadProducts") {
@@ -563,7 +563,8 @@ const changeProduct = async (ctx, newValue) => {
     await sheet.loadCells(`A${productRowNumber}:J${productRowNumber}`); // loads a range of cells
     const ID = sheet.getCellByA1(`B${productRowNumber}`);
     // check current value
-    if (ID.value !== productId) {
+    // dont use strict equality diff types
+    if (ID.value != productId) {
       await ctx.replyWithHTML(`Product ${productId} not found in sheet row ${productRowNumber}`);
       return;
     }
