@@ -209,7 +209,7 @@ export function startAutocomplete() {
                   </div>
                   <div class="aa-ItemContentBody">
                     <div class="aa-ItemContentTitle">
-                      ${components.Highlight({hit: item, attribute: "name"})} (${components.Highlight({hit: item, attribute: "hierarchicalUrl"})})
+                      ${components.Highlight({hit: item, attribute: "hierarchicalUrl"})}
                     </div>
                   </div>
                 </div>

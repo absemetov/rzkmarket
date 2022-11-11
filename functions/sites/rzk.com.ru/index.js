@@ -129,6 +129,7 @@ app.get("/o/:objectId", auth, async (req, res) => {
     res.render("object", {title: object.name, object, envSite});
   } else {
     // return res.redirect("/");
+    console.log(`404 error: ${req.path}`);
     return res.status(404).send(`<h1>404! Page not found <a href="${envSite.domain}">${envSite.domain}</a></h1>`);
   }
 });
@@ -142,6 +143,10 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
   const startAfter = req.query.startAfter;
   const endBefore = req.query.endBefore;
   const object = await store.findRecord(`objects/${objectId}`);
+  if (!object) {
+    console.log(`404 error: ${req.path}`);
+    return res.status(404).send(`<h1>404! Page not found <a href="${envSite.domain}">${envSite.domain}</a></h1>`);
+  }
   let currentCatalog = null;
   let title = `Каталог - ${object.name}`;
   const catalogs = [];
@@ -170,6 +175,10 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
   const tagActive = {};
   if (catalogId) {
     currentCatalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
+    if (!currentCatalog) {
+      console.log(`404 error: ${req.path}`);
+      return res.status(404).send(`<h1>404! Page not found <a href="${envSite.domain}">${envSite.domain}</a></h1>`);
+    }
     title = `${currentCatalog.name} - ${object.name}`;
     let mainQuery = firebase.firestore().collection("objects").doc(objectId).collection("products")
         .where("catalogId", "==", catalogId)
@@ -368,6 +377,7 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
       envSite,
     });
   } else {
+    console.log(`404 error: ${req.path}`);
     return res.status(404).send(`<h1>404! Page not found <a href="${envSite.domain}">${envSite.domain}</a></h1>`);
   }
 });
@@ -785,6 +795,7 @@ app.get("/return-policy", (req, res) => {
 
 // not found route
 app.get("*", (req, res) => {
+  console.log(`404 error: ${req.path}`);
   return res.status(404).send(`<h1>404! Page not found <a href="${envSite.domain}">${envSite.domain}</a></h1>`);
 });
 

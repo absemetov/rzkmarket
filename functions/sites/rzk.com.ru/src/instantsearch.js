@@ -34,13 +34,13 @@ const instantSearchRouter = historyRouter({
       title = query;
     }
     if (category && category[0]) {
-      title = `${title ? `${title} – ` : ""}Каталог: ${category[category.length - 1]}`;
+      title = `${title ? `${title} – ` : ""}${category[category.length - 1]}`;
     }
     if (subCategory && subCategory[0]) {
       title = `${title ? `${title} – ` : ""}${subCategory[0]}`;
     }
     if (brand && brand[0]) {
-      title = `${title ? `${title} – ` : ""}Бренд: ${brand[0]}`;
+      title = `${title ? `${title} – ` : ""}${brand[0]}`;
     }
     if (location.href.match(/^.*?\/search/)) {
       return title ? `${title} – ${i18n.a_search} ${i18n.bot_name}` : `${i18n.a_search} ${i18n.bot_name}`;

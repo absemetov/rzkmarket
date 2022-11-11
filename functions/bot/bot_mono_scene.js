@@ -5,7 +5,7 @@ const moment = require("moment");
 const monoActions = [];
 // handler
 const monoHandler = async (ctx) => {
-  await ctx.reply("Выберите валюту", {
+  await ctx.reply("Курс валют", {
     reply_markup: {
       inline_keyboard: [
         [
