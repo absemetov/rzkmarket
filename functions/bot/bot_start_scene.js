@@ -50,7 +50,7 @@ const startHandler = async (ctx) => {
     if (objectType === "p") {
       const product = await store.findRecord(`objects/${objectId}/products/${objectTypeId}`);
       if (object && product) {
-        inlineKeyboardArray.push([{text: `🚲 ${product.name} (${product.id})`,
+        inlineKeyboardArray.push([{text: `📦 ${product.brand ? product.brand + " " : ""}${product.name} (${product.id})`,
           callback_data: `p/${product.id}?o=${objectId}`}]);
       }
     }

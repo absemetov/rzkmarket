@@ -101,14 +101,14 @@ const showCatalog = async (ctx, next) => {
       // generate products array
       for (const product of productsSnapshot.docs) {
         const addButton = {text: `📦 ${roundNumber(product.data().price * object.currencies[product.data().currency])}` +
-        `${process.env.BOT_CURRENCY} ${product.data().name} (${product.id})`,
+        `${process.env.BOT_CURRENCY} ${product.data().name} (${product.id}) ${product.data().brand ? product.data().brand : ""}`,
         callback_data: `p/${product.id}`};
         // get cart products
         const cartProduct = cartProductsArray && cartProductsArray[product.id];
         if (cartProduct) {
           addButton.text = `🛒${cartProduct.qty}${cartProduct.unit} ` +
           `${roundNumber(cartProduct.price * cartProduct.qty)} ` +
-          `${process.env.BOT_CURRENCY} ${product.data().name} (${product.id})`;
+          `${process.env.BOT_CURRENCY} ${product.data().name} (${product.id}) ${product.data().brand ? product.data().brand : ""}`;
           addButton.callback_data = `p/${product.id}`;
         }
         inlineKeyboardArray.push([addButton]);
@@ -224,7 +224,7 @@ const showProduct = async (ctx, next) => {
     }
     inlineKeyboardArray.push([addButton]);
     // add session vars
-    ctx.state.sessionMsg.url.searchParams.set("productName", product.name);
+    ctx.state.sessionMsg.url.searchParams.set("productName", `${product.brand ? product.brand + " " : ""}${product.name}`);
     ctx.state.sessionMsg.url.searchParams.set("productPrice", product.price);
     ctx.state.sessionMsg.url.searchParams.set("productUnit", product.unit);
     // for edit
@@ -279,7 +279,7 @@ const showProduct = async (ctx, next) => {
     await ctx.editMessageMedia({
       type: "photo",
       media,
-      caption: `<b>${object.name} \n${product.name} (${product.id})\n</b>` +
+      caption: `<b>${object.name}\n${product.brand ? product.brand + "\n" : ""}${product.name} (${product.id})\n</b>` +
       `${ctx.i18n.product.price()}: ${product.price} ${process.env.BOT_CURRENCY}\n` +
       `${process.env.BOT_SITE}/o/${objectId}/p/${productId} ` + ctx.state.sessionMsg.linkHTML(),
       parse_mode: "html",
@@ -522,7 +522,7 @@ const showCart = async (ctx, next) => {
         inlineKeyboardArray.push([
           {text: `${index + 1}) ${cartProduct.qty}${product.unit}=` +
           // `${roundNumber(cartProduct.qty * product.price)} ${process.env.BOT_CURRENCY} ` +
-          `${product.name} (${product.id})`,
+          `${product.name} (${product.id}) ${product.brand ? product.brand : ""}`,
           callback_data: `p/${product.id}`},
         ]);
         // update price in cart

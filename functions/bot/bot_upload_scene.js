@@ -92,8 +92,8 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
         PRICE: PRICE.value,
         CURRENCY: CURRENCY.value,
         UNIT: UNIT.value,
-        GROUP: GROUP.value,
-        TAGS: TAGS.value,
+        GROUP: GROUP.value || [],
+        TAGS: TAGS.value || [],
         BRAND: BRAND.value,
       };
       // add to delete batch
@@ -101,36 +101,36 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
         batchGoodsDelete.delete(store.getQuery(`objects/${objectId}/products/${row.ID}`));
         ++ deletedProducts;
         // delete catalogs
-        // TODO chech nested catalogs if not del alert error
-        if (row.GROUP) {
-          // generate delete array
-          const delCatalogs = [];
-          row.GROUP.split("#").map((catalogName, index, groupArrayOrigin) => {
-            let id = null;
-            let name = catalogName.trim();
-            const url = name.match(/(.+)\[([[a-zA-Z0-9-_]+)\]$/);
-            // url exist
-            if (url) {
-              name = url[1].trim();
-              id = url[2].trim();
+        // TODO check nested catalogs if not del alert error
+        // generate delete array
+        const delCatalogs = [];
+        row.GROUP.split("#").map((catalogName, index, groupArrayOrigin) => {
+          let id = null;
+          let name = catalogName.trim();
+          const url = name.match(/(.+)\[(.+)\]$/);
+          // url exist
+          if (url) {
+            name = url[1].trim();
+            // id = url[2].trim();
+            const partial = url[2].split(",");
+            id = partial[0] ? partial[0].trim() : cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name.charAt(0) === "%" ? name.substring(1).trim() : name, "-")).toLowerCase();
+          } else {
+            id = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name.charAt(0) === "%" ? name.substring(1).trim() : name, "-")).toLowerCase();
+          }
+          if (name.charAt(0) === "%") {
+            delCatalogs.push({id, del: true});
+          } else {
+            delCatalogs.push({id, del: false});
+          }
+        });
+        for (const [index, value] of delCatalogs.entries()) {
+          if (value.del) {
+            if (checkNestedCat(index, delCatalogs)) {
+              batchCatalogsDelete.delete(store.getQuery(`objects/${objectId}/catalogs/${value.id}`));
+              ++ deletedCatalogs;
             } else {
-              id = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name.charAt(0) === "%" ? name.substring(1).trim() : name, "-")).toLowerCase();
-            }
-            if (name.charAt(0) === "%") {
-              delCatalogs.push({id, del: true});
-            } else {
-              delCatalogs.push({id, del: false});
-            }
-          });
-          for (const [index, value] of delCatalogs.entries()) {
-            if (value.del) {
-              if (checkNestedCat(index, delCatalogs)) {
-                batchCatalogsDelete.delete(store.getQuery(`objects/${objectId}/catalogs/${value.id}`));
-                ++ deletedCatalogs;
-              } else {
-                // alert error
-                throw new Error(`Delete catalog problem ${value.id}, first delete nested cat!!!`);
-              }
+              // alert error
+              throw new Error(`Delete catalog problem ${value.id}, first delete nested cat!!!`);
             }
           }
         }
@@ -141,9 +141,10 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
       if (row.ID && row.NAME && newDataDetected) {
         // generate catalogs array
         const pathArrayHelper = [];
-        const groupArray = row.GROUP ? row.GROUP.split("#").map((catalogName, index, groupArrayOrigin) => {
+        const groupArray = row.GROUP.split("#").map((catalogName, index, groupArrayOrigin) => {
           let id = null;
           let parentId = null;
+          let orderNumber = null;
           let name = catalogName.trim();
           // let parentName = null;
           // set parentId and parentName
@@ -151,19 +152,23 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
             const parentCatalog = groupArrayOrigin[index - 1].trim();
             // parentName = parentCatalog;
             // Parent exist
-            const url = parentCatalog.match(/(.+)\[([[a-zA-Z0-9-_]+)\]$/);
+            const url = parentCatalog.match(/(.+)\[(.+)\]$/);
             if (url) {
-              // parentName = url[1].trim();
-              parentId = url[2].trim();
+              const parentName = url[1].trim();
+              // parentId = url[2].trim();
+              const partial = url[2].split(",");
+              parentId = partial[0] ? partial[0].trim() : cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(parentName, "-")).toLowerCase();
             } else {
               parentId = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(parentCatalog, "-")).toLowerCase();
             }
           }
-          const url = name.match(/(.+)\[([[a-zA-Z0-9-_]+)\]$/);
-          // url exist
+          // parce catalog url
+          const url = name.match(/(.+)\[(.+)\]$/);
           if (url) {
             name = url[1].trim();
-            id = url[2].trim();
+            const partial = url[2].split(",");
+            id = partial[0] ? partial[0].trim() : cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name, "-")).toLowerCase();
+            orderNumber = partial[1] && partial[1].trim();
           } else {
             id = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name, "-")).toLowerCase();
           }
@@ -174,26 +179,28 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
             name,
             url: pathArrayHelper.join("/"),
             parentId,
+            orderNumber,
             // parentName,
           };
-        }) : [];
+        });
         // generate tags array
-        const tags = row.TAGS ? row.TAGS.split(",").map((tag) => {
+        const tags = row.TAGS.split(",").map((tag) => {
           const name = tag.trim();
           const id = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name, "-")).toLowerCase();
           return {id, name};
           // return {cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(tag.trim(), "-")).toLowerCase();
           // return name;
-        }) : [];
+        });
         // product data
         const product = {
           id: row.ID,
           name: row.NAME,
           purchasePrice: row.PURCHASE_PRICE ? roundNumber(row.PURCHASE_PRICE) : null,
           price: row.PRICE ? roundNumber(row.PRICE) : null,
-          group: groupArray.length ? groupArray.map((cat) => cat.id) : null,
-          groupLength: groupArray.length ? groupArray.length : null,
-          tags: tags.length ? tags.map((tag) => tag.id) : null,
+          group: groupArray.map((cat) => cat.id),
+          groupOrder: groupArray.map((cat) => cat.orderNumber),
+          groupLength: groupArray.length,
+          tags: tags.map((tag) => tag.id),
           currency: row.CURRENCY,
           unit: row.UNIT,
           brand: row.BRAND,
@@ -207,6 +214,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
           "price": "required|numeric",
           "groupLength": "required|max:5",
           "group.*": "alpha_dash|max:18",
+          "groupOrder.*": "integer|min:1",
           "tags.*": "alpha_dash|max:20",
           "currency": "required|in:USD,EUR,RUB,UAH",
           "unit": "required|in:м,шт",
@@ -278,7 +286,8 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
                 "name": catalog.name,
                 "parentId": catalog.parentId,
                 // "parentName": catalog.parentName,
-                "orderNumber": catalogsIsSet.size,
+                // "orderNumber": catalogsIsSet.size,
+                "orderNumber": catalog.orderNumber ? catalog.orderNumber : catalogsIsSet.size,
                 "updatedAt": updatedAtTimestamp,
                 // "tags": firestore.FieldValue.delete(),
                 // "hierarchicalUrl": pathArray.join(" > "),
@@ -404,7 +413,7 @@ const createObject = async (ctx, next) => {
     const todo = ctx.state.params.get("todo");
     const object = await store.findRecord(`objects/${objectId}`);
     const uploads = await store.findRecord(`objects/${objectId}/uploads/start`);
-    // test upload local
+    // test upload local obj Saki
     // await uploadProducts(ctx.telegram, objectId, "1NdlYGQb3qUiS5D7rkouhZZ8Q7KvoJ6kTpKMtF2o5oVM");
     try {
       // upload goods
