@@ -233,6 +233,8 @@ exports.catalogUpdate = functions.region("europe-central2").firestore
     .document("objects/{objectId}/catalogs/{catalogId}")
     .onUpdate(async (change, context) => {
       const catalog = change.after.data();
+      // ...or the previous value before this update
+      const previousValueCatalog = change.before.data();
       const catalogId = context.params.catalogId;
       const objectId = context.params.objectId;
       const catalogAlgolia = {
@@ -255,6 +257,13 @@ exports.catalogUpdate = functions.region("europe-central2").firestore
       }
       // update data in Algolia
       await catalogsIndex.saveObject(catalogAlgolia);
+      // check parentId if catalog move
+      if (previousValueCatalog.parentId !== catalog.parentId) {
+        await bot.telegram.sendMessage(94899148, `<b>Catalog moved!!! ${catalog.name} (${catalogId})\n` +
+        `from: ${previousValueCatalog.pathArray.map((catalog) => catalog.name).join(" > ")}\n` +
+        `to: ${catalog.pathArray.map((catalog) => catalog.name).join(" > ")}</b>`,
+        {parse_mode: "html"});
+      }
       // return a promise of a set operation to update the count
       return null;
     });

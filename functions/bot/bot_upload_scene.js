@@ -92,10 +92,61 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
         PRICE: PRICE.value,
         CURRENCY: CURRENCY.value,
         UNIT: UNIT.value,
-        GROUP: GROUP.value || [],
-        TAGS: TAGS.value || [],
+        GROUP: GROUP.value && GROUP.value.split("#") || [],
+        TAGS: TAGS.value && TAGS.value.split(",") || [],
         BRAND: BRAND.value,
       };
+      // generate catalogs array
+      const pathArrayHelper = [];
+      const delCatalogs = [];
+      const groupArray = row.GROUP.map((catalogName, index, groupArrayOrigin) => {
+        let id = null;
+        // let parentId = null;
+        let orderNumber = null;
+        let name = catalogName.trim();
+        // let parentName = null;
+        // set parentId and parentName
+        // if (index !== 0) {
+        //   // const parentCatalog = groupArrayOrigin[index - 1].trim();
+        //   // // parentName = parentCatalog;
+        //   // // Parent exist
+        //   // const url = parentCatalog.match(/(.+)\[(.+)\]$/);
+        //   // if (url) {
+        //   //   const parentName = url[1].trim();
+        //   //   // parentId = url[2].trim();
+        //   //   const partial = url[2].split(",");
+        //   //   parentId = partial[0] ? partial[0].trim() : cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(parentName, "-")).toLowerCase();
+        //   // } else {
+        //   //   parentId = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(parentCatalog, "-")).toLowerCase();
+        //   // }
+        //   parentId = pathArrayHelper.join("#");
+        // }
+        // parce catalog url
+        const url = name.match(/(.+)\[(.+)\]$/);
+        if (url) {
+          name = url[1].trim();
+          const partial = url[2].split(",");
+          id = partial[0] ? partial[0].trim() : cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name, "-")).toLowerCase();
+          orderNumber = partial[1] && + partial[1].trim();
+        } else {
+          id = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name, "-")).toLowerCase();
+        }
+        if (name.charAt(0) === "%") {
+          delCatalogs.push({id, del: true});
+        } else {
+          delCatalogs.push({id, del: false});
+        }
+        pathArrayHelper.push(id);
+        // delete special char
+        return {
+          id,
+          name,
+          url: pathArrayHelper.join("/"),
+          parentId: pathArrayHelper.length > 1 ? pathArrayHelper[pathArrayHelper.length - 2] : null,
+          orderNumber,
+          // parentName,
+        };
+      });
       // add to delete batch
       if (prodMustDel) {
         batchGoodsDelete.delete(store.getQuery(`objects/${objectId}/products/${row.ID}`));
@@ -103,26 +154,26 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
         // delete catalogs
         // TODO check nested catalogs if not del alert error
         // generate delete array
-        const delCatalogs = [];
-        row.GROUP.split("#").map((catalogName, index, groupArrayOrigin) => {
-          let id = null;
-          let name = catalogName.trim();
-          const url = name.match(/(.+)\[(.+)\]$/);
-          // url exist
-          if (url) {
-            name = url[1].trim();
-            // id = url[2].trim();
-            const partial = url[2].split(",");
-            id = partial[0] ? partial[0].trim() : cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name.charAt(0) === "%" ? name.substring(1).trim() : name, "-")).toLowerCase();
-          } else {
-            id = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name.charAt(0) === "%" ? name.substring(1).trim() : name, "-")).toLowerCase();
-          }
-          if (name.charAt(0) === "%") {
-            delCatalogs.push({id, del: true});
-          } else {
-            delCatalogs.push({id, del: false});
-          }
-        });
+        // const delCatalogs = [];
+        // row.GROUP.map((catalogName, index, groupArrayOrigin) => {
+        //   let id = null;
+        //   let name = catalogName.trim();
+        //   const url = name.match(/(.+)\[(.+)\]$/);
+        //   // url exist
+        //   if (url) {
+        //     name = url[1].trim();
+        //     // id = url[2].trim();
+        //     const partial = url[2].split(",");
+        //     id = partial[0] ? partial[0].trim() : cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name.charAt(0) === "%" ? name.substring(1).trim() : name, "-")).toLowerCase();
+        //   } else {
+        //     id = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name.charAt(0) === "%" ? name.substring(1).trim() : name, "-")).toLowerCase();
+        //   }
+        //   if (name.charAt(0) === "%") {
+        //     delCatalogs.push({id, del: true});
+        //   } else {
+        //     delCatalogs.push({id, del: false});
+        //   }
+        // });
         for (const [index, value] of delCatalogs.entries()) {
           if (value.del) {
             if (checkNestedCat(index, delCatalogs)) {
@@ -139,52 +190,8 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
       }
       // check if this products have ID and NAME
       if (row.ID && row.NAME && newDataDetected) {
-        // generate catalogs array
-        const pathArrayHelper = [];
-        const groupArray = row.GROUP.split("#").map((catalogName, index, groupArrayOrigin) => {
-          let id = null;
-          let parentId = null;
-          let orderNumber = null;
-          let name = catalogName.trim();
-          // let parentName = null;
-          // set parentId and parentName
-          if (index !== 0) {
-            const parentCatalog = groupArrayOrigin[index - 1].trim();
-            // parentName = parentCatalog;
-            // Parent exist
-            const url = parentCatalog.match(/(.+)\[(.+)\]$/);
-            if (url) {
-              const parentName = url[1].trim();
-              // parentId = url[2].trim();
-              const partial = url[2].split(",");
-              parentId = partial[0] ? partial[0].trim() : cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(parentName, "-")).toLowerCase();
-            } else {
-              parentId = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(parentCatalog, "-")).toLowerCase();
-            }
-          }
-          // parce catalog url
-          const url = name.match(/(.+)\[(.+)\]$/);
-          if (url) {
-            name = url[1].trim();
-            const partial = url[2].split(",");
-            id = partial[0] ? partial[0].trim() : cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name, "-")).toLowerCase();
-            orderNumber = partial[1] && partial[1].trim();
-          } else {
-            id = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name, "-")).toLowerCase();
-          }
-          pathArrayHelper.push(id);
-          // delete special char
-          return {
-            id,
-            name,
-            url: pathArrayHelper.join("/"),
-            parentId,
-            orderNumber,
-            // parentName,
-          };
-        });
         // generate tags array
-        const tags = row.TAGS.split(",").map((tag) => {
+        const tags = row.TAGS.map((tag) => {
           const name = tag.trim();
           const id = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name, "-")).toLowerCase();
           return {id, name};
@@ -282,6 +289,8 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
               // catalogsIsSet.set(pathArray.join("-"));
               const catalogRef = firebase.firestore().collection("objects").doc(objectId)
                   .collection("catalogs").doc(catalog.id);
+              // const catalogRef = firebase.firestore().collection("objects").doc(objectId)
+              //     .collection("catalogs").doc(catalog.fireId);
               batchCatalogs.set(catalogRef, {
                 "name": catalog.name,
                 "parentId": catalog.parentId,
