@@ -132,6 +132,8 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
           id = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name, "-")).toLowerCase();
         }
         if (name.charAt(0) === "%") {
+          // delete special char!!!
+          id = id.substring(1);
           delCatalogs.push({id, del: true});
         } else {
           delCatalogs.push({id, del: false});
