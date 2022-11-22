@@ -133,7 +133,9 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
         }
         if (name.charAt(0) === "%") {
           // delete special char!!!
-          id = id.substring(1);
+          if (id.charAt(0) === "%") {
+            id = id.substring(1);
+          }
           delCatalogs.push({id, del: true});
         } else {
           delCatalogs.push({id, del: false});

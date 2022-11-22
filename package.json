@@ -8,6 +8,7 @@
     "deploy-site-ua":"firebase deploy --project=ua --only functions:site,hosting:rzk.com.ua",
     "deploy-bot-ua":"firebase deploy --project=ua --only functions:bot",
     "deploy-triggers-ua":"firebase deploy --project=ua --only functions:triggers,functions:productsUpload",
+    "deploy-triggers-productUpdate": "firebase deploy --project=ua --only functions:triggers-productUpdate",
     "deploy-site-ru":"firebase deploy --project=ru --only functions:site,hosting:rzk.com.ru",
     "deploy-bot-ru":"firebase deploy --project=ru --only functions:bot",
     "deploy-triggers-ru":"firebase deploy --project=ru --only functions:triggers,functions:productsUpload",

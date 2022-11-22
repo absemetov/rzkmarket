@@ -147,6 +147,8 @@ exports.productUpdate = functions.region("europe-central2").firestore
     .document("objects/{objectId}/products/{productId}")
     .onUpdate(async (change, context) => {
       const product = change.after.data();
+      // ...or the previous value before this update
+      const previousValueProduct = change.before.data();
       const objectId = context.params.objectId;
       const productId = context.params.productId;
       // update data in Algolia
@@ -189,6 +191,24 @@ exports.productUpdate = functions.region("europe-central2").firestore
       });
       // const productAlgoliaHierarchicalMenu = Object.assign(productAlgolia, objProp);
       await productsIndex.saveObject(productAlgolia);
+      // check catalogId if product move
+      if (previousValueProduct.catalogId !== product.catalogId) {
+        await bot.telegram.sendMessage(94899148, `<b>Product changed catalogId!!! ${product.name} (${productId}) in row ${product.rowNumber}\n` +
+        `from: ${previousValueProduct.pathArray.map((catalog) => catalog.name).join(" > ")}(${previousValueProduct.catalogId}) in row ${previousValueProduct.rowNumber}\n` +
+        `to: ${product.pathArray.map((catalog) => catalog.name).join(" > ")} (${product.catalogId})</b>`,
+        {parse_mode: "html"});
+      }
+      if (previousValueProduct.name !== product.name) {
+        await bot.telegram.sendMessage(94899148, `<b>Product name changed!!! ${product.name} (${productId}) in row ${product.rowNumber}\n` +
+        `previousValue is: ${previousValueProduct.name} in row ${previousValueProduct.rowNumber}</b>`,
+        {parse_mode: "html"});
+      }
+      if (previousValueProduct.rowNumber !== product.rowNumber) {
+        await bot.telegram.sendMessage(94899148, `<b>Product rowNumber changed!!! ${product.name} (${productId})\n` +
+        `previousValue is: ${previousValueProduct.rowNumber}\n` +
+        `to row ${product.rowNumber}</b>`,
+        {parse_mode: "html"});
+      }
       // return a promise of a set operation to update the count
       return null;
     });
