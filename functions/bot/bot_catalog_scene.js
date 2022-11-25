@@ -155,8 +155,9 @@ const showCatalog = async (ctx, next) => {
     await ctx.editMessageMedia({
       type: "photo",
       media,
-      caption: `<b>${object.name} > Каталог${currentCatalog ? ` > ${currentCatalog.name}` : ""}</b>\n` +
-        `${process.env.BOT_SITE}/o/${objectId}/c${catalogId ? "/" + catalogId : ""} ` + ctx.state.sessionMsg.linkHTML(),
+      caption: `<b>${object.name} > ${currentCatalog && currentCatalog.pathArray ? `Каталог > ${currentCatalog.pathArray.map((cat) => cat.name).join(" > ")}` : "Каталог"}</b>\n` +
+        `${process.env.BOT_SITE}/o/${objectId}/c${catalogId ? "/" + catalogId : ""}\n` +
+        `${currentCatalog && currentCatalog.postId ? `RZK Market Channel <a href="t.me/${process.env.BOT_CHANNEL}/${currentCatalog.postId}">t.me/${process.env.BOT_CHANNEL}/${currentCatalog.postId}</a>` : ""} `+ ctx.state.sessionMsg.linkHTML(),
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: inlineKeyboardArray,
@@ -269,6 +270,8 @@ const showProduct = async (ctx, next) => {
         callback_data: `b/${product.id}?todo=purchasePrice&column=D`}]);
       inlineKeyboardArray.push([{text: "Изменить продажную цену товара",
         callback_data: `b/${product.id}?todo=price&column=E`}]);
+      inlineKeyboardArray.push([{text: "Добавить пост из канала",
+        callback_data: `b/${product.id}?todo=postId`}]);
       inlineKeyboardArray.push([{text: "Удалить товар",
         callback_data: `b/${product.id}?todo=del`}]);
       inlineKeyboardArray.push([{text: "📸 Загрузить фото",
@@ -281,7 +284,8 @@ const showProduct = async (ctx, next) => {
       media,
       caption: `<b>${object.name}\n${product.brand ? product.brand + "\n" : ""}${product.name} (${product.id})\n</b>` +
       `${ctx.i18n.product.price()}: ${product.price} ${process.env.BOT_CURRENCY}\n` +
-      `${process.env.BOT_SITE}/o/${objectId}/p/${productId} ` + ctx.state.sessionMsg.linkHTML(),
+      `${process.env.BOT_SITE}/o/${objectId}/p/${productId}\n` +
+      `${product.postId ? `RZK Market Channel <a href="t.me/${process.env.BOT_CHANNEL}/${product.postId}">t.me/${process.env.BOT_CHANNEL}/${product.postId}</a>` : ""}` + ctx.state.sessionMsg.linkHTML(),
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: inlineKeyboardArray,
@@ -1228,7 +1232,7 @@ catalogsActions.push( async (ctx, next) => {
       await ctx.replyWithHTML(`Изменить поле <b>${todo}</b>\n` +
       `<b>ObjectId: ${objectId}, ${name} (${paramId})</b>\n` +
       `Закупочная цена (purchasePrice) <b>${purchasePrice} ${productCurrency}</b>\n` +
-      `Продажная цена (price) <b>${price} ${productCurrency}</b>` + ctx.state.sessionMsg.linkHTML(), {
+      `Продажная цена (price) <b>${price} ${productCurrency}</b>\nДля удаления postId введите 0` + ctx.state.sessionMsg.linkHTML(), {
         reply_markup: {
           force_reply: true,
           input_field_placeholder: todo,

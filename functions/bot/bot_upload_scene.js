@@ -103,6 +103,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
         let id = null;
         // let parentId = null;
         let orderNumber = null;
+        let postId = null;
         let name = catalogName.trim();
         // let parentName = null;
         // set parentId and parentName
@@ -127,7 +128,8 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
           name = url[1].trim();
           const partial = url[2].split(",");
           id = partial[0] ? partial[0].trim() : cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name, "-")).toLowerCase();
-          orderNumber = partial[1] && + partial[1].trim();
+          orderNumber = partial[1] && + partial[1];
+          postId = partial[2] && + partial[2];
         } else {
           id = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name, "-")).toLowerCase();
         }
@@ -148,6 +150,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
           url: pathArrayHelper.join("/"),
           parentId: pathArrayHelper.length > 1 ? pathArrayHelper[pathArrayHelper.length - 2] : null,
           orderNumber,
+          postId,
           // parentName,
         };
       });
@@ -209,6 +212,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
           purchasePrice: row.PURCHASE_PRICE ? roundNumber(row.PURCHASE_PRICE) : null,
           price: row.PRICE ? roundNumber(row.PRICE) : null,
           group: groupArray.map((cat) => cat.id),
+          groupPost: groupArray.map((cat) => cat.postId),
           groupOrder: groupArray.map((cat) => cat.orderNumber),
           groupLength: groupArray.length,
           tags: tags.map((tag) => tag.id),
@@ -225,6 +229,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
           "price": "required|numeric",
           "groupLength": "required|max:5",
           "group.*": "alpha_dash|max:18",
+          "groupPost.*": "integer|min:1",
           "groupOrder.*": "integer|min:1",
           "tags.*": "alpha_dash|max:20",
           "currency": "required|in:USD,EUR,RUB,UAH",
@@ -301,6 +306,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
                 // "parentName": catalog.parentName,
                 // "orderNumber": catalogsIsSet.size,
                 "orderNumber": catalog.orderNumber ? catalog.orderNumber : catalogsIsSet.size,
+                "postId": catalog.postId ? catalog.postId : firestore.FieldValue.delete(),
                 "updatedAt": updatedAtTimestamp,
                 // "tags": firestore.FieldValue.delete(),
                 // "hierarchicalUrl": pathArray.join(" > "),
@@ -455,7 +461,7 @@ const createObject = async (ctx, next) => {
         await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
         await doc.loadInfo(); // loads document properties and worksheets
         const sheet = doc.sheetsByTitle["info"]; // doc.sheetsById[listId];
-        await sheet.loadCells("B1:B9"); // loads a range of cells
+        await sheet.loadCells("B1:B10"); // loads a range of cells
         const id = sheet.getCellByA1("B1").value;
         const name = sheet.getCellByA1("B2").value;
         const description = sheet.getCellByA1("B3").value;
@@ -468,6 +474,7 @@ const createObject = async (ctx, next) => {
         const EUR = roundNumber(sheet.getCellByA1("B7").value);
         const UAH = roundNumber(sheet.getCellByA1("B8").value);
         const RUB = roundNumber(sheet.getCellByA1("B9").value);
+        const postId = sheet.getCellByA1("B10").value;
         const objectCheck = {
           id,
           name,
@@ -478,6 +485,7 @@ const createObject = async (ctx, next) => {
           EUR,
           UAH,
           RUB,
+          postId,
         };
         const rulesObject = {
           "id": "required|alpha_dash|max:20",
@@ -490,6 +498,7 @@ const createObject = async (ctx, next) => {
           "EUR": "required|numeric",
           "UAH": "required|numeric",
           "RUB": "required|numeric",
+          "postId": "integer|min:1",
         };
         const validateObject = new Validator(objectCheck, rulesObject, {
           "regex": `The :attribute phone number is not in the format ${process.env.BOT_PHONETEMPLATE}`,
@@ -513,6 +522,7 @@ const createObject = async (ctx, next) => {
             UAH,
             RUB,
           },
+          postId: postId ? postId : firestore.FieldValue.delete(),
         });
         await ctx.replyWithHTML(`Данные обновлены ${objectCheck.name} /objects`);
       }
@@ -588,6 +598,23 @@ const changeProduct = async (ctx, newValue) => {
     // dont use strict equality diff types
     if (ID.value != productId) {
       await ctx.replyWithHTML(`Product ${productId} not found in sheet row ${productRowNumber}`);
+      return;
+    }
+    // add postId
+    if (todo === "postId") {
+      // validate and save
+      newValue = + newValue;
+      if (Number.isInteger(newValue)) {
+        await store.updateRecord(`objects/${objectId}/products/${productId}`, {
+          [todo]: newValue ? newValue : firestore.FieldValue.delete(),
+        });
+      } else {
+        await ctx.replyWithHTML(`<b>${todo}</b> must be a integer!` + ctx.state.sessionMsg.linkHTML(), {
+          reply_markup: {
+            force_reply: true,
+            input_field_placeholder: todo,
+          }});
+      }
       return;
     }
     // delete product

@@ -137,7 +137,9 @@ startActions.push(async (ctx, next) => {
       caption = `<b>${object.name}\n` +
         `${object.phoneArray.join()}\n` +
         `${object.address}\n` +
-        `${object.description}</b>\n`;
+        `${object.description}</b>\n` +
+        `${process.env.BOT_SITE}/o/${objectId}\n` +
+        `${object.postId ? `RZK Market Channel <a href="t.me/${process.env.BOT_CHANNEL}/${object.postId}">t.me/${process.env.BOT_CHANNEL}/${object.postId}</a>` : ""}`;
       const cartButtons = await cart.cartButtons(objectId, ctx);
       inlineKeyboardArray.push([{text: "📁 Каталог", callback_data: "c"}]);
       inlineKeyboardArray.push([cartButtons[1]]);

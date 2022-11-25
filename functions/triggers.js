@@ -203,12 +203,12 @@ exports.productUpdate = functions.region("europe-central2").firestore
         `previousValue is: ${previousValueProduct.name} in row ${previousValueProduct.rowNumber}</b>`,
         {parse_mode: "html"});
       }
-      if (previousValueProduct.rowNumber !== product.rowNumber) {
-        await bot.telegram.sendMessage(94899148, `<b>Product rowNumber changed!!! ${product.name} (${productId})\n` +
-        `previousValue is: ${previousValueProduct.rowNumber}\n` +
-        `to row ${product.rowNumber}</b>`,
-        {parse_mode: "html"});
-      }
+      // if (previousValueProduct.rowNumber !== product.rowNumber) {
+      //   await bot.telegram.sendMessage(94899148, `<b>Product rowNumber changed!!! ${product.name} (${productId})\n` +
+      //   `previousValue is: ${previousValueProduct.rowNumber}\n` +
+      //   `to row ${product.rowNumber}</b>`,
+      //   {parse_mode: "html"});
+      // }
       // return a promise of a set operation to update the count
       return null;
     });
