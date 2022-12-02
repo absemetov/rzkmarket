@@ -5,11 +5,10 @@
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <link rel="stylesheet" href="/assets/index.6a22e6b9.css">
       <script type="module" src="/assets/index.731e9c37.js"></script>
-      <title>{{#if title}}{{title}} - {{/if}}{{envSite.i18n.siteTitle}}</title>
+      <title>{{#if title}}{{title}} | {{envSite.i18n.siteName}}{{else}}{{envSite.i18n.siteTitle}}{{/if}}</title>
       <link rel="icon" href="/favicon-{{envSite.lang}}.ico">
       <link rel="icon" href="/logo/logo-{{envSite.lang}}.svg" type="image/svg+xml">
-      <meta name="description" content="{{description}}{{envSite.i18n.siteDesc}}">
-      <meta name="keywords" content="{{keywords}}{{envSite.i18n.siteKeywords}}">
+      <meta name="description" content="{{#if description}}{{description}}{{else}}{{envSite.i18n.siteDesc}}{{/if}}">
       <meta name="robots" content="{{envSite.robots}}">
       <meta name="author" content="Nadir Absemetov - absemetov.org.ua">
       <!-- Global site tag (gtag.js) - Google Analytics -->

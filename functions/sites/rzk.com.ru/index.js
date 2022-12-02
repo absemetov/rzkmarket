@@ -126,9 +126,11 @@ app.get("/o/:objectId", auth, async (req, res) => {
       object.img1 = "/icons/shop.svg";
       object.img2 = "/icons/shop.svg";
     }
-    // Set Cache-Control
-    // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
-    res.render("object", {title: object.name, object, envSite});
+    res.render("object", {
+      title: `${object.description} - ${object.name}`,
+      description: object.address,
+      object,
+      envSite});
   } else {
     // return res.redirect("/");
     console.log(`404 error: ${req.path}`);
@@ -150,7 +152,7 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
     return res.status(404).send(`<h1>404! Page not found <a href="${envSite.domain}">${envSite.domain}</a></h1>`);
   }
   let currentCatalog = null;
-  let title = `Каталог - ${object.name}`;
+  let title = `${envSite.i18n.aCatGoods()} - ${object.name}`;
   const catalogs = [];
   const tags = [];
   // get catalog sibl
@@ -181,7 +183,8 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
       console.log(`404 error: ${req.path}`);
       return res.status(404).send(`<h1>404! Page not found <a href="${envSite.domain}">${envSite.domain}</a></h1>`);
     }
-    title = `${currentCatalog.name} - ${object.name}`;
+    // generate title
+    title = `${currentCatalog.name} ${envSite.i18n.btnBuy().toLowerCase()} ${envSite.i18n.siteCatTitle()} - ${object.name}`;
     let mainQuery = firebase.firestore().collection("objects").doc(objectId).collection("products")
         .where("catalogId", "==", catalogId)
         .orderBy("orderNumber");
@@ -256,7 +259,8 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
           };
           // close tag
           if (tagId === selectedTag) {
-            title = `${currentCatalog.name} - ${tagName} - ${object.name}`;
+            // generate title
+            title = `${currentCatalog.name} ${tagName} ${envSite.i18n.btnBuy().toLowerCase()} ${envSite.i18n.siteCatTitle()} - ${object.name}`;
             tagObj.active = true;
             tagActive.name = `${tagName} (${tagCount})`;
             tagActive.path = req.path.replace(/\/$/, "");
@@ -286,15 +290,9 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
   }
   // count cart items
   object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
-  // Set Cache-Control
-  // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
-  // create filer sear
-  // if (products.length) {
-  //   currentCatalog.filterLink = `/o/${object.id}/c/` + [...currentCatalog.pathArray.map((catalog) => catalog.name), currentCatalog.name].map(encodeURIComponent).join("/");
-  // }
   res.render("catalog", {
     title,
-    description: `${currentCatalog ? currentCatalog.name : "Каталог"} - ${object.name} - `,
+    description: `${currentCatalog ? `${currentCatalog.name} ${envSite.i18n.btnBuy().toLowerCase()}` : envSite.i18n.aCatGoods()} ${envSite.i18n.siteCatDesc()}`,
     object,
     currentCatalog,
     catalogs,
@@ -370,9 +368,8 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
     // count cart items
     object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
     res.render("product", {
-      title: `${product.brand ? `${product.brand} - ` : ""}${product.name} - ${object.name}`,
-      description: `${product.brand ? `${product.brand} - ` : ""}${product.name} - ${object.name} - `,
-      keywords: product.tagsNames && product.tagsNames.join() + ", ",
+      title: `${product.name}${product.brand ? ` ${product.brand}` : ""} ${productId} ${envSite.i18n.btnBuy().toLowerCase()} за ${product.price} ${envSite.currency} ${envSite.i18n.siteCatTitle()} - ${object.name}`,
+      description: `${product.name}${product.brand ? ` ${product.brand}` : ""} ${productId} ${envSite.i18n.btnBuy().toLowerCase()} за ${product.price} ${envSite.currency} ${envSite.i18n.siteCatDesc()}`,
       object,
       product,
       photos,

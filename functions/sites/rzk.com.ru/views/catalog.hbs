@@ -14,6 +14,11 @@
     {{/if}}
   </ol>
 </nav>
+{{#if currentCatalog}}
+  <h1>{{currentCatalog.name}}{{#if tagActive.name}} / {{tagActive.name}}{{/if}}</h1>
+{{else}}
+  <h1>{{envSite.i18n.aCatGoods}}</h1>
+{{/if}}
 {{#if tags}}
   <div class="dropdown mb-3">
     <button class="btn btn-success dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">

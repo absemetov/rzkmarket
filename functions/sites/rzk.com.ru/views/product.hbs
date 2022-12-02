@@ -41,6 +41,7 @@
     {{/each}}
   </ol>
 </nav>
+<h1>{{#if product.brand}}{{product.brand}} / {{/if}}{{product.name}}</h1>
 <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2 pb-3">
   {{> product product=product object=object envSite=envSite smartPhoto=true}}
 </div>
