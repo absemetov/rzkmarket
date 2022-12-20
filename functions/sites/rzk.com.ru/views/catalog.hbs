@@ -5,9 +5,13 @@
     {{#if currentCatalog}}
       <li class="breadcrumb-item"><a href="/o/{{object.id}}/c">{{envSite.i18n.aCatGoods}}</a></li>
       {{#each currentCatalog.pathArray as |item|}}
-        <li class="breadcrumb-item">
-          <a href="/o/{{../object.id}}/c/{{item.url}}">{{item.name}}</a>
-        </li>
+        {{#if (not item.name ../currentCatalog.name)}}
+          <li class="breadcrumb-item">
+            <a href="/o/{{../object.id}}/c/{{item.url}}">{{item.name}}</a>
+          </li>
+        {{else}}
+          <li class="breadcrumb-item active">{{../currentCatalog.name}}</li>
+        {{/if}}
       {{/each}}
     {{else}}
       <li class="breadcrumb-item active">{{envSite.i18n.aCatGoods}}</li>  
@@ -44,16 +48,16 @@
       <div class="col">
         <div class="card text-center h-100">
           <a href="{{catalog.url}}">
-            <img src="{{catalog.img1}}" class="card-img-top" onerror="this.src = '/icons/photo_error_{{../envSite.lang}}.svg';" alt="{{catalog.name}}">
+            <img src="{{photoError catalog.img1 ../envSite.lang}}" class="card-img-top" onerror="this.src = '/icons/photo_error_{{../envSite.lang}}.svg';" alt="{{catalog.name}}">
           </a>
           <div class="card-body">
             <h6>
               <a href="{{catalog.url}}">{{catalog.name}}</a>
               <div class="mt-2">
-                <a href="{{catalog.img2}}" class="js-smartphoto-single text-decoration-none" data-caption="{{catalog.name}}">
+                <a href="{{photoError catalog.img2 ../envSite.lang}}" class="js-smartphoto-single text-decoration-none" data-caption="{{catalog.name}}">
                   <img src="/icons/zoom-in.svg" width="28" height="28" class="me-2" alt="zoom img">
                 </a>
-                <a href="//t.me/{{../envSite.botName}}?start=o_{{../object.id}}_c_{{catalog.id}}" target="_blank">
+                <a href="https://t.me/share/url?url={{encodeUrl ../envSite.botName ../object.id "c" catalog.id ../envSite.domain}}&text={{encode ../object.name catalog.name}}" target="_blank">
                   <i class="bi bi-telegram fs-4"></i>
                 </a>
               </div>

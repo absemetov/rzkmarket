@@ -4,7 +4,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <link rel="stylesheet" href="/assets/index.6a22e6b9.css">
-      <script type="module" src="/assets/index.731e9c37.js"></script>
+      <script type="module" src="/assets/index.3edaf936.js"></script>
       <title>{{#if title}}{{title}} | {{envSite.i18n.siteName}}{{else}}{{envSite.i18n.siteTitle}}{{/if}}</title>
       <link rel="icon" href="/favicon-{{envSite.lang}}.ico">
       <link rel="icon" href="/logo/logo-{{envSite.lang}}.svg" type="image/svg+xml">
@@ -26,6 +26,68 @@
         linkTag.href = location.href.split("?")[0];
         document.head.appendChild(linkTag);
       </script>
+      {{#if currentCatalog}}
+        <script type="application/ld+json">
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [{
+              "@type": "ListItem",
+              "position": 1,
+              "name": "{{object.name}}",
+              "item": "{{envSite.domain}}/o/{{object.id}}"
+            },{
+              "@type": "ListItem",
+              "position": 2,
+              "name": "{{envSite.i18n.aCatGoods}}",
+              "item": "{{envSite.domain}}/o/{{object.id}}/c"
+            },
+          {{#each currentCatalog.pathArray as |item|}}
+            {
+              "@type": "ListItem",
+              "position": {{inc @index}},
+            {{#if (not item.name ../currentCatalog.name)}}
+              "name": "{{item.name}}",
+              "item": "{{../envSite.domain}}/o/{{../object.id}}/c/{{item.url}}"
+            },
+            {{else}}
+              "name": "{{item.name}}"
+            }
+            {{/if}}
+          {{/each}}
+            ]
+          }
+        </script>  
+      {{/if}}
+      {{#if product}}
+      <script type="application/ld+json">
+        {
+          "@context": "https://schema.org/",
+          "@type": "Product",
+          "name": "{{product.name}}",
+          "mpn": "{{product.id}}",
+          "image": [
+            "{{product.img1}}",
+            "{{product.img2}}"
+          ],
+          "description": "{{envSite.i18n.siteDesc}}",
+        {{#if product.brand}}
+          "brand": {
+            "@type": "Brand",
+            "name": "{{product.brand}}"
+          },
+        {{/if}}
+          "offers": {
+            "@type": "Offer",
+            "url": "{{product.url}}",
+            "itemCondition": "https://schema.org/NewCondition",
+            "availability": "https://schema.org/InStock",
+            "price": {{product.price}},
+            "priceCurrency": "{{envSite.priceCurrency}}"
+          }
+        }
+      </script>
+      {{/if}}
     </head>
     <body>
       <nav class="navbar navbar-expand navbar-light bg-light">

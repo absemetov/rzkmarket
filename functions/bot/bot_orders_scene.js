@@ -44,7 +44,7 @@ const userOrders = async (ctx, next) => {
         const orderProductsSorted = store.sort(order.products);
         orderProductsSorted.forEach((product, index) => {
           const productTxt = `${index + 1})<b>${product.name}</b> (${product.id})` +
-        `=${product.price} ${process.env.BOT_CURRENCY}*${product.qty}${product.unit}` +
+        `=<b>${product.qty}${product.unit}</b>*${product.price} ${process.env.BOT_CURRENCY}` +
         `=${roundNumber(product.price * product.qty)}${process.env.BOT_CURRENCY}`;
           // truncate long string
           if ((caption + `${productTxt}\n`).length < 1000) {
@@ -203,7 +203,7 @@ const adminOrders = async (ctx, next) => {
         const orderProductsSorted = store.sort(order.products);
         orderProductsSorted.forEach((product, index) => {
           const productTxt = `${index + 1})<b>${product.name}</b> (${product.id})` +
-        `=${product.price}${process.env.BOT_CURRENCY}*${product.qty}${product.unit}` +
+        `=<b>${product.qty}${product.unit}</b>*${product.price}${process.env.BOT_CURRENCY}` +
         `=${roundNumber(product.price * product.qty)}${process.env.BOT_CURRENCY}`;
           // truncate long string
           if ((caption + `${productTxt}\n`).length < 950) {

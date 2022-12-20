@@ -6,10 +6,10 @@ const {GoogleSpreadsheet} = require("google-spreadsheet");
 const creds = require("./rzk-com-ua-d1d3248b8410.json");
 const Validator = require("validatorjs");
 const {google} = require("googleapis");
-const {store, roundNumber, photoCheckUrl} = require("./bot_store_cart");
-const Translit = require("cyrillic-to-translit-js");
-const cyrillicToTranslit = new Translit();
-const cyrillicToTranslitUk = new Translit({preset: "uk"});
+const {store, roundNumber, photoCheckUrl, translit} = require("./bot_store_cart");
+// const Translit = require("cyrillic-to-translit-js");
+// const cyrillicToTranslit = new Translit();
+// const cyrillicToTranslitUk = new Translit({preset: "uk"});
 const bot = new Telegraf(process.env.BOT_TOKEN, {
   handlerTimeout: 540000,
 });
@@ -36,7 +36,8 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
   // Max upload goods
   const maxUploadGoods = 2000;
   // Catalogs set array
-  const catalogsIsSet = new Map();
+  // const catalogsIsSet = new Map();
+  const catalogsIsSet = new Set();
   // Products set array
   const productIsSet = new Set();
   let deletedProducts = 0;
@@ -64,7 +65,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
     const batchCatalogsDelete = firebase.firestore().batch();
     // get rows data, use get cell because this method have numder formats
     await sheet.loadCells({
-      startRowIndex: i, endRowIndex: i + perPage, startColumnIndex: 0, endColumnIndex: 10,
+      startRowIndex: i, endRowIndex: i + perPage, startColumnIndex: 0, endColumnIndex: 11,
     });
     // loop rows from SHEET
     for (let j = i; j < i + perPage && j < rowCount; j++) {
@@ -79,10 +80,15 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
       const GROUP = sheet.getCell(j, 7);
       const TAGS = sheet.getCell(j, 8);
       const BRAND = sheet.getCell(j, 9);
-      // check color cell if red not add
-      const prodMustDel = ID.value && NAME.value && ID.backgroundColor && Object.keys(ID.backgroundColor).length === 1 && ID.backgroundColor.red === 1 && ID.note !== "deleted";
+      const TIMESTAMP = sheet.getCell(j, 10);
+      // if cell empty set +1 new data!!!
+      const rowUpdatedTime = TIMESTAMP.value || 1;
+      // check color cell if red delete
+      // const prodMustDel = ID.value && NAME.value && ID.backgroundColor && Object.keys(ID.backgroundColor).length === 1 && ID.backgroundColor.red === 1 && ID.note !== "deleted";
+      const prodMustDel = ID.value && NAME.value && ID.backgroundColor && Object.keys(ID.backgroundColor).length === 1 && ID.backgroundColor.red === 1 && rowUpdatedTime !== "deleted";
       // find max timestamp
-      const rowUpdatedTime = ID.value && NAME.value && Math.max(ORDER_BY.note || 1, ID.note || 1, NAME.note || 1, PURCHASE_PRICE.note || 1, PRICE.note || 1, CURRENCY.note || 1, UNIT.note || 1, GROUP.note || 1, TAGS.note || 1, BRAND.note || 1);
+      // const rowUpdatedTime = ID.value && NAME.value && Math.max(ORDER_BY.note || 1, ID.note || 1, NAME.note || 1, PURCHASE_PRICE.note || 1, PRICE.note || 1, CURRENCY.note || 1, UNIT.note || 1, GROUP.note || 1, TAGS.note || 1, BRAND.note || 1);
+
       const newDataDetected = !prodMustDel && rowUpdatedTime > lastUplodingTime;
       const row = {
         ORDER_BY: ORDER_BY.value,
@@ -127,28 +133,37 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
         if (url) {
           name = url[1].trim();
           const partial = url[2].split(",");
-          id = partial[0] ? partial[0].trim() : cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name, "-")).toLowerCase();
+          // id = partial[0] ? partial[0].trim() : cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name, "-")).toLowerCase();
+          id = partial[0] ? partial[0].trim() : translit(name);
           orderNumber = partial[1] && + partial[1];
           postId = partial[2] && + partial[2];
         } else {
-          id = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name, "-")).toLowerCase();
+          // id = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name, "-")).toLowerCase();
+          id = translit(name);
         }
+        // delete catalogs
+        // if (name.charAt(0) === "%") {
+        // delete special char!!!
         if (name.charAt(0) === "%") {
-          // delete special char!!!
           if (id.charAt(0) === "%") {
-            id = id.substring(1);
+            // id = id.substring(1);
+            id = id.replace(/^%-*/, "");
           }
-          delCatalogs.push({id, del: true});
+          pathArrayHelper.push(id);
+          // delCatalogs.push({id, del: true});
+          delCatalogs.push({id: pathArrayHelper.join("#"), del: true});
         } else {
-          delCatalogs.push({id, del: false});
+          // delCatalogs.push({id, del: false});
+          pathArrayHelper.push(id);
+          delCatalogs.push({id: pathArrayHelper.join("#"), del: false});
         }
-        pathArrayHelper.push(id);
         // delete special char
         return {
           id,
           name,
           url: pathArrayHelper.join("/"),
-          parentId: pathArrayHelper.length > 1 ? pathArrayHelper[pathArrayHelper.length - 2] : null,
+          // parentId: pathArrayHelper.length > 1 ? pathArrayHelper[pathArrayHelper.length - 2] : null,
+          parentId: pathArrayHelper.length > 1 ? pathArrayHelper.slice(0, -1).join("#") : null,
           orderNumber,
           postId,
           // parentName,
@@ -192,7 +207,8 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
             }
           }
         }
-        ID.note = "deleted";
+        // ID.note = "deleted";
+        TIMESTAMP.value = "deleted";
         // await ID.save();
       }
       // check if this products have ID and NAME
@@ -200,7 +216,8 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
         // generate tags array
         const tags = row.TAGS.map((tag) => {
           const name = tag.trim();
-          const id = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name, "-")).toLowerCase();
+          // const id = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(name, "-")).toLowerCase();
+          const id = translit(name);
           return {id, name};
           // return {cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(tag.trim(), "-")).toLowerCase();
           // return name;
@@ -265,7 +282,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
             "currency": product.currency,
             "unit": product.unit,
             "orderNumber": product.orderNumber,
-            "catalogId": groupArray[groupArray.length - 1].id,
+            "catalogId": groupArray[groupArray.length - 1].url.replace(/\//g, "#"),
             // "catalog": groupArray[groupArray.length - 1],
             // "catalogsNamePath": groupArray.map((item) => item.name).join("#"),
             "pathArray": groupArray.map((catalog) => {
@@ -293,13 +310,14 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
               name: catalog.name,
               url: pathArray.join("/"),
             });
-            if (!catalogsIsSet.has(catalog.id)) {
-              catalogsIsSet.set(catalog.id, {parentId: catalog.parentId});
-              // catalogsIsSet.set(pathArray.join("-"));
-              const catalogRef = firebase.firestore().collection("objects").doc(objectId)
-                  .collection("catalogs").doc(catalog.id);
+            // if (!catalogsIsSet.has(catalog.id)) {
+            if (!catalogsIsSet.has(pathArray.join("#"))) {
+              // catalogsIsSet.set(catalog.id, {parentId: catalog.parentId});
+              catalogsIsSet.add(pathArray.join("#"));
               // const catalogRef = firebase.firestore().collection("objects").doc(objectId)
-              //     .collection("catalogs").doc(catalog.fireId);
+              //     .collection("catalogs").doc(catalog.id);
+              const catalogRef = firebase.firestore().collection("objects").doc(objectId)
+                  .collection("catalogs").doc(pathArray.join("#"));
               batchCatalogs.set(catalogRef, {
                 "name": catalog.name,
                 "parentId": catalog.parentId,
@@ -321,9 +339,9 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
               }
             }
             // check if catalog moved
-            if (catalogsIsSet.get(catalog.id).parentId !== catalog.parentId) {
-              throw new Error(`Catalog <b>${catalog.name}</b> moved from  <b>${catalogsIsSet.get(catalog.id).parentId}</b> to  <b>${catalog.parentId}</b> in row <b>${j + 1}</b>`);
-            }
+            // if (catalogsIsSet.get(catalog.id).parentId !== catalog.parentId) {
+            //   throw new Error(`Catalog <b>${catalog.name}</b> moved from  <b>${catalogsIsSet.get(catalog.id).parentId}</b> to  <b>${catalog.parentId}</b> in row <b>${j + 1}</b>`);
+            // }
           }
           // generate tags Map for last catalog
           // for (const tagsRow of tags) {
@@ -347,7 +365,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
     // send done info
     await telegram.sendMessage(94899148, `<b>${i + perPage - 1} rows scaned from ${rowCount}</b>`,
         {parse_mode: "html"});
-    // save changes
+    // save cell changes
     await sheet.saveUpdatedCells();
     // clear cache
     sheet.resetLocalCache(true);

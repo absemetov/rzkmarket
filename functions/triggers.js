@@ -266,7 +266,7 @@ exports.catalogUpdate = functions.region("europe-central2").firestore
       // add photos if changed
       if (catalog.photoId) {
         for (const zoom of [1, 2]) {
-          const imgUrl = await photoCheckUrl(`photos/o/${objectId}/c/${catalogId}/${catalog.photoId}/${zoom}.jpg`, true);
+          const imgUrl = await photoCheckUrl(`photos/o/${objectId}/c/${catalogId.replace(/#/g, "-")}/${catalog.photoId}/${zoom}.jpg`, true);
           if (imgUrl) {
             catalogAlgolia[`img${zoom}`] = imgUrl;
           } else {
@@ -280,8 +280,8 @@ exports.catalogUpdate = functions.region("europe-central2").firestore
       // check parentId if catalog move
       if (previousValueCatalog.parentId !== catalog.parentId) {
         await bot.telegram.sendMessage(94899148, `<b>Catalog moved!!! ${catalog.name} (${catalogId})\n` +
-        `from: ${previousValueCatalog.pathArray.map((catalog) => catalog.name).join(" > ")}\n` +
-        `to: ${catalog.pathArray.map((catalog) => catalog.name).join(" > ")}</b>`,
+        `from: ${previousValueCatalog.pathArray.map((catalog) => catalog.name).join(" > ")}(${previousValueCatalog.parentId})\n` +
+        `to: ${catalog.pathArray.map((catalog) => catalog.name).join(" > ")}(${catalog.parentId})</b>`,
         {parse_mode: "html"});
       }
       // return a promise of a set operation to update the count
@@ -299,6 +299,6 @@ exports.catalogDelete = functions.region("europe-central2").firestore
       // await bucket.deleteFiles({
       //   prefix: `photos/o/${objectId}/c/${catalogId}`,
       // });
-      await deletePhotoStorage(`photos/o/${objectId}/c/${catalogId}`);
+      await deletePhotoStorage(`photos/o/${objectId}/c/${catalogId.replace(/#/g, "-")}`);
       return null;
     });

@@ -4,7 +4,7 @@ const firestore = require("firebase-admin/firestore");
 const bucket = firebase.storage().bucket();
 const express = require("express");
 const exphbs = require("express-handlebars");
-const {store, cart, roundNumber} = require("../.././bot/bot_store_cart.js");
+const {store, cart, roundNumber, translit} = require("../.././bot/bot_store_cart.js");
 const {algoliaIndexProducts} = require("../.././bot/bot_search");
 const {createHash, createHmac} = require("crypto");
 const jwt = require("jsonwebtoken");
@@ -16,9 +16,9 @@ const moment = require("moment");
 const cors = require("cors");
 const TelegrafI18n = require("telegraf-i18n");
 const path = require("path");
-const Translit = require("cyrillic-to-translit-js");
-const cyrillicToTranslit = new Translit();
-const cyrillicToTranslitUk = new Translit({preset: "uk"});
+// const Translit = require("cyrillic-to-translit-js");
+// const cyrillicToTranslit = new Translit();
+// const cyrillicToTranslitUk = new Translit({preset: "uk"});
 // locale
 const i18n = new TelegrafI18n({
   directory: path.resolve(__dirname, "locales"),
@@ -43,20 +43,48 @@ const envSite = {
   postId: process.env.SITE_POST_ID,
 };
 const app = express();
+app.use((req, res, next) => {
+  if (req.path.substr(-1) == "/" && req.path.length > 1) {
+    const query = req.url.slice(req.path.length);
+    res.redirect(301, req.path.slice(0, -1) + query);
+  } else {
+    next();
+  }
+});
 app.use(cors({origin: true}));
 app.use(cookieParser());
 // Configure template Engine and Main Template File
 function cyrillicUrl(value) {
-  return cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(value, "-")).toLowerCase();
+  // return cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(value, "-")).toLowerCase();
+  return translit(value);
 }
 const hbs = exphbs.create({
   extname: ".hbs",
   helpers: {
+    photoError(src, locale) {
+      // proxy img for Crimea
+      return locale === "ru" ? src.replace("storage", "i0.wp.com/storage") : src;
+    },
+    not(value1, value2) {
+      return value1 !== value2;
+    },
     inc(value) {
-      return parseInt(value) + 4;
+      return value + 3;
     },
     url(value) {
       return cyrillicUrl(value);
+    },
+    encodeUrl(botName, objectId, type, elementId, domain) {
+      const param = btoa(`o_${objectId}_${type}_${elementId}`);
+      if (type === "c" && param.length > 64) {
+        return encodeURIComponent(`${domain}/o/${objectId}/c/${elementId.replace(/#/g, "/")}`);
+      } else {
+        return encodeURIComponent(`https://t.me/${botName}?start=${param}`);
+      }
+    },
+    encode(...value) {
+      // delete options element
+      return encodeURIComponent(value.filter((n) =>n).slice(0, -1).join(" - "));
     },
   },
 });
@@ -133,7 +161,7 @@ app.get("/o/:objectId", auth, async (req, res) => {
       envSite});
   } else {
     // return res.redirect("/");
-    console.log(`404 error: ${req.path}`);
+    console.log(`404 error: ${req.url}`);
     return res.status(404).send(`<h1>404! Page not found <a href="${envSite.domain}">${envSite.domain}</a></h1>`);
   }
 });
@@ -142,10 +170,12 @@ app.get("/o/:objectId", auth, async (req, res) => {
 // show catalogs
 app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
   const objectId = req.params.objectId;
-  const catalogId = req.params.catalogPath ? req.params.catalogPath.replace(/\/$/, "").split("/")[req.params.catalogPath.replace(/\/$/, "").split("/").length - 1] : null;
+  // const catalogId = req.params.catalogPath ? req.params.catalogPath.replace(/\/$/, "").split("/")[req.params.catalogPath.replace(/\/$/, "").split("/").length - 1] : null;
+  const catalogId = req.params.catalogPath && req.params.catalogPath.replace(/\/+$/, "").replace(/\//g, "#") || null;
   const selectedTag = req.query.tag;
   const startAfter = req.query.startAfter;
   const endBefore = req.query.endBefore;
+  // const path = req.path.replace(/\/+$/, "");
   const object = await store.findRecord(`objects/${objectId}`);
   if (!object) {
     console.log(`404 error: ${req.path}`);
@@ -162,11 +192,11 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
     const catalogSibl = {
       id: doc.id,
       name: doc.data().name,
-      url: `${req.path.replace(/\/$/, "")}/${doc.id}`,
+      url: `/o/${objectId}/c/${doc.id.replace(/#/g, "/")}`,
     };
     if (doc.data().photoId) {
-      catalogSibl.img1 = bucket.file(`photos/o/${object.id}/c/${doc.id}/${doc.data().photoId}/1.jpg`).publicUrl();
-      catalogSibl.img2 = bucket.file(`photos/o/${object.id}/c/${doc.id}/${doc.data().photoId}/2.jpg`).publicUrl();
+      catalogSibl.img1 = bucket.file(`photos/o/${object.id}/c/${doc.id.replace(/#/g, "-")}/${doc.data().photoId}/1.jpg`).publicUrl();
+      catalogSibl.img2 = bucket.file(`photos/o/${object.id}/c/${doc.id.replace(/#/g, "-")}/${doc.data().photoId}/2.jpg`).publicUrl();
     } else {
       catalogSibl.img1 = "/icons/folder2.svg";
       catalogSibl.img2 = "/icons/folder2.svg";
@@ -180,14 +210,13 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
   if (catalogId) {
     currentCatalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
     if (!currentCatalog) {
-      console.log(`404 error: ${req.path}`);
+      console.log(`404 error: ${req.url}`);
       return res.status(404).send(`<h1>404! Page not found <a href="${envSite.domain}">${envSite.domain}</a></h1>`);
     }
     // generate title
     title = `${currentCatalog.name} ${envSite.i18n.btnBuy().toLowerCase()} ${envSite.i18n.siteCatTitle()} - ${object.name}`;
     let mainQuery = firebase.firestore().collection("objects").doc(objectId).collection("products")
-        .where("catalogId", "==", catalogId)
-        .orderBy("orderNumber");
+        .where("catalogId", "==", catalogId).orderBy("orderNumber");
     // Filter by tag
     let tagUrl = "";
     if (selectedTag) {
@@ -255,7 +284,7 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
           const tagId = cyrillicUrl(tagName);
           const tagObj = {
             text: `${tagName} (${tagCount})`,
-            url: `${req.path.replace(/\/$/, "")}?tag=${tagId}`,
+            url: `${req.path}?tag=${tagId}`,
           };
           // close tag
           if (tagId === selectedTag) {
@@ -263,7 +292,7 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
             title = `${currentCatalog.name} ${tagName} ${envSite.i18n.btnBuy().toLowerCase()} ${envSite.i18n.siteCatTitle()} - ${object.name}`;
             tagObj.active = true;
             tagActive.name = `${tagName} (${tagCount})`;
-            tagActive.path = req.path.replace(/\/$/, "");
+            tagActive.path = req.path;
           }
           tags.push(tagObj);
         }
@@ -275,7 +304,7 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
         text: envSite.i18n.aPagPrevious,
         icon: "bi-chevron-left",
         show: ifBeforeProducts.empty,
-        url: `${req.path.replace(/\/$/, "")}?endBefore=${endBeforeSnap.id}${tagUrl}`,
+        url: `${req.path}?endBefore=${endBeforeSnap.id}${tagUrl}`,
       });
       // startAfter
       const startAfterSnap = productsSnapshot.docs[productsSnapshot.docs.length - 1];
@@ -284,7 +313,7 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
         text: envSite.i18n.aPagNext,
         icon: "bi-chevron-right",
         show: ifAfterProducts.empty,
-        url: `${req.path.replace(/\/$/, "")}?startAfter=${startAfterSnap.id}${tagUrl}`,
+        url: `${req.path}?startAfter=${startAfterSnap.id}${tagUrl}`,
       });
     }
   }

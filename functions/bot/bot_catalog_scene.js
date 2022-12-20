@@ -1,11 +1,11 @@
 const firebase = require("firebase-admin");
 const firestore = require("firebase-admin/firestore");
-const {cart, store, roundNumber, photoCheckUrl, deletePhotoStorage} = require("./bot_store_cart");
+const {cart, store, roundNumber, photoCheckUrl, deletePhotoStorage, translit} = require("./bot_store_cart");
 const {searchProductHandle, algoliaIndexProducts} = require("./bot_search");
 const {parseUrl} = require("./bot_start_scene");
-const Translit = require("cyrillic-to-translit-js");
-const cyrillicToTranslit = new Translit();
-const cyrillicToTranslitUk = new Translit({preset: "uk"});
+// const Translit = require("cyrillic-to-translit-js");
+// const cyrillicToTranslit = new Translit();
+// const cyrillicToTranslitUk = new Translit({preset: "uk"});
 // catalogs actions array
 const catalogsActions = [];
 // show catalogs and goods
@@ -21,7 +21,7 @@ const showCatalog = async (ctx, next) => {
     // delete search redirect!
     ctx.state.sessionMsg.url.searchParams.delete("page");
     const cartButtons = await cart.cartButtons(objectId, ctx);
-    const catalogId = ctx.state.param;
+    let catalogId = ctx.state.param;
     const tag = ctx.state.params.get("t");
     const startAfter = ctx.state.params.get("s");
     const endBefore = ctx.state.params.get("e");
@@ -40,13 +40,24 @@ const showCatalog = async (ctx, next) => {
     ctx.state.sessionMsg.url.searchParams.delete("cart");
     let currentCatalog;
     if (catalogId) {
+      // TEST path url
+      const pathUrl = ctx.state.sessionMsg.url.searchParams.get("pathUrl") && ctx.state.sessionMsg.url.searchParams.get("pathUrl") + "#" || "";
+      const pathUrlSplit = pathUrl.split(`${catalogId}`);
+      catalogId = `${pathUrlSplit[0]}${catalogId}`;
+      ctx.state.sessionMsg.url.searchParams.set("pathUrl", catalogId);
+      // TEST path url
+      // currentCatalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
       currentCatalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
+      if (!currentCatalog) {
+        await ctx.answerCbQuery("Catalog not found");
+        return;
+      }
       // back button
       inlineKeyboardArray.push([{text: `⤴️ ${currentCatalog.pathArray.length > 1 ? currentCatalog.pathArray[currentCatalog.pathArray.length - 2].name : "Каталог"}`,
-        callback_data: currentCatalog.parentId ? `c/${currentCatalog.parentId}` : "c"}]);
+        callback_data: currentCatalog.parentId ? `c/${currentCatalog.parentId.substring(currentCatalog.parentId.lastIndexOf("#") + 1)}` : "c"}]);
       if (ctx.state.isAdmin && ctx.state.sessionMsg.url.searchParams.get("editMode")) {
         inlineKeyboardArray.push([{text: `📸 Загрузить фото каталога ${currentCatalog.name}`,
-          callback_data: `u/${currentCatalog.id}?todo=cat`}]);
+          callback_data: `u/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?todo=cat`}]);
       }
       // products query
       let mainQuery = firebase.firestore().collection("objects").doc(objectId)
@@ -60,10 +71,9 @@ const showCatalog = async (ctx, next) => {
       }
       // show catalog siblings, get catalogs snap index or siblings
       const catalogsSnapshot = await firebase.firestore().collection("objects").doc(objectId)
-          .collection("catalogs")
-          .where("parentId", "==", catalogId).orderBy("orderNumber").get();
+          .collection("catalogs").where("parentId", "==", catalogId).orderBy("orderNumber").get();
       catalogsSnapshot.docs.forEach((doc) => {
-        inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}`}]);
+        inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id.substring(doc.id.lastIndexOf("#") + 1)}`}]);
       });
       // paginate goods, copy main query
       let query = mainQuery;
@@ -88,11 +98,11 @@ const showCatalog = async (ctx, next) => {
       if (!productsSnapshot.empty && catalogsSnapshot.empty) {
         const tagsArray = [];
         tagsArray.push({text: ctx.i18n.btn.filter(),
-          callback_data: `t/${currentCatalog.id}`});
+          callback_data: `t/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}`});
         // Delete or close selected tag
         if (tag) {
-          tagsArray[0].callback_data = `t/${currentCatalog.id}?tS=${tag}`;
-          tagsArray.push({text: `❎ ${tag}`, callback_data: `c/${currentCatalog.id}`});
+          tagsArray[0].callback_data = `t/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?tS=${tag}`;
+          tagsArray.push({text: `❎ ${tag}`, callback_data: `c/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}`});
         }
         inlineKeyboardArray.push(tagsArray);
       }
@@ -121,22 +131,25 @@ const showCatalog = async (ctx, next) => {
         const ifBeforeProducts = await mainQuery.endBefore(endBeforeSnap).limitToLast(1).get();
         if (!ifBeforeProducts.empty) {
           prevNext.push({text: ctx.i18n.btn.previous(),
-            callback_data: `c/${currentCatalog.id}?e=${endBeforeSnap.id}${tagUrl}`});
+            callback_data: `c/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?e=${endBeforeSnap.id}${tagUrl}`});
         }
         // startAfter
         const startAfterSnap = productsSnapshot.docs[productsSnapshot.docs.length - 1];
         const ifAfterProducts = await mainQuery.startAfter(startAfterSnap).limit(1).get();
         if (!ifAfterProducts.empty) {
           prevNext.push({text: ctx.i18n.btn.next(),
-            callback_data: `c/${currentCatalog.id}?s=${startAfterSnap.id}${tagUrl}`});
+            callback_data: `c/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?s=${startAfterSnap.id}${tagUrl}`});
         }
         inlineKeyboardArray.push(prevNext);
       }
       // get photo catalog
       if (currentCatalog.photoId) {
-        publicImgUrl = `photos/o/${objectId}/c/${currentCatalog.id}/${currentCatalog.photoId}/2.jpg`;
+        publicImgUrl = `photos/o/${objectId}/c/${currentCatalog.id.replace(/#/g, "-")}/${currentCatalog.photoId}/2.jpg`;
       }
     } else {
+      // TEST path url
+      ctx.state.sessionMsg.url.searchParams.delete("pathUrl");
+      // TEST path url
       // back button
       // inlineKeyboardArray.push([{text: `⤴️ ../${object.name}`, callback_data: `objects/${objectId}`}]);
       // show catalog siblings, get catalogs snap index or siblings
@@ -144,7 +157,7 @@ const showCatalog = async (ctx, next) => {
           .collection("catalogs")
           .where("parentId", "==", null).orderBy("orderNumber").get();
       catalogsSnapshot.docs.forEach((doc) => {
-        inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id}`}]);
+        inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id.substring(doc.id.lastIndexOf("#") + 1)}`}]);
       });
     }
     // cart buttons
@@ -156,8 +169,8 @@ const showCatalog = async (ctx, next) => {
       type: "photo",
       media,
       caption: `<b>${object.name} > ${currentCatalog && currentCatalog.pathArray ? `Каталог > ${currentCatalog.pathArray.map((cat) => cat.name).join(" > ")}` : "Каталог"}</b>\n` +
-        `${process.env.BOT_SITE}/o/${objectId}/c${catalogId ? "/" + catalogId : ""}\n` +
-        `${currentCatalog && currentCatalog.postId ? `RZK Market Channel <a href="t.me/${process.env.BOT_CHANNEL}/${currentCatalog.postId}">t.me/${process.env.BOT_CHANNEL}/${currentCatalog.postId}</a>` : ""} `+ ctx.state.sessionMsg.linkHTML(),
+        `${process.env.BOT_SITE}/o/${objectId}/c${catalogId ? "/" + catalogId.replace(/#/g, "/") : ""}\n` +
+        `${currentCatalog && currentCatalog.postId ? `RZK Market Channel <a href="t.me/${process.env.BOT_CHANNEL}/${currentCatalog.postId}">t.me/${process.env.BOT_CHANNEL}/${currentCatalog.postId}</a>` : ""} ` + ctx.state.sessionMsg.linkHTML(),
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: inlineKeyboardArray,
@@ -198,10 +211,13 @@ const showProduct = async (ctx, next) => {
       await ctx.answerCbQuery("Product not found");
       return;
     }
+    // TEST path Url
+    ctx.state.sessionMsg.url.searchParams.set("pathUrl", product.pathArray[product.pathArray.length - 1].url.replace(/\//g, "#"));
+    // Test path url
     ctx.state.sessionMsg.url.searchParams.set("productPriceChange", product.price);
     product.price = roundNumber(product.price * object.currencies[product.currency]);
     const cartButtons = await cart.cartButtons(objectId, ctx);
-    let catalogUrl = `c/${product.catalogId}`;
+    let catalogUrl = `c/${product.catalogId.substring(product.catalogId.lastIndexOf("#") + 1)}`;
     // const sessionPathCatalog = await store.findRecord(`users/${ctx.from.id}`, "session.pathCatalog");
     const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathCatalog");
     if (sessionPathCatalog) {
@@ -274,10 +290,10 @@ const showProduct = async (ctx, next) => {
         callback_data: `b/${product.id}?todo=postId`}]);
       inlineKeyboardArray.push([{text: "Удалить товар",
         callback_data: `b/${product.id}?todo=del`}]);
-      inlineKeyboardArray.push([{text: "📸 Загрузить фото",
-        callback_data: `u/${product.id}?todo=prod`}]);
       inlineKeyboardArray.push([{text: "Загрузить в Merch",
         callback_data: `uploadMerch/${product.id}`}]);
+      inlineKeyboardArray.push([{text: "📸 Загрузить фото",
+        callback_data: `u/${product.id}?todo=prod`}]);
     }
     await ctx.editMessageMedia({
       type: "photo",
@@ -1025,11 +1041,12 @@ catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "t") {
     const inlineKeyboardArray = [];
     const catalogId = ctx.state.param;
+    const pathUrl = ctx.state.sessionMsg.url.searchParams.get("pathUrl");
     // const objectId = ctx.state.params.get("o");
     const objectId = ctx.state.sessionMsg.url.searchParams.get("objectId");
     const object = await store.findRecord(`objects/${objectId}`);
-    const catalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
-    let catalogUrl = `c/${catalog.id}`;
+    const catalog = await store.findRecord(`objects/${objectId}/catalogs/${pathUrl}`);
+    let catalogUrl = `c/${catalogId}`;
     // if (ctx.session.pathCatalog) {
     //   catalogUrl = ctx.session.pathCatalog;
     // }
@@ -1049,11 +1066,12 @@ catalogsActions.push( async (ctx, next) => {
     });
     // console.log(`categories.lvl${pathNames.length - 1}:${pathNames.join(" > ")}`);
     for (const [tagName, tagCount] of Object.entries(tags.facets.subCategory || {})) {
-      const transTagName = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(tagName, "-")).toLowerCase();
+      // const transTagName = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(tagName, "-")).toLowerCase();
+      const transTagName = translit(tagName);
       if (transTagName === ctx.state.params.get("tS")) {
-        inlineKeyboardArray.push([{text: `✅ ${tagName} (${tagCount})`, callback_data: `c/${catalog.id}?t=${transTagName}`}]);
+        inlineKeyboardArray.push([{text: `✅ ${tagName} (${tagCount})`, callback_data: `c/${catalogId}?t=${transTagName}`}]);
       } else {
-        inlineKeyboardArray.push([{text: `🎚 ${tagName} (${tagCount})`, callback_data: `c/${catalog.id}?t=${transTagName}`}]);
+        inlineKeyboardArray.push([{text: `🎚 ${tagName} (${tagCount})`, callback_data: `c/${catalogId}?t=${transTagName}`}]);
       }
     }
     let publicImgUrl = null;
@@ -1186,8 +1204,9 @@ catalogsActions.push( async (ctx, next) => {
       caption = `Добавьте фото <b>${productName} (${paramId})</b>`;
     }
     if (todo === "cat") {
-      ctx.state.sessionMsg.url.searchParams.set("upload-catalogId", paramId);
-      const catalog = await store.findRecord(`objects/${objectId}/catalogs/${paramId}`);
+      const pathUrl = ctx.state.sessionMsg.url.searchParams.get("pathUrl");
+      ctx.state.sessionMsg.url.searchParams.set("upload-catalogId", pathUrl);
+      const catalog = await store.findRecord(`objects/${objectId}/catalogs/${pathUrl}`);
       caption = `Добавьте фото <b>${catalog.name} (${catalog.id})</b>`;
     }
     if (todo === "obj") {

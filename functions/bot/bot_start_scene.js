@@ -38,7 +38,7 @@ const parseUrl = (ctx, next) => {
 const startHandler = async (ctx) => {
   const inlineKeyboardArray = [];
   // start deep linking parsing
-  const path = ctx.message.text.match(/o_([a-zA-Z0-9-_]+)_(p|c)_([a-zA-Z0-9-_]+)/);
+  const path = atob(ctx.message.text.substring(6)).match(/o_([a-zA-Z0-9-_]+)_(p|c)_([a-zA-Z0-9-_#]+)/);
   // const pathCatalog = ctx.message.text.match(/o_([a-zA-Z0-9-_]+)_c_([a-zA-Z0-9-_]+)/);
   let caption = "";
   if (path) {
@@ -56,10 +56,11 @@ const startHandler = async (ctx) => {
     }
     // get catalog
     if (objectType === "c") {
+      ctx.state.sessionMsg.url.searchParams.set("pathUrl", objectTypeId);
       const catalog = await store.findRecord(`objects/${objectId}/catalogs/${objectTypeId}`);
       if (object && catalog) {
         inlineKeyboardArray.push([{text: `📁 ${catalog.name}`,
-          callback_data: `c/${objectTypeId}?o=${objectId}`}]);
+          callback_data: `c/${objectTypeId.substring(objectTypeId.lastIndexOf("#") + 1)}?o=${objectId}`}]);
       }
     }
     if (object) {
@@ -78,7 +79,7 @@ const startHandler = async (ctx) => {
     const publicImgUrl = await photoCheckUrl();
     await ctx.replyWithPhoto(publicImgUrl,
         {
-          caption,
+          caption: caption + ctx.state.sessionMsg.linkHTML(),
           parse_mode: "html",
           reply_markup: {
             inline_keyboard: inlineKeyboardArray,
@@ -139,7 +140,7 @@ startActions.push(async (ctx, next) => {
         `${object.address}\n` +
         `${object.description}</b>\n` +
         `${process.env.BOT_SITE}/o/${objectId}\n` +
-        `${object.postId ? `RZK Market Channel <a href="t.me/${process.env.BOT_CHANNEL}/${object.postId}">t.me/${process.env.BOT_CHANNEL}/${object.postId}</a>` : ""}`;
+        `${object.postId ? `RZK Market Channel <a href="t.me/${process.env.BOT_CHANNEL}/${object.postId}">t.me/${process.env.BOT_CHANNEL}/${object.postId}</a>\n` : ""}`;
       const cartButtons = await cart.cartButtons(objectId, ctx);
       inlineKeyboardArray.push([{text: "📁 Каталог", callback_data: "c"}]);
       inlineKeyboardArray.push([cartButtons[1]]);

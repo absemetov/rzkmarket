@@ -383,17 +383,17 @@ const uploadPhotoCat = async (ctx, objectId, catalogId) => {
       // await bucket.deleteFiles({
       //   prefix: `photos/o/${objectId}/c/${catalogId}`,
       // });
-      await deletePhotoStorage(`photos/o/${objectId}/c/${catalogId}`);
+      await deletePhotoStorage(`photos/o/${objectId}/c/${catalogId.replace(/#/g, "-")}`);
     }
     try {
-      const photoId = await savePhotoTelegram(ctx, `photos/o/${objectId}/c/${catalog.id}`);
+      const photoId = await savePhotoTelegram(ctx, `photos/o/${objectId}/c/${catalogId.replace(/#/g, "-")}`);
 
-      await store.updateRecord(`objects/${objectId}/catalogs/${catalog.id}`, {
+      await store.updateRecord(`objects/${objectId}/catalogs/${catalogId}`, {
         photoId,
       });
       // get catalog url (path)
-      const catalogUrl = `c/${catalog.id}`;
-      const media = await photoCheckUrl(`photos/o/${objectId}/c/${catalog.id}/${photoId}/2.jpg`);
+      const catalogUrl = `c/${catalogId.substring(catalogId.lastIndexOf("#") + 1)}`;
+      const media = await photoCheckUrl(`photos/o/${objectId}/c/${catalogId.replace(/#/g, "-")}/${photoId}/2.jpg`);
       await ctx.replyWithPhoto(media,
           {
             caption: `${catalog.name} (${catalog.id}) photo uploaded` + ctx.state.sessionMsg.linkHTML(),
@@ -420,6 +420,57 @@ const deletePhotoStorage = async (prefix) => {
   });
 };
 
+// translit
+const lettersRuUk = {
+  "а": "a",
+  "б": "b",
+  "в": "v",
+  "д": "d",
+  "з": "z",
+  "й": "y",
+  "к": "k",
+  "л": "l",
+  "м": "m",
+  "н": "n",
+  "о": "o",
+  "п": "p",
+  "р": "r",
+  "с": "s",
+  "т": "t",
+  "у": "u",
+  "ф": "f",
+  "ь": "",
+  "г": "g",
+  "и": "i",
+  "ъ": "",
+  "ы": "i",
+  "э": "e",
+  "ґ": "g",
+  "е": "e",
+  "і": "i",
+  "'": "",
+  "’": "",
+  "ʼ": "",
+  "ё": "yo",
+  "ж": "zh",
+  "х": "kh",
+  "ц": "ts",
+  "ч": "ch",
+  "ш": "sh",
+  "щ": "shch",
+  "ю": "yu",
+  "я": "ya",
+  "є": "ye",
+  "ї": "yi",
+  " ": "-",
+};
+
+function translit(word) {
+  return word.toString().split("").map((letter) => {
+    const lowLetter = letter.toLowerCase();
+    return lowLetter in lettersRuUk ? lettersRuUk[lowLetter] : lowLetter;
+  }).join("");
+}
 exports.store = store;
 exports.cart = cart;
 exports.roundNumber = roundNumber;
@@ -429,3 +480,4 @@ exports.uploadPhotoObj = uploadPhotoObj;
 exports.uploadPhotoProduct = uploadPhotoProduct;
 exports.uploadPhotoCat = uploadPhotoCat;
 exports.deletePhotoStorage = deletePhotoStorage;
+exports.translit = translit;

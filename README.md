@@ -29,6 +29,6 @@ $ yarn deploy-triggers-*
 ```
 
 For detailed explanation on how things work, check out [RZK Маркет Україна](https://rzk.com.ua).
-Telegram bot [@RzkMarketBot](https://t.me/RzkMarketBot?start=fromgit)
+Telegram bot [@RzkMarketBot](https://t.me/RzkMarketBot)
 Кожну другу розетку в Україні куплять у нас!
 З усіх питань звертайтеся до [@absemetov](https://t.me/absemetov)

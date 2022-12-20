@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import instantsearch from "instantsearch.js";
 import {connectSearchBox,
   connectHits,
@@ -154,14 +155,14 @@ const renderHits = async (renderOptions, isFirstRender) => {
             `<div class="col">
               <div class="card text-center h-100">
                 <a href="/o/${item.sellerId}/p/${item.productId}">
-                  <img src="${item.img1 ? item.img1 : "/icons/flower3.svg"}" onerror="this.onerror=null;this.src = '/icons/photo_error_${lang}.svg';" class="card-img-top" alt="${item.name}">
+                  <img src="${item.img1 ? lang === "ru" ? item.img1.replace("storage", "i0.wp.com/storage") : item.img1 : "/icons/flower3.svg"}" onerror="this.onerror=null;this.src = '/icons/photo_error_${lang}.svg';" class="card-img-top" alt="${item.name}">
                 </a>
                 <div class="card-body">
                   ${item.brand ? `<h6>${highlight({attribute: "brand", hit: item})}</h6>` : ""}
                   <h6>
                     <a href="/o/${item.sellerId}/p/${item.productId}">${highlight({attribute: "name", hit: item})}</a> <small class="text-muted">(${highlight({attribute: "productId", hit: item})})</small>
                     <div class="mt-2">
-                      <a href="//t.me/${i18n.bot_name}?start=o_${item.sellerId}_p_${item.productId}" target="_blank">
+                      <a href="https://t.me/share/url?url=${encodeURIComponent(`https://t.me/${i18n.bot_name}?start=${btoa(`o_${item.sellerId}_p_${item.productId}`)}`)}&text=${encodeURIComponent(`${item.seller} ${item.brand ? ` - ${item.brand} - ` : "-"} ${item.name}`)}" target="_blank">
                         <i class="bi bi-telegram fs-4"></i>
                       </a>
                     </div>
@@ -174,7 +175,7 @@ const renderHits = async (renderOptions, isFirstRender) => {
                     data-product-id="${item.productId}"
                     data-product-name="${item.name}"
                     data-product-brand="${item.brand}"
-                    data-product-img2="${item.img2 ? item.img2 : "/icons/flower3.svg"}"
+                    data-product-img2="${item.img2 ? lang === "ru" ? item.img2.replace("storage", "i0.wp.com/storage") : item.img2 : "/icons/flower3.svg"}"
                     data-seller="${item.seller}"
                     data-seller-id="${item.sellerId}">${i18n.btn_show}</button>
                   </div>

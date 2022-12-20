@@ -136,7 +136,7 @@ export function startAutocomplete() {
                 <div class="aa-ItemContent">
                   <div className="aa-ItemIcon aa-ItemIcon--picture aa-ItemIcon--alignTop">
                     <img
-                      src="${item.img1 ? item.img1 : "/icons/flower3.svg"}"
+                      src="${item.img1 ? lang === "ru" ? item.img1.replace("storage", "i0.wp.com/storage") : item.img1 : "/icons/flower3.svg"}"
                       onerror=${imageOnErrorHandler}
                       alt="${item.name}"
                       width="40"
@@ -200,7 +200,7 @@ export function startAutocomplete() {
                 <div class="aa-ItemContent">
                   <div class="aa-ItemIcon">
                     <img
-                      src="${item.img1 ? item.img1 : "/icons/folder2.svg"}"
+                      src="${item.img1 ? lang === "ru" ? item.img1.replace("storage", "i0.wp.com/storage") : item.img1 : "/icons/folder2.svg"}"
                       onerror=${imageOnErrorHandler}
                       alt="${item.name}"
                       width="100"
