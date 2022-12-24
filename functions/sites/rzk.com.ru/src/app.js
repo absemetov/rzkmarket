@@ -14,7 +14,16 @@ const lang = document.getElementById("addToCart").dataset.lang;
 const i18n = i18nContext[lang];
 
 search.start();
-startAutocomplete();
+const {setIsOpen} = startAutocomplete();
+
+// document.getElementById("productModal").addEventListener("click", function(event, suggestion, dataset) {
+//   setIsOpen(false);
+// });
+
+// document.getElementById("cartAddModal").addEventListener("click", function(event, suggestion, dataset) {
+//   setIsOpen(true);
+// });
+
 const searchPageState = getInstantSearchUiState();
 if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0] && searchPageState.query) {
   document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = searchPageState.query.substring(0, 5) + "...";
@@ -41,6 +50,21 @@ const addButton = document.getElementById("addToCart");
 const currency = addButton.dataset.currency;
 // btn show product
 let buttonShowProduct;
+// show info after add prod in button
+let buttonAddProduct;
+let hideByBuy = true;
+// show autocomlete
+productModalEl.addEventListener("hide.bs.modal", (event) => {
+  hideByBuy = true;
+});
+
+productModalEl.addEventListener("hidden.bs.modal", (event) => {
+  const fromAutocomlete = buttonShowProduct && buttonShowProduct.dataset.autocomplete;
+  if (fromAutocomlete && hideByBuy) {
+    setIsOpen(true);
+  }
+});
+
 productModalEl.addEventListener("show.bs.modal", async (event) => {
   // Extract info from data-bs-* attributes
   buttonShowProduct = event.relatedTarget;
@@ -73,6 +97,7 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
   </div>`;
   // get product data
   const productRes = await fetch(`/o/${sellerId}/p/${productId}`, {method: "POST"});
+  // const productRes = await fetch(`https://rzk.com.ru/o/${sellerId}/p/${productId}`, {method: "POST"});
   const product = await productRes.json();
   if (!productRes.ok) {
     // throw new Error(resJson.error);
@@ -133,9 +158,6 @@ const cartAddModal = new Modal(cartAddModalEl);
 // const addButton = document.getElementById("addToCart");
 const delButton = document.getElementById("deleteFromCart");
 const qtyInput = document.getElementById("qty");
-// show info after add prod in button
-let buttonAddProduct;
-
 // show algolia form when close
 // cartAddModalEl.addEventListener("hide.bs.modal", function(event) {
 //   if (buttonAddProduct.getAttribute("data-modal-close")) {
@@ -143,7 +165,18 @@ let buttonAddProduct;
 //   }
 // });
 
+// show autocomlete
+cartAddModalEl.addEventListener("hidden.bs.modal", (event) => {
+  const fromAutocomlete = buttonShowProduct && buttonShowProduct.dataset.autocomplete;
+  if (fromAutocomlete) {
+    setIsOpen(true);
+    // productModal.show();
+  }
+  buttonShowProduct = null;
+});
+
 cartAddModalEl.addEventListener("show.bs.modal", function(event) {
+  hideByBuy = false;
   // Button that triggered the modal
   buttonAddProduct = event.relatedTarget;
   // Extract info from data-bs-* attributes
@@ -186,6 +219,7 @@ addToCartform.addEventListener("submit", async (event) => {
   const productId = buttonAddProduct.getAttribute("data-product-id");
   const added = + buttonAddProduct.getAttribute("data-product-qty");
   const sellerId = buttonAddProduct.getAttribute("data-seller-id");
+  // const response = await fetch(`https://rzk.com.ru/o/${sellerId}/cart/add`, {
   const response = await fetch(`/o/${sellerId}/cart/add`, {
     method: "POST",
     headers: {
@@ -213,7 +247,7 @@ addToCartform.addEventListener("submit", async (event) => {
     buttonAddProduct.classList.remove("btn-primary");
     buttonAddProduct.classList.add("btn-success");
     // btn show add cart info
-    if (buttonShowProduct) {
+    if (buttonShowProduct && !buttonShowProduct.dataset.autocomplete) {
       buttonShowProduct.innerHTML = `${qty} ${buttonAddProduct.dataset.productUnit} <span class="text-nowrap">${roundNumber(qty * resJson.price)} ${currency}</span>`;
       buttonShowProduct.classList.remove("btn-primary");
       buttonShowProduct.classList.add("btn-success");
@@ -234,7 +268,7 @@ addToCartform.addEventListener("submit", async (event) => {
     buttonAddProduct.classList.add("btn-primary");
     buttonAddProduct.removeAttribute("data-product-qty");
     // btn show
-    if (buttonShowProduct) {
+    if (buttonShowProduct && !buttonShowProduct.dataset.autocomplete) {
       buttonShowProduct.innerText = i18n.btn_show;
       buttonShowProduct.classList.remove("btn-success");
       buttonShowProduct.classList.add("btn-primary");

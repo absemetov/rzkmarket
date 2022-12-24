@@ -13,7 +13,7 @@ exports.userCreate = functions.region("europe-central2").firestore
     .onCreate(async (snap, context) => {
       const userId = context.params.userId;
       // admin notify
-      await bot.telegram.sendMessage(94899148, `<b>New subsc! <a href="tg://user?id=${userId}">${userId}</a>`, {parse_mode: "html"});
+      await bot.telegram.sendMessage(94899148, `New subsc! <a href="tg://user?id=${userId}">${userId}</a>`, {parse_mode: "html"});
       // add createdAt timestamp
       // return snap.ref.set({
       //   createdAt: Math.floor(Date.now() / 1000),

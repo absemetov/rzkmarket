@@ -11,7 +11,7 @@ const searchProductHandle = async (ctx) => {
   const productAddedQty = + ctx.state.sessionMsg.url.searchParams.get("productAddedQty");
   const productAddedId = ctx.state.sessionMsg.url.searchParams.get("productAddedId");
   const productAddedObjectId = ctx.state.sessionMsg.url.searchParams.get("productAddedObjectId");
-  const searchText = ctx.state.sessionMsg.url.searchParams.get("search_text");
+  let searchText = ctx.state.sessionMsg.url.searchParams.get("search_text");
   if (formOpen) {
     await searchFormProduct(ctx);
     return;
@@ -20,10 +20,18 @@ const searchProductHandle = async (ctx) => {
   inlineKeyboard.push([{text: ctx.i18n.btn.main(), callback_data: "o"}, {text: ctx.i18n.btn.search(), callback_data: "search?formOpen=true"}]);
   try {
     // get resalts from algolia
-    const resalt = await algoliaIndexProducts.search(searchText, {
+    const params = {
       attributesToRetrieve: ["name", "productId", "brand", "seller", "sellerId"],
       hitsPerPage: 10,
       page,
+    };
+    if (searchText.charAt(0) === "_") {
+      searchText = searchText.substring(1);
+      params.facets = ["seller"];
+      params.facetFilters = [["seller:RZK Саки"]];
+    }
+    const resalt = await algoliaIndexProducts.search(searchText, {
+      ...params,
     });
     for (const product of resalt.hits) {
       const btnSearch = [];

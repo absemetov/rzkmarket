@@ -3,14 +3,13 @@ import {createLocalStorageRecentSearchesPlugin} from "@algolia/autocomplete-plug
 import {createQuerySuggestionsPlugin} from "@algolia/autocomplete-plugin-query-suggestions";
 import {setInstantSearchUiState, getInstantSearchUiState, searchPanel} from "./instantsearch";
 import {searchClient, devPrefix} from "./searchClient";
-
 import i18nContext from "./i18n";
 const lang = document.getElementById("addToCart").dataset.lang;
 const i18n = i18nContext[lang];
 // recent search
 const recentSearchesPlugin = createLocalStorageRecentSearchesPlugin({
   key: "navbar",
-  limit: 3,
+  limit: 2,
   transformSource({source, onRemove}) {
     return {
       ...source,
@@ -33,7 +32,7 @@ const querySuggestionsPlugin = createQuerySuggestionsPlugin({
   indexName: `${devPrefix}query_suggestions`,
   getSearchParams() {
     return recentSearchesPlugin.data.getAlgoliaSearchParams({
-      hitsPerPage: 6,
+      hitsPerPage: 4,
     });
   },
   transformSource({source, onRemove}) {
@@ -55,10 +54,10 @@ const querySuggestionsPlugin = createQuerySuggestionsPlugin({
 });
 // get searh query
 const searchPageState = getInstantSearchUiState();
-const imageOnErrorHandler = (event) => event.currentTarget.src = `/icons/photo_error_${lang}.svg`;
+// const imageOnErrorHandler = (event) => event.currentTarget.src = `/icons/photo_error_${lang}.svg`;
 
 export function startAutocomplete() {
-  autocomplete({
+  return autocomplete({
     debug: false,
     container: "#autocomplete",
     openOnFocus: true,
@@ -85,11 +84,19 @@ export function startAutocomplete() {
       }
       setInstantSearchUiState({query: "", hierarchicalMenu: {}, refinementList: {}});
     },
-    getSources({query}) {
+    getSources({query, setIsOpen}) {
       return [
         {
           sourceId: "products",
           getItems() {
+            const params = {
+              hitsPerPage: 5,
+            };
+            if (query.charAt(0) === "_") {
+              query = query.substring(1);
+              params.facets = ["seller"];
+              params.facetFilters = [["seller:RZK Саки"]];
+            }
             return getAlgoliaResults({
               searchClient,
               queries: [
@@ -97,7 +104,7 @@ export function startAutocomplete() {
                   indexName: `${devPrefix}products`,
                   query,
                   params: {
-                    hitsPerPage: 3,
+                    ...params,
                   },
                 },
               ],
@@ -137,10 +144,9 @@ export function startAutocomplete() {
                   <div className="aa-ItemIcon aa-ItemIcon--picture aa-ItemIcon--alignTop">
                     <img
                       src="${item.img1 ? lang === "ru" ? item.img1.replace("storage", "i0.wp.com/storage") : item.img1 : "/icons/flower3.svg"}"
-                      onerror=${imageOnErrorHandler}
+                      onerror="${(event) => event.currentTarget.src = `/icons/photo_error_${lang}.svg`}"
                       alt="${item.name}"
-                      width="40"
-                      height="40"
+                      class="${!item.img1 && "w-100"}"
                     />
                   </div>
                   <div class="aa-ItemContentBody">
@@ -148,6 +154,7 @@ export function startAutocomplete() {
                       ${components.Highlight({hit: item, attribute: "name"})} (${components.Highlight({hit: item, attribute: "productId"})})
                     </div>
                     ${item.brand ? html`<small>Бренд ${components.Highlight({hit: item, attribute: "brand"})}</small>` : ""}
+                    ${item.seller}
                   </div>
                 </div>
                 <div class="aa-ItemActions">
@@ -162,6 +169,18 @@ export function startAutocomplete() {
                       />
                     </svg>
                   </button>
+                  <button type="button" class="aa-ItemActionButton me-2" style="font-size: 1.5rem; color: cornflowerblue;" data-bs-toggle="modal" data-bs-target="#productModal"
+                    onClick="${(event) => {
+    event.stopPropagation();
+    setIsOpen(false);
+  }}"
+                    data-autocomplete="true"
+                    data-product-id="${item.productId}"
+                    data-product-name="${item.name}"
+                    data-product-brand="${item.brand}"
+                    data-product-img2="${item.img2 ? lang === "ru" ? item.img2.replace("storage", "i0.wp.com/storage") : item.img2 : "/icons/flower3.svg"}"
+                    data-seller="${item.seller}"
+                    data-seller-id="${item.sellerId}"><i class="bi bi-cart3"></i></button>
                 </div>
               </div>`;
             },
@@ -198,18 +217,17 @@ export function startAutocomplete() {
             item({item, html, components}) {
               return html`<div class="aa-ItemWrapper">
                 <div class="aa-ItemContent">
-                  <div class="aa-ItemIcon">
+                  <div class="aa-ItemIcon aa-ItemIcon--picture aa-ItemIcon--alignTop">
                     <img
                       src="${item.img1 ? lang === "ru" ? item.img1.replace("storage", "i0.wp.com/storage") : item.img1 : "/icons/folder2.svg"}"
-                      onerror=${imageOnErrorHandler}
+                      onerror="${(event) => event.currentTarget.src = `/icons/photo_error_${lang}.svg`}"
                       alt="${item.name}"
-                      width="100"
-                      height="100"
+                      class="${!item.img1 && "w-100"}"
                     />
                   </div>
                   <div class="aa-ItemContentBody">
-                    <div class="aa-ItemContentTitle">
-                      ${components.Highlight({hit: item, attribute: "hierarchicalUrl"})}
+                    <div class="aa-ItemContentTitle text-wrap">
+                      ${components.Highlight({hit: item, attribute: "name"})} (${components.Highlight({hit: item, attribute: "hierarchicalUrl"})})
                     </div>
                   </div>
                 </div>
