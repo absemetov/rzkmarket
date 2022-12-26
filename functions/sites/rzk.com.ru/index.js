@@ -27,6 +27,7 @@ const i18nContext = i18n.createContext(process.env.BOT_LANG);
 // site env
 const envSite = {
   i18n: i18nContext.repository[process.env.BOT_LANG],
+  siteName: process.env.SITE_NAME,
   lang: process.env.BOT_LANG,
   currency: process.env.BOT_CURRENCY,
   priceCurrency: process.env.SITE_CURRENCY,

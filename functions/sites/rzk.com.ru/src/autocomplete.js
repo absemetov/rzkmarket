@@ -92,7 +92,7 @@ export function startAutocomplete() {
             const params = {
               hitsPerPage: 5,
             };
-            if (query.charAt(0) === "_") {
+            if (query && query.charAt(0) === "_") {
               query = query.substring(1);
               params.facets = ["seller"];
               params.facetFilters = [["seller:RZK Саки"]];

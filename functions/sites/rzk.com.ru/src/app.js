@@ -322,9 +322,15 @@ if (purchaseForm) {
   purchaseForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     createOrderButton.disabled = true;
+    const formData = new FormData(purchaseForm);
+    // trim inputs
+    const inputs = ["lastName", "firstName", "address", "comment"];
+    inputs.forEach((input) => {
+      formData.set(input, formData.get(input).trim());
+    });
     const response = await fetch(purchaseForm.action, {
       method: "POST",
-      body: new FormData(purchaseForm),
+      body: formData,
     });
     const order = await response.json();
     if (response.ok) {
