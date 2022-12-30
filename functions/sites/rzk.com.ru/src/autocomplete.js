@@ -18,9 +18,9 @@ const recentSearchesPlugin = createLocalStorageRecentSearchesPlugin({
         // setTimeout(() => {
         //   setQuery(item.label);
         // }, 3);
-        if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0]) {
-          document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = item.label.substring(0, 5) + "...";
-        }
+        // if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0] && item.label && item.label.lenght > 5) {
+        //   document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = item.label.substring(0, 5) + "...";
+        // }
         searchPanel("show");
         setInstantSearchUiState({query: item.label, hierarchicalMenu: {}, refinementList: {}});
       },
@@ -43,9 +43,9 @@ const querySuggestionsPlugin = createQuerySuggestionsPlugin({
         // setTimeout(() => {
         //   setQuery(item.query);
         // }, 3);
-        if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0]) {
-          document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = item.query.substring(0, 5) + "...";
-        }
+        // if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0]) {
+        //   document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = item.query.substring(0, 5) + "...";
+        // }
         searchPanel("show");
         setInstantSearchUiState({query: item.query, hierarchicalMenu: {}, refinementList: {}});
       },
@@ -72,16 +72,16 @@ export function startAutocomplete() {
       // setTimeout(() => {
       //   setQuery(state.query);
       // }, 3);
-      if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0]) {
-        document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = state.query.substring(0, 5) + "...";
-      }
+      // if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0] && state.query) {
+      //   document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = state.query.substring(0, 500) + "...";
+      // }
       searchPanel("show");
       setInstantSearchUiState({query: state.query, hierarchicalMenu: {}, refinementList: {}});
     },
     onReset() {
-      if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0]) {
-        document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = i18n.a_search;
-      }
+      // if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0]) {
+      //   document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = i18n.placeholder_search;
+      // }
       setInstantSearchUiState({query: "", hierarchicalMenu: {}, refinementList: {}});
     },
     getSources({query, setIsOpen}) {
@@ -116,9 +116,9 @@ export function startAutocomplete() {
             // setTimeout(() => {
             //   setQuery(item.name);
             // }, 3);
-            if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0]) {
-              document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = item.name.substring(0, 5) + "...";
-            }
+            // if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0] && item.name && item.name.lenght > 5) {
+            //   document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = item.name.substring(0, 5) + "...";
+            // }
             searchPanel("show");
             setInstantSearchUiState({query: item.name, hierarchicalMenu: {}, refinementList: {}});
           },

@@ -360,6 +360,8 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
                 [{text: "📸 Upload photo", callback_data: `u/${product.id}?todo=prod`}],
                 [{text: `🖼 Show photos (${product.photos ? product.photos.length + 1 : 1})`,
                   callback_data: `s/${product.id}`}],
+                [{text: `⤴️ ${product.name}`,
+                  callback_data: `p/${product.id}`}],
                 [{text: "⤴️ Goto catalog",
                   callback_data: catalogUrl}],
               ],
