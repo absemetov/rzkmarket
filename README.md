@@ -3,6 +3,8 @@
 ## Build Setup
 
 ```bash
+# restart aws site
+$ pm2 restart index
 # projects list
 $ yarn pl
 

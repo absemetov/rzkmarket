@@ -6,12 +6,16 @@
     <div class="card-body">
       {{#if product.brand}}<h6>{{product.brand}}</h6>{{/if}}
       <h6>
-        <a href="{{product.url}}">{{product.name}}</a> <small class="text-muted">({{product.id}})</small>
+        {{#if smartPhoto}}
+          {{product.name}} <small class="text-muted">({{product.id}})</small>
+        {{else}}
+          <a href="{{product.url}}">{{product.name}}</a> <small class="text-muted">({{product.id}})</small>
+        {{/if}}
         <div class="mt-2">
           <a href="{{photoError product.img2 envSite.lang}}" class="js-smartphoto-single text-decoration-none" data-caption="{{product.name}}">
             <img src="/icons/zoom-in.svg" width="28" height="28" class="me-2" alt="zoom img">
           </a>
-          <a href="https://t.me/share/url?url={{encodeUrl envSite.botName object.id "p" product.id}}&text={{encode object.name product.brand product.name}}" target="_blank">
+          <a href="https://t.me/share/url?url={{encodeUrl envSite.botName object.id "p" product.id envSite.domain}}&text={{encode object.name product.brand product.name}}" target="_blank">
             <i class="bi bi-telegram fs-4"></i>
           </a>
         </div>
@@ -22,7 +26,7 @@
         {{product.price}} <small class="text-muted">{{envSite.currency}}</small>
       </h3>
       <div class="d-grid gap-2">
-        <button type="button" class="btn {{#if product.qty}}btn-success{{else}}btn-primary{{/if}}" data-bs-toggle="modal" data-bs-target="#cartAddModal"
+        <button type="button" class="btn {{#if product.qty}}btn-primary{{else}}btn-success{{/if}}" data-bs-toggle="modal" data-bs-target="#cartAddModal"
           data-product-id="{{product.id}}" data-product-name="{{product.name}}" data-product-unit="{{product.unit}}" data-product-qty="{{product.qty}}"
           data-seller-id="{{product.sellerId}}" data-seller="{{object.name}}">
           {{#if product.qty}}{{product.qty}} {{product.unit}} <span class="text-nowrap">{{product.sum}} {{envSite.currency}}</span>{{else}}{{envSite.i18n.btnBuy}}{{/if}}

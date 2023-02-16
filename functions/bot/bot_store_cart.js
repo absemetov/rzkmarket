@@ -21,7 +21,7 @@ const photoCheckUrl = async (url, check) => {
   return process.env.BOT_LOGO;
 };
 // download and save photo from telegram
-const savePhotoTelegram = async (ctx, path, zoom) => {
+const savePhotoTelegram = async (ctx, path, thumbnails = true) => {
   if (ctx.message.media_group_id) {
     throw new Error("Choose only one Photo!");
   }
@@ -32,7 +32,9 @@ const savePhotoTelegram = async (ctx, path, zoom) => {
   }
   // loop photos [0 (90*90),1 (320*320), 2 (800*800), 3 (1000*1000)]
   // download only 1, 3 or 4 index
-  savePhotos.push(telegramPhotos[1]);
+  if (thumbnails) {
+    savePhotos.push(telegramPhotos[1]);
+  }
   savePhotos.push(telegramPhotos.length == 4 ? telegramPhotos[3] : telegramPhotos[2]);
   // set photo id
   const photoId = savePhotos[0].file_unique_id;
@@ -346,8 +348,8 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
         });
       }
       // get catalog url (path)
-      let catalogUrl = `c/${product.catalogId}`;
-      const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathCatalog");
+      let catalogUrl = `c/${product.catalogId.substring(product.catalogId.lastIndexOf("#") + 1)}`;
+      const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathC");
       if (sessionPathCatalog) {
         catalogUrl = sessionPathCatalog;
       }
@@ -421,7 +423,57 @@ const deletePhotoStorage = async (prefix) => {
     prefix,
   });
 };
-
+// change banner fields
+const changeBanner = async (ctx, url, scene) => {
+  const bannerNumber = ctx.state.sessionMsg.url.searchParams.get("bNumber");
+  if (scene == "delete-main-banner") {
+    if (url === "del") {
+      // delete photo
+      await deletePhotoStorage(`photos/main/banners/${bannerNumber}`);
+      // del doc
+      await store.getQuery(`banners/${bannerNumber}`).delete();
+      await ctx.reply(`Banner ${bannerNumber} deleted!`);
+    } else {
+      await ctx.replyWithHTML(`<b>${url}</b> must be a del!`);
+    }
+  }
+  if (scene == "setUrl-main-banner") {
+    await store.createRecord(`banners/${bannerNumber}`, {
+      url,
+    });
+    await ctx.reply(`Banner ${bannerNumber} url ${url} updated!`);
+  }
+};
+// upload banners photo
+const uploadBanner = async (ctx) => {
+  const bannerNumber = ctx.state.sessionMsg.url.searchParams.get("bNumber");
+  // first delete old photos
+  await deletePhotoStorage(`photos/main/banners/${bannerNumber}`);
+  try {
+    const photoId = await savePhotoTelegram(ctx, `photos/main/banners/${bannerNumber}`, false);
+    await store.createRecord(`banners/${bannerNumber}`, {
+      photoUrl: bucket.file(`photos/main/banners/${bannerNumber}/${photoId}/1.jpg`).publicUrl(),
+    });
+    // firestore.FieldValue.arrayUnion(photoId)
+    // photos: firestore.FieldValue.arrayRemove(photoId),
+    // get catalog url (path)
+    const media = await photoCheckUrl(`photos/main/banners/${bannerNumber}/${photoId}/1.jpg`);
+    await ctx.replyWithPhoto(media,
+        {
+          caption: `Banner ${bannerNumber} uploaded` + ctx.state.sessionMsg.linkHTML(),
+          reply_markup: {
+            inline_keyboard: [
+              [{text: "⤴️ Goto banner",
+                callback_data: `d/show?b=${bannerNumber}`}],
+            ],
+          },
+          parse_mode: "html",
+        });
+  } catch (e) {
+    await ctx.reply(`Error upload photos ${e.message}`);
+    return;
+  }
+};
 // translit
 const lettersRuUk = {
   "а": "a",
@@ -473,6 +525,76 @@ function translit(word) {
     return lowLetter in lettersRuUk ? lettersRuUk[lowLetter] : lowLetter;
   }).join("");
 }
+
+// encode decode cyrillic
+const letters = {
+  "о": "a",
+  "е": "b",
+  "а": "c",
+  "и": "d",
+  "н": "e",
+  "т": "f",
+  "с": "g",
+  "р": "h",
+  "в": "i",
+  "л": "j",
+  "к": "k",
+  "м": "l",
+  "д": "m",
+  "п": "n",
+  "у": "o",
+  "я": "p",
+  "ы": "q",
+  "ь": "r",
+  "г": "s",
+  "з": "t",
+  "б": "u",
+  "ч": "v",
+  "й": "w",
+  "х": "x",
+  "ж": "y",
+  "ш": "z",
+  " ": "-",
+  "_": "",
+  "1": "1",
+  "2": "2",
+  "3": "3",
+  "4": "4",
+  "5": "5",
+  "6": "6",
+  "7": "7",
+  "8": "8",
+  "9": "9",
+  "0": "0",
+};
+
+const invertLetters = {};
+Object.keys(letters).forEach((key) => {
+  invertLetters[letters[key]] = key;
+});
+
+function encodeCyrillic(text, decode) {
+  let latin = false;
+  return text.toString().split("").map((letter) => {
+    const isUpperCase = letter === letter.toUpperCase();
+    const lowLetter = letter.toLowerCase();
+    if (decode) {
+      if (letter === "_") {
+        latin = true;
+        return "";
+      }
+      if (latin) {
+        latin = false;
+        return letter;
+      } else {
+        return lowLetter in invertLetters ? (isUpperCase ? invertLetters[lowLetter].toUpperCase() : invertLetters[lowLetter]) : letter;
+      }
+    } else {
+      return lowLetter in letters ? (isUpperCase ? letters[lowLetter].toUpperCase() : letters[lowLetter]) : (invertLetters[lowLetter] ? `_${letter}` : letter);
+    }
+  }).join("");
+}
+
 exports.store = store;
 exports.cart = cart;
 exports.roundNumber = roundNumber;
@@ -481,5 +603,8 @@ exports.savePhotoTelegram = savePhotoTelegram;
 exports.uploadPhotoObj = uploadPhotoObj;
 exports.uploadPhotoProduct = uploadPhotoProduct;
 exports.uploadPhotoCat = uploadPhotoCat;
+exports.uploadBanner = uploadBanner;
+exports.changeBanner = changeBanner;
 exports.deletePhotoStorage = deletePhotoStorage;
 exports.translit = translit;
+exports.encodeCyrillic = encodeCyrillic;

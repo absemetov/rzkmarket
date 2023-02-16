@@ -121,9 +121,9 @@ exports.productCreate = functions.region("europe-central2").firestore
         productAlgolia.brand = product.brand;
       }
       // add subCategory
-      if (product.tagsNames) {
+      if (product.tags) {
         // productAlgolia.subCategory = product.tagsNames.map((item) => item.name);
-        productAlgolia.subCategory = product.tagsNames;
+        productAlgolia.subCategory = product.tags;
       }
       // create HierarchicalMenu
       // const groupString = product.catalogsNamePath.split("#");
@@ -165,9 +165,9 @@ exports.productUpdate = functions.region("europe-central2").firestore
         productAlgolia.brand = product.brand;
       }
       // add subCategory
-      if (product.tagsNames) {
+      if (product.tags) {
         // productAlgolia.subCategory = product.tagsNames.map((item) => item.name);
-        productAlgolia.subCategory = product.tagsNames;
+        productAlgolia.subCategory = product.tags;
       }
       // add photos if changed
       if (product.mainPhoto) {

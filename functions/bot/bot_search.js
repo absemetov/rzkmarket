@@ -8,10 +8,11 @@ const moment = require("moment");
 const searchProductHandle = async (ctx) => {
   const page = + ctx.state.param || 0;
   const formOpen = ctx.state.params && ctx.state.params.get("formOpen");
-  const productAddedQty = + ctx.state.sessionMsg.url.searchParams.get("productAddedQty");
-  const productAddedId = ctx.state.sessionMsg.url.searchParams.get("productAddedId");
-  const productAddedObjectId = ctx.state.sessionMsg.url.searchParams.get("productAddedObjectId");
+  const productAddedQty = + ctx.state.sessionMsg.url.searchParams.get("sQty");
+  const productAddedId = ctx.state.sessionMsg.url.searchParams.get("sId");
+  const productAddedObjectId = ctx.state.sessionMsg.url.searchParams.get("sObjectId");
   let searchText = ctx.state.sessionMsg.url.searchParams.get("search_text");
+  ctx.state.sessionMsg.url.searchParams.set("TTL", 1);
   if (formOpen) {
     await searchFormProduct(ctx);
     return;

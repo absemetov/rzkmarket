@@ -137,6 +137,7 @@
           <div class="row">
             <nav id="breadcrumb" aria-label="breadcrumb"></nav>
           </div>
+          <h1 id="cat_header"></h1>
           <ul id="current-refinements" class="nav"></ul>
           <div id="loading-indicator">
             <div class="d-flex justify-content-center">
@@ -153,6 +154,28 @@
       </div>
     </div>
     <div class="container" id="main">
+      <div id="myCarousel" class="carousel slide position-relative" data-bs-ride="carousel">
+        <div class="carousel-inner">
+          <div class="carousel-item active">
+            <img src="https://i0.wp.com/storage.googleapis.com/rzk-warsaw-dev.appspot.com/photos%2Fo%2Fsaki%2Flogo%2FAQADu8IxG6ozCEly%2F1.jpg" class="d-block w-100" alt="...">
+          </div>
+          <div class="carousel-item">
+            <img src="https://i0.wp.com/storage.googleapis.com/rzk-warsaw-dev.appspot.com/photos%2Fo%2Fsaki%2Flogo%2FAQADu8IxG6ozCEly%2F1.jpg" class="d-block w-100" alt="...">
+          </div>
+          <div class="carousel-item">
+            <img src="https://i0.wp.com/storage.googleapis.com/rzk-warsaw-dev.appspot.com/photos%2Fo%2Fsaki%2Flogo%2FAQADu8IxG6ozCEly%2F1.jpg" class="d-block w-100" alt="...">
+          </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#myCarousel" data-bs-slide="prev">
+          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#myCarousel" data-bs-slide="next">
+          <span class="carousel-control-next-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Next</span>
+        </button>
+        <div class="position-absolute bottom-0 end-0 badge rounded-pill bg-secondary"><span id="activeSlide">1</span>/<span id="totalSlides"></span></div>
+      </div>
       <div class="col">
         <div class="card text-center h-100">
         <a href="/o/saki/p/shvvp-2-0-5-coax">

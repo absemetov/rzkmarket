@@ -16,14 +16,14 @@
     {{/each}}
   </ol>
 </nav>
-<h1>{{#if product.brand}}{{product.brand}} / {{/if}}{{product.name}}</h1>
+<h1>{{object.name}} / {{#if product.brand}}{{product.brand}} / {{/if}}{{product.name}}</h1>
 <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2 pb-3">
   {{> product product=product object=object envSite=envSite smartPhoto=true}}
 </div>
-{{#if product.tagsNames}}
+{{#if product.tags}}
   <h3>Tags</h3>
   <div class="row row-cols-1 row-cols-sm-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 row-cols-xxl-5 g-2 mb-3">
-    {{#each product.tagsNames as |tag|}}
+    {{#each product.tags as |tag|}}
       <div class="col">
         <div class="card text-center h-100">
           <ul class="list-group list-group-flush">
@@ -47,6 +47,9 @@
       </div>
     {{/each}}
   </div>
+{{/if}}
+{{#if product.desc}}
+  <p class="lead"><h2>{{product.desc}}</h2></p>
 {{/if}}
 {{#if product.postId}}
 <div class="row row-cols-1 row-cols-md-1 row-cols-lg-2 mt-3">

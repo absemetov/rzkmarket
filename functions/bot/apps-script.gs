@@ -1,4 +1,4 @@
-/** @OnlyCurrentDoc  v19.12.2022 */
+/** @OnlyCurrentDoc RZK Market 2.0 v10.01.2023 */
 function onEdit(e){
   const range = e.range;
   // range.setNote('Last modified: ' + new Date());
@@ -14,9 +14,16 @@ function onEdit(e){
       const validCell = validRange && cell.getValue();
       // validate ID
       if (column === 2 && validCell) {
-        const valid_fail = validate(cell.getValue(), 18);
+        const valid_fail = validate(cell.getValue(), 40);
         if (valid_fail) {
           SpreadsheetApp.getUi().alert(`Error in row ${row}, column ${column}: ${valid_fail}`);
+          sheet.setActiveSelection(`A${row}:J${row}`);
+        }
+      }
+      // validate NAME
+      if (column === 3 && validCell) {
+        if (cell.getValue().length > 90) {
+          SpreadsheetApp.getUi().alert(`Error in row ${row}, column ${column}: Value >>${cell.getValue()}<< field not be greater than ${cell.getValue().length} > 80`);
           sheet.setActiveSelection(`A${row}:J${row}`);
         }
       }
@@ -49,7 +56,7 @@ function onEdit(e){
           } else {
             delCatalogs.push({id, del: false});
           }
-          const valid_fail = validate(id, 18);
+          const valid_fail = validate(id, 40);
           if (valid_fail) {
             SpreadsheetApp.getUi().alert(`Error in row ${row}, column ${column}: ${valid_fail}`);
             sheet.setActiveSelection(`A${row}:J${row}`);
@@ -71,14 +78,19 @@ function onEdit(e){
       if (column === 9 && validCell) {
         cell.getValue().split(",").forEach((tag) => {
           const name = tag.trim();
-          const id = translit(name);
-          const valid_fail = validate(id, 20);
-          if (valid_fail) {
-            // Logger.log(valid_fail);
-            SpreadsheetApp.getUi().alert(`Error in row ${row}, column ${column}: ${valid_fail}`);
+          // const id = translit(name);
+          if (name.length > 40) {
+            SpreadsheetApp.getUi().alert(`Error in row ${row}, column ${column}: Value >>${name}<< field not be greater than ${name.length} > 40`);
             sheet.setActiveSelection(`A${row}:J${row}`);
           }
         });
+      }
+      // validate Brand
+      if (column === 10 && validCell) {
+        if (cell.getValue().length > 40) {
+          SpreadsheetApp.getUi().alert(`Error in row ${row}, column ${column}: Value >>${cell.getValue()}<< field not be greater than ${cell.getValue().length} > 40`);
+          sheet.setActiveSelection(`A${row}:J${row}`);
+        }
       }
       // upd timestamp
       if (validRange) {

@@ -7,6 +7,7 @@ import "bootstrap/js/dist/offcanvas";
 import "bootstrap/js/dist/collapse";
 import "bootstrap/js/dist/dropdown";
 import "bootstrap/js/dist/alert";
+import "bootstrap/js/dist/carousel";
 import SmartPhoto from "smartphoto";
 
 import i18nContext from "./i18n";
@@ -91,7 +92,7 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
       </h3>
       <div class="d-grid gap-2">
         <a href="#" tabindex="-1" class="btn btn-success disabled placeholder"></a>
-        <a href="#" tabindex="-1" class="btn btn-primary disabled placeholder mt-2"></a>
+        <a href="#" tabindex="-1" class="btn btn-success disabled placeholder mt-2"></a>
       </div>
     </div>
   </div>`;
@@ -110,7 +111,7 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
       ${product.price} <small class="text-muted">${currency}</small>
     </h3>
     <div class="d-grid gap-2">
-    <button type="button" class="btn ${product.qty ? "btn-success" : "btn-primary"}" data-bs-toggle="modal"
+    <button type="button" class="btn ${product.qty ? "btn-primary" : "btn-success"}" data-bs-toggle="modal"
       data-bs-target="#cartAddModal"
       data-product-id="${product.id}"
       data-product-name="${product.name}"
@@ -121,9 +122,9 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
       data-modal-close="true">
       ${product.qty ? product.qty + " " + product.unit + " " + product.sum + " " + currency : i18n.btn_buy}
     </button>
-    <a href="/o/${sellerId}/cart"  class="btn btn-primary position-relative mt-2" role="button">
+    <a href="/o/${sellerId}/cart"  class="btn btn-success position-relative mt-2" role="button">
       ${i18n.btn_cart} <strong id="totalSumNavAlg">${product.cartInfo.totalSum} ${currency}</strong>
-      <span id="cartCountNavAlg" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+      <span id="cartCountNavAlg" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark">
         ${product.cartInfo.cartCount}
         <span class="visually-hidden">count goods</span>
       </span>
@@ -244,19 +245,19 @@ addToCartform.addEventListener("submit", async (event) => {
   if (qty) {
     buttonAddProduct.innerHTML = `${qty} ${buttonAddProduct.dataset.productUnit} <span class="text-nowrap">${roundNumber(qty * resJson.price)} ${currency}</span>`;
     buttonAddProduct.setAttribute("data-product-qty", qty);
-    buttonAddProduct.classList.remove("btn-primary");
-    buttonAddProduct.classList.add("btn-success");
+    buttonAddProduct.classList.remove("btn-success");
+    buttonAddProduct.classList.add("btn-primary");
     // btn show add cart info
     if (buttonShowProduct && !buttonShowProduct.dataset.autocomplete) {
       buttonShowProduct.innerHTML = `${qty} ${buttonAddProduct.dataset.productUnit} <span class="text-nowrap">${roundNumber(qty * resJson.price)} ${currency}</span>`;
-      buttonShowProduct.classList.remove("btn-primary");
-      buttonShowProduct.classList.add("btn-success");
+      buttonShowProduct.classList.remove("btn-success");
+      buttonShowProduct.classList.add("btn-primary");
     }
     // toast info
     toastBody.innerHTML = `${buttonAddProduct.getAttribute("data-product-name")} (${buttonAddProduct.getAttribute("data-product-id")})
     <span class="text-nowrap fw-bold">${qty} ${buttonAddProduct.dataset.productUnit}</span> ${i18n.added_to_cart}
     <div class="mt-2 pt-2 border-top">
-      <a href="/o/${sellerId}/cart" class="btn btn-primary btn-sm" role="button">
+      <a href="/o/${sellerId}/cart" class="btn btn-success btn-sm" role="button">
         <i class="bi bi-cart3"></i> ${resJson.cartInfo.totalSum} ${currency} (${resJson.cartInfo.cartCount})
       </a>
     </div>`;
@@ -264,20 +265,20 @@ addToCartform.addEventListener("submit", async (event) => {
     toast.show();
   } else {
     buttonAddProduct.innerText = i18n.btn_buy;
-    buttonAddProduct.classList.remove("btn-success");
-    buttonAddProduct.classList.add("btn-primary");
+    buttonAddProduct.classList.remove("btn-primary");
+    buttonAddProduct.classList.add("btn-success");
     buttonAddProduct.removeAttribute("data-product-qty");
     // btn show
     if (buttonShowProduct && !buttonShowProduct.dataset.autocomplete) {
       buttonShowProduct.innerText = i18n.btn_show;
-      buttonShowProduct.classList.remove("btn-success");
-      buttonShowProduct.classList.add("btn-primary");
+      buttonShowProduct.classList.remove("btn-primary");
+      buttonShowProduct.classList.add("btn-success");
     }
     // toast
     if (added) {
       toastBody.innerHTML = `${buttonAddProduct.getAttribute("data-product-name")} (${buttonAddProduct.getAttribute("data-product-id")}) ${i18n.deleted_from_cart}
       <div class="mt-2 pt-2 border-top">
-        <a href="/o/${sellerId}/cart" class="btn btn-primary btn-sm" role="button">
+        <a href="/o/${sellerId}/cart" class="btn btn-success btn-sm" role="button">
           <i class="bi bi-cart3"></i> ${resJson.cartInfo.totalSum} ${currency} (${resJson.cartInfo.cartCount})
         </a>
       </div>`;
@@ -367,5 +368,16 @@ if (purchaseForm) {
       document.getElementById("carrierNumberDiv").classList.add("d-none");
       document.getElementById("carrierNumber").required = false;
     }
+  });
+}
+
+// carousel
+const myCarousel = document.getElementById("myCarousel");
+if (myCarousel) {
+  const totalSlides = document.querySelectorAll("#myCarousel .carousel-item").length;
+  document.getElementById("totalSlides").innerHTML = totalSlides;
+  myCarousel.addEventListener("slide.bs.carousel", (event) => {
+    document.getElementById("activeSlide").innerHTML = event.to + 1;
+    document.getElementById("totalSlides").innerHTML = totalSlides;
   });
 }

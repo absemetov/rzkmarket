@@ -4,7 +4,7 @@ const firestore = require("firebase-admin/firestore");
 const bucket = firebase.storage().bucket();
 const express = require("express");
 const exphbs = require("express-handlebars");
-const {store, cart, roundNumber, translit} = require("../.././bot/bot_store_cart.js");
+const {store, cart, roundNumber} = require("../.././bot/bot_store_cart.js");
 const {algoliaIndexProducts} = require("../.././bot/bot_search");
 const {createHash, createHmac} = require("crypto");
 const jwt = require("jsonwebtoken");
@@ -55,13 +55,16 @@ app.use((req, res, next) => {
 app.use(cors({origin: true}));
 app.use(cookieParser());
 // Configure template Engine and Main Template File
-function cyrillicUrl(value) {
-  // return cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(value, "-")).toLowerCase();
-  return translit(value);
-}
+// function cyrillicUrl(value) {
+//   // return cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(value, "-")).toLowerCase();
+//   return translit(value);
+// }
 const hbs = exphbs.create({
   extname: ".hbs",
   helpers: {
+    year() {
+      return new Date().getFullYear();
+    },
     photoError(src, locale) {
       // proxy img for Crimea
       return locale === "ru" ? src.replace("storage", "i0.wp.com/storage") : src;
@@ -69,19 +72,27 @@ const hbs = exphbs.create({
     not(value1, value2) {
       return value1 !== value2;
     },
+    equals(value1, value2) {
+      return value1 === value2;
+    },
+    last(value1, value2) {
+      return value1 + 1 !== value2;
+    },
     inc(value) {
       return value + 3;
     },
     url(value) {
-      return cyrillicUrl(value);
+      return encodeURIComponent(value);
     },
     encodeUrl(botName, objectId, type, elementId, domain) {
       const param = btoa(`o_${objectId}_${type}_${elementId}`);
       if (type === "c" && param.length > 64) {
         return encodeURIComponent(`${domain}/o/${objectId}/c/${elementId.replace(/#/g, "/")}`);
-      } else {
-        return encodeURIComponent(`https://t.me/${botName}?start=${param}`);
       }
+      if (type === "p" && param.length > 64) {
+        return encodeURIComponent(`${domain}/o/${objectId}/p/${elementId}`);
+      }
+      return encodeURIComponent(`https://t.me/${botName}?start=${param}`);
     },
     encode(...value) {
       // delete options element
@@ -113,6 +124,22 @@ const auth = (req, res, next) => {
 
 // show objects
 app.get("/", auth, async (req, res) => {
+  // get algolia catalogs
+  const catalogsAlgolia = await algoliaIndexProducts.search("", {
+    hitsPerPage: 0,
+    facets: ["categories.lvl0"],
+  });
+  const catalogs = [];
+  for (const [catName, catCount] of Object.entries(catalogsAlgolia.facets["categories.lvl0"] || {})) {
+    // const tagId = cyrillicUrl(tagName);
+    // const tagId = encodeURIComponent(tagName);
+    const catObj = {
+      name: catName,
+      count: catCount,
+      url: encodeURIComponent(catName),
+    };
+    catalogs.push(catObj);
+  }
   const objects = await store.findAll("objects");
   // generate cart link
   for (const object of objects) {
@@ -125,7 +152,9 @@ app.get("/", auth, async (req, res) => {
       object.img2 = "/icons/shop.svg";
     }
   }
-  res.render("index", {objects, envSite});
+  // banners
+  const banners = await store.findAll("banners");
+  res.render("index", {objects, catalogs, banners, envSite});
 });
 
 // search products
@@ -206,7 +235,8 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
   });
   // products query
   const products = [];
-  const prevNextLinks = [];
+  let prevLink = {};
+  let nextLink = {};
   const tagActive = {};
   if (catalogId) {
     currentCatalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
@@ -282,13 +312,14 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
           facetFilters: [[`seller:${object.name}`], [`categories.lvl${pathNames.length - 1}:${pathNames.join(" > ")}`]],
         });
         for (const [tagName, tagCount] of Object.entries(tagsAlgolia.facets.subCategory || {})) {
-          const tagId = cyrillicUrl(tagName);
+          // const tagId = cyrillicUrl(tagName);
+          // const tagId = encodeURIComponent(tagName);
           const tagObj = {
             text: `${tagName} (${tagCount})`,
-            url: `${req.path}?tag=${tagId}`,
+            url: `${req.path}?tag=${encodeURIComponent(tagName)}`,
           };
           // close tag
-          if (tagId === selectedTag) {
+          if (tagName === selectedTag) {
             // generate title
             title = `${currentCatalog.name} ${tagName} ${envSite.i18n.btnBuy().toLowerCase()} ${envSite.i18n.siteCatTitle()} - ${object.name}`;
             tagObj.active = true;
@@ -301,21 +332,17 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
       // endBefore prev button e paaram
       const endBeforeSnap = productsSnapshot.docs[0];
       const ifBeforeProducts = await mainQuery.endBefore(endBeforeSnap).limitToLast(1).get();
-      prevNextLinks.push({
-        text: envSite.i18n.aPagPrevious,
-        icon: "bi-chevron-left",
-        show: ifBeforeProducts.empty,
+      prevLink = {
+        hide: ifBeforeProducts.empty,
         url: `${req.path}?endBefore=${endBeforeSnap.id}${tagUrl}`,
-      });
+      };
       // startAfter
       const startAfterSnap = productsSnapshot.docs[productsSnapshot.docs.length - 1];
       const ifAfterProducts = await mainQuery.startAfter(startAfterSnap).limit(1).get();
-      prevNextLinks.push({
-        text: envSite.i18n.aPagNext,
-        icon: "bi-chevron-right",
-        show: ifAfterProducts.empty,
+      nextLink = {
+        hide: ifAfterProducts.empty,
         url: `${req.path}?startAfter=${startAfterSnap.id}${tagUrl}`,
-      });
+      };
     }
   }
   // count cart items
@@ -329,7 +356,9 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
     products,
     tags,
     tagActive,
-    prevNextLinks,
+    prevLink,
+    nextLink,
+    loadMore: !prevLink.hide || !nextLink.hide,
     envSite,
   });
 });
@@ -366,10 +395,10 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
   const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
   if (object && product) {
     product.price = roundNumber(product.price * object.currencies[product.currency]);
-    product.img1 = `${process.env.BOT_SITE}/icons/flower3.svg`;
-    product.img2 = `${process.env.BOT_SITE}/icons/flower3.svg`;
+    product.img1 = "/icons/flower3.svg";
+    product.img2 = "/icons/flower3.svg";
     product.sellerId = objectId;
-    product.url = `${process.env.BOT_SITE}/o/${objectId}/p/${product.id}`;
+    product.url = `/o/${objectId}/p/${product.id}`;
     product.tagPath = product.pathArray[product.pathArray.length - 1].url;
     const photos = [];
     // get cart qty
@@ -445,7 +474,7 @@ app.get("/o/:objectId/s/:orderId", auth, async (req, res) => {
       totalSum += product.qty * product.price;
     });
     return res.render("share-order", {
-      title: `${envSite.i18n.order()} #${shareOrder.orderNumber} - ${object.name}`,
+      title: `${envSite.i18n.order()} - ${object.name} #${shareOrder.orderNumber}`,
       object,
       shareOrder,
       products,
@@ -485,7 +514,7 @@ app.get("/o/:objectId/share-cart/:cartId", auth, async (req, res) => {
     });
     // render
     return res.render("share-cart", {
-      title: `${envSite.i18n.aCart()} #${cartId} - ${object.name}`,
+      title: `${envSite.i18n.aCart()} - ${object.name} #${cartId}`,
       object,
       cartId,
       updatedAt: moment.unix(cartData.updatedAt).locale(process.env.BOT_LANG).fromNow(),
@@ -575,6 +604,57 @@ app.get("/logout", auth, (req, res) => {
       .redirect("/login");
 });
 
+// render json cart
+app.get("/o/:objectId/cart/json", auth, async (req, res) => {
+  const objectId = req.params.objectId;
+  const cash = req.query.cash;
+  const change = req.query.change;
+  const object = await store.findRecord(`objects/${objectId}`);
+  const cartInfo = await cart.cartInfo(object.id, "94899148");
+  const receipt = [];
+  // products.push({type: 0, content: "", bold: 1, align: 1, format: 0});
+  // products.push({type: 0, content: "rzk.com.ru", bold: 1, align: 1, format: 0});
+  // products.push({type: 0, content: "Товарный чек", bold: 1, align: 1, format: 4});
+  // html
+  const cartProducts = await cart.products(objectId, "94899148");
+  let productText = "";
+  for (const [index, cartProduct] of cartProducts.entries()) {
+    // products.push({type: 0, content: cartProduct.name, bold: 0, align: 0, format: 4});
+    // products.push({type: 0, content: `${cartProduct.price} * ${cartProduct.qty} = ${roundNumber(cartProduct.qty * cartProduct.price)} р.`, bold: 0, align: 2, format: 4});
+    productText += `<span style="font-size:1px;">${index + 1}) ${cartProduct.name} (${cartProduct.id})</span>
+    <div style="text-align: right">
+      <span style="font-weight:bold; font-size:1px;">
+        ${cartProduct.price}₽ * ${cartProduct.qty}${cartProduct.unit} = ${roundNumber(cartProduct.qty * cartProduct.price)}₽
+      </span>
+    </div>`;
+  }
+  // products.push({type: 0, content: `Количество: ${cartInfo.totalQty}`, bold: 0, align: 2, format: 4});
+  // products.push({type: 0, content: `Сумма: ${cartInfo.totalSum} руб.`, bold: 0, align: 2, format: 4});
+  // products.push({type: 0, content: "Телеграм бот @RzkCrimeaBot", bold: 1, align: 1, format: 4});
+  // empty line
+  receipt.push({type: 4, content: `
+  <center><span style="font-weight:bold; font-size:15px;">RZK Маркет Крым</span></center>
+  <center><span style="font-weight:bold; font-size:5px;">г. Саки, Рынок, б.1108</span></center>
+  <center><span style="font-weight:bold; font-size:5px;">+7 978 89 86 431</span></center>
+  <center><span style="font-weight:bold; font-size:5px;">Товарный чек ${new Date().toLocaleString("ru-RU", {timeZone: "Europe/Moscow"})}</span></center>
+  <center>------------------------------------------------------------</center>
+  ${productText}
+  <center>------------------------------------------------------------</center>
+  <div style="text-align: right"><span style="font-size:5px;">Количество: ${cartInfo.totalQty}</span></div>
+  <div style="text-align: right"><span style="font-weight:bold; font-size:10px;">ИТОГ: ${cartInfo.totalSum}₽</span></div>
+  <center>------------------------------------------------------------</center>
+  ${+change ? `
+  <div style="text-align: right"><span style="font-size:5px;">Наличными: ${cash}₽</span></div>
+  <div style="text-align: right"><span style="font-size:5px;">Сдача: ${change}₽</span></div>
+  <center>------------------------------------------------------------</center>` : ""}
+  <center><span style="font-weight:bold; font-size:5px;">Телеграм бот @RzkCrimeaBot</span></center>
+  <center><span style="font-weight:bold; font-size:5px;">Сайт Rzk.com.ru</span></center>`});
+  receipt.push({type: 0, content: "", bold: 0, align: 0});
+  receipt.push({type: 0, content: "", bold: 0, align: 0});
+  // sending QR entry
+  // products.push({type: 3, value: "https://rzk.com.ru", size: 20, align: 1});
+  res.json({...Object.assign({}, receipt)});
+});
 // show cart
 app.get("/o/:objectId/cart", auth, async (req, res) => {
   const objectId = req.params.objectId;
@@ -640,6 +720,7 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
     carriers: Array.from(store.carriers(), ([id, obj]) => ({id, name: obj.name, reqNumber: obj.reqNumber ? 1 : 0})),
     payments: Array.from(store.payments(), ([id, name]) => ({id, name})),
     envSite,
+    admin: req.user.uid === "94899148",
   });
 });
 

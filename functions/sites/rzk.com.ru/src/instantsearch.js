@@ -36,19 +36,24 @@ const instantSearchRouter = historyRouter({
     }
     if (category && category[0]) {
       title = `${title ? `${title} – ` : ""}${category[category.length - 1]}`;
-    }
-    if (subCategory && subCategory[0]) {
-      title = `${title ? `${title} – ` : ""}${subCategory[0]}`;
+      document.getElementById("cat_header").innerHTML = category[category.length - 1] || "";
+    } else {
+      document.getElementById("cat_header").innerHTML = "";
     }
     if (brand && brand[0]) {
-      title = `${title ? `${title} – ` : ""}${brand[0]}`;
+      title = `${title ? `${title} – ` : ""}${brand.join(" – ")}`;
+    }
+    if (subCategory && subCategory[0]) {
+      title = `${title ? `${title} – ` : ""}${subCategory.join(" – ")}`;
     }
     if (location.href.match(/^.*?\/search/)) {
-      return title ? `${title} – ${i18n.a_search} ${i18n.bot_name}` : `${i18n.a_search} ${i18n.bot_name}`;
+      return title ? `${title} – ${i18n.a_search} – ${i18n.siteTitle}` : `${i18n.a_search} – ${i18n.siteTitle}`;
     }
   },
   createURL({qsModule, routeState, location}) {
     const urlParts = location.href.match(/^(.*?)\/search/);
+    // console.log(urlParts);
+    // console.log(routeState);
     const baseUrl = `${urlParts ? urlParts[1] : ""}/`;
     const categoryPath = routeState.category ? `/${getCategorySlug(routeState.category)}` : "";
     const queryParameters = {};
@@ -108,7 +113,7 @@ export const search = instantsearch({
     router: instantSearchRouter,
     stateMapping: {
       stateToRoute(uiState) {
-        const indexUiState = uiState["products"] || {};
+        const indexUiState = uiState[INSTANT_SEARCH_INDEX_NAME] || {};
         return {
           query: indexUiState.query,
           page: indexUiState.page,
@@ -120,7 +125,7 @@ export const search = instantsearch({
       },
       routeToState(routeState) {
         return {
-          products: {
+          [INSTANT_SEARCH_INDEX_NAME]: {
             query: routeState.query,
             page: routeState.page,
             hierarchicalMenu: {
@@ -171,7 +176,7 @@ const renderHits = async (renderOptions, isFirstRender) => {
                 <div class="card-footer">
                   <h6>${item.seller}</h6>
                   <div class="d-grid gap-2">
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal"
+                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#productModal"
                     data-product-id="${item.productId}"
                     data-product-name="${item.name}"
                     data-product-brand="${item.brand}"
@@ -280,7 +285,7 @@ const renderList = ({newitems, createURL}) => `
           <a href="${createURL(item.value)}" data-value="${item.value}"
             class="list-group-item list-group-item-action d-flex justify-content-between align-items-center ${item.isRefined ? "list-group-item-warning" : ""}">
             <div class="${item.isRefined ? "fw-bold" : ""}">  ${item.isRefined ? "<i class=\"bi bi-chevron-down\"></i>" : ""}
-            ${item.label}</div> <span class="badge bg-primary rounded-pill">${item.count}</span>
+            ${item.label}</div> <span class="badge bg-success rounded-pill">${item.count}</span>
           </a>
           ${item.data ? renderList({newitems: item.data, createURL}) : ""}
       `).join("")}
@@ -341,7 +346,7 @@ const renderRefinementList = (renderOptions, isFirstRender) => {
     const div = document.createElement("div");
     div.classList.add("list-group", "list-group-flush", "pt-2");
     const button = document.createElement("button");
-    button.classList.add("btn", "btn-primary", "mt-2");
+    button.classList.add("btn", "btn-success", "mt-2");
     input.addEventListener("input", (event) => {
       searchForItems(event.currentTarget.value);
     });
@@ -368,7 +373,7 @@ const renderRefinementList = (renderOptions, isFirstRender) => {
           <div>
             <i class="bi bi-${item.isRefined ? "check-square" : "square"}"></i> ${item.label}
           </div>
-          <span class="badge bg-primary rounded-pill">${item.count}</span>
+          <span class="badge bg-success rounded-pill">${item.count}</span>
         </a>
         `).join("") : "No resalts";
 
@@ -407,7 +412,6 @@ const renderBreadcrumbItem = ({item, createURL}) => `
 
 const renderBreadcrumb = (renderOptions, isFirstRender) => {
   const {items, refine, createURL, widgetParams} = renderOptions;
-
   widgetParams.container.innerHTML = `
     <ol class="breadcrumb">
       <li class="breadcrumb-item">

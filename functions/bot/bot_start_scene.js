@@ -39,7 +39,6 @@ const startHandler = async (ctx) => {
   const inlineKeyboardArray = [];
   // start deep linking parsing
   const path = atob(ctx.message.text.substring(6)).match(/o_([a-zA-Z0-9-_]+)_(p|c)_([a-zA-Z0-9-_#]+)/);
-  // const pathCatalog = ctx.message.text.match(/o_([a-zA-Z0-9-_]+)_c_([a-zA-Z0-9-_]+)/);
   let caption = "";
   if (path) {
     const objectId = path[1];
@@ -56,7 +55,7 @@ const startHandler = async (ctx) => {
     }
     // get catalog
     if (objectType === "c") {
-      ctx.state.sessionMsg.url.searchParams.set("pathUrl", objectTypeId);
+      ctx.state.sessionMsg.url.searchParams.set("pathU", objectTypeId);
       const catalog = await store.findRecord(`objects/${objectId}/catalogs/${objectTypeId}`);
       if (object && catalog) {
         inlineKeyboardArray.push([{text: `📁 ${catalog.name}`,
@@ -94,6 +93,7 @@ const startHandler = async (ctx) => {
     inlineKeyboardArray.push([{text: ctx.i18n.btn.orders(), callback_data: `m/${ctx.from.id}`}]);
     inlineKeyboardArray.push([{text: ctx.i18n.btn.search(), callback_data: "search?formOpen=true"}]);
     if (ctx.state.isAdmin) {
+      inlineKeyboardArray.push([{text: "🎞 Banners", callback_data: "d"}]);
       inlineKeyboardArray.push([{text: "💰 Заказы Algolia", callback_data: "searchOrder"}]);
     }
     inlineKeyboardArray.push([{text: ctx.i18n.btn.login(), login_url: {
@@ -114,6 +114,9 @@ const startHandler = async (ctx) => {
 };
 startActions.push(async (ctx, next) => {
   if (ctx.state.routeName === "o") {
+    // delete session vars
+    ctx.state.sessionMsg.url.searchParams.delete("pathOrderCurrent");
+
     const objectId = ctx.state.param;
     let caption = `<b>${ctx.i18n.start.chooseWarehouse()}\n${ctx.i18n.phones.map((value) => `📞 ${value()}`).join("\n")}</b>`;
     const inlineKeyboardArray = [];
@@ -132,7 +135,7 @@ startActions.push(async (ctx, next) => {
         await ctx.answerCbQuery("Edit Mode disable");
       }
       // set session
-      ctx.state.sessionMsg.url.searchParams.set("objectId", objectId);
+      ctx.state.sessionMsg.url.searchParams.set("oId", objectId);
       // get data obj
       const object = await store.findRecord(`objects/${objectId}`);
       caption = `<b>${object.name}\n` +
@@ -178,6 +181,7 @@ startActions.push(async (ctx, next) => {
       inlineKeyboardArray.push([{text: ctx.i18n.btn.orders(), callback_data: `m/${ctx.from.id}`}]);
       inlineKeyboardArray.push([{text: ctx.i18n.btn.search(), callback_data: "search?formOpen=true"}]);
       if (ctx.state.isAdmin) {
+        inlineKeyboardArray.push([{text: "🎞 Banners", callback_data: "d"}]);
         inlineKeyboardArray.push([{text: "💰 Заказы Algolia", callback_data: "searchOrder"}]);
       }
       inlineKeyboardArray.push([{text: ctx.i18n.btn.login(), login_url: {
@@ -198,6 +202,86 @@ startActions.push(async (ctx, next) => {
       },
     });
     await ctx.answerCbQuery();
+  } else {
+    return next();
+  }
+});
+// banners action
+startActions.push(async (ctx, next) => {
+  if (ctx.state.routeName === "d") {
+    const todo = ctx.state.param;
+    const bannerNumber = ctx.state.params.get("b");
+    await ctx.answerCbQuery();
+    // show a banner options
+    if (todo === "show") {
+      const banner = await store.findRecord(`banners/${bannerNumber}`);
+      let media = await photoCheckUrl(null);
+      if (banner && banner.photoUrl) {
+        media = banner.photoUrl;
+      }
+      await ctx.editMessageMedia({
+        type: "photo",
+        media,
+        caption: `Banner ${bannerNumber}, url: ${banner ? banner.url : ""}` + ctx.state.sessionMsg.linkHTML(),
+        parse_mode: "html",
+      }, {reply_markup: {
+        inline_keyboard: [
+          [{text: "Upload photo",
+            callback_data: `d/upload?b=${bannerNumber}`}],
+          [{text: "Set url",
+            callback_data: `d/setUrl?b=${bannerNumber}`}],
+          [{text: "Delete Banner",
+            callback_data: `d/delBanner?b=${bannerNumber}`}],
+          [{text: "Banners",
+            callback_data: "d"}],
+        ],
+      }});
+      return;
+    }
+    // delete a banner
+    if (todo === "delBanner") {
+      ctx.state.sessionMsg.url.searchParams.set("scene", "delete-main-banner");
+      ctx.state.sessionMsg.url.searchParams.set("bNumber", bannerNumber);
+      await ctx.replyWithHTML(`<b>Enter del for delete ${bannerNumber} banner</b>` + ctx.state.sessionMsg.linkHTML(), {
+        reply_markup: {
+          force_reply: true,
+        }});
+      return;
+    }
+    // set url a banner
+    if (todo === "setUrl") {
+      ctx.state.sessionMsg.url.searchParams.set("scene", "setUrl-main-banner");
+      ctx.state.sessionMsg.url.searchParams.set("bNumber", bannerNumber);
+
+      await ctx.replyWithHTML(`<b>Enter url ${bannerNumber} banner</b>` + ctx.state.sessionMsg.linkHTML(), {
+        reply_markup: {
+          force_reply: true,
+        }});
+      return;
+    }
+    // upload a banner
+    if (todo === "upload") {
+      ctx.state.sessionMsg.url.searchParams.set("scene", "upload-main-banner");
+      ctx.state.sessionMsg.url.searchParams.set("bNumber", bannerNumber);
+
+      await ctx.replyWithHTML(`<b>Upload ${bannerNumber} banner photo</b>` + ctx.state.sessionMsg.linkHTML(), {
+        reply_markup: {
+          force_reply: true,
+        }});
+      return;
+    }
+    const inlineKeyboardArray = [];
+    inlineKeyboardArray.push([{text: "1 banner", callback_data: "d/show?b=1"}]);
+    inlineKeyboardArray.push([{text: "2 banner", callback_data: "d/show?b=2"}]);
+    inlineKeyboardArray.push([{text: "3 banner", callback_data: "d/show?b=3"}]);
+    inlineKeyboardArray.push([{text: "4 banner", callback_data: "d/show?b=4"}]);
+    inlineKeyboardArray.push([{text: "5 banner", callback_data: "d/show?b=5"}]);
+    inlineKeyboardArray.push([{text: ctx.i18n.btn.main(), callback_data: "o"}]);
+    await ctx.editMessageCaption("<b>Banners</b>" + ctx.state.sessionMsg.linkHTML(), {
+      parse_mode: "html",
+      reply_markup: {
+        inline_keyboard: inlineKeyboardArray,
+      }});
   } else {
     return next();
   }

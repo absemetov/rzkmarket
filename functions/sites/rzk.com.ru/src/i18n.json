@@ -1,5 +1,6 @@
 {
 "ru": {
+  "siteTitle": "Интернет магазин Rzk.com.ru",
   "ALGOLIA_ID": "YZIFWJVE7R",
   "ALGOLIA_SEARCH_KEY": "a56bd432142fc9813846fa737167eeef",
   "bot_name": "RzkCrimeaBot",
@@ -28,6 +29,7 @@
   "deleted_from_cart": "удален из корзины"
 },
 "uk": {
+  "siteTitle": "Інтернет магазин Rzk.com.ua",
   "ALGOLIA_ID": "YSHMAC99ZS",
   "ALGOLIA_SEARCH_KEY": "c9f2ff23faccc8a423feb221fdbfdb53",
   "bot_name": "RzkMarketBot",

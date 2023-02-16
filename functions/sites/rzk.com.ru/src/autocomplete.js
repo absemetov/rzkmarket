@@ -177,10 +177,10 @@ export function startAutocomplete() {
                     data-autocomplete="true"
                     data-product-id="${item.productId}"
                     data-product-name="${item.name}"
-                    data-product-brand="${item.brand}"
+                    data-product-brand="${item.brand ? item.brand : "undefined"}"
                     data-product-img2="${item.img2 ? lang === "ru" ? item.img2.replace("storage", "i0.wp.com/storage") : item.img2 : "/icons/flower3.svg"}"
                     data-seller="${item.seller}"
-                    data-seller-id="${item.sellerId}"><i class="bi bi-cart3"></i></button>
+                    data-seller-id="${item.sellerId}"><i class="bi bi-cart3 text-success"></i></button>
                 </div>
               </div>`;
             },

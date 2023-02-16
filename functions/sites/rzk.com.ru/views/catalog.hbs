@@ -5,7 +5,7 @@
     {{#if currentCatalog}}
       <li class="breadcrumb-item"><a href="/o/{{object.id}}/c">{{envSite.i18n.aCatGoods}}</a></li>
       {{#each currentCatalog.pathArray as |item|}}
-        {{#if (not item.name ../currentCatalog.name)}}
+        {{#if (last @index ../currentCatalog.pathArray.length)}}
           <li class="breadcrumb-item">
             <a href="/o/{{../object.id}}/c/{{item.url}}">{{item.name}}</a>
           </li>
@@ -19,9 +19,9 @@
   </ol>
 </nav>
 {{#if currentCatalog}}
-  <h1>{{currentCatalog.name}}{{#if tagActive.name}} / {{tagActive.name}}{{/if}}</h1>
+  <h1>{{object.name}} / {{currentCatalog.name}}{{#if tagActive.name}} / {{tagActive.name}}{{/if}}</h1>
 {{else}}
-  <h1>{{envSite.i18n.aCatGoods}}</h1>
+  <h1>{{object.name}} / {{envSite.i18n.aCatGoods}}</h1>
 {{/if}}
 {{#if tags}}
   <div class="dropdown mb-3">
@@ -73,15 +73,18 @@
     {{/each}}
   {{/if}}
 </div>
-{{#if prevNextLinks}}
-  <nav aria-label="Page navigation example">
-    <ul class="pagination mt-4">
-      {{#each prevNextLinks as |prevNextLink|}}
-        <li class="page-item"><a class="page-link{{#if prevNextLink.show}} disabled{{/if}}" href="{{prevNextLink.url}}" title="{{prevNextLink.text}}">
-        <i class="bi {{prevNextLink.icon}}"></i></a></li>
-      {{/each}}
-    </ul>
-  </nav>
+{{#if products}}
+  {{#if loadMore}}
+    <nav aria-label="Page navigation example">
+      <ul class="pagination mt-4">
+        <li class="page-item"><a class="page-link{{#if prevLink.hide}} disabled{{/if}}" href="{{prevLink.url}}"><i class="bi bi-chevron-left"></i> {{envSite.i18n.aPagPrevious}}</a></li>
+        <li class="page-item"><a class="page-link{{#if nextLink.hide}} disabled{{/if}}" href="{{nextLink.url}}">{{envSite.i18n.aPagNext}} <i class="bi bi-chevron-right"></i></a></li>
+      </ul>
+    </nav>
+  {{/if}}
+{{/if}}
+{{#if currentCatalog.desc}}
+  <p class="lead"><h2>{{currentCatalog.desc}}</h2></p>
 {{/if}}
 {{#if currentCatalog.postId}}
 <div class="row row-cols-1 row-cols-md-1 row-cols-lg-2 mt-3">

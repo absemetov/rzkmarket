@@ -1,52 +1,57 @@
 const firebase = require("firebase-admin");
 const firestore = require("firebase-admin/firestore");
-const {cart, store, roundNumber, photoCheckUrl, deletePhotoStorage, translit} = require("./bot_store_cart");
+const {cart, store, roundNumber, photoCheckUrl, deletePhotoStorage, encodeCyrillic} = require("./bot_store_cart");
 const {searchProductHandle, algoliaIndexProducts} = require("./bot_search");
 const {parseUrl} = require("./bot_start_scene");
-// const Translit = require("cyrillic-to-translit-js");
-// const cyrillicToTranslit = new Translit();
-// const cyrillicToTranslitUk = new Translit({preset: "uk"});
 // catalogs actions array
 const catalogsActions = [];
 // show catalogs and goods
 const showCatalog = async (ctx, next) => {
   if (ctx.state.routeName === "c") {
-    // const objectId = ctx.state.params.get("o");
-    // const objectId = ctx.state.sessionMsg.url.searchParams.get("objectId");
-    const objectIdSession = ctx.state.sessionMsg.url.searchParams.get("objectId");
-    const objectId = ctx.state.params.get("o") || objectIdSession;
+    // get btn url
+    const inlineKeyboard = ctx.callbackQuery.message.reply_markup.inline_keyboard;
+    let urlBtn = new URL(process.env.BOT_SITE);
+    inlineKeyboard.forEach((btnArray) => {
+      if (btnArray[0].url) {
+        urlBtn = new URL(btnArray[0].url);
+      }
+    });
+    const objectId = ctx.state.params.get("o") || ctx.state.sessionMsg.url.searchParams.get("oId");
     if (ctx.state.params.get("o")) {
-      ctx.state.sessionMsg.url.searchParams.set("objectId", objectId);
+      ctx.state.sessionMsg.url.searchParams.set("oId", objectId);
     }
-    // delete search redirect!
-    ctx.state.sessionMsg.url.searchParams.delete("page");
     const cartButtons = await cart.cartButtons(objectId, ctx);
     let catalogId = ctx.state.param;
     const tag = ctx.state.params.get("t");
+    const sessionTag = urlBtn.searchParams.getAll("sessionTag")[tag];
+    const tagName = sessionTag && encodeCyrillic(sessionTag, true) || null;
     const startAfter = ctx.state.params.get("s");
     const endBefore = ctx.state.params.get("e");
+    const upCatalog = ctx.state.params.get("up");
+    const inCatalog = ctx.state.params.get("in");
     let publicImgUrl = null;
     const object = await store.findRecord(`objects/${objectId}`);
     if (object.photoId) {
       publicImgUrl = `photos/o/${objectId}/logo/${object.photoId}/2.jpg`;
     }
-    // and show upload catalog photo
-    // let uUrl = "";
     const inlineKeyboardArray =[];
-    // ctx.session.pathCatalog = ctx.callbackQuery.data;
-    // save to fire session
-    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"pathCatalog": ctx.callbackQuery.data}});
-    ctx.state.sessionMsg.url.searchParams.set("pathCatalog", ctx.callbackQuery.data);
+    const pathC = ctx.callbackQuery.data
+        .replace("?up=1", "")
+        .replace("?in=1", "");
+    ctx.state.sessionMsg.url.searchParams.set("pathC", pathC);
     ctx.state.sessionMsg.url.searchParams.delete("cart");
     let currentCatalog;
     if (catalogId) {
-      // TEST path url
-      const pathUrl = ctx.state.sessionMsg.url.searchParams.get("pathUrl") && ctx.state.sessionMsg.url.searchParams.get("pathUrl") + "#" || "";
-      const pathUrlSplit = pathUrl.split(`${catalogId}`);
-      catalogId = `${pathUrlSplit[0]}${catalogId}`;
-      ctx.state.sessionMsg.url.searchParams.set("pathUrl", catalogId);
-      // TEST path url
-      // currentCatalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
+      const pathUrl = ctx.state.sessionMsg.url.searchParams.get("pathU") || "";
+      if (upCatalog) {
+        // clear last cat
+        catalogId = pathUrl.split(/#[a-zA-Z0-9-_]+$/)[0];
+      } else if (inCatalog) {
+        catalogId = `${pathUrl ? `${pathUrl}#` : ""}${catalogId}`;
+      } else {
+        catalogId = pathUrl;
+      }
+      ctx.state.sessionMsg.url.searchParams.set("pathU", catalogId);
       currentCatalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
       if (!currentCatalog) {
         await ctx.answerCbQuery("Catalog not found");
@@ -54,10 +59,14 @@ const showCatalog = async (ctx, next) => {
       }
       // back button
       inlineKeyboardArray.push([{text: `⤴️ ${currentCatalog.pathArray.length > 1 ? currentCatalog.pathArray[currentCatalog.pathArray.length - 2].name : "Каталог"}`,
-        callback_data: currentCatalog.parentId ? `c/${currentCatalog.parentId.substring(currentCatalog.parentId.lastIndexOf("#") + 1)}` : "c"}]);
+        callback_data: currentCatalog.parentId ? `c/${currentCatalog.parentId.substring(currentCatalog.parentId.lastIndexOf("#") + 1)}?up=1` : "c"}]);
       if (ctx.state.isAdmin && ctx.state.sessionMsg.url.searchParams.get("editMode")) {
         inlineKeyboardArray.push([{text: `📸 Загрузить фото каталога ${currentCatalog.name}`,
           callback_data: `u/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?todo=cat`}]);
+        inlineKeyboardArray.push([{text: `📖 Описание ${currentCatalog.name}`,
+          callback_data: `u/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?todo=desc`}]);
+        inlineKeyboardArray.push([{text: `📖 PostId ${currentCatalog.name}`,
+          callback_data: `u/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?todo=postId`}]);
       }
       // products query
       let mainQuery = firebase.firestore().collection("objects").doc(objectId)
@@ -65,29 +74,32 @@ const showCatalog = async (ctx, next) => {
           .orderBy("orderNumber");
       // Filter by tag
       let tagUrl = "";
-      if (tag) {
-        mainQuery = mainQuery.where("tags", "array-contains", tag);
+      if (tagName) {
+        mainQuery = mainQuery.where("tags", "array-contains", tagName);
         tagUrl = `&t=${tag}`;
       }
       // show catalog siblings, get catalogs snap index or siblings
       const catalogsSnapshot = await firebase.firestore().collection("objects").doc(objectId)
           .collection("catalogs").where("parentId", "==", catalogId).orderBy("orderNumber").get();
       catalogsSnapshot.docs.forEach((doc) => {
-        inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id.substring(doc.id.lastIndexOf("#") + 1)}`}]);
+        inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id.substring(doc.id.lastIndexOf("#") + 1)}?in=1`}]);
       });
       // paginate goods, copy main query
       let query = mainQuery;
       if (startAfter) {
+        // get session
+        const startAfterSession = ctx.state.sessionMsg.url.searchParams.get("s");
         const startAfterProduct = await firebase.firestore().collection("objects").doc(objectId)
             .collection("products")
-            .doc(startAfter).get();
+            .doc(startAfterSession).get();
         query = query.startAfter(startAfterProduct);
       }
       // prev button
       if (endBefore) {
+        const endBeforeSession = ctx.state.sessionMsg.url.searchParams.get("e");
         const endBeforeProduct = await firebase.firestore().collection("objects").doc(objectId)
             .collection("products")
-            .doc(endBefore).get();
+            .doc(endBeforeSession).get();
         query = query.endBefore(endBeforeProduct).limitToLast(10);
       } else {
         query = query.limit(10);
@@ -102,7 +114,7 @@ const showCatalog = async (ctx, next) => {
         // Delete or close selected tag
         if (tag) {
           tagsArray[0].callback_data = `t/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?tS=${tag}`;
-          tagsArray.push({text: `❎ ${tag}`, callback_data: `c/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}`});
+          tagsArray.push({text: `❎ ${tagName}`, callback_data: `c/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}`});
         }
         inlineKeyboardArray.push(tagsArray);
       }
@@ -130,15 +142,19 @@ const showCatalog = async (ctx, next) => {
         const endBeforeSnap = productsSnapshot.docs[0];
         const ifBeforeProducts = await mainQuery.endBefore(endBeforeSnap).limitToLast(1).get();
         if (!ifBeforeProducts.empty) {
+          // set session
+          ctx.state.sessionMsg.url.searchParams.set("e", endBeforeSnap.id);
           prevNext.push({text: ctx.i18n.btn.previous(),
-            callback_data: `c/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?e=${endBeforeSnap.id}${tagUrl}`});
+            callback_data: `c/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?e=1${tagUrl}`});
         }
         // startAfter
         const startAfterSnap = productsSnapshot.docs[productsSnapshot.docs.length - 1];
         const ifAfterProducts = await mainQuery.startAfter(startAfterSnap).limit(1).get();
         if (!ifAfterProducts.empty) {
+          // set session
+          ctx.state.sessionMsg.url.searchParams.set("s", startAfterSnap.id);
           prevNext.push({text: ctx.i18n.btn.next(),
-            callback_data: `c/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?s=${startAfterSnap.id}${tagUrl}`});
+            callback_data: `c/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?s=1${tagUrl}`});
         }
         inlineKeyboardArray.push(prevNext);
       }
@@ -147,29 +163,29 @@ const showCatalog = async (ctx, next) => {
         publicImgUrl = `photos/o/${objectId}/c/${currentCatalog.id.replace(/#/g, "-")}/${currentCatalog.photoId}/2.jpg`;
       }
     } else {
-      // TEST path url
-      ctx.state.sessionMsg.url.searchParams.delete("pathUrl");
-      // TEST path url
-      // back button
-      // inlineKeyboardArray.push([{text: `⤴️ ../${object.name}`, callback_data: `objects/${objectId}`}]);
-      // show catalog siblings, get catalogs snap index or siblings
+      ctx.state.sessionMsg.url.searchParams.delete("pathU");
       const catalogsSnapshot = await firebase.firestore().collection("objects").doc(objectId)
           .collection("catalogs")
           .where("parentId", "==", null).orderBy("orderNumber").get();
       catalogsSnapshot.docs.forEach((doc) => {
-        inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id.substring(doc.id.lastIndexOf("#") + 1)}`}]);
+        inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id.substring(doc.id.lastIndexOf("#") + 1)}?in=1`}]);
       });
     }
     // cart buttons
     cartButtons[0].text = `🏪 ${object.name}`;
     inlineKeyboardArray.push(cartButtons);
+    inlineKeyboardArray.push([
+      {
+        text: `${catalogId ? currentCatalog.name : "Каталог"}`,
+        url: `${process.env.BOT_SITE}/o/${objectId}/c${catalogId ? "/" + catalogId.replace(/#/g, "/") : ""}?${urlBtn.searchParams.toString()}`,
+      },
+    ]);
     // render
     const media = await photoCheckUrl(publicImgUrl);
     await ctx.editMessageMedia({
       type: "photo",
       media,
       caption: `<b>${object.name} > ${currentCatalog && currentCatalog.pathArray ? `Каталог > ${currentCatalog.pathArray.map((cat) => cat.name).join(" > ")}` : "Каталог"}</b>\n` +
-        `${process.env.BOT_SITE}/o/${objectId}/c${catalogId ? "/" + catalogId.replace(/#/g, "/") : ""}\n` +
         `${currentCatalog && currentCatalog.postId ? `RZK Market Channel <a href="t.me/${process.env.BOT_CHANNEL}/${currentCatalog.postId}">t.me/${process.env.BOT_CHANNEL}/${currentCatalog.postId}</a>` : ""} ` + ctx.state.sessionMsg.linkHTML(),
       parse_mode: "html",
     }, {reply_markup: {
@@ -188,6 +204,8 @@ const showProduct = async (ctx, next) => {
     // enable edit mode
     const editOn = ctx.state.params.get("editOn");
     const editOff = ctx.state.params.get("editOff");
+    const page = ctx.state.sessionMsg.url.searchParams.get("page");
+    const fromCart = ctx.state.sessionMsg.url.searchParams.get("cart");
     // edit mode
     if (editOn) {
       // uUrl += "&u=1";
@@ -200,10 +218,9 @@ const showProduct = async (ctx, next) => {
     }
     // get product data
     const productId = ctx.state.param;
-    const objectIdSession = ctx.state.sessionMsg.url.searchParams.get("objectId");
-    const objectId = ctx.state.params.get("o") || objectIdSession;
+    const objectId = ctx.state.params.get("o") || ctx.state.sessionMsg.url.searchParams.get("oId");
     if (ctx.state.params.get("o")) {
-      ctx.state.sessionMsg.url.searchParams.set("objectId", objectId);
+      ctx.state.sessionMsg.url.searchParams.set("oId", objectId);
     }
     const object = await store.findRecord(`objects/${objectId}`);
     const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
@@ -211,44 +228,41 @@ const showProduct = async (ctx, next) => {
       await ctx.answerCbQuery("Product not found");
       return;
     }
-    // TEST path Url
-    ctx.state.sessionMsg.url.searchParams.set("pathUrl", product.pathArray[product.pathArray.length - 1].url.replace(/\//g, "#"));
-    // Test path url
-    ctx.state.sessionMsg.url.searchParams.set("productPriceChange", product.price);
-    product.price = roundNumber(product.price * object.currencies[product.currency]);
+    ctx.state.sessionMsg.url.searchParams.set("pathU", product.catalogId);
+    const productPrice = roundNumber(product.price * object.currencies[product.currency]);
     const cartButtons = await cart.cartButtons(objectId, ctx);
     let catalogUrl = `c/${product.catalogId.substring(product.catalogId.lastIndexOf("#") + 1)}`;
-    // const sessionPathCatalog = await store.findRecord(`users/${ctx.from.id}`, "session.pathCatalog");
-    const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathCatalog");
-    if (sessionPathCatalog) {
+    const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathC");
+    if (sessionPathCatalog && !page && !fromCart) {
       catalogUrl = sessionPathCatalog;
     } else {
-      ctx.state.sessionMsg.url.searchParams.set("pathCatalog", catalogUrl);
+      ctx.state.sessionMsg.url.searchParams.set("pathC", catalogUrl);
     }
     const inlineKeyboardArray = [];
     inlineKeyboardArray.push([{text: `⤴️ ${product.pathArray[product.pathArray.length - 1].name}`, callback_data: catalogUrl}]);
     // default add button
     const addButton = {text: ctx.i18n.btn.buy(), callback_data: `k/${product.id}`};
     // get cart products
+    const prodBtns = [];
     const cartProduct = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`,
         `products.${productId}`);
-    ctx.state.sessionMsg.url.searchParams.delete("inCart");
+    ctx.state.sessionMsg.url.searchParams.delete("pCart");
     if (cartProduct) {
+      ctx.state.sessionMsg.url.searchParams.set("pCart", true);
       addButton.text = `🛒 ${cartProduct.qty} ${cartProduct.unit} ` +
       ` ${roundNumber(cartProduct.qty * cartProduct.price)} ${process.env.BOT_CURRENCY}`;
       addButton.callback_data = `k/${product.id}?qty=${cartProduct.qty}`;
-      ctx.state.sessionMsg.url.searchParams.set("inCart", true);
+      prodBtns.push(addButton);
+      prodBtns.push({text: ctx.i18n.btn.del(), callback_data: `a/${productId}`});
+    } else {
+      prodBtns.push(addButton);
     }
-    inlineKeyboardArray.push([addButton]);
+    inlineKeyboardArray.push(prodBtns);
     // add session vars
-    ctx.state.sessionMsg.url.searchParams.set("productName", `${product.brand ? product.brand + " " : ""}${product.name}`);
-    ctx.state.sessionMsg.url.searchParams.set("productPrice", product.price);
-    ctx.state.sessionMsg.url.searchParams.set("productUnit", product.unit);
-    // for edit
-    ctx.state.sessionMsg.url.searchParams.set("sheetId", object.sheetId);
-    ctx.state.sessionMsg.url.searchParams.set("productPurchasePrice", product.purchasePrice);
-    ctx.state.sessionMsg.url.searchParams.set("productCurrency", product.currency);
-    ctx.state.sessionMsg.url.searchParams.set("productRowNumber", product.rowNumber);
+    ctx.state.sessionMsg.url.searchParams.set("pName", encodeCyrillic(`${product.brand ? product.brand + " " : ""}${product.name}`));
+    ctx.state.sessionMsg.url.searchParams.set("pPrice", productPrice);
+    ctx.state.sessionMsg.url.searchParams.set("pUnit", product.unit);
+    ctx.state.sessionMsg.url.searchParams.set("TTL", 1);
     // chck photos
     if (product.photos && product.photos.length) {
       inlineKeyboardArray.push([{text: `🖼 Фото (${product.photos.length})`,
@@ -265,27 +279,49 @@ const showProduct = async (ctx, next) => {
     // footer buttons
     cartButtons[0].text = `🏪 ${object.name}`;
     inlineKeyboardArray.push(cartButtons);
-    const page = ctx.state.sessionMsg.url.searchParams.get("page");
+    // get btn url
+    const inlineKeyboard = ctx.callbackQuery.message.reply_markup.inline_keyboard;
+    let urlBtn = new URL(process.env.BOT_SITE);
+    inlineKeyboard.forEach((btnArray) => {
+      if (btnArray[0].url) {
+        urlBtn = new URL(btnArray[0].url);
+      }
+    });
+    inlineKeyboardArray.push([
+      {
+        text: `${product.brand ? product.brand + " " : ""}${product.name}`,
+        url: `${process.env.BOT_SITE}/o/${objectId}/p/${product.id}?${urlBtn.searchParams.toString()}`,
+      },
+    ]);
+    // search btn
     if (page) {
       inlineKeyboardArray.push([{text: ctx.i18n.btn.backToSearch(), callback_data: `search/${page}`}]);
     }
     const media = await photoCheckUrl(publicImgUrl);
-    ctx.state.sessionMsg.url.searchParams.set("media", media);
     // admin btns
-    if (ctx.state.sessionMsg.url.searchParams.get("editMode")) {
-      inlineKeyboardArray.push([{text: "🔒 Отключить Режим редактирования",
-        callback_data: `p/${product.id}?editOff=true`}]);
-    } else {
-      inlineKeyboardArray.push([{text: "📝 Включить Режим редактирования",
-        callback_data: `p/${product.id}?editOn=true`}]);
+    if (ctx.state.isAdmin) {
+      if (ctx.state.sessionMsg.url.searchParams.get("editMode")) {
+        ctx.state.sessionMsg.url.searchParams.set("cRowN", product.rowNumber);
+        ctx.state.sessionMsg.url.searchParams.set("ePrice", product.price);
+        ctx.state.sessionMsg.url.searchParams.set("ePurchase", product.purchasePrice);
+        ctx.state.sessionMsg.url.searchParams.set("eCurrency", product.currency);
+        inlineKeyboardArray.push([{text: "🔒 Отключить Режим редактирования",
+          callback_data: `p/${product.id}?editOff=true`}]);
+      } else {
+        inlineKeyboardArray.push([{text: "📝 Включить Режим редактирования",
+          callback_data: `p/${product.id}?editOn=true`}]);
+      }
     }
+    // set url session
     if (ctx.state.isAdmin && ctx.state.sessionMsg.url.searchParams.get("editMode")) {
       inlineKeyboardArray.push([{text: "Изменить наименовение товара",
-        callback_data: `b/${product.id}?todo=name&column=C`}]);
-      inlineKeyboardArray.push([{text: `Изменить закупочную цену ${product.purchasePrice} ${product.currency}`,
-        callback_data: `b/${product.id}?todo=purchasePrice&column=D`}]);
-      inlineKeyboardArray.push([{text: "Изменить продажную цену товара",
-        callback_data: `b/${product.id}?todo=price&column=E`}]);
+        callback_data: `b/${product.id}?todo=name&c=C`}]);
+      inlineKeyboardArray.push([{text: `Изменить закуп цену ${product.purchasePrice} ${product.currency}`,
+        callback_data: `b/${product.id}?todo=pPrice&c=D`}]);
+      inlineKeyboardArray.push([{text: `Изменить прод цену ${product.price} ${product.currency}`,
+        callback_data: `b/${product.id}?todo=price&c=E`}]);
+      inlineKeyboardArray.push([{text: "Добавить описание",
+        callback_data: `b/${product.id}?todo=desc`}]);
       inlineKeyboardArray.push([{text: "Добавить пост из канала",
         callback_data: `b/${product.id}?todo=postId`}]);
       inlineKeyboardArray.push([{text: "Удалить товар",
@@ -299,8 +335,7 @@ const showProduct = async (ctx, next) => {
       type: "photo",
       media,
       caption: `<b>${object.name}\n${product.brand ? product.brand + "\n" : ""}${product.name} (${product.id})\n</b>` +
-      `${ctx.i18n.product.price()}: ${product.price} ${process.env.BOT_CURRENCY}\n` +
-      `${process.env.BOT_SITE}/o/${objectId}/p/${productId}\n` +
+      `${ctx.i18n.product.price()}: ${productPrice} ${process.env.BOT_CURRENCY}\n` +
       `${product.postId ? `RZK Market Channel <a href="t.me/${process.env.BOT_CHANNEL}/${product.postId}">t.me/${process.env.BOT_CHANNEL}/${product.postId}</a>` : ""}` + ctx.state.sessionMsg.linkHTML(),
       parse_mode: "html",
     }, {reply_markup: {
@@ -316,22 +351,27 @@ catalogsActions.push(showProduct);
 // add product to cart by keyboard
 catalogsActions.push(async (ctx, next) => {
   if (ctx.state.routeName === "a") {
-    const objectId = ctx.state.sessionMsg.url.searchParams.get("objectId");
+    ctx.state.sessionMsg.url.searchParams.set("TTL", 0);
+    const objectId = ctx.state.sessionMsg.url.searchParams.get("oId");
     const id = ctx.state.param;
-    const name = ctx.state.sessionMsg.url.searchParams.get("productName");
-    const price = + ctx.state.sessionMsg.url.searchParams.get("productPrice");
-    const unit = ctx.state.sessionMsg.url.searchParams.get("productUnit");
-    const inCart = ctx.state.sessionMsg.url.searchParams.get("inCart");
+    // const product = await store.findRecord(`objects/${objectId}/products/${id}`);
+    const name = encodeCyrillic(ctx.state.sessionMsg.url.searchParams.get("pName"), true);
+    // const name = product.name;
+    const price = + ctx.state.sessionMsg.url.searchParams.get("pPrice");
+    const unit = ctx.state.sessionMsg.url.searchParams.get("pUnit");
+    const pCart = ctx.state.sessionMsg.url.searchParams.get("pCart");
     const redirectToCart = ctx.state.sessionMsg.url.searchParams.get("cart");
     const page = ctx.state.sessionMsg.url.searchParams.get("page");
     const qty = + ctx.state.params.get("qty") || 0;
-    ctx.state.sessionMsg.url.searchParams.set("productAddedQty", qty);
-    ctx.state.sessionMsg.url.searchParams.set("productAddedId", id);
-    ctx.state.sessionMsg.url.searchParams.set("productAddedObjectId", objectId);
+    // TODO add if statemant
+    if (page) {
+      ctx.state.sessionMsg.url.searchParams.set("sQty", qty);
+      ctx.state.sessionMsg.url.searchParams.set("sId", id);
+      ctx.state.sessionMsg.url.searchParams.set("sObjectId", objectId);
+    }
     // if product exist
-    if (inCart) {
+    if (pCart) {
       if (qty) {
-        // await cart.add(objectId, ctx.from.id, inCart ? product.id : product, addValue);
         await cart.update({
           objectId,
           userId: ctx.from.id,
@@ -341,14 +381,14 @@ catalogsActions.push(async (ctx, next) => {
             },
           },
         });
-        await ctx.answerCbQuery(`${name} ${qty}${unit}, ${ctx.i18n.product.upd()}`);
+        await ctx.answerCbQuery(`${id} = ${qty}${unit}, ${ctx.i18n.product.upd()}`);
       } else {
         await cart.delete({
           objectId,
           userId: ctx.from.id,
           id,
         });
-        await ctx.answerCbQuery(`${name}, ${ctx.i18n.product.del()}`);
+        await ctx.answerCbQuery(`${id}, ${ctx.i18n.product.del()}`);
       }
     } else {
       // add new product
@@ -368,26 +408,9 @@ catalogsActions.push(async (ctx, next) => {
           },
         });
       }
-      await ctx.answerCbQuery(`${name} ${qty}${unit}, ${ctx.i18n.product.add()}`);
+      await ctx.answerCbQuery(`${id} = ${qty}${unit}, ${ctx.i18n.product.add()}`);
     }
-    //   ctx.state.routeName = "c";
-    //   // eslint-disable-next-line no-useless-escape
-    //   const regPath = catalogUrl.match(/^([a-zA-Z0-9-_]+)\/?([a-zA-Z0-9-_]+)?\??([a-zA-Z0-9-_=&\/:~+]+)?/);
-    //   ctx.state.param = regPath[2];
-    //   const args = regPath[3];
-    //   ctx.state.params.clear();
-    //   if (args) {
-    //     for (const paramsData of args.split("&")) {
-    //       ctx.state.params.set(paramsData.split("=")[0], paramsData.split("=")[1]);
-    //     }
-    //   }
-    //   ctx.callbackQuery.data = catalogUrl;
-    //   await showCatalog(ctx, next);
-    // redirect
     if (page) {
-      // ctx.state.routeName = "search";
-      // ctx.state.param = page;
-      // ctx.callbackQuery.data = ;
       parseUrl(ctx, `search/${page}`);
       await searchProductHandle(ctx);
       return;
@@ -396,10 +419,7 @@ catalogsActions.push(async (ctx, next) => {
       parseUrl(ctx, "cart");
       await showCart(ctx);
     } else {
-      // ctx.state.routeName = "p";
-      // ctx.state.param = id;
-      // await showProduct(ctx, next);
-      const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathCatalog");
+      const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathC");
       parseUrl(ctx, sessionPathCatalog ? sessionPathCatalog : "c");
       await showCatalog(ctx);
     }
@@ -413,13 +433,13 @@ catalogsActions.push( async (ctx, next) => {
     let qty = ctx.state.params.get("qty") || 0;
     const number = ctx.state.params.get("n");
     const back = ctx.state.params.get("b");
-    const objectId = ctx.state.sessionMsg.url.searchParams.get("objectId");
+    const objectId = ctx.state.sessionMsg.url.searchParams.get("oId");
     const productId = ctx.state.param;
-    const productName = ctx.state.sessionMsg.url.searchParams.get("productName");
-    const productPrice = ctx.state.sessionMsg.url.searchParams.get("productPrice");
-    const productUnit = ctx.state.sessionMsg.url.searchParams.get("productUnit");
-    const media = ctx.state.sessionMsg.url.searchParams.get("media");
-    const inCart = ctx.state.sessionMsg.url.searchParams.get("inCart");
+    const productName = encodeCyrillic(ctx.state.sessionMsg.url.searchParams.get("pName"), true);
+    const productPrice = ctx.state.sessionMsg.url.searchParams.get("pPrice");
+    const productUnit = ctx.state.sessionMsg.url.searchParams.get("pUnit");
+    ctx.state.sessionMsg.url.searchParams.set("TTL", 1);
+    // use edit caption media not need
     // add number
     if (number) {
       qty += number;
@@ -436,49 +456,49 @@ catalogsActions.push( async (ctx, next) => {
       await ctx.answerCbQuery("qty > 20000");
       return false;
     }
-    // buttons
-    const addButtonArray = [];
-    if (inCart) {
-      addButtonArray.push({text: ctx.i18n.btn.del(), callback_data: `a/${productId}`});
-    }
-    addButtonArray.push({text: ctx.i18n.btn.buy(), callback_data: `a/${productId}?${paramsUrl}`});
-    await ctx.editMessageMedia({
-      type: "photo",
-      media,
-      caption: `<b>${ctx.i18n.product.placeholderQty()}</b>\n${productName} (${productId})\n` +
-      `${ctx.i18n.product.price()}: ${productPrice} ${process.env.BOT_CURRENCY}\n` +
-      `<b>${ctx.i18n.product.qty()}: ${qty} ${productUnit}</b>\n` +
-      `${ctx.i18n.product.sum()}: ${roundNumber(qty * productPrice)} ${process.env.BOT_CURRENCY}\n` +
-      `${process.env.BOT_SITE}/o/${objectId}/p/${productId} ` + ctx.state.sessionMsg.linkHTML(),
+    // get btn url
+    const inlineKeyboard = ctx.callbackQuery.message.reply_markup.inline_keyboard;
+    let urlBtn = new URL(process.env.BOT_SITE);
+    inlineKeyboard.forEach((btnArray) => {
+      if (btnArray[0].url) {
+        urlBtn = new URL(btnArray[0].url);
+      }
+    });
+    await ctx.editMessageCaption(`<b>${ctx.i18n.product.placeholderQty()}</b>\n${productName} (${productId})\n` +
+    `<b>${ctx.i18n.product.qty()}: ${qty} ${productUnit}</b>\n` +
+    `${ctx.i18n.product.price()}: ${productPrice} ${process.env.BOT_CURRENCY}\n` +
+    `<b>${ctx.i18n.product.sum()}: ${roundNumber(qty * productPrice)} ${process.env.BOT_CURRENCY}</b>` + ctx.state.sessionMsg.linkHTML(), {
       parse_mode: "html",
-    }, {reply_markup: {
-      inline_keyboard: [
-        [
-          {text: "7", callback_data: `k/${productId}?n=7&${paramsUrl}`},
-          {text: "8", callback_data: `k/${productId}?n=8&${paramsUrl}`},
-          {text: "9", callback_data: `k/${productId}?n=9&${paramsUrl}`},
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {text: `⤴️ ${productName}`, callback_data: `p/${productId}`},
+          ],
+          [
+            {text: "7", callback_data: `k/${productId}?n=7&${paramsUrl}`},
+            {text: "8", callback_data: `k/${productId}?n=8&${paramsUrl}`},
+            {text: "9", callback_data: `k/${productId}?n=9&${paramsUrl}`},
+          ],
+          [
+            {text: "4", callback_data: `k/${productId}?n=4&${paramsUrl}`},
+            {text: "5", callback_data: `k/${productId}?n=5&${paramsUrl}`},
+            {text: "6", callback_data: `k/${productId}?n=6&${paramsUrl}`},
+          ],
+          [
+            {text: "1", callback_data: `k/${productId}?n=1&${paramsUrl}`},
+            {text: "2", callback_data: `k/${productId}?n=2&${paramsUrl}`},
+            {text: "3", callback_data: `k/${productId}?n=3&${paramsUrl}`},
+          ],
+          [
+            {text: "⬅️", callback_data: `k/${productId}?b=1&${paramsUrl}`},
+            {text: "0️", callback_data: `k/${productId}?n=0&${paramsUrl}`},
+            {text: ctx.i18n.btn.buy(), callback_data: `a/${productId}?${paramsUrl}`},
+          ],
+          [
+            {text: productName, url: `${process.env.BOT_SITE}/o/${objectId}/p/${productId}?${urlBtn.searchParams.toString()}`},
+          ],
         ],
-        [
-          {text: "4", callback_data: `k/${productId}?n=4&${paramsUrl}`},
-          {text: "5", callback_data: `k/${productId}?n=5&${paramsUrl}`},
-          {text: "6", callback_data: `k/${productId}?n=6&${paramsUrl}`},
-        ],
-        [
-          {text: "1", callback_data: `k/${productId}?n=1&${paramsUrl}`},
-          {text: "2", callback_data: `k/${productId}?n=2&${paramsUrl}`},
-          {text: "3", callback_data: `k/${productId}?n=3&${paramsUrl}`},
-        ],
-        [
-          {text: "0️", callback_data: `k/${productId}?n=0&${paramsUrl}`},
-          {text: "🔙", callback_data: `k/${productId}?b=1&${paramsUrl}`},
-          {text: "AC", callback_data: `k/${productId}`},
-        ],
-        addButtonArray,
-        [
-          {text: `⤴️ ${productName} (${productId})`, callback_data: `p/${productId}`},
-        ],
-      ],
-    }});
+      }});
     await ctx.answerCbQuery();
   } else {
     return next();
@@ -488,25 +508,14 @@ catalogsActions.push( async (ctx, next) => {
 // show cart
 const showCart = async (ctx, next) => {
   if (ctx.state.routeName === "cart") {
+    ctx.state.sessionMsg.url.searchParams.delete("pathU");
+    ctx.state.sessionMsg.url.searchParams.delete("pathC");
+    ctx.state.sessionMsg.url.searchParams.delete("s");
+    ctx.state.sessionMsg.url.searchParams.delete("e");
     const clear = ctx.state.params.get("clear");
     const clearOrder = ctx.state.params.get("clearOrder");
-    const objectIdSession = ctx.state.sessionMsg.url.searchParams.get("objectId");
-    const objectId = ctx.state.params.get("o") || objectIdSession;
-    ctx.state.sessionMsg.url.searchParams.delete("page");
-    ctx.state.sessionMsg.url.searchParams.delete("productAddedQty");
-    ctx.state.sessionMsg.url.searchParams.delete("productAddedId");
-    ctx.state.sessionMsg.url.searchParams.delete("productAddedObjectId");
-    ctx.state.sessionMsg.url.searchParams.delete("search_text");
-    ctx.state.sessionMsg.url.searchParams.delete("pathCatalog");
-    ctx.state.sessionMsg.url.searchParams.delete("productName");
-    ctx.state.sessionMsg.url.searchParams.delete("productPrice");
-    ctx.state.sessionMsg.url.searchParams.delete("productUnit");
-    ctx.state.sessionMsg.url.searchParams.delete("media");
-    ctx.state.sessionMsg.url.searchParams.delete("inCart");
+    const objectId = ctx.state.params.get("o") || ctx.state.sessionMsg.url.searchParams.get("oId");
     if (clearOrder) {
-      // await store.createRecord(`users/${ctx.from.id}`, {"session": {
-      //   "orderData": null,
-      // }});
       ctx.state.sessionMsg.url.searchParams.delete("orderData_id");
       ctx.state.sessionMsg.url.searchParams.delete("orderData_orderNumber");
       ctx.state.sessionMsg.url.searchParams.delete("orderData_lastName");
@@ -530,18 +539,8 @@ const showCart = async (ctx, next) => {
       const product = await store.findRecord(`objects/${objectId}/products/${cartProduct.id}`);
       if (product) {
         product.price = roundNumber(product.price * object.currencies[product.currency]);
-        // const productTxt = `${index + 1}) <b>${product.name}</b> (${product.id})` +
-        // `=${product.price} ${process.env.BOT_CURRENCY}*${cartProduct.qty}${product.unit}` +
-        // `=${roundNumber(product.price * cartProduct.qty)}${process.env.BOT_CURRENCY}`;
-        // // truncate long string
-        // if ((msgTxt + `${productTxt}\n`).length < 1000) {
-        //   msgTxt += `${productTxt}\n`;
-        //   itemShow++;
-        //   // msgTxt = msgTxt.substring(0, 1024);
-        // }
         inlineKeyboardArray.push([
           {text: `${index + 1}) ${cartProduct.qty}${product.unit}=` +
-          // `${roundNumber(cartProduct.qty * product.price)} ${process.env.BOT_CURRENCY} ` +
           `${product.name} (${product.id}) ${product.brand ? product.brand : ""}`,
           callback_data: `p/${product.id}`},
         ]);
@@ -566,21 +565,12 @@ const showCart = async (ctx, next) => {
         });
       }
     }
-    // if (itemShow !== inlineKeyboardArray.length) {
-    //   msgTxt += ctx.i18n.txt.cartFuel() + "\n";
-    // }
     if (totalQty) {
       msgTxt += `<b>${ctx.i18n.product.qty()}: ${totalQty}\n` +
-      `${ctx.i18n.product.sum()}: ${roundNumber(totalSum)} ${process.env.BOT_CURRENCY}</b>\n` +
-      `<a href="${process.env.BOT_SITE}/o/${objectId}/share-cart/${ctx.from.id}">${process.env.BOT_SITE}/o/${objectId}/share-cart/${ctx.from.id}</a>`;
+      `${ctx.i18n.product.sum()}: ${roundNumber(totalSum)} ${process.env.BOT_CURRENCY}</b>`;
     }
 
-    if (inlineKeyboardArray.length < 1) {
-      inlineKeyboardArray.push([
-        {text: "📁 Каталог", callback_data: "c"},
-      ]);
-      msgTxt += ctx.i18n.txt.cartEmpty();
-    } else {
+    if (products.length) {
       // const orderData = await store.findRecord(`users/${ctx.from.id}`, "session.orderData");
       const orderDataId = ctx.state.sessionMsg.url.searchParams.get("orderData_id");
       const orderDataOrderNumber = ctx.state.sessionMsg.url.searchParams.get("orderData_orderNumber");
@@ -601,14 +591,21 @@ const showCart = async (ctx, next) => {
       // clear cart
       inlineKeyboardArray.push([{text: ctx.i18n.btn.clearCart(),
         callback_data: "cart?clear=1"}]);
-      // share cart
+    } else {
       inlineKeyboardArray.push([
-        {text: ctx.i18n.btn.linkCart(), url: `${process.env.BOT_SITE}/o/${objectId}/share-cart/${ctx.from.id}`},
+        {text: "📁 Каталог", callback_data: "c"},
       ]);
+      msgTxt += ctx.i18n.txt.cartEmpty();
     }
     // Set Main menu
     inlineKeyboardArray.push([{text: `🏪 ${object.name}`,
       callback_data: `o/${objectId}`}]);
+    // share cart
+    if (products.length) {
+      inlineKeyboardArray.push([
+        {text: ctx.i18n.btn.linkCart(), url: `${process.env.BOT_SITE}/o/${objectId}/share-cart/${ctx.from.id}`},
+      ]);
+    }
     // edit message
     let publicImgUrl = null;
     if (object.photoId) {
@@ -669,11 +666,6 @@ const cartWizard = [
     if (orderId) {
       paramsUrl += `&oId=${orderId}`;
     }
-    // add rnd param to fast load
-    // let rnd = "";
-    // if (error || !Number(number)) {
-    //   rnd = Math.random().toFixed(2).substring(2);
-    // }
     inlineKeyboardArray.push([
       {text: "7", callback_data: `w/k?n=7&${paramsUrl}`},
       {text: "8", callback_data: `w/k?n=8&${paramsUrl}`},
@@ -690,16 +682,15 @@ const cartWizard = [
       {text: "3", callback_data: `w/k?n=3&${paramsUrl}`},
     ]);
     inlineKeyboardArray.push([
+      {text: "⬅️", callback_data: `w/k?b=1&${paramsUrl}`},
       {text: "0️", callback_data: `w/k?n=0&${paramsUrl}`},
-      {text: "🔙", callback_data: `w/k?b=1&${paramsUrl}`},
-      {text: "AC", callback_data: `w/k?${paramsUrl}`},
+      {text: "Ok", callback_data: orderId ? `e/${orderId}?cN=${qty}&saveCarrier=${carrierId}` :
+      `w/setCurrier?cN=${qty}&cId=${carrierId}`},
     ]);
     // edit order mode or purchase
     if (orderId) {
-      inlineKeyboardArray.push([{text: "Ok", callback_data: `e/${orderId}?cN=${qty}&saveCarrier=${carrierId}`}]);
       inlineKeyboardArray.push([{text: "⬅️ Назад", callback_data: `r/${orderId}`}]);
     } else {
-      inlineKeyboardArray.push([{text: "Ok", callback_data: `w/setCurrier?cN=${qty}&cId=${carrierId}`}]);
       inlineKeyboardArray.push([{text: ctx.i18n.btn.cart(), callback_data: "cart"}]);
     }
     await ctx.editMessageCaption(`${ctx.i18n.txt.carrierNumber()}:\n<b>${qty}</b>` +
@@ -720,12 +711,10 @@ const cartWizard = [
         force_reply: true,
         input_field_placeholder: ctx.i18n.txt.address(),
       }});
-    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"scene": "wizardOrder", "cursor": 3}});
   },
   // 3
   async (ctx, address) => {
     // const address = ctx.message.text;
-    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {address}}});
     ctx.state.sessionMsg.url.searchParams.set("address", address);
     ctx.state.sessionMsg.url.searchParams.set("cursor", 4);
     await ctx.replyWithHTML(`<b>${ctx.i18n.txt.lastName()}</b>` + ctx.state.sessionMsg.linkHTML(),
@@ -735,21 +724,6 @@ const cartWizard = [
             input_field_placeholder: ctx.i18n.txt.lastName(),
           },
         });
-    // reply last name alert
-    // const inlineKeyboard = [];
-    // inlineKeyboard.push([{text: "Ввести другую фамилию.", callback_data: "w/setLastName"}]);
-    // if (ctx.from.last_name) {
-    //   inlineKeyboard.push([{text: `Выбрать свою фамилию ${ctx.from.last_name}`, callback_data: "w/setCurrentLastName"}]);
-    // }
-    // const lastName = ctx.from.last_name ? ctx.from.last_name : null;
-    // const keyboard = lastName ? [[lastName], ["Отмена"]] : [["Отмена"]];
-    // await ctx.replyWithHTML(`Введите фамилию получателя ${ctx.from.last_name ? "или выберите свою" : ""}` + ctx.state.sessionMsg.linkHTML(), {
-    //   reply_markup: {
-    //     // keyboard,
-    //     // resize_keyboard: true,
-    //     inline_keyboard: inlineKeyboard,
-    //   }});
-    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 4}});
   },
   // 4
   async (ctx, lastName) => {
@@ -763,25 +737,10 @@ const cartWizard = [
             input_field_placeholder: ctx.i18n.txt.firstName(),
           },
         });
-    // const firstName = ctx.from.first_name;
-    // const inlineKeyboard = [];
-    // inlineKeyboard.push([{text: "Ввести другое имя.", callback_data: "w/setFirstName"}]);
-    // if (ctx.from.first_name) {
-    //   inlineKeyboard.push([{text: `Выбрать свое имя ${ctx.from.first_name}`, callback_data: "w/setCurrentFirstName"}]);
-    // }
-    // // const keyboard = [[firstName], ["Отмена"]];
-    // await ctx.replyWithHTML("Введите имя получателя или выберите свое" + ctx.state.sessionMsg.linkHTML(), {
-    //   reply_markup: {
-    //     // keyboard,
-    //     // resize_keyboard: true,
-    //     inline_keyboard: inlineKeyboard,
-    //   }});
-    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 5}});
   },
   // 5
   async (ctx, firstName) => {
     // const firstName = ctx.message.text;
-    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {firstName}}});
     ctx.state.sessionMsg.url.searchParams.set("firstName", firstName);
     ctx.state.sessionMsg.url.searchParams.set("cursor", 6);
     await ctx.replyWithHTML(`<b>${ctx.i18n.txt.phoneNumber()} ${process.env.BOT_PHONETEMPLATE}</b>` + ctx.state.sessionMsg.linkHTML(), {
@@ -790,16 +749,6 @@ const cartWizard = [
         input_field_placeholder: process.env.BOT_PHONETEMPLATE,
       },
     });
-    // const inlineKeyboard = [];
-    // inlineKeyboard.push([{text: "Отправить свой номер", callback_data: "w/setCurrentPhoneNumber"}]);
-    // inlineKeyboard.push([{text: "Ввести другой номер", callback_data: "w/setPhoneNumber"}]);
-    // await ctx.replyWithHTML("Введите номер телефона" + ctx.state.sessionMsg.linkHTML(), {
-    //   reply_markup: {
-    //     // keyboard,
-    //     // resize_keyboard: true,
-    //     inline_keyboard: inlineKeyboard,
-    //   }});
-    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 6}});
   },
   // 6
   async (ctx, phoneNumberText) => {
@@ -817,7 +766,6 @@ const cartWizard = [
     }
     const phoneNumber = `${process.env.BOT_PHONECODE}${checkPhone[2]}`;
     ctx.state.sessionMsg.url.searchParams.set("phoneNumber", phoneNumber);
-    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {phoneNumber}}});
     const inlineKeyboard = [];
     inlineKeyboard.push([{text: ctx.i18n.btn.proceed(), callback_data: "w/setNoComment"}]);
     inlineKeyboard.push([{text: ctx.i18n.btn.addComment(), callback_data: "w/setComment"}]);
@@ -826,22 +774,15 @@ const cartWizard = [
           reply_markup: {
             inline_keyboard: inlineKeyboard,
           }});
-    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 7}});
   },
   // 7
   async (ctx, comment) => {
-    // if (ctx.message.text && ctx.message.text !== "Без комментариев") {
-    //   const comment = ctx.message.text;
-    //   await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {comment}}});
-    // }
     if (comment) {
       ctx.state.sessionMsg.url.searchParams.set("comment", comment);
     }
     // get preorder data
-    // const preOrderData = await store.findRecord(`users/${ctx.from.id}`, "session.wizardData");
     const inlineKeyboard = [];
     inlineKeyboard.push([{text: ctx.i18n.btn.purchaseConfirm(), callback_data: "w/createOrder"}]);
-    // inlineKeyboard.push([{text: "Отмена", callback_data: "w/cancelOrder"}]);
     const preOrderData = ctx.state.sessionMsg.url.searchParams;
     await ctx.replyWithHTML(`<b>${ctx.i18n.txt.check()}:</b>\n` +
         `${preOrderData.get("lastName")} ${preOrderData.get("firstName")} ${preOrderData.get("phoneNumber")}\n` +
@@ -854,7 +795,6 @@ const cartWizard = [
       reply_markup: {
         inline_keyboard: inlineKeyboard,
       }});
-    // await store.createRecord(`users/${ctx.from.id}`, {"session": {"cursor": 8}});
   },
 ];
 // save order final
@@ -887,12 +827,6 @@ catalogsActions.push( async (ctx, next) => {
       inlineKeyboardArray.push([{text: ctx.i18n.btn.cart(), callback_data: "cart"}]);
       await cartWizard[0](ctx, "Доставка", inlineKeyboardArray);
     }
-    // open keyboard
-    // if (todo === "o") {
-    //   const carrierId = + ctx.state.params.get("cId");
-    //   ctx.state.sessionMsg.url.searchParams.set("carrierId", carrierId);
-    //   await cartWizard[1](ctx);
-    // }
     // set carrier number by virt keyboard
     if (todo === "k") {
       await cartWizard[1](ctx);
@@ -913,7 +847,6 @@ catalogsActions.push( async (ctx, next) => {
     // save payment and goto wizard
     if (todo === "wizard") {
       const carrierId = + ctx.state.params.get("cId");
-      // await store.createRecord(`users/${ctx.from.id}`, {"session": {"wizardData": {carrierId}}});
       // test save msg session
       ctx.state.sessionMsg.url.searchParams.set("carrierId", carrierId);
       await ctx.deleteMessage();
@@ -997,7 +930,7 @@ catalogsActions.push( async (ctx, next) => {
     if (todo === "createOrder") {
       const preOrderData = ctx.state.sessionMsg.url.searchParams;
       const wizardData = {
-        "objectId": preOrderData.get("objectId"),
+        "objectId": preOrderData.get("oId"),
         "lastName": preOrderData.get("lastName"),
         "firstName": preOrderData.get("firstName"),
         "phoneNumber": preOrderData.get("phoneNumber"),
@@ -1041,17 +974,12 @@ catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "t") {
     const inlineKeyboardArray = [];
     const catalogId = ctx.state.param;
-    const pathUrl = ctx.state.sessionMsg.url.searchParams.get("pathUrl");
-    // const objectId = ctx.state.params.get("o");
-    const objectId = ctx.state.sessionMsg.url.searchParams.get("objectId");
+    const pathUrl = ctx.state.sessionMsg.url.searchParams.get("pathU");
+    const objectId = ctx.state.sessionMsg.url.searchParams.get("oId");
     const object = await store.findRecord(`objects/${objectId}`);
     const catalog = await store.findRecord(`objects/${objectId}/catalogs/${pathUrl}`);
     let catalogUrl = `c/${catalogId}`;
-    // if (ctx.session.pathCatalog) {
-    //   catalogUrl = ctx.session.pathCatalog;
-    // }
-    // const sessionPathCatalog = await store.findRecord(`users/${ctx.from.id}`, "session.pathCatalog");
-    const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathCatalog");
+    const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathC");
     if (sessionPathCatalog) {
       catalogUrl = sessionPathCatalog;
     }
@@ -1064,16 +992,17 @@ catalogsActions.push( async (ctx, next) => {
       facets: ["subCategory"],
       facetFilters: [[`seller:${object.name}`], [`categories.lvl${pathNames.length - 1}:${pathNames.join(" > ")}`]],
     });
-    // console.log(`categories.lvl${pathNames.length - 1}:${pathNames.join(" > ")}`);
-    for (const [tagName, tagCount] of Object.entries(tags.facets.subCategory || {})) {
-      // const transTagName = cyrillicToTranslitUk.transform(cyrillicToTranslit.transform(tagName, "-")).toLowerCase();
-      const transTagName = translit(tagName);
-      if (transTagName === ctx.state.params.get("tS")) {
-        inlineKeyboardArray.push([{text: `✅ ${tagName} (${tagCount})`, callback_data: `c/${catalogId}?t=${transTagName}`}]);
+    const urlBtn = new URL(`${process.env.BOT_SITE}/o/${objectId}/c/${pathUrl.replace(/#/g, "/")}`);
+    for (const [index, tag] of Object.entries(tags.facets.subCategory || {}).entries()) {
+      // add session data encoded
+      urlBtn.searchParams.append("sessionTag", encodeCyrillic(tag[0]));
+      if (index == ctx.state.params.get("tS")) {
+        inlineKeyboardArray.push([{text: `✅ ${tag[0]} (${tag[1]})`, callback_data: `c/${catalogId}?t=${index}`}]);
       } else {
-        inlineKeyboardArray.push([{text: `🎚 ${tagName} (${tagCount})`, callback_data: `c/${catalogId}?t=${transTagName}`}]);
+        inlineKeyboardArray.push([{text: `🎚 ${tag[0]} (${tag[1]})`, callback_data: `c/${catalogId}?t=${index}`}]);
       }
     }
+    inlineKeyboardArray.push([{text: catalog.name, url: urlBtn.href}]);
     let publicImgUrl = null;
     if (object.photoId) {
       publicImgUrl = `photos/o/${objectId}/logo/${object.photoId}/2.jpg`;
@@ -1096,9 +1025,10 @@ catalogsActions.push( async (ctx, next) => {
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "s") {
     const productId = ctx.state.param;
-    const photoId = ctx.state.params.get("pId");
+    // const pId = ctx.state.params.get("pId");
+    const photoId = ctx.state.sessionMsg.url.searchParams.get("photoId");
     const todo = ctx.state.params.get("todo");
-    const objectId = ctx.state.sessionMsg.url.searchParams.get("objectId");
+    const objectId = ctx.state.sessionMsg.url.searchParams.get("oId");
     // set main photo
     if (todo === "main") {
       await store.updateRecord(`objects/${objectId}/products/${productId}`, {
@@ -1108,8 +1038,8 @@ catalogsActions.push( async (ctx, next) => {
           {
             reply_markup: {
               inline_keyboard: [
-                [{text: "🗑 Delete", callback_data: `s/${productId}?pId=${photoId}&todo=delete`}],
-                [{text: "❎ Закрыть", callback_data: `s/${productId}?pId=${photoId}&todo=close`}],
+                [{text: "🗑 Delete", callback_data: `s/${productId}?todo=delete`}],
+                [{text: "❎ Закрыть", callback_data: `s/${productId}?todo=close`}],
               ],
             },
             parse_mode: "html",
@@ -1151,24 +1081,23 @@ catalogsActions.push( async (ctx, next) => {
         });
       }
       // delete photos from bucket
-      // await bucket.deleteFiles({
-      //   prefix: `photos/o/${objectId}/p/${productId}/${deleteFileId}`,
-      // });
       await deletePhotoStorage(`photos/o/${objectId}/p/${productId}/${photoId}`);
       await ctx.deleteMessage();
       return;
     }
     const product = {id: productSnapshot.id, ...productSnapshot.data()};
+    ctx.state.sessionMsg.url.searchParams.delete("photoId");
     for (const [index, photoId] of product.photos.entries()) {
       const inlineKeyboardArray = [];
       // if admin
       if (ctx.state.isAdmin) {
+        ctx.state.sessionMsg.url.searchParams.set("photoId", photoId);
         if (product.mainPhoto !== photoId) {
           inlineKeyboardArray.push([{text: "🏷 Set main",
-            callback_data: `s/${product.id}?pId=${photoId}&todo=main`}]);
+            callback_data: `s/${product.id}?todo=main`}]);
         }
         inlineKeyboardArray.push([{text: "🗑 Delete",
-          callback_data: `s/${product.id}?pId=${photoId}&todo=delete`}]);
+          callback_data: `s/${product.id}?todo=delete`}]);
       }
       inlineKeyboardArray.push([{text: "❎ Закрыть", callback_data: `s/${product.id}?todo=close`}]);
       let caption = `<b>Фото #${index + 1}</b> ${product.name} (${product.id})`;
@@ -1192,26 +1121,32 @@ catalogsActions.push( async (ctx, next) => {
 // upload photos
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "u") {
-    const objectId = ctx.state.sessionMsg.url.searchParams.get("objectId");
+    const objectId = ctx.state.sessionMsg.url.searchParams.get("oId");
+    const pathUrl = ctx.state.sessionMsg.url.searchParams.get("pathU");
     const todo = ctx.state.params.get("todo");
     ctx.state.sessionMsg.url.searchParams.set("scene", `upload-${todo}`);
     const paramId = ctx.state.param;
     let caption;
     if (todo === "prod") {
       ctx.state.sessionMsg.url.searchParams.set("upload-productId", paramId);
-      const productName = ctx.state.sessionMsg.url.searchParams.get("productName");
-      // const product = await store.findRecord(`objects/${objectId}/products/${paramId}`);
-      caption = `Добавьте фото <b>${productName} (${paramId})</b>`;
+      caption = `Добавьте фото <b>${paramId}</b>`;
     }
     if (todo === "cat") {
-      const pathUrl = ctx.state.sessionMsg.url.searchParams.get("pathUrl");
       ctx.state.sessionMsg.url.searchParams.set("upload-catalogId", pathUrl);
-      const catalog = await store.findRecord(`objects/${objectId}/catalogs/${pathUrl}`);
-      caption = `Добавьте фото <b>${catalog.name} (${catalog.id})</b>`;
+      // const catalog = await store.findRecord(`objects/${objectId}/catalogs/${pathUrl}`);
+      caption = `Добавьте фото <b>${pathUrl}</b>`;
     }
     if (todo === "obj") {
-      const object = await store.findRecord(`objects/${paramId}`);
-      caption = `Добавьте фото <b>${object.name} (${object.id})</b>`;
+      // const object = await store.findRecord(`objects/${paramId}`);
+      caption = `Добавьте фото <b>${objectId}</b>`;
+    }
+    if (todo === "desc") {
+      ctx.state.sessionMsg.url.searchParams.set("upload-catalogId", pathUrl);
+      caption = `Добавьте описание, del удалить<b>${pathUrl}</b>`;
+    }
+    if (todo === "postId") {
+      ctx.state.sessionMsg.url.searchParams.set("upload-catalogId", pathUrl);
+      caption = `Добавьте postId, del удалить<b>${pathUrl}</b>`;
     }
     await ctx.replyWithHTML(caption + ctx.state.sessionMsg.linkHTML(), {
       reply_markup: {
@@ -1225,33 +1160,34 @@ catalogsActions.push( async (ctx, next) => {
 // change product data
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "b") {
-    const objectId = ctx.state.sessionMsg.url.searchParams.get("objectId");
-    const name = ctx.state.sessionMsg.url.searchParams.get("productName");
-    const price = ctx.state.sessionMsg.url.searchParams.get("productPriceChange");
-    const purchasePrice = ctx.state.sessionMsg.url.searchParams.get("productPurchasePrice");
-    const productCurrency = ctx.state.sessionMsg.url.searchParams.get("productCurrency");
-    const todo = ctx.state.params.get("todo");
-    const column = ctx.state.params.get("column");
+    ctx.state.sessionMsg.url.searchParams.set("TTL", 1);
+    const objectId = ctx.state.sessionMsg.url.searchParams.get("oId");
+    const productName = encodeCyrillic(ctx.state.sessionMsg.url.searchParams.get("pName"), true);
+    const price = ctx.state.sessionMsg.url.searchParams.get("ePrice");
+    const purchasePrice = ctx.state.sessionMsg.url.searchParams.get("ePurchase");
+    const productCurrency = ctx.state.sessionMsg.url.searchParams.get("eCurrency");
     ctx.state.sessionMsg.url.searchParams.set("scene", "changeProduct");
-    ctx.state.sessionMsg.url.searchParams.set("change-todo", todo);
-    ctx.state.sessionMsg.url.searchParams.set("change-column", column);
-    const paramId = ctx.state.param;
-    ctx.state.sessionMsg.url.searchParams.set("change-productId", paramId);
+    const todo = ctx.state.params.get("todo");
+    ctx.state.sessionMsg.url.searchParams.set("cTodo", todo);
+    const column = ctx.state.params.get("c");
+    ctx.state.sessionMsg.url.searchParams.set("cColumn", column);
+    const productId = ctx.state.param;
+    ctx.state.sessionMsg.url.searchParams.set("cPId", productId);
     if (todo === "del") {
       // first exit from product
-      const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathCatalog");
+      const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathC");
       parseUrl(ctx, sessionPathCatalog ? sessionPathCatalog : "c");
       await showCatalog(ctx);
-      await ctx.replyWithHTML(`<b>${name} (${paramId})</b>\n` +
+      await ctx.replyWithHTML(`<b>${productId}</b>\n` +
       `Введите <b>${todo}</b> для подтверждения удаления` + ctx.state.sessionMsg.linkHTML(), {
         reply_markup: {
           force_reply: true,
         }});
     } else {
-      await ctx.replyWithHTML(`Изменить поле <b>${todo}</b>\n` +
-      `<b>ObjectId: ${objectId}, ${name} (${paramId})</b>\n` +
+      await ctx.replyWithHTML(`${productName} (${productId})\nИзменить поле <b>${todo}</b>\n` +
+      `<b>${objectId}</b>\n` +
       `Закупочная цена (purchasePrice) <b>${purchasePrice} ${productCurrency}</b>\n` +
-      `Продажная цена (price) <b>${price} ${productCurrency}</b>\nДля удаления postId введите 0` + ctx.state.sessionMsg.linkHTML(), {
+      `Продажная цена (price) <b>${price} ${productCurrency}</b>\nДля удаления desc введите del\nДля удаления postId введите 0` + ctx.state.sessionMsg.linkHTML(), {
         reply_markup: {
           force_reply: true,
           input_field_placeholder: todo,
