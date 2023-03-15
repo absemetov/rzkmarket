@@ -2,6 +2,7 @@
 sitemap-index.xml
 sitemap.*.xml
 rzk-com-ua-d1d3248b8410.json
+robots.txt
 #firebase
 .firebase
 public

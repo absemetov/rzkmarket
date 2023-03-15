@@ -48,8 +48,8 @@ function monoMarkdown(currency) {
   const currencyCode = cc.number(currency.currencyCodeA).code;
   const date = moment.unix(currency.date);
   return `CURRENCY: *${currencyCode}*
-RATE BUY: *${currency.rateBuy}*
-RATE SELL: *${currency.rateSell}*
+RATE BUY: *${currency.rateBuy.toLocaleString("ru-RU")}*
+RATE SELL: *${currency.rateSell.toLocaleString("ru-RU")}*
 UPDATED: ${date.fromNow()}`;
 }
 

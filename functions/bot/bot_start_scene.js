@@ -2,6 +2,7 @@ const {store, cart, photoCheckUrl} = require("./bot_store_cart");
 const startActions = [];
 const TelegrafI18n = require("telegraf-i18n");
 const path = require("path");
+const {createPdf} = require("../sites/rzk.com.ru/createPdf.js");
 const i18n = new TelegrafI18n({
   directory: path.resolve(__dirname, "locales"),
 });
@@ -69,7 +70,7 @@ const startHandler = async (ctx) => {
           `${object.description}</b>`;
       // default button
       if (!inlineKeyboardArray.length) {
-        inlineKeyboardArray.push([{text: "📁 Каталог",
+        inlineKeyboardArray.push([{text: ctx.i18n.btn.catalog(),
           callback_data: `c?o=${objectId}`}]);
       }
     }
@@ -145,7 +146,7 @@ startActions.push(async (ctx, next) => {
         `${process.env.BOT_SITE}/o/${objectId}\n` +
         `${object.postId ? `RZK Market Channel <a href="t.me/${process.env.BOT_CHANNEL}/${object.postId}">t.me/${process.env.BOT_CHANNEL}/${object.postId}</a>\n` : ""}`;
       const cartButtons = await cart.cartButtons(objectId, ctx);
-      inlineKeyboardArray.push([{text: "📁 Каталог", callback_data: "c"}]);
+      inlineKeyboardArray.push([{text: ctx.i18n.btn.catalog(), callback_data: "c"}]);
       inlineKeyboardArray.push([cartButtons[1]]);
       if (ctx.state.isAdmin) {
         inlineKeyboardArray.push([{text: "💰 Заказы", callback_data: "r"}]);
@@ -282,6 +283,71 @@ startActions.push(async (ctx, next) => {
       reply_markup: {
         inline_keyboard: inlineKeyboardArray,
       }});
+  } else {
+    return next();
+  }
+});
+
+// pdf actions
+startActions.push(async (ctx, next) => {
+  if (ctx.state.routeName === "f") {
+    await ctx.answerCbQuery();
+    // doc type cart or order
+    const objectId = ctx.state.sessionMsg.url.searchParams.get("oId");
+    const type = ctx.state.param;
+    const docId = ctx.state.params.get("id");
+    const object = await store.findRecord(`objects/${objectId}`);
+    let data = {};
+    // print cart
+    // create pdf
+    if (type === "cart") {
+      const products = await cart.products(objectId, docId);
+      data = {
+        client: "bot",
+        filename: `Cart - ${docId}`,
+        type: "cart",
+        products,
+        object,
+        i18n: {
+          cart: ctx.i18n.btn.cart(),
+          prodCode: ctx.i18n.product.code(),
+          prodName: ctx.i18n.product.name(),
+          prodPrice: ctx.i18n.product.price(),
+          tQty: ctx.i18n.product.qty(),
+          tSum: ctx.i18n.product.sum(),
+          cartLink: ctx.i18n.cartLink(),
+        },
+        siteName: process.env.SITE_NAME,
+        currency: process.env.BOT_CURRENCY,
+        domain: process.env.BOT_SITE,
+      };
+    }
+    // generate order pdf
+    if (type === "order") {
+      const order = await store.findRecord(`objects/${objectId}/orders/${docId}`);
+      data = {
+        client: "bot",
+        filename: `Order ${store.formatOrderNumber(order.userId, order.orderNumber)}`,
+        type: "order",
+        order,
+        products: store.sort(order.products),
+        object,
+        i18n: {
+          cart: ctx.i18n.btn.cart(),
+          prodCode: ctx.i18n.product.code(),
+          prodName: ctx.i18n.product.name(),
+          prodPrice: ctx.i18n.product.price(),
+          tQty: ctx.i18n.product.qty(),
+          tSum: ctx.i18n.product.sum(),
+          cartLink: ctx.i18n.cartLink(),
+        },
+        siteName: process.env.SITE_NAME,
+        currency: process.env.BOT_CURRENCY,
+        domain: process.env.BOT_SITE,
+      };
+    }
+    // generate pdf
+    createPdf(ctx, data);
   } else {
     return next();
   }

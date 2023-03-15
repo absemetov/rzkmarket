@@ -5,6 +5,14 @@
     <li class="breadcrumb-item active" aria-current="page">{{envSite.i18n.aCart}}</li>
   </ol>
 </nav>
+{{#if productsImport}}
+  <ul class="list-group">
+  {{#each productsImport as |product|}}
+    <li class="list-group-item">{{inc @index 1}}. {{product.id}} = {{product.qty}}</li>
+  {{/each}}
+  </ul>
+  <a href="?{{productParam}}&import=true" class="btn btn-success mt-2">{{envSite.i18n.cartImport}}</a>
+{{/if}}
 <h1>{{object.name}} / {{envSite.i18n.aCart}}</h1>
 {{#if products}}
   <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2 pb-3">
@@ -19,14 +27,16 @@
   </div>
   <div class="row">
     <div class="col">
-      <h5>{{envSite.i18n.tSum}}: <strong class="text-nowrap" id="totalSum">{{object.cartInfo.totalSum}} {{envSite.currency}}</strong></h5>
+      <h5>{{envSite.i18n.tSum}}: <strong class="text-nowrap" id="totalSum">{{formatNumber object.cartInfo.totalSum}} {{envSite.currency}}</strong></h5>
     </div>
   </div>
   <button type="button" class="btn btn-success mt-2" data-bs-toggle="modal" data-bs-target="#purchaseModal">
     {{envSite.i18n.btnPurchase}}
   </button>
+  <a href="?clear=true" class="btn btn-primary mt-2">{{envSite.i18n.btnСlearCart}}</a>
+  <a href="/o/{{object.id}}/pdf?docId={{envSite.user.uid}}" target="_blank" class="btn btn-primary mt-2">{{envSite.i18n.btnSavePdf}}</a>
   {{#if admin}}
-    <button id="receiptCash" class="btn btn-success mt-2">Печать</button>
+    <button type="button" class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#receiptModaL">Печать</button>
   {{/if}}
 {{else}}
   <h3>{{envSite.i18n.tCartEmpty}} <a href="/o/{{object.id}}/c">{{envSite.i18n.aChuseGoods}}</a></h3>
@@ -94,20 +104,63 @@
     </div>
   </div>
 </div>
+<!-- Modal Receipt-->
+  <div class="modal fade" id="receiptModaL" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="exampleModalLabel">Сдача клиенту</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="receiptSum" class="h5"></div>
+          <div class="input-group mb-3">
+            <input type="number" min="0" id="cash" name="cash" class="form-control" placeholder="Введите сумму">
+            <span class="input-group-text">руб</span>
+          </div>
+          <div id="change" class="h3"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="receiptCash">Print receip</button>
+        </div>
+      </div>
+    </div>
+  </div>
 <script>
+  const cashInput = document.getElementById("cash");
   const btnReceipt = document.getElementById("receiptCash");
-  btnReceipt.addEventListener("click", () => {
+  cashInput.addEventListener("input", updateValue);
+  const receiptSum = document.getElementById("receiptSum");
+  const log = document.getElementById("change");
+  // focus cash
+  const receiptModaL = document.getElementById("receiptModaL");
+  receiptModaL.addEventListener("shown.bs.modal", async (event) => {
+    cashInput.focus();
+  });
+  receiptModaL.addEventListener("show.bs.modal", async (event) => {
     const totalSumText = document.getElementById("totalSum").innerText;
-    const totalSum = parseFloat(totalSumText);
-    let cash = prompt(`Сумма к оплате ${totalSum}, Вы получили от клиента ₽:`);
-    const change = (cash - totalSum).toFixed(2);
+    const totalSum = parseInt(totalSumText.replace(/\s/g, ""));
+    receiptSum.textContent = `К оплате: ${totalSum} ₽`;
+  });
+  function updateValue(e) {
+    const totalSumText = document.getElementById("totalSum").innerText;
+    const totalSum = parseInt(totalSumText.replace(/\s/g, ""));
+    const change = e.target.value - totalSum;
+    log.textContent = "";
+    btnReceipt.removeAttribute("data-cash");
+    btnReceipt.removeAttribute("data-change");
     if (change >= 0) {
-      const print = confirm(`${cash} - ${totalSum}, CДАЧА КЛИЕНТУ: ${change} ₽, распечатать чек?`);
-      if (print) {
-        window.location.replace(`my.bluetoothprint.scheme://https://rzk.com.ru/o/saki/cart/json?cash=${cash}&change=${change}`);
-      }
-    } else {
-      alert("Вы ввели маленькую сумму");
+      log.textContent = `Сдача: ${change} ₽`;
+      btnReceipt.setAttribute("data-cash", e.target.value);
+      btnReceipt.setAttribute("data-change", change);
     }
+  }
+  // print receipt to thermal printer
+  btnReceipt.addEventListener("click", (event) => {
+    const buttondata = event.target;
+    const cash = buttondata.dataset.cash; 
+    const change = buttondata.dataset.change;
+    window.location.replace(`my.bluetoothprint.scheme://https://rzk.com.ru/o/saki/cart/json?cash=${cash}&change=${change}`);
   });
 </script>

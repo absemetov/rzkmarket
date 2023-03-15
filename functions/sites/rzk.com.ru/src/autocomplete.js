@@ -82,7 +82,8 @@ export function startAutocomplete() {
       // if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0]) {
       //   document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = i18n.placeholder_search;
       // }
-      setInstantSearchUiState({query: "", hierarchicalMenu: {}, refinementList: {}});
+      // searchPanel();
+      // setInstantSearchUiState({query: "", hierarchicalMenu: {}, refinementList: {}});
     },
     getSources({query, setIsOpen}) {
       return [

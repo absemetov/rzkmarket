@@ -16,6 +16,9 @@ const moment = require("moment");
 const cors = require("cors");
 const TelegrafI18n = require("telegraf-i18n");
 const path = require("path");
+const {createPdf} = require("./createPdf.js");
+const isbot = require("isbot");
+// const fs = require("fs");
 // const Translit = require("cyrillic-to-translit-js");
 // const cyrillicToTranslit = new Translit();
 // const cyrillicToTranslitUk = new Translit({preset: "uk"});
@@ -32,7 +35,6 @@ const envSite = {
   currency: process.env.BOT_CURRENCY,
   priceCurrency: process.env.SITE_CURRENCY,
   gtag: process.env.SITE_GTAG,
-  robots: process.env.SITE_ROBOTS,
   gmaps: process.env.BOT_GMAPS,
   email: process.env.BOT_EMAIL,
   botName: process.env.BOT_NAME,
@@ -44,6 +46,7 @@ const envSite = {
   postId: process.env.SITE_POST_ID,
 };
 const app = express();
+// tralling slashes
 app.use((req, res, next) => {
   if (req.path.substr(-1) == "/" && req.path.length > 1) {
     const query = req.url.slice(req.path.length);
@@ -62,6 +65,9 @@ app.use(cookieParser());
 const hbs = exphbs.create({
   extname: ".hbs",
   helpers: {
+    formatNumber(value) {
+      return value.toLocaleString("ru-Ru");
+    },
     year() {
       return new Date().getFullYear();
     },
@@ -78,8 +84,8 @@ const hbs = exphbs.create({
     last(value1, value2) {
       return value1 + 1 !== value2;
     },
-    inc(value) {
-      return value + 3;
+    inc(value, inc) {
+      return value + inc;
     },
     url(value) {
       return encodeURIComponent(value);
@@ -119,26 +125,29 @@ const auth = (req, res, next) => {
     req.user.uid = null;
   }
   envSite.user = req.user;
+  envSite.notBot = !isbot(req.get("user-agent"));
   return next();
 };
 
 // show objects
 app.get("/", auth, async (req, res) => {
-  // get algolia catalogs
-  const catalogsAlgolia = await algoliaIndexProducts.search("", {
-    hitsPerPage: 0,
-    facets: ["categories.lvl0"],
-  });
   const catalogs = [];
-  for (const [catName, catCount] of Object.entries(catalogsAlgolia.facets["categories.lvl0"] || {})) {
-    // const tagId = cyrillicUrl(tagName);
-    // const tagId = encodeURIComponent(tagName);
-    const catObj = {
-      name: catName,
-      count: catCount,
-      url: encodeURIComponent(catName),
-    };
-    catalogs.push(catObj);
+  // get algolia catalogs
+  if (envSite.notBot) {
+    const catalogsAlgolia = await algoliaIndexProducts.search("", {
+      hitsPerPage: 0,
+      facets: ["categories.lvl0"],
+    });
+    for (const [catName, catCount] of Object.entries(catalogsAlgolia.facets["categories.lvl0"] || {})) {
+      // const tagId = cyrillicUrl(tagName);
+      // const tagId = encodeURIComponent(tagName);
+      const catObj = {
+        name: catName,
+        count: catCount,
+        url: encodeURIComponent(catName),
+      };
+      catalogs.push(catObj);
+    }
   }
   const objects = await store.findAll("objects");
   // generate cart link
@@ -304,7 +313,7 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
     // Set load more button and tags Algolia
     if (!productsSnapshot.empty) {
       // get algolia tags if siblings empty
-      if (catalogsSiblingsSnapshot.empty) {
+      if (catalogsSiblingsSnapshot.empty && envSite.notBot) {
         const pathNames = currentCatalog.pathArray.map((catalog) => catalog.name);
         const tagsAlgolia = await algoliaIndexProducts.search("", {
           hitsPerPage: 0,
@@ -559,7 +568,8 @@ app.get("/login/:objectId?", auth, async (req, res) => {
       for (const obj of objects) {
         const products = await store.findRecord(`objects/${obj.id}/carts/${req.user.uid}`, "products");
         const productsImp = await store.findRecord(`objects/${obj.id}/carts/${req.query.id}`, "products");
-        if (products) {
+        // check empry cart!!! {} add keys lenght
+        if (products && Object.keys(products).length) {
           if (productsImp) {
             await store.updateRecord(`objects/${obj.id}/carts/${req.query.id}`, {products});
           } else {
@@ -604,6 +614,35 @@ app.get("/logout", auth, (req, res) => {
       .redirect("/login");
 });
 
+// create pdf
+app.get("/o/:objectId/pdf", auth, async (req, res) => {
+  const objectId = req.params.objectId;
+  const docId = req.query.docId;
+  const object = await store.findRecord(`objects/${objectId}`);
+  const products = await cart.products(objectId, docId);
+  const data = {
+    client: "web",
+    filename: `Cart - ${docId}`,
+    type: "cart",
+    products,
+    object,
+    i18n: {
+      cart: envSite.i18n.aCart(),
+      prodCode: envSite.i18n.product.code(),
+      prodName: envSite.i18n.product.name(),
+      prodPrice: envSite.i18n.product.price(),
+      tQty: envSite.i18n.tQty(),
+      tSum: envSite.i18n.tSum(),
+      cartLink: envSite.i18n.cartLink(),
+    },
+    siteName: process.env.SITE_NAME,
+    currency: process.env.BOT_CURRENCY,
+    domain: process.env.BOT_SITE,
+  };
+  // generate pdf
+  createPdf(res, data);
+});
+
 // render json cart
 app.get("/o/:objectId/cart/json", auth, async (req, res) => {
   const objectId = req.params.objectId;
@@ -643,7 +682,7 @@ app.get("/o/:objectId/cart/json", auth, async (req, res) => {
   <div style="text-align: right"><span style="font-size:5px;">Количество: ${cartInfo.totalQty}</span></div>
   <div style="text-align: right"><span style="font-weight:bold; font-size:10px;">ИТОГ: ${cartInfo.totalSum}₽</span></div>
   <center>------------------------------------------------------------</center>
-  ${+change ? `
+  ${ + change ? `
   <div style="text-align: right"><span style="font-size:5px;">Наличными: ${cash}₽</span></div>
   <div style="text-align: right"><span style="font-size:5px;">Сдача: ${change}₽</span></div>
   <center>------------------------------------------------------------</center>` : ""}
@@ -655,10 +694,64 @@ app.get("/o/:objectId/cart/json", auth, async (req, res) => {
   // products.push({type: 3, value: "https://rzk.com.ru", size: 20, align: 1});
   res.json({...Object.assign({}, receipt)});
 });
+
 // show cart
 app.get("/o/:objectId/cart", auth, async (req, res) => {
   const objectId = req.params.objectId;
   const object = await store.findRecord(`objects/${objectId}`);
+  const admin = req.user.uid === "94899148";
+  // import products from URL
+  // TODO check is array
+  const productsImportParam = req.query.products !== undefined && (Array.isArray(req.query.products) ? req.query.products : [req.query.products]);
+  const importCart = req.query.import;
+  const clearCart = req.query.clear;
+  // clear cart
+  if (clearCart) {
+    await cart.clear(objectId, req.user.uid);
+    res.redirect(`/o/${objectId}/cart`);
+  }
+  // import cart
+  if (importCart) {
+    // first clear cart
+    await cart.clear(objectId, req.user.uid);
+
+    if (productsImportParam) {
+      for (const productStr of productsImportParam) {
+        const [id, qty] = productStr.split(" ");
+        const productFire = await store.findRecord(`objects/${objectId}/products/${id}`);
+        const qtyNumber = + qty;
+        if (productFire && qtyNumber) {
+          productFire.price = roundNumber(productFire.price * object.currencies[productFire.currency]);
+          await cart.add({
+            objectId,
+            userId: req.user.uid,
+            fromBot: false,
+            product: {
+              [id]: {
+                name: `${productFire.brand ? productFire.brand + " - " : ""}${productFire.name}`,
+                price: productFire.price,
+                unit: productFire.unit,
+                qty: qtyNumber,
+                createdAt: Math.floor(Date.now() / 1000),
+              },
+            },
+          });
+        }
+      }
+    }
+    res.redirect(`/o/${objectId}/cart`);
+  }
+  // parse products
+  const productsImport = [];
+  if (productsImportParam) {
+    for (const productStr of productsImportParam) {
+      const [id, qty] = productStr.split(" ");
+      if (id && + qty) {
+        productsImport.push({id, qty});
+      }
+    }
+  }
+  const productParam = productsImport.map((prod) => `products=${prod.id}+${prod.qty}`).join("&");
   const products = [];
   if (req.user.uid) {
     // get cart products
@@ -667,7 +760,29 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
       // check cart products price exist...
       const product = await store.findRecord(`objects/${objectId}/products/${cartProduct.id}`);
       if (product) {
-        product.price = roundNumber(product.price * object.currencies[product.currency]);
+        // update price in cart
+        const productOld = (Math.floor(Date.now() / 1000) - cartProduct.updatedAt) > 3600;
+        if (productOld && product.price !== cartProduct.price && !admin) {
+          const price = roundNumber(product.price * object.currencies[product.currency]);
+          cartProduct.price = price;
+          // products this is name field!!!
+          // const products = {
+          //   [product.id]: {
+          //     price: product.price,
+          //   },
+          // };
+          // await store.createRecord(`objects/${objectId}/carts/${req.user.uid}`, {products});
+          await cart.update({
+            objectId,
+            userId: req.user.uid,
+            product: {
+              [product.id]: {
+                price,
+                updatedAt: Math.floor(Date.now() / 1000),
+              },
+            },
+          });
+        }
         if (product) {
           product.img1 = "/icons/flower3.svg";
           product.img2 = "/icons/flower3.svg";
@@ -681,25 +796,15 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
             id: product.id,
             brand: product.brand ? product.brand : null,
             name: product.name,
-            price: product.price,
+            price: cartProduct.price,
             unit: product.unit,
             qty: cartProduct.qty,
-            sum: roundNumber(cartProduct.qty * product.price),
+            sum: roundNumber(cartProduct.qty * cartProduct.price),
             url: `/o/${objectId}/p/${product.id}`,
             img1: product.img1,
             img2: product.img2,
             sellerId: objectId,
           });
-          // update price in cart
-          if (product.price !== cartProduct.price) {
-            // products this is name field!!!
-            const products = {
-              [product.id]: {
-                price: product.price,
-              },
-            };
-            await store.createRecord(`objects/${objectId}/carts/${req.user.uid}`, {products});
-          }
         }
       } else {
         // delete product
@@ -717,10 +822,12 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
     title: `${envSite.i18n.aCart()} - ${object.name}`,
     object,
     products,
+    productsImport,
+    productParam,
     carriers: Array.from(store.carriers(), ([id, obj]) => ({id, name: obj.name, reqNumber: obj.reqNumber ? 1 : 0})),
     payments: Array.from(store.payments(), ([id, name]) => ({id, name})),
     envSite,
-    admin: req.user.uid === "94899148",
+    admin,
   });
 });
 
@@ -811,10 +918,10 @@ app.post("/o/:objectId/cart/purchase", auth, (req, res) => {
   bb.end(req.rawBody);
 });
 
-// cart add product
+// add product to cart
 app.post("/o/:objectId/cart/add", auth, jsonParser, async (req, res) => {
   const objectId = req.params.objectId;
-  const {productId, qty, added} = req.body;
+  const {productId, qty} = req.body;
   // validate data
   const rulesProductRow = {
     "qty": "required|integer|min:0|max:10000",
@@ -841,50 +948,64 @@ app.post("/o/:objectId/cart/add", auth, jsonParser, async (req, res) => {
     });
   }
   // get product data
-  const object = await store.findRecord(`objects/${objectId}`);
   const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
-  const price = product.price = roundNumber(product.price * object.currencies[product.currency]);
+  const added = await store.findRecord(`objects/${objectId}/carts/${req.user.uid}`, `products.${productId}`);
   // add to cart
   // await cart.add({objectId, userId: req.user.uid, added ? product.id : product, qty});
-  if (added) {
-    if (qty) {
-      // new cart ins
-      await cart.update({
-        objectId,
-        userId: req.user.uid,
-        product: {
-          [productId]: {
-            qty,
+  if (product) {
+    const object = await store.findRecord(`objects/${objectId}`);
+    const price = product.price = roundNumber(product.price * object.currencies[product.currency]);
+    if (added) {
+      if (qty) {
+        // new cart ins
+        await cart.update({
+          objectId,
+          userId: req.user.uid,
+          product: {
+            [productId]: {
+              price,
+              qty,
+              updatedAt: Math.floor(Date.now() / 1000),
+            },
           },
-        },
-      });
+        });
+      } else {
+        await cart.delete({
+          objectId,
+          userId: req.user.uid,
+          id: productId,
+        });
+      }
     } else {
+      // add new product
+      if (qty) {
+        await cart.add({
+          objectId,
+          userId: req.user.uid,
+          fromBot: false,
+          product: {
+            [productId]: {
+              name: `${product.brand ? product.brand + " - " : ""}${product.name}`,
+              price,
+              unit: product.unit,
+              qty,
+              createdAt: Math.floor(Date.now() / 1000),
+            },
+          },
+        });
+      }
+    }
+  } else {
+    if (added) {
       await cart.delete({
         objectId,
         userId: req.user.uid,
         id: productId,
       });
     }
-  } else {
-    // add new product
-    if (qty) {
-      await cart.add({
-        objectId,
-        userId: req.user.uid,
-        fromBot: false,
-        product: {
-          [productId]: {
-            name: `${product.brand ? product.brand + " - " : ""}${product.name}`,
-            price,
-            unit: product.unit,
-            qty,
-            createdAt: Math.floor(Date.now() / 1000),
-          },
-        },
-      });
-    }
   }
   const cartInfo = await cart.cartInfo(objectId, req.user.uid);
+  const price = product ? product.price : null;
   return res.json({cartInfo, price});
 });
 

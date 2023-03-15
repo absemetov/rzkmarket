@@ -15,7 +15,7 @@
         <h5 class="card-title">
           {{object.name}}
           <div class="mt-2">
-            <a href="https://t.me/share/url?url={{encodeUrl envSite.botName object.id "c" "c"}}&text={{encode object.name "Каталог"}}" target="_blank">
+            <a href="https://t.me/share/url?url={{encodeUrl envSite.botName object.id "c" "c"}}&text={{encode object.name envSite.i18n.aCatGoods}}" target="_blank">
               <i class="bi bi-telegram fs-4"></i>
             </a>
           </div>
@@ -35,14 +35,14 @@
         </li>
         <li class="list-group-item">
           <div class="d-grid gap-2">
-            <a href="/o/{{object.id}}/c" class="btn btn-success"><i class="bi bi-folder2"></i> Каталог</a>
+            <a href="/o/{{object.id}}/c" class="btn btn-success"><i class="bi bi-folder2"></i> {{envSite.i18n.aCatGoods}}</a>
           </div>
         </li>
       </ul>
       <div class="card-footer">
         <div class="d-grid gap-2">
           <a href="/o/{{object.id}}/cart"  class="btn btn-success position-relative mt-2">
-            <span class="text-nowrap"><i class="bi bi-cart3"></i> {{object.cartInfo.totalSum}} {{envSite.currency}}</span>
+            <span class="text-nowrap"><i class="bi bi-cart3"></i> {{formatNumber object.cartInfo.totalSum}} {{envSite.currency}}</span>
             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark">
               {{object.cartInfo.cartCount}}
               <span class="visually-hidden">count goods</span>

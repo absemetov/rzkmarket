@@ -5,7 +5,9 @@ const {download} = require("./download");
 const fs = require("fs");
 // round to 2 decimals
 const roundNumber = (num) => {
-  return Math.round((num + Number.EPSILON) * 100) / 100;
+  // 2 decimals
+  // return Math.round((num + Number.EPSILON) * 100) / 100;
+  return Math.round(num);
 };
 // check photo
 const photoCheckUrl = async (url, check) => {

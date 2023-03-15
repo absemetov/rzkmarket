@@ -58,7 +58,7 @@ const showCatalog = async (ctx, next) => {
         return;
       }
       // back button
-      inlineKeyboardArray.push([{text: `⤴️ ${currentCatalog.pathArray.length > 1 ? currentCatalog.pathArray[currentCatalog.pathArray.length - 2].name : "Каталог"}`,
+      inlineKeyboardArray.push([{text: `⤴️ ${currentCatalog.pathArray.length > 1 ? currentCatalog.pathArray[currentCatalog.pathArray.length - 2].name : ctx.i18n.btn.catalog()}`,
         callback_data: currentCatalog.parentId ? `c/${currentCatalog.parentId.substring(currentCatalog.parentId.lastIndexOf("#") + 1)}?up=1` : "c"}]);
       if (ctx.state.isAdmin && ctx.state.sessionMsg.url.searchParams.get("editMode")) {
         inlineKeyboardArray.push([{text: `📸 Загрузить фото каталога ${currentCatalog.name}`,
@@ -122,14 +122,14 @@ const showCatalog = async (ctx, next) => {
       const cartProductsArray = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`, "products");
       // generate products array
       for (const product of productsSnapshot.docs) {
-        const addButton = {text: `📦 ${roundNumber(product.data().price * object.currencies[product.data().currency])}` +
+        const addButton = {text: `📦 ${roundNumber(product.data().price * object.currencies[product.data().currency]).toLocaleString("ru-RU")}` +
         `${process.env.BOT_CURRENCY} ${product.data().name} (${product.id}) ${product.data().brand ? product.data().brand : ""}`,
         callback_data: `p/${product.id}`};
         // get cart products
         const cartProduct = cartProductsArray && cartProductsArray[product.id];
         if (cartProduct) {
           addButton.text = `🛒${cartProduct.qty}${cartProduct.unit} ` +
-          `${roundNumber(cartProduct.price * cartProduct.qty)} ` +
+          `${roundNumber(cartProduct.price * cartProduct.qty).toLocaleString("ru-RU")} ` +
           `${process.env.BOT_CURRENCY} ${product.data().name} (${product.id}) ${product.data().brand ? product.data().brand : ""}`;
           addButton.callback_data = `p/${product.id}`;
         }
@@ -176,7 +176,7 @@ const showCatalog = async (ctx, next) => {
     inlineKeyboardArray.push(cartButtons);
     inlineKeyboardArray.push([
       {
-        text: `${catalogId ? currentCatalog.name : "Каталог"}`,
+        text: `${catalogId ? currentCatalog.name : ctx.i18n.btn.catalog()}`,
         url: `${process.env.BOT_SITE}/o/${objectId}/c${catalogId ? "/" + catalogId.replace(/#/g, "/") : ""}?${urlBtn.searchParams.toString()}`,
       },
     ]);
@@ -185,7 +185,7 @@ const showCatalog = async (ctx, next) => {
     await ctx.editMessageMedia({
       type: "photo",
       media,
-      caption: `<b>${object.name} > ${currentCatalog && currentCatalog.pathArray ? `Каталог > ${currentCatalog.pathArray.map((cat) => cat.name).join(" > ")}` : "Каталог"}</b>\n` +
+      caption: `<b>${object.name} > ${currentCatalog && currentCatalog.pathArray ? `${ctx.i18n.btn.catalog()} > ${currentCatalog.pathArray.map((cat) => cat.name).join(" > ")}` : ctx.i18n.btn.catalog()}</b>\n` +
         `${currentCatalog && currentCatalog.postId ? `RZK Market Channel <a href="t.me/${process.env.BOT_CHANNEL}/${currentCatalog.postId}">t.me/${process.env.BOT_CHANNEL}/${currentCatalog.postId}</a>` : ""} ` + ctx.state.sessionMsg.linkHTML(),
       parse_mode: "html",
     }, {reply_markup: {
@@ -246,11 +246,13 @@ const showProduct = async (ctx, next) => {
     const prodBtns = [];
     const cartProduct = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`,
         `products.${productId}`);
-    ctx.state.sessionMsg.url.searchParams.delete("pCart");
+    // ctx.state.sessionMsg.url.searchParams.delete("pCart");
+    ctx.state.sessionMsg.url.searchParams.delete("cPrice");
     if (cartProduct) {
-      ctx.state.sessionMsg.url.searchParams.set("pCart", true);
+      // ctx.state.sessionMsg.url.searchParams.set("pCart", true);
+      ctx.state.sessionMsg.url.searchParams.set("cPrice", cartProduct.price);
       addButton.text = `🛒 ${cartProduct.qty} ${cartProduct.unit} ` +
-      ` ${roundNumber(cartProduct.qty * cartProduct.price)} ${process.env.BOT_CURRENCY}`;
+      ` ${roundNumber(cartProduct.qty * cartProduct.price).toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}`;
       addButton.callback_data = `k/${product.id}?qty=${cartProduct.qty}`;
       prodBtns.push(addButton);
       prodBtns.push({text: ctx.i18n.btn.del(), callback_data: `a/${productId}`});
@@ -308,6 +310,10 @@ const showProduct = async (ctx, next) => {
         inlineKeyboardArray.push([{text: "🔒 Отключить Режим редактирования",
           callback_data: `p/${product.id}?editOff=true`}]);
       } else {
+        if (cartProduct) {
+          inlineKeyboardArray.push([{text: `📝 Изменить цену в корзине ${cartProduct.price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}`,
+            callback_data: `k/${product.id}?qty=${cartProduct.price}&price=1`}]);
+        }
         inlineKeyboardArray.push([{text: "📝 Включить Режим редактирования",
           callback_data: `p/${product.id}?editOn=true`}]);
       }
@@ -316,9 +322,9 @@ const showProduct = async (ctx, next) => {
     if (ctx.state.isAdmin && ctx.state.sessionMsg.url.searchParams.get("editMode")) {
       inlineKeyboardArray.push([{text: "Изменить наименовение товара",
         callback_data: `b/${product.id}?todo=name&c=C`}]);
-      inlineKeyboardArray.push([{text: `Изменить закуп цену ${product.purchasePrice} ${product.currency}`,
+      inlineKeyboardArray.push([{text: `Изменить закуп цену ${product.purchasePrice.toLocaleString("ru-RU")} ${product.currency}`,
         callback_data: `b/${product.id}?todo=pPrice&c=D`}]);
-      inlineKeyboardArray.push([{text: `Изменить прод цену ${product.price} ${product.currency}`,
+      inlineKeyboardArray.push([{text: `Изменить прод цену ${product.price.toLocaleString("ru-RU")} ${product.currency}`,
         callback_data: `b/${product.id}?todo=price&c=E`}]);
       inlineKeyboardArray.push([{text: "Добавить описание",
         callback_data: `b/${product.id}?todo=desc`}]);
@@ -335,7 +341,7 @@ const showProduct = async (ctx, next) => {
       type: "photo",
       media,
       caption: `<b>${object.name}\n${product.brand ? product.brand + "\n" : ""}${product.name} (${product.id})\n</b>` +
-      `${ctx.i18n.product.price()}: ${productPrice} ${process.env.BOT_CURRENCY}\n` +
+      `${ctx.i18n.product.price()}: ${productPrice.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY} ${ctx.state.isAdmin && cartProduct ? `в корзине ${cartProduct.price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}` : ""}\n` +
       `${product.postId ? `RZK Market Channel <a href="t.me/${process.env.BOT_CHANNEL}/${product.postId}">t.me/${process.env.BOT_CHANNEL}/${product.postId}</a>` : ""}` + ctx.state.sessionMsg.linkHTML(),
       parse_mode: "html",
     }, {reply_markup: {
@@ -357,9 +363,11 @@ catalogsActions.push(async (ctx, next) => {
     // const product = await store.findRecord(`objects/${objectId}/products/${id}`);
     const name = encodeCyrillic(ctx.state.sessionMsg.url.searchParams.get("pName"), true);
     // const name = product.name;
-    const price = + ctx.state.sessionMsg.url.searchParams.get("pPrice");
+    // const price = + ctx.state.sessionMsg.url.searchParams.get("pPrice");
     const unit = ctx.state.sessionMsg.url.searchParams.get("pUnit");
-    const pCart = ctx.state.sessionMsg.url.searchParams.get("pCart");
+    // const pCart = ctx.state.sessionMsg.url.searchParams.get("pCart");
+    const product = await store.findRecord(`objects/${objectId}/products/${id}`);
+    const pCart = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`, `products.${id}`);
     const redirectToCart = ctx.state.sessionMsg.url.searchParams.get("cart");
     const page = ctx.state.sessionMsg.url.searchParams.get("page");
     const qty = + ctx.state.params.get("qty") || 0;
@@ -370,45 +378,62 @@ catalogsActions.push(async (ctx, next) => {
       ctx.state.sessionMsg.url.searchParams.set("sObjectId", objectId);
     }
     // if product exist
-    if (pCart) {
-      if (qty) {
-        await cart.update({
-          objectId,
-          userId: ctx.from.id,
-          product: {
-            [id]: {
-              qty,
+    if (product) {
+      const object = await store.findRecord(`objects/${objectId}`);
+      const price = product.price = roundNumber(product.price * object.currencies[product.currency]);
+      if (pCart) {
+        if (qty) {
+          // add updatedAt for control price updater
+          await cart.update({
+            objectId,
+            userId: ctx.from.id,
+            product: {
+              [id]: {
+                price,
+                qty,
+                updatedAt: Math.floor(Date.now() / 1000),
+              },
             },
-          },
-        });
-        await ctx.answerCbQuery(`${id} = ${qty}${unit}, ${ctx.i18n.product.upd()}`);
+          });
+          await ctx.answerCbQuery(`${id} = ${qty}${unit}, ${ctx.i18n.product.upd()}`);
+        } else {
+          await cart.delete({
+            objectId,
+            userId: ctx.from.id,
+            id,
+          });
+          await ctx.answerCbQuery(`${id}, ${ctx.i18n.product.del()}`);
+        }
       } else {
+        // add new product
+        if (qty) {
+          await cart.add({
+            objectId,
+            userId: ctx.from.id,
+            fromBot: true,
+            product: {
+              [id]: {
+                name,
+                price,
+                unit,
+                qty,
+                createdAt: Math.floor(Date.now() / 1000),
+              },
+            },
+          });
+        }
+        await ctx.answerCbQuery(`${id} = ${qty}${unit}, ${ctx.i18n.product.add()}`);
+      }
+    } else {
+      // delete not exist cart
+      if (pCart) {
         await cart.delete({
           objectId,
           userId: ctx.from.id,
           id,
         });
-        await ctx.answerCbQuery(`${id}, ${ctx.i18n.product.del()}`);
+        await ctx.answerCbQuery(`${id} not exist!`);
       }
-    } else {
-      // add new product
-      if (qty) {
-        await cart.add({
-          objectId,
-          userId: ctx.from.id,
-          fromBot: true,
-          product: {
-            [id]: {
-              name,
-              price,
-              unit,
-              qty,
-              createdAt: Math.floor(Date.now() / 1000),
-            },
-          },
-        });
-      }
-      await ctx.answerCbQuery(`${id} = ${qty}${unit}, ${ctx.i18n.product.add()}`);
     }
     if (page) {
       parseUrl(ctx, `search/${page}`);
@@ -431,12 +456,14 @@ catalogsActions.push(async (ctx, next) => {
 catalogsActions.push( async (ctx, next) => {
   if (ctx.state.routeName === "k") {
     let qty = ctx.state.params.get("qty") || 0;
+    const changePrice = ctx.state.params.get("price");
     const number = ctx.state.params.get("n");
     const back = ctx.state.params.get("b");
     const objectId = ctx.state.sessionMsg.url.searchParams.get("oId");
     const productId = ctx.state.param;
     const productName = encodeCyrillic(ctx.state.sessionMsg.url.searchParams.get("pName"), true);
-    const productPrice = ctx.state.sessionMsg.url.searchParams.get("pPrice");
+    const productPrice = + ctx.state.sessionMsg.url.searchParams.get("pPrice");
+    const productCartPrice = + ctx.state.sessionMsg.url.searchParams.get("cPrice");
     const productUnit = ctx.state.sessionMsg.url.searchParams.get("pUnit");
     ctx.state.sessionMsg.url.searchParams.set("TTL", 1);
     // use edit caption media not need
@@ -450,9 +477,9 @@ catalogsActions.push( async (ctx, next) => {
     }
     // delete zerows
     qty = + qty;
-    const paramsUrl = `qty=${qty}`;
+    const paramsUrl = changePrice ? `qty=${qty}&price=1` : `qty=${qty}`;
     // check max qty
-    if (qty > 20000) {
+    if (!changePrice && qty > 20000) {
       await ctx.answerCbQuery("qty > 20000");
       return false;
     }
@@ -464,10 +491,17 @@ catalogsActions.push( async (ctx, next) => {
         urlBtn = new URL(btnArray[0].url);
       }
     });
-    await ctx.editMessageCaption(`<b>${ctx.i18n.product.placeholderQty()}</b>\n${productName} (${productId})\n` +
-    `<b>${ctx.i18n.product.qty()}: ${qty} ${productUnit}</b>\n` +
-    `${ctx.i18n.product.price()}: ${productPrice} ${process.env.BOT_CURRENCY}\n` +
-    `<b>${ctx.i18n.product.sum()}: ${roundNumber(qty * productPrice)} ${process.env.BOT_CURRENCY}</b>` + ctx.state.sessionMsg.linkHTML(), {
+    let msg;
+    if (changePrice) {
+      msg = `<b>Change price in cart</b>\n${productName} (${productId}) \nNew price: ${qty.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}`;
+    } else {
+      msg = `<b>${ctx.i18n.product.placeholderQty()}</b>\n${productName} (${productId})\n` +
+      `<b>${ctx.i18n.product.qty()}: ${qty.toLocaleString("ru-RU")} ${productUnit}</b>\n` +
+      `${ctx.i18n.product.price()}: ${productPrice.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY} ${ctx.state.isAdmin && productCartPrice ? `в корзине ${productCartPrice.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}` : ""}\n` +
+      `<b>${ctx.i18n.product.sum()}: ${ctx.state.isAdmin && productCartPrice ? roundNumber(qty * productCartPrice).toLocaleString("ru-RU") : roundNumber(qty * productPrice).toLocaleString("ru-RU")} ` +
+      `${process.env.BOT_CURRENCY}</b>`;
+    }
+    await ctx.editMessageCaption(msg + ctx.state.sessionMsg.linkHTML(), {
       parse_mode: "html",
       reply_markup: {
         inline_keyboard: [
@@ -492,7 +526,7 @@ catalogsActions.push( async (ctx, next) => {
           [
             {text: "⬅️", callback_data: `k/${productId}?b=1&${paramsUrl}`},
             {text: "0️", callback_data: `k/${productId}?n=0&${paramsUrl}`},
-            {text: ctx.i18n.btn.buy(), callback_data: `a/${productId}?${paramsUrl}`},
+            {text: changePrice ? "Изменить цену" : ctx.i18n.btn.buy(), callback_data: changePrice ? `x/${productId}?${paramsUrl}` : `a/${productId}?${paramsUrl}`},
           ],
           [
             {text: productName, url: `${process.env.BOT_SITE}/o/${objectId}/p/${productId}?${urlBtn.searchParams.toString()}`},
@@ -538,24 +572,35 @@ const showCart = async (ctx, next) => {
       // check cart products price exist...
       const product = await store.findRecord(`objects/${objectId}/products/${cartProduct.id}`);
       if (product) {
-        product.price = roundNumber(product.price * object.currencies[product.currency]);
+        // update price in cart only for users
+        const productOld = (Math.floor(Date.now() / 1000) - cartProduct.updatedAt) > 3600;
+        if (!ctx.state.isAdmin && productOld && product.price !== cartProduct.price) {
+          const price = roundNumber(product.price * object.currencies[product.currency]);
+          cartProduct.price = price;
+          // products this is name field!!!
+          // const products = {
+          //   [product.id]: {
+          //     price: product.price,
+          //   },
+          // };
+          // await store.createRecord(`objects/${objectId}/carts/${ctx.from.id}`, {products});
+          await cart.update({
+            objectId,
+            userId: ctx.from.id,
+            product: {
+              [product.id]: {
+                price,
+              },
+            },
+          });
+        }
         inlineKeyboardArray.push([
-          {text: `${index + 1}) ${cartProduct.qty}${product.unit}=` +
+          {text: `${index + 1}) ${cartProduct.qty.toLocaleString("ru-RU")}${product.unit}*${cartProduct.price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}=` +
           `${product.name} (${product.id}) ${product.brand ? product.brand : ""}`,
           callback_data: `p/${product.id}`},
         ]);
-        // update price in cart
-        if (product.price !== cartProduct.price) {
-          // products this is name field!!!
-          const products = {
-            [product.id]: {
-              price: product.price,
-            },
-          };
-          await store.createRecord(`objects/${objectId}/carts/${ctx.from.id}`, {products});
-        }
         totalQty += cartProduct.qty;
-        totalSum += cartProduct.qty * product.price;
+        totalSum += cartProduct.qty * cartProduct.price;
       } else {
         // delete product
         await cart.delete({
@@ -566,8 +611,8 @@ const showCart = async (ctx, next) => {
       }
     }
     if (totalQty) {
-      msgTxt += `<b>${ctx.i18n.product.qty()}: ${totalQty}\n` +
-      `${ctx.i18n.product.sum()}: ${roundNumber(totalSum)} ${process.env.BOT_CURRENCY}</b>`;
+      msgTxt += `<b>${ctx.i18n.product.qty()}: ${totalQty.toLocaleString("ru-RU")}\n` +
+      `${ctx.i18n.product.sum()}: ${roundNumber(totalSum).toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}</b>`;
     }
 
     if (products.length) {
@@ -588,12 +633,15 @@ const showCart = async (ctx, next) => {
       // create order
       inlineKeyboardArray.push([{text: ctx.i18n.btn.purchase(),
         callback_data: "w/payment"}]);
+      // create pdf
+      inlineKeyboardArray.push([{text: ctx.i18n.btn.savePdf(),
+        callback_data: `f/cart?id=${ctx.from.id}`}]);
       // clear cart
       inlineKeyboardArray.push([{text: ctx.i18n.btn.clearCart(),
         callback_data: "cart?clear=1"}]);
     } else {
       inlineKeyboardArray.push([
-        {text: "📁 Каталог", callback_data: "c"},
+        {text: ctx.i18n.btn.catalog(), callback_data: "c"},
       ]);
       msgTxt += ctx.i18n.txt.cartEmpty();
     }
@@ -1186,14 +1234,57 @@ catalogsActions.push( async (ctx, next) => {
     } else {
       await ctx.replyWithHTML(`${productName} (${productId})\nИзменить поле <b>${todo}</b>\n` +
       `<b>${objectId}</b>\n` +
-      `Закупочная цена (purchasePrice) <b>${purchasePrice} ${productCurrency}</b>\n` +
-      `Продажная цена (price) <b>${price} ${productCurrency}</b>\nДля удаления desc введите del\nДля удаления postId введите 0` + ctx.state.sessionMsg.linkHTML(), {
+      `Закупочная цена (purchasePrice) <b>${purchasePrice.toLocaleString("ru-RU")} ${productCurrency}</b>\n` +
+      `Продажная цена (price) <b>${price.toLocaleString("ru-RU")} ${productCurrency}</b>\nДля удаления desc введите del\nДля удаления postId введите 0` + ctx.state.sessionMsg.linkHTML(), {
         reply_markup: {
           force_reply: true,
           input_field_placeholder: todo,
         }});
     }
     await ctx.answerCbQuery();
+  } else {
+    return next();
+  }
+});
+
+// change cart product price
+catalogsActions.push( async (ctx, next) => {
+  if (ctx.state.routeName === "x") {
+    ctx.state.sessionMsg.url.searchParams.set("TTL", 0);
+    const objectId = ctx.state.sessionMsg.url.searchParams.get("oId");
+    const id = ctx.state.param;
+    const price = + ctx.state.params.get("qty") || 0;
+    const name = encodeCyrillic(ctx.state.sessionMsg.url.searchParams.get("pName"), true);
+    const redirectToCart = ctx.state.sessionMsg.url.searchParams.get("cart");
+    const page = ctx.state.sessionMsg.url.searchParams.get("page");
+    if (price) {
+      await cart.update({
+        objectId,
+        userId: ctx.from.id,
+        product: {
+          [id]: {
+            price,
+          },
+        },
+      });
+      await ctx.answerCbQuery(`${name} (${id}) New price set ${price}`);
+    } else {
+      await ctx.answerCbQuery("price > 0");
+      return;
+    }
+    if (page) {
+      parseUrl(ctx, `search/${page}`);
+      await searchProductHandle(ctx);
+      return;
+    }
+    if (redirectToCart) {
+      parseUrl(ctx, "cart");
+      await showCart(ctx);
+    } else {
+      const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathC");
+      parseUrl(ctx, sessionPathCatalog ? sessionPathCatalog : "c");
+      await showCatalog(ctx);
+    }
   } else {
     return next();
   }

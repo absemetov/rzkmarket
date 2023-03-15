@@ -4,12 +4,11 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <link rel="stylesheet" href="/assets/index.6a22e6b9.css">
-      <script type="module" src="/assets/index.17b7ab78.js"></script>
+      <script type="module" src="/assets/index.8e0f9f45.js"></script>
       <title>{{#if title}}{{title}} | {{envSite.siteName}}{{else}}{{envSite.i18n.siteTitle}}{{/if}}</title>
       <link rel="icon" href="/favicon-{{envSite.lang}}.ico">
       <link rel="icon" href="/logo/logo-{{envSite.lang}}.svg" type="image/svg+xml">
       <meta name="description" content="{{#if description}}{{description}}{{else}}{{envSite.i18n.siteDesc}}{{/if}}">
-      <meta name="robots" content="{{envSite.robots}}">
       <meta name="author" content="Nadir Absemetov - absemetov.org.ua">
       <!-- Global site tag (gtag.js) - Google Analytics -->
       <script async src="https://www.googletagmanager.com/gtag/js?id={{envSite.gtag}}"></script>
@@ -19,6 +18,9 @@
         gtag("js", new Date());
         gtag("config", "{{envSite.gtag}}");
       </script>
+      {{#if (equals envSite.lang "ru")}}
+      <!-- Yandex.Metrika counter --> <script type="text/javascript" > (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)}; m[i].l=1*new Date(); for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }} k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)}) (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym"); ym(50984510, "init", { clickmap:true, trackLinks:true, accurateTrackBounce:true, webvisor:true, trackHash:true }); </script> <noscript><div><img src="https://mc.yandex.ru/watch/50984510" style="position:absolute; left:-9999px;" alt="" /></div></noscript> <!-- /Yandex.Metrika counter -->
+      {{/if}}
       <script>
         // set canonical url
         const linkTag = document.createElement("link");
@@ -45,7 +47,7 @@
           {{#each currentCatalog.pathArray as |item|}}
             {
               "@type": "ListItem",
-              "position": {{inc @index}},
+              "position": {{inc @index 3}},
             {{#if (not item.name ../currentCatalog.name)}}
               "name": "{{item.name}}",
               "item": "{{../envSite.domain}}/o/{{../object.id}}/c/{{item.url}}"
@@ -104,7 +106,7 @@
             <ul class="navbar-nav me-2">
               <li class="nav-item"></li>
                 <a class="text-nowrap text-white nav-link{{#if cart}} active{{/if}} position-relative" href="/o/{{object.id}}/cart">
-                  <i class="bi bi-cart3"></i> <strong id="totalSumNav">{{object.cartInfo.totalSum}} {{envSite.currency}}</strong>
+                  <i class="bi bi-cart3"></i> <strong id="totalSumNav">{{formatNumber object.cartInfo.totalSum}} {{envSite.currency}}</strong>
                   <span id="cartCountNav" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success mt-1">
                     {{object.cartInfo.cartCount}}
                     <span class="visually-hidden">count goods</span>
@@ -121,7 +123,7 @@
           <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body">
-          <p class="lead">{{envSite.i18n.desc}}</p>
+          <p class="lead">{{{envSite.i18n.desc}}}</p>
           <nav class="nav flex-column">
             {{#if envSite.user.auth}}
               <a class="nav-link" href="/login">{{envSite.user.firstName}}</a>
@@ -165,7 +167,7 @@
                   <div class="accordion-item">
                     <h2 class="accordion-header" id="panelsStayOpen-headingOne">
                       <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseOne" aria-expanded="true" aria-controls="panelsStayOpen-collapseOne">
-                        Каталог
+                        {{envSite.i18n.aCatGoods}}
                       </button>
                     </h2>
                     <div id="panelsStayOpen-collapseOne" class="accordion-collapse collapse show" aria-labelledby="panelsStayOpen-headingOne">

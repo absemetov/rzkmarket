@@ -3,7 +3,7 @@ const {Telegraf} = require("telegraf");
 const {startActions, startHandler, parseUrl, isAdmin} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
 const {esp32Handler, esp32Actions} = require("./bot_esp32_scene");
-const {uploadActions, uploadForm, changeProduct, changeCatalog} = require("./bot_upload_scene");
+const {uploadActions, uploadForm, changeProduct, changeCatalog, changeCartProductPrice} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
 const {catalogsActions, cartWizard} = require("./bot_catalog_scene");
 const {store, uploadPhotoObj, uploadPhotoProduct, uploadPhotoCat, uploadBanner, changeBanner} = require("./bot_store_cart");
@@ -128,6 +128,12 @@ bot.on(["text", "edited_message"], async (ctx) => {
     await changeProduct(ctx, message.text);
     return;
   }
+  // change price in cart
+  if (scene === "changeCartProductPrice") {
+    await changeCartProductPrice(ctx, message.text);
+    return;
+  }
+
   // edit catalog desc
   if (scene === "upload-desc") {
     await changeCatalog(ctx, message.text);

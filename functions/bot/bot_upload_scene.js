@@ -6,7 +6,7 @@ const {GoogleSpreadsheet} = require("google-spreadsheet");
 const creds = require("./rzk-com-ua-d1d3248b8410.json");
 const Validator = require("validatorjs");
 const {google} = require("googleapis");
-const {store, roundNumber, photoCheckUrl, translit, encodeCyrillic} = require("./bot_store_cart");
+const {store, roundNumber, photoCheckUrl, translit, encodeCyrillic, cart} = require("./bot_store_cart");
 const bot = new Telegraf(process.env.BOT_TOKEN, {
   handlerTimeout: 540000,
 });
@@ -284,8 +284,10 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
   });
   // send notify
   const uploadTime = new Date() - startTime;
-  await telegram.sendMessage(94899148, `<b>Data uploaded in ${Math.floor(uploadTime/1000)}s\n` +
-      `Goods added: ${productIsSet.size}\nCatalogs added: ${catalogsIsSet.size}</b>\nDeleted Goods: ${deletedProducts}\nDeleted Catalogs: ${deletedCatalogs}`,
+  await telegram.sendMessage(94899148, `Data uploaded in ${Math.floor(uploadTime/1000)}s\n` +
+      `Goods added: ${productIsSet.size}\nCatalogs added: ${catalogsIsSet.size}\n` +
+      `${deletedProducts > 0 ? `Deleted Goods: ${deletedProducts}\n<b>Don't forget to delete the product catalog!!!</b>\n` : ""}`+
+      `${deletedCatalogs > 0 ? `Deleted Catalogs: ${deletedCatalogs}` : ""}`,
   {parse_mode: "html"});
 };
 
@@ -538,6 +540,32 @@ const changeProduct = async (ctx, newValue) => {
     await ctx.replyWithHTML(`Sheet ${error}`);
   }
 };
+
+// change price in cart
+const changeCartProductPrice = async (ctx, price) => {
+  const objectId = ctx.state.sessionMsg.url.searchParams.get("oId");
+  const id = ctx.state.sessionMsg.url.searchParams.get("cartProductId");
+  // comma to dot
+  price = + price.replace(",", ".");
+  if (isNaN(price)) {
+    await ctx.replyWithHTML(`<b>${price}</b> must be a number!` + ctx.state.sessionMsg.linkHTML(), {
+      reply_markup: {
+        force_reply: true,
+        input_field_placeholder: "Must be a number",
+      }});
+    return;
+  }
+  await cart.update({
+    objectId,
+    userId: ctx.from.id,
+    product: {
+      [id]: {
+        price,
+      },
+    },
+  });
+  await ctx.replyWithHTML(`<b>${id}</b> new price ${price}`);
+};
 // change catalog
 const changeCatalog = async (ctx, newValue) => {
   const objectId = ctx.state.sessionMsg.url.searchParams.get("oId");
@@ -632,7 +660,7 @@ const runtimeOpts = {
   memory: "1GB",
 };
 
-exports.productsUploadFunction = functions.region("europe-central2")
+const productsUploadFunction = functions.region("europe-central2")
     .runWith(runtimeOpts).firestore
     .document("objects/{objectId}/uploads/start")
     .onCreate(async (snap, context) => {
@@ -648,7 +676,16 @@ exports.productsUploadFunction = functions.region("europe-central2")
       await snap.ref.delete();
       return null;
     });
-exports.uploadForm = uploadForm;
-exports.changeProduct = changeProduct;
-exports.changeCatalog = changeCatalog;
-exports.uploadActions = uploadActions;
+// exports.uploadForm = uploadForm;
+// exports.changeProduct = changeProduct;
+// exports.changeCatalog = changeCatalog;
+// exports.uploadActions = uploadActions;
+
+module.exports = {
+  productsUploadFunction,
+  uploadForm,
+  changeProduct,
+  changeCatalog,
+  uploadActions,
+  changeCartProductPrice,
+};

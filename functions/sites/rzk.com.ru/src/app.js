@@ -1,5 +1,5 @@
 import {startAutocomplete} from "./autocomplete";
-import {search, searchPanel, getInstantSearchUiState} from "./instantsearch";
+import {searchPanel, getInstantSearchUiState} from "./instantsearch";
 // Import custom plugins
 import Modal from "bootstrap/js/dist/modal";
 import Toast from "bootstrap/js/dist/toast";
@@ -13,8 +13,10 @@ import SmartPhoto from "smartphoto";
 import i18nContext from "./i18n";
 const lang = document.getElementById("addToCart").dataset.lang;
 const i18n = i18nContext[lang];
-
-search.start();
+if (location.href.match(/^.*?\/search/)) {
+  searchPanel("show");
+}
+// search.start();
 const {setIsOpen} = startAutocomplete();
 
 // document.getElementById("productModal").addEventListener("click", function(event, suggestion, dataset) {
@@ -30,17 +32,19 @@ if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0] && 
   document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = searchPageState.query.substring(0, 5) + "...";
 }
 
-search.on("render", () => {
-  // window.location.pathname == "/search/"
-  if (location.href.match(/^.*?\/search/)) {
-    searchPanel("show");
-  }
-});
+// search.on("render", () => {
+// window.location.pathname == "/search/"
+// if (location.href.match(/^.*?\/search/)) {
+//   searchPanel("show");
+// }
+// });
 
 // back prev buttons trigger
 window.addEventListener("popstate", function() {
   // window.location.pathname !== "/search/"
-  if (!location.href.match(/^.*?\/search/)) {
+  if (location.href.match(/^.*?\/search/)) {
+    searchPanel("show");
+  } else {
     searchPanel("hide");
   }
 });
@@ -88,7 +92,7 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
     </div>
     <div class="card-footer">
       <h3>
-        <span class="placeholder">111</span> <small class="text-muted">${currency}</small>
+        <span class="placeholder">111</span> ${currency}
       </h3>
       <div class="d-grid gap-2">
         <a href="#" tabindex="-1" class="btn btn-success disabled placeholder"></a>
@@ -108,7 +112,7 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
   const cardFooter = productModalEl.querySelector(".card-footer");
   cardFooter.innerHTML = `
     <h3>
-      ${product.price} <small class="text-muted">${currency}</small>
+      ${product.price.toLocaleString("ru-Ru")} ${currency}
     </h3>
     <div class="d-grid gap-2">
     <button type="button" class="btn ${product.qty ? "btn-primary" : "btn-success"}" data-bs-toggle="modal"
@@ -123,7 +127,7 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
       ${product.qty ? product.qty + " " + product.unit + " " + product.sum + " " + currency : i18n.btn_buy}
     </button>
     <a href="/o/${sellerId}/cart"  class="btn btn-success position-relative mt-2" role="button">
-      ${i18n.btn_cart} <strong id="totalSumNavAlg">${product.cartInfo.totalSum} ${currency}</strong>
+      ${i18n.btn_cart} <strong id="totalSumNavAlg">${product.cartInfo.totalSum.toLocaleString("ru-Ru")} ${currency}</strong>
       <span id="cartCountNavAlg" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark">
         ${product.cartInfo.cartCount}
         <span class="visually-hidden">count goods</span>
@@ -152,7 +156,8 @@ new SmartPhoto(".js-smartphoto-single", {
 // modal cart
 // helper round to 2 decimals
 const roundNumber = (num) => {
-  return Math.round((num + Number.EPSILON) * 100) / 100;
+  // return Math.round((num + Number.EPSILON) * 100) / 100;
+  return Math.round(num);
 };
 const cartAddModalEl = document.getElementById("cartAddModal");
 const cartAddModal = new Modal(cartAddModalEl);
@@ -229,7 +234,6 @@ addToCartform.addEventListener("submit", async (event) => {
     body: JSON.stringify({
       productId,
       qty,
-      added,
     }),
   });
   const resJson = await response.json();
@@ -243,13 +247,13 @@ addToCartform.addEventListener("submit", async (event) => {
   // set toast header
   toastSeller.innerText = buttonAddProduct.dataset.seller;
   if (qty) {
-    buttonAddProduct.innerHTML = `${qty} ${buttonAddProduct.dataset.productUnit} <span class="text-nowrap">${roundNumber(qty * resJson.price)} ${currency}</span>`;
+    buttonAddProduct.innerHTML = `${qty} ${buttonAddProduct.dataset.productUnit} <span class="text-nowrap">${resJson.price ? roundNumber(qty * resJson.price).toLocaleString("ru-Ru") : "null"} ${currency}</span>`;
     buttonAddProduct.setAttribute("data-product-qty", qty);
     buttonAddProduct.classList.remove("btn-success");
     buttonAddProduct.classList.add("btn-primary");
     // btn show add cart info
     if (buttonShowProduct && !buttonShowProduct.dataset.autocomplete) {
-      buttonShowProduct.innerHTML = `${qty} ${buttonAddProduct.dataset.productUnit} <span class="text-nowrap">${roundNumber(qty * resJson.price)} ${currency}</span>`;
+      buttonShowProduct.innerHTML = `${qty} ${buttonAddProduct.dataset.productUnit} <span class="text-nowrap">${resJson.price ? roundNumber(qty * resJson.price).toLocaleString("ru-Ru") : "null"} ${currency}</span>`;
       buttonShowProduct.classList.remove("btn-success");
       buttonShowProduct.classList.add("btn-primary");
     }
@@ -258,7 +262,7 @@ addToCartform.addEventListener("submit", async (event) => {
     <span class="text-nowrap fw-bold">${qty} ${buttonAddProduct.dataset.productUnit}</span> ${i18n.added_to_cart}
     <div class="mt-2 pt-2 border-top">
       <a href="/o/${sellerId}/cart" class="btn btn-success btn-sm" role="button">
-        <i class="bi bi-cart3"></i> ${resJson.cartInfo.totalSum} ${currency} (${resJson.cartInfo.cartCount})
+        <i class="bi bi-cart3"></i> ${resJson.cartInfo.totalSum.toLocaleString("ru-Ru")} ${currency} (${resJson.cartInfo.cartCount})
       </a>
     </div>`;
     // show toast
@@ -279,7 +283,7 @@ addToCartform.addEventListener("submit", async (event) => {
       toastBody.innerHTML = `${buttonAddProduct.getAttribute("data-product-name")} (${buttonAddProduct.getAttribute("data-product-id")}) ${i18n.deleted_from_cart}
       <div class="mt-2 pt-2 border-top">
         <a href="/o/${sellerId}/cart" class="btn btn-success btn-sm" role="button">
-          <i class="bi bi-cart3"></i> ${resJson.cartInfo.totalSum} ${currency} (${resJson.cartInfo.cartCount})
+          <i class="bi bi-cart3"></i> ${resJson.cartInfo.totalSum.toLocaleString("ru-Ru")} ${currency} (${resJson.cartInfo.cartCount})
         </a>
       </div>`;
       // show toast
@@ -293,18 +297,18 @@ addToCartform.addEventListener("submit", async (event) => {
   const totalSum = document.getElementById("totalSum");
   if (totalQty) {
     totalQty.innerText = resJson.cartInfo.totalQty;
-    totalSum.innerText = `${resJson.cartInfo.totalSum} ${currency}`;
+    totalSum.innerText = `${resJson.cartInfo.totalSum.toLocaleString("ru-Ru")} ${currency}`;
   }
   // update algolia product
   const cartCountNavAlg = document.getElementById("cartCountNavAlg");
   const totalSumNavAlg = document.getElementById("totalSumNavAlg");
   if (cartCountNavAlg) {
     cartCountNavAlg.innerText = resJson.cartInfo.cartCount;
-    totalSumNavAlg.innerText = `${resJson.cartInfo.totalSum} ${currency}`;
+    totalSumNavAlg.innerText = `${resJson.cartInfo.totalSum.toLocaleString("ru-Ru")} ${currency}`;
   }
   if (cartCountNav) {
     cartCountNav.innerText = resJson.cartInfo.cartCount;
-    totalSumNav.innerText = `${resJson.cartInfo.totalSum} ${currency}`;
+    totalSumNav.innerText = `${resJson.cartInfo.totalSum.toLocaleString("ru-Ru")} ${currency}`;
   }
   // hide modal
   cartAddModal.hide();
@@ -315,7 +319,15 @@ delButton.addEventListener("click", async () => {
   addButton.click();
 });
 
-// purchase
+// purchase focus last name
+const purchaseModal = document.getElementById("purchaseModal");
+if (purchaseModal) {
+  purchaseModal.addEventListener("shown.bs.modal", async (event) => {
+    const lastName = document.getElementById("lastName");
+    lastName.focus();
+  });
+}
+
 const purchaseForm = document.getElementById("purchase");
 if (purchaseForm) {
   const createOrderButton = document.getElementById("createOrderButton");

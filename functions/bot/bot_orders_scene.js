@@ -2,6 +2,7 @@ const firebase = require("firebase-admin");
 const {showCart, cartWizard} = require("./bot_catalog_scene");
 const {store, cart, roundNumber, photoCheckUrl} = require("./bot_store_cart");
 const {parseUrl} = require("./bot_start_scene");
+const firestore = require("firebase-admin/firestore");
 const moment = require("moment");
 const ordersActions = [];
 // user orders
@@ -209,6 +210,9 @@ const adminOrders = async (ctx, next) => {
       inlineKeyboardArray.push([
         {text: "Ссылка на заказ", url: `${process.env.BOT_SITE}/o/${objectId}/s/${order.id}`},
       ]);
+      // create pdf
+      inlineKeyboardArray.push([{text: ctx.i18n.btn.savePdf(),
+        callback_data: `f/order?id=${order.id}`}]);
       // edit entries
       inlineKeyboardArray.push([{text: `📝 Статус: ${store.statuses().get(order.statusId)}`,
         callback_data: `e/${order.id}?showStatus=${order.statusId}`}]);
@@ -342,7 +346,7 @@ const orderWizard = [
     ctx.state.sessionMsg.url.searchParams.set("cursor", 1);
     const fieldName = ctx.state.sessionMsg.url.searchParams.get("fieldName");
     const fieldValue = ctx.state.sessionMsg.url.searchParams.get("fieldValue");
-    await ctx.replyWithHTML(`Текущее значение ${fieldName}: <b>${fieldValue}</b>` + ctx.state.sessionMsg.linkHTML(), {
+    await ctx.replyWithHTML(`Текущее значение ${fieldName}: <b>${fieldValue}</b>, ${fieldName === "comment" ? "del for delete" : ""}` + ctx.state.sessionMsg.linkHTML(), {
       reply_markup: {
         force_reply: true,
       }});
@@ -364,13 +368,23 @@ const orderWizard = [
     }
     const objectId = ctx.state.sessionMsg.url.searchParams.get("oId");
     const orderId = ctx.state.sessionMsg.url.searchParams.get("orderId");
-    await store.updateRecord(`objects/${objectId}/orders/${orderId}`,
-        {[fieldName]: newValue});
-    // exit scene
-    await ctx.reply(`Данные сохранены. Обновите заказ! ${fieldName}=>${newValue} 🔄`, {
-      reply_markup: {
-        remove_keyboard: true,
-      }});
+    if (fieldName === "comment" && newValue === "del") {
+      await store.updateRecord(`objects/${objectId}/orders/${orderId}`,
+          {[fieldName]: firestore.FieldValue.delete()});
+      // exit scene
+      await ctx.reply(`Комментарий удален. Обновите заказ! ${fieldName}=>${newValue} 🔄`, {
+        reply_markup: {
+          remove_keyboard: true,
+        }});
+    } else {
+      await store.updateRecord(`objects/${objectId}/orders/${orderId}`,
+          {[fieldName]: newValue});
+      // exit scene
+      await ctx.reply(`Данные сохранены. Обновите заказ! ${fieldName}=>${newValue} 🔄`, {
+        reply_markup: {
+          remove_keyboard: true,
+        }});
+    }
   },
 ];
 // edit order fields

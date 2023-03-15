@@ -129,7 +129,7 @@ export const search = instantsearch({
             query: routeState.query,
             page: routeState.page,
             hierarchicalMenu: {
-              "categories.lvl0": [routeState.category.join(" > ")],
+              "categories.lvl0": [routeState.category ? routeState.category.join(" > ") : ""],
             },
             refinementList: {
               brand: routeState.brand,
@@ -632,6 +632,9 @@ export function getInstantSearchUiState() {
 
 // Return the InstantSearch index UI state.
 export function searchPanel(visible) {
+  if (!search.started) {
+    search.start();
+  }
   const searchPage = document.getElementById("search");
   const mainPage = document.getElementById("main");
   if (visible == "show") {
