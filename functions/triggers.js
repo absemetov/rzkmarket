@@ -112,6 +112,7 @@ exports.productCreate = functions.region("europe-central2").firestore
       const productAlgolia = {
         objectID: `${objectId}-${productId}`,
         name: product.name,
+        price: product.price,
         orderNumber: product.orderNumber,
         productId,
         seller: product.objectName,
@@ -156,6 +157,7 @@ exports.productUpdate = functions.region("europe-central2").firestore
       const productAlgolia = {
         objectID: `${objectId}-${productId}`,
         name: product.name,
+        price: product.price,
         orderNumber: product.orderNumber,
         productId,
         seller: product.objectName,

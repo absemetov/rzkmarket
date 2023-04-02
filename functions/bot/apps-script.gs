@@ -1,4 +1,4 @@
-/** @OnlyCurrentDoc RZK Market 2.0 v10.01.2023 */
+/** @OnlyCurrentDoc */
 function onEdit(e){
   const range = e.range;
   // range.setNote('Last modified: ' + new Date());
@@ -10,7 +10,7 @@ function onEdit(e){
       const cell = range.getCell(i, j);
       const column = cell.getColumn();
       const row = cell.getRow();
-      const validRange = sheet.getName() === "products" && column < 11 && row > 1;
+      const validRange = sheet.getName() === "products" && column < 10 && row > 1;
       const validCell = validRange && cell.getValue();
       // validate ID
       if (column === 2 && validCell) {
@@ -23,7 +23,7 @@ function onEdit(e){
       // validate NAME
       if (column === 3 && validCell) {
         if (cell.getValue().length > 90) {
-          SpreadsheetApp.getUi().alert(`Error in row ${row}, column ${column}: Value >>${cell.getValue()}<< field not be greater than ${cell.getValue().length} > 80`);
+          SpreadsheetApp.getUi().alert(`Error in row ${row}, column ${column}: Value >>${cell.getValue()}<< field not be greater than 90 ${cell.getValue().length} > 90`);
           sheet.setActiveSelection(`A${row}:J${row}`);
         }
       }
@@ -35,7 +35,7 @@ function onEdit(e){
         }
       }
       // validate GROUP
-      if (column === 8 && validCell) {
+      if (column === 7 && validCell) {
         const delCatalogs = [];
         cell.getValue().split("#").forEach((catalogName) => {
           let id = null;
@@ -75,7 +75,7 @@ function onEdit(e){
         }
       }
       // validate TAGS
-      if (column === 9 && validCell) {
+      if (column === 8 && validCell) {
         cell.getValue().split(",").forEach((tag) => {
           const name = tag.trim();
           // const id = translit(name);
@@ -86,7 +86,7 @@ function onEdit(e){
         });
       }
       // validate Brand
-      if (column === 10 && validCell) {
+      if (column === 9 && validCell) {
         if (cell.getValue().length > 40) {
           SpreadsheetApp.getUi().alert(`Error in row ${row}, column ${column}: Value >>${cell.getValue()}<< field not be greater than ${cell.getValue().length} > 40`);
           sheet.setActiveSelection(`A${row}:J${row}`);
@@ -94,7 +94,7 @@ function onEdit(e){
       }
       // upd timestamp
       if (validRange) {
-        sheet.getRange(row, 11).setValue(timestamp);
+        sheet.getRange(row, 10).setValue(timestamp);
       }
     }
   }

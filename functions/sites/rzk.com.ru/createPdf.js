@@ -10,7 +10,11 @@ function createPdf(res, data) {
   rowPosition = 20;
   const doc = new PDFDocument({size: "A4", margin: 20, info: {Author: "Nadir Absemetov absemetov.org.ua"}});
   if (data.client === "web") {
-    res.setHeader("Content-disposition", `inline; filename=${data.filename}.pdf`);
+    // res.setHeader("Content-disposition", `inline; filename=${data.filename}.pdf`);
+    res.writeHead(200, {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `inline; filename=${data.filename}.pdf`,
+    });
     doc.pipe(res);
   } else {
     // bot
@@ -61,17 +65,17 @@ function generateCustomerInformation(doc, data) {
     doc.font(fontRegular).fontSize(10).text(new Date().toLocaleString("ru-RU", {timeZone: "Europe/Moscow"}), columnPosition, rowPosition + 20, {align: "center"});
     rowPosition += 50;
   } else {
-    doc.font(fontRegular).fontSize(14).fillColor("#000").text(`${data.object.name} / Заказ № ${store.formatOrderNumber(data.order.userId, data.order.orderNumber)}`, columnPosition, rowPosition, {align: "left"});
+    doc.font(fontRegular).fontSize(14).fillColor("#000").text(`${data.object.name} / ${data.i18n.order} № ${store.formatOrderNumber(data.order.userId, data.order.orderNumber)}`, columnPosition, rowPosition, {align: "left"});
     doc.font(fontRegular).fontSize(10).text(new Date(data.order.createdAt * 1000).toLocaleString("ru-RU", {timeZone: "Europe/Moscow"}), columnPosition, rowPosition + 5, {align: "right"});
-    doc.font(fontBold).fontSize(10).text("Покупатель: ", columnPosition, rowPosition + 30)
-        .font(fontRegular).text(`${data.order.lastName} ${data.order.firstName} ${data.order.phoneNumber}`, columnPosition + 85, rowPosition + 30);
-    doc.font(fontBold).fontSize(10).text("Адрес доставки: ", columnPosition, rowPosition + 45)
-        .font(fontRegular).text(`${data.order.address}, ${store.carriers().get(data.order.carrierId).name} ${data.order.carrierNumber ? "#" + data.order.carrierNumber : ""}`, columnPosition + 85, rowPosition + 45);
+    doc.font(fontBold).fontSize(10).text(`${data.i18n.buyer}: `, columnPosition, rowPosition + 30)
+        .font(fontRegular).text(`${data.order.lastName} ${data.order.firstName} ${data.order.phoneNumber}`, columnPosition + 90, rowPosition + 30);
+    doc.font(fontBold).fontSize(10).text(`${data.i18n.delivery}: `, columnPosition, rowPosition + 45)
+        .font(fontRegular).text(`${data.order.address}, ${store.carriers().get(data.order.carrierId).name} ${data.order.carrierNumber ? "#" + data.order.carrierNumber : ""}`, columnPosition + 90, rowPosition + 45);
     doc.font(fontBold).fontSize(10).text("Оплата: ", columnPosition, rowPosition + 60)
-        .font(fontRegular).text(`${store.payments().get(data.order.paymentId)}\n`, columnPosition + 85, rowPosition + 60);
+        .font(fontRegular).text(`${store.payments().get(data.order.paymentId)}\n`, columnPosition + 90, rowPosition + 60);
     if (data.order.comment) {
-      doc.font(fontBold).fontSize(10).text("Комментарий: ", columnPosition, rowPosition + 75)
-          .font(fontRegular).text(data.order.comment, columnPosition + 85, rowPosition + 75, {width: 450});
+      doc.font(fontBold).fontSize(10).text(`${data.i18n.comment}: `, columnPosition, rowPosition + 75)
+          .font(fontRegular).text(data.order.comment, columnPosition + 90, rowPosition + 75, {width: 450});
       const textHeight = doc.heightOfString(data.order.comment, {width: 450});
       rowPosition += textHeight + 90;
     } else {
@@ -85,7 +89,7 @@ function generateProductsTable(doc, data) {
       .text("#", columnPosition + 5, rowPosition)
       .text(data.i18n.prodCode, columnPosition + 25, rowPosition)
       .text(data.i18n.prodName, columnPosition + 110, rowPosition)
-      .text(data.i18n.tQty, columnPosition + 360, rowPosition)
+      .text(data.i18n.tQty, columnPosition + 365, rowPosition)
       .text(data.i18n.prodPrice, columnPosition + 430, rowPosition)
       .text(data.i18n.tSum, columnPosition + 495, rowPosition);
   generateHr(doc, rowPosition + 20);
@@ -95,7 +99,7 @@ function generateProductsTable(doc, data) {
     doc.font(fontRegular).fontSize(10).text(index + 1, columnPosition + 5, rowPosition);
     doc.text(product.id, columnPosition + 25, rowPosition, {width: 80});
     doc.fillColor("blue").text(product.name, columnPosition + 110, rowPosition, {width: 250, link: `${data.domain}/o/${data.object.id}/p/${product.id}`});
-    doc.fillColor("#000").text(`${product.qty} ${product.unit}`, columnPosition + 360, rowPosition, {width: 50});
+    doc.fillColor("#000").text(`${product.qty} ${product.unit}`, columnPosition + 365, rowPosition, {width: 60});
     doc.text(`${product.price.toLocaleString("ru-RU")} ${data.currency}`, columnPosition + 430, rowPosition, {width: 65});
     doc.text(`${roundNumber(product.qty * product.price).toLocaleString("ru-RU")} ${data.currency}`, columnPosition + 495, rowPosition, {width: 60});
     const textHeight = Math.max(doc.heightOfString(product.id, {width: 80}), doc.heightOfString(product.name, {width: 250})) + 5;

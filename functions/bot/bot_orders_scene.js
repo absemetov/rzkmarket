@@ -176,14 +176,14 @@ const adminOrders = async (ctx, next) => {
         ctx.state.sessionMsg.url.searchParams.set("pathOrderCurrent", ctx.callbackQuery.data);
         const date = moment.unix(order.createdAt).locale("ru");
         caption = `<b>${order.objectName} >` +
-        ` Заказ #${store.formatOrderNumber(order.userId, order.orderNumber)}` +
+        ` ${ctx.i18n.txt.order()} #${store.formatOrderNumber(order.userId, order.orderNumber)}` +
         ` (${date.fromNow()})\n` +
-        `${order.lastName} ${order.firstName} ${order.phoneNumber}\n` +
-        `Адрес доставки: ${order.address}, ` +
+        `${ctx.i18n.txt.buyer()}: ${order.lastName} ${order.firstName} ${order.phoneNumber}\n` +
+        `${ctx.i18n.txt.delivery()}: ${order.address}, ` +
         `${store.carriers().get(order.carrierId).name} ` +
         `${order.carrierNumber ? "#" + order.carrierNumber : ""}\n` +
         `Оплата: ${store.payments().get(order.paymentId)}\n` +
-        `${order.comment ? "Комментарий: " + order.comment + "\n" : ""}</b>`;
+        `${order.comment ? `${ctx.i18n.txt.comment()}: ` + order.comment + "\n" : ""}</b>`;
         let totalQty = 0;
         let totalSum = 0;
         let itemShow = 0;

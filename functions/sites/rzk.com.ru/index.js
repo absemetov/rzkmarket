@@ -286,7 +286,8 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
         id: product.id,
         name: product.data().name,
         brand: product.data().brand ? product.data().brand : null,
-        price: roundNumber(product.data().price * object.currencies[product.data().currency]),
+        // price: roundNumber(product.data().price * object.currencies[product.data().currency]),
+        price: product.data().price,
         unit: product.data().unit,
         url: `/o/${objectId}/p/${product.id}`,
         img1: "/icons/flower3.svg",
@@ -376,13 +377,14 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
 app.post("/o/:objectId/p/:productId", auth, async (req, res) => {
   const objectId = req.params.objectId;
   const productId = req.params.productId;
-  const object = await store.findRecord(`objects/${objectId}`);
+  // const object = await store.findRecord(`objects/${objectId}`);
   const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
   const productAlgolia = {};
   productAlgolia.id = productId;
   productAlgolia.name = product.name;
   productAlgolia.unit = product.unit;
-  productAlgolia.price = roundNumber(product.price * object.currencies[product.currency]);
+  // productAlgolia.price = roundNumber(product.price * object.currencies[product.currency]);
+  productAlgolia.price = product.price;
   // get cart qty
   if (req.user.uid) {
     const cartProduct = await store.findRecord(`objects/${objectId}/carts/${req.user.uid}`,
@@ -403,7 +405,7 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
   const object = await store.findRecord(`objects/${objectId}`);
   const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
   if (object && product) {
-    product.price = roundNumber(product.price * object.currencies[product.currency]);
+    // product.price = roundNumber(product.price * object.currencies[product.currency]);
     product.img1 = "/icons/flower3.svg";
     product.img2 = "/icons/flower3.svg";
     product.sellerId = objectId;
@@ -482,6 +484,7 @@ app.get("/o/:objectId/s/:orderId", auth, async (req, res) => {
       totalQty += product.qty;
       totalSum += product.qty * product.price;
     });
+    res.setHeader("X-Robots-Tag", "noindex");
     return res.render("share-order", {
       title: `${envSite.i18n.order()} - ${object.name} #${shareOrder.orderNumber}`,
       object,
@@ -522,6 +525,7 @@ app.get("/o/:objectId/share-cart/:cartId", auth, async (req, res) => {
       totalSum += product.qty * product.price;
     });
     // render
+    res.setHeader("X-Robots-Tag", "noindex");
     return res.render("share-cart", {
       title: `${envSite.i18n.aCart()} - ${object.name} #${cartId}`,
       object,
@@ -622,7 +626,7 @@ app.get("/o/:objectId/pdf", auth, async (req, res) => {
   const products = await cart.products(objectId, docId);
   const data = {
     client: "web",
-    filename: `Cart - ${docId}`,
+    filename: `Cart-${docId}`,
     type: "cart",
     products,
     object,
@@ -721,14 +725,14 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
         const productFire = await store.findRecord(`objects/${objectId}/products/${id}`);
         const qtyNumber = + qty;
         if (productFire && qtyNumber) {
-          productFire.price = roundNumber(productFire.price * object.currencies[productFire.currency]);
+          // productFire.price = roundNumber(productFire.price * object.currencies[productFire.currency]);
           await cart.add({
             objectId,
             userId: req.user.uid,
             fromBot: false,
             product: {
               [id]: {
-                name: `${productFire.brand ? productFire.brand + " - " : ""}${productFire.name}`,
+                name: `${productFire.name}${productFire.brand ? " " + productFire.brand : ""}`,
                 price: productFire.price,
                 unit: productFire.unit,
                 qty: qtyNumber,
@@ -763,8 +767,9 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
         // update price in cart
         const productOld = (Math.floor(Date.now() / 1000) - cartProduct.updatedAt) > 3600;
         if (productOld && product.price !== cartProduct.price && !admin) {
-          const price = roundNumber(product.price * object.currencies[product.currency]);
-          cartProduct.price = price;
+          // const price = roundNumber(product.price * object.currencies[product.currency]);
+          // cartProduct.price = price;
+          cartProduct.price = product.price;
           // products this is name field!!!
           // const products = {
           //   [product.id]: {
@@ -777,7 +782,8 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
             userId: req.user.uid,
             product: {
               [product.id]: {
-                price,
+                // price,
+                price: product.price,
                 updatedAt: Math.floor(Date.now() / 1000),
               },
             },
@@ -817,6 +823,7 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
     }
   }
   object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
+  res.setHeader("X-Robots-Tag", "noindex");
   res.render("cart", {
     cart: true,
     title: `${envSite.i18n.aCart()} - ${object.name}`,
@@ -953,8 +960,8 @@ app.post("/o/:objectId/cart/add", auth, jsonParser, async (req, res) => {
   // add to cart
   // await cart.add({objectId, userId: req.user.uid, added ? product.id : product, qty});
   if (product) {
-    const object = await store.findRecord(`objects/${objectId}`);
-    const price = product.price = roundNumber(product.price * object.currencies[product.currency]);
+    // const object = await store.findRecord(`objects/${objectId}`);
+    // const price = product.price = roundNumber(product.price * object.currencies[product.currency]);
     if (added) {
       if (qty) {
         // new cart ins
@@ -963,7 +970,8 @@ app.post("/o/:objectId/cart/add", auth, jsonParser, async (req, res) => {
           userId: req.user.uid,
           product: {
             [productId]: {
-              price,
+              // price,
+              price: product.price,
               qty,
               updatedAt: Math.floor(Date.now() / 1000),
             },
@@ -985,8 +993,9 @@ app.post("/o/:objectId/cart/add", auth, jsonParser, async (req, res) => {
           fromBot: false,
           product: {
             [productId]: {
-              name: `${product.brand ? product.brand + " - " : ""}${product.name}`,
-              price,
+              name: `${product.name}${product.brand ? " " + product.brand : ""}`,
+              // price,
+              price: product.price,
               unit: product.unit,
               qty,
               createdAt: Math.floor(Date.now() / 1000),

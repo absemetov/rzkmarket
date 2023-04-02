@@ -152,10 +152,10 @@ export function startAutocomplete() {
                   </div>
                   <div class="aa-ItemContentBody">
                     <div class="aa-ItemContentTitle text-wrap">
-                      ${components.Highlight({hit: item, attribute: "name"})} (${components.Highlight({hit: item, attribute: "productId"})})
+                      ${components.Highlight({hit: item, attribute: "name"})} (${components.Highlight({hit: item, attribute: "productId"})}) ${components.Highlight({hit: item, attribute: "brand"})}
                     </div>
-                    ${item.brand ? html`<small>Бренд ${components.Highlight({hit: item, attribute: "brand"})}</small>` : ""}
                     ${item.seller}
+                    <b>${item.price} ${i18n.currency}</b>
                   </div>
                 </div>
                 <div class="aa-ItemActions">

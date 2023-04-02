@@ -4,10 +4,11 @@ if (process.argv[3] === "robots") {
   const writeStream = fs.createWriteStream("sites/rzk.com.ru/robots.txt");
   writeStream.write(`User-agent: * 
 Disallow: /search
-Disallow: /o/*/cart
 Disallow: /delivery-info
 Disallow: /return-policy
 Disallow: /login
+Disallow: /*?*startAfter=
+Disallow: /*?*endBefore=
 Sitemap: https://rzk.com.${process.argv[2]}/sitemaps/${process.argv[2]}/sitemap-index.xml
 
 User-agent: Yahoo

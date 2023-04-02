@@ -26,7 +26,8 @@
   "searchFound": "найдено",
   "searchNotFound": "по Вашему запросу ничего не найдено",
   "added_to_cart": "добавлен в корзину",
-  "deleted_from_cart": "удален из корзины"
+  "deleted_from_cart": "удален из корзины",
+  "currency": "₽"
 },
 "uk": {
   "siteTitle": "Інтернет магазин Rzk.com.ua",
@@ -55,6 +56,7 @@
   "searchFound": "знайдено",
   "searchNotFound": "за Вашим запитом нічого не знайдено",
   "added_to_cart": "доданий до кошика",
-  "deleted_from_cart": "видалено з кошика"
+  "deleted_from_cart": "видалено з кошика",
+  "currency": "₴"
 }
 }

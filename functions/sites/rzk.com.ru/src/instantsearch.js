@@ -174,6 +174,7 @@ const renderHits = async (renderOptions, isFirstRender) => {
                   </h6>
                 </div>
                 <div class="card-footer">
+                  <h3>${item.price} ${i18n.currency}</h3>
                   <h6>${item.seller}</h6>
                   <div class="d-grid gap-2">
                     <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#productModal"

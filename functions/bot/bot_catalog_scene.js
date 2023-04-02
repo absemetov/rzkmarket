@@ -25,6 +25,7 @@ const showCatalog = async (ctx, next) => {
     const tag = ctx.state.params.get("t");
     const sessionTag = urlBtn.searchParams.getAll("sessionTag")[tag];
     const tagName = sessionTag && encodeCyrillic(sessionTag, true) || null;
+    const back = ctx.state.params.get("b");
     const startAfter = ctx.state.params.get("s");
     const endBefore = ctx.state.params.get("e");
     const upCatalog = ctx.state.params.get("up");
@@ -88,7 +89,9 @@ const showCatalog = async (ctx, next) => {
       let query = mainQuery;
       if (startAfter) {
         // get session
-        const startAfterSession = ctx.state.sessionMsg.url.searchParams.get("s");
+        const startAfterSession = back ? ctx.state.sessionMsg.url.searchParams.get("sPrev") : ctx.state.sessionMsg.url.searchParams.get("s");
+        // for back btn
+        ctx.state.sessionMsg.url.searchParams.set("sPrev", startAfterSession);
         const startAfterProduct = await firebase.firestore().collection("objects").doc(objectId)
             .collection("products")
             .doc(startAfterSession).get();
@@ -96,7 +99,8 @@ const showCatalog = async (ctx, next) => {
       }
       // prev button
       if (endBefore) {
-        const endBeforeSession = ctx.state.sessionMsg.url.searchParams.get("e");
+        const endBeforeSession = back ? ctx.state.sessionMsg.url.searchParams.get("ePrev") : ctx.state.sessionMsg.url.searchParams.get("e");
+        ctx.state.sessionMsg.url.searchParams.set("ePrev", endBeforeSession);
         const endBeforeProduct = await firebase.firestore().collection("objects").doc(objectId)
             .collection("products")
             .doc(endBeforeSession).get();
@@ -122,7 +126,7 @@ const showCatalog = async (ctx, next) => {
       const cartProductsArray = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`, "products");
       // generate products array
       for (const product of productsSnapshot.docs) {
-        const addButton = {text: `📦 ${roundNumber(product.data().price * object.currencies[product.data().currency]).toLocaleString("ru-RU")}` +
+        const addButton = {text: `📦 ${product.data().price.toLocaleString("ru-RU")}` +
         `${process.env.BOT_CURRENCY} ${product.data().name} (${product.id}) ${product.data().brand ? product.data().brand : ""}`,
         callback_data: `p/${product.id}`};
         // get cart products
@@ -229,12 +233,12 @@ const showProduct = async (ctx, next) => {
       return;
     }
     ctx.state.sessionMsg.url.searchParams.set("pathU", product.catalogId);
-    const productPrice = roundNumber(product.price * object.currencies[product.currency]);
+    // const productPrice = roundNumber(product.price * object.currencies[product.currency]);
     const cartButtons = await cart.cartButtons(objectId, ctx);
     let catalogUrl = `c/${product.catalogId.substring(product.catalogId.lastIndexOf("#") + 1)}`;
     const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathC");
     if (sessionPathCatalog && !page && !fromCart) {
-      catalogUrl = sessionPathCatalog;
+      catalogUrl = sessionPathCatalog + "&b=1";
     } else {
       ctx.state.sessionMsg.url.searchParams.set("pathC", catalogUrl);
     }
@@ -261,8 +265,8 @@ const showProduct = async (ctx, next) => {
     }
     inlineKeyboardArray.push(prodBtns);
     // add session vars
-    ctx.state.sessionMsg.url.searchParams.set("pName", encodeCyrillic(`${product.brand ? product.brand + " " : ""}${product.name}`));
-    ctx.state.sessionMsg.url.searchParams.set("pPrice", productPrice);
+    ctx.state.sessionMsg.url.searchParams.set("pName", encodeCyrillic(`${product.name}${product.brand ? " " + product.brand : ""}`));
+    ctx.state.sessionMsg.url.searchParams.set("pPrice", product.price);
     ctx.state.sessionMsg.url.searchParams.set("pUnit", product.unit);
     ctx.state.sessionMsg.url.searchParams.set("TTL", 1);
     // chck photos
@@ -306,7 +310,7 @@ const showProduct = async (ctx, next) => {
         ctx.state.sessionMsg.url.searchParams.set("cRowN", product.rowNumber);
         ctx.state.sessionMsg.url.searchParams.set("ePrice", product.price);
         ctx.state.sessionMsg.url.searchParams.set("ePurchase", product.purchasePrice);
-        ctx.state.sessionMsg.url.searchParams.set("eCurrency", product.currency);
+        // ctx.state.sessionMsg.url.searchParams.set("eCurrency", product.currency);
         inlineKeyboardArray.push([{text: "🔒 Отключить Режим редактирования",
           callback_data: `p/${product.id}?editOff=true`}]);
       } else {
@@ -322,9 +326,9 @@ const showProduct = async (ctx, next) => {
     if (ctx.state.isAdmin && ctx.state.sessionMsg.url.searchParams.get("editMode")) {
       inlineKeyboardArray.push([{text: "Изменить наименовение товара",
         callback_data: `b/${product.id}?todo=name&c=C`}]);
-      inlineKeyboardArray.push([{text: `Изменить закуп цену ${product.purchasePrice.toLocaleString("ru-RU")} ${product.currency}`,
+      inlineKeyboardArray.push([{text: `Изменить закуп цену ${product.purchasePrice.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}`,
         callback_data: `b/${product.id}?todo=pPrice&c=D`}]);
-      inlineKeyboardArray.push([{text: `Изменить прод цену ${product.price.toLocaleString("ru-RU")} ${product.currency}`,
+      inlineKeyboardArray.push([{text: `Изменить прод цену ${product.price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}`,
         callback_data: `b/${product.id}?todo=price&c=E`}]);
       inlineKeyboardArray.push([{text: "Добавить описание",
         callback_data: `b/${product.id}?todo=desc`}]);
@@ -341,7 +345,7 @@ const showProduct = async (ctx, next) => {
       type: "photo",
       media,
       caption: `<b>${object.name}\n${product.brand ? product.brand + "\n" : ""}${product.name} (${product.id})\n</b>` +
-      `${ctx.i18n.product.price()}: ${productPrice.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY} ${ctx.state.isAdmin && cartProduct ? `в корзине ${cartProduct.price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}` : ""}\n` +
+      `${ctx.i18n.product.price()}: ${product.price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY} ${ctx.state.isAdmin && cartProduct ? `в корзине ${cartProduct.price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}` : ""}\n` +
       `${product.postId ? `RZK Market Channel <a href="t.me/${process.env.BOT_CHANNEL}/${product.postId}">t.me/${process.env.BOT_CHANNEL}/${product.postId}</a>` : ""}` + ctx.state.sessionMsg.linkHTML(),
       parse_mode: "html",
     }, {reply_markup: {
@@ -379,8 +383,8 @@ catalogsActions.push(async (ctx, next) => {
     }
     // if product exist
     if (product) {
-      const object = await store.findRecord(`objects/${objectId}`);
-      const price = product.price = roundNumber(product.price * object.currencies[product.currency]);
+      // const object = await store.findRecord(`objects/${objectId}`);
+      // const price = product.price = roundNumber(product.price * object.currencies[product.currency]);
       if (pCart) {
         if (qty) {
           // add updatedAt for control price updater
@@ -389,7 +393,7 @@ catalogsActions.push(async (ctx, next) => {
             userId: ctx.from.id,
             product: {
               [id]: {
-                price,
+                price: product.price,
                 qty,
                 updatedAt: Math.floor(Date.now() / 1000),
               },
@@ -414,7 +418,7 @@ catalogsActions.push(async (ctx, next) => {
             product: {
               [id]: {
                 name,
-                price,
+                price: product.price,
                 unit,
                 qty,
                 createdAt: Math.floor(Date.now() / 1000),
@@ -575,8 +579,8 @@ const showCart = async (ctx, next) => {
         // update price in cart only for users
         const productOld = (Math.floor(Date.now() / 1000) - cartProduct.updatedAt) > 3600;
         if (!ctx.state.isAdmin && productOld && product.price !== cartProduct.price) {
-          const price = roundNumber(product.price * object.currencies[product.currency]);
-          cartProduct.price = price;
+          // const price = roundNumber(product.price * object.currencies[product.currency]);
+          cartProduct.price = product.price;
           // products this is name field!!!
           // const products = {
           //   [product.id]: {
@@ -589,7 +593,7 @@ const showCart = async (ctx, next) => {
             userId: ctx.from.id,
             product: {
               [product.id]: {
-                price,
+                price: product.price,
               },
             },
           });
@@ -1177,7 +1181,7 @@ catalogsActions.push( async (ctx, next) => {
     let caption;
     if (todo === "prod") {
       ctx.state.sessionMsg.url.searchParams.set("upload-productId", paramId);
-      caption = `Добавьте фото <b>${paramId}</b>`;
+      caption = `Добавьте фото <b>${paramId}</b>${pathUrl}`;
     }
     if (todo === "cat") {
       ctx.state.sessionMsg.url.searchParams.set("upload-catalogId", pathUrl);
@@ -1213,7 +1217,7 @@ catalogsActions.push( async (ctx, next) => {
     const productName = encodeCyrillic(ctx.state.sessionMsg.url.searchParams.get("pName"), true);
     const price = ctx.state.sessionMsg.url.searchParams.get("ePrice");
     const purchasePrice = ctx.state.sessionMsg.url.searchParams.get("ePurchase");
-    const productCurrency = ctx.state.sessionMsg.url.searchParams.get("eCurrency");
+    // const productCurrency = ctx.state.sessionMsg.url.searchParams.get("eCurrency");
     ctx.state.sessionMsg.url.searchParams.set("scene", "changeProduct");
     const todo = ctx.state.params.get("todo");
     ctx.state.sessionMsg.url.searchParams.set("cTodo", todo);
@@ -1234,8 +1238,8 @@ catalogsActions.push( async (ctx, next) => {
     } else {
       await ctx.replyWithHTML(`${productName} (${productId})\nИзменить поле <b>${todo}</b>\n` +
       `<b>${objectId}</b>\n` +
-      `Закупочная цена (purchasePrice) <b>${purchasePrice.toLocaleString("ru-RU")} ${productCurrency}</b>\n` +
-      `Продажная цена (price) <b>${price.toLocaleString("ru-RU")} ${productCurrency}</b>\nДля удаления desc введите del\nДля удаления postId введите 0` + ctx.state.sessionMsg.linkHTML(), {
+      `Закупочная цена (purchasePrice) <b>${purchasePrice.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}</b>\n` +
+      `Продажная цена (price) <b>${price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}</b>\nДля удаления desc введите del\nДля удаления postId введите 0` + ctx.state.sessionMsg.linkHTML(), {
         reply_markup: {
           force_reply: true,
           input_field_placeholder: todo,

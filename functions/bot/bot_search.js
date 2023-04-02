@@ -22,7 +22,7 @@ const searchProductHandle = async (ctx) => {
   try {
     // get resalts from algolia
     const params = {
-      attributesToRetrieve: ["name", "productId", "brand", "seller", "sellerId"],
+      attributesToRetrieve: ["name", "price", "productId", "brand", "seller", "sellerId"],
       hitsPerPage: 10,
       page,
     };
@@ -37,7 +37,7 @@ const searchProductHandle = async (ctx) => {
     for (const product of resalt.hits) {
       const btnSearch = [];
       btnSearch.push({
-        text: `${product.brand ? product.brand + " " : ""}${product.name} (${product.productId}) - ${product.seller}`,
+        text: `${product.price}${process.env.BOT_CURRENCY} ${product.name} (${product.productId}) ${product.brand ? product.brand + " " : ""} - ${product.seller}`,
         callback_data: `p/${product.productId}?o=${product.sellerId}`,
       });
       // add cart btn

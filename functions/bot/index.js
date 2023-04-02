@@ -60,8 +60,8 @@ bot.use(async (ctx, next) => {
   ctx.state.sessionMsg = {
     url,
     linkHTML() {
-      return `<a href="${this.url.href}">\u200c</a>`;
-      // return `<a href="${this.url.href}">${this.url.href}</a>`;
+      // return `<a href="${this.url.href}">\u200c</a>`;
+      return `<a href="${this.url.href}">${this.url.href}</a>`;
     },
   };
   return next();

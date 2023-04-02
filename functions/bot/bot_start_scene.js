@@ -156,8 +156,7 @@ startActions.push(async (ctx, next) => {
             callback_data: `u/${object.id}?todo=obj`}]);
           inlineKeyboardArray.push([{text: "📥 Загрузить товары",
             callback_data: `upload/${object.id}?todo=uploadProducts`}]);
-          caption += `<b>Курсы валют: USD = ${object.currencies.USD}${process.env.BOT_CURRENCY}, ` +
-          `EUR = ${object.currencies.EUR}${process.env.BOT_CURRENCY}</b>\n`;
+          caption += `https://docs.google.com/spreadsheets/d/${object.sheetId}\n`;
         }
         if (ctx.state.sessionMsg.url.searchParams.get("editMode")) {
           inlineKeyboardArray.push([{text: "🔒 Отключить Режим редактирования",
@@ -304,12 +303,12 @@ startActions.push(async (ctx, next) => {
       const products = await cart.products(objectId, docId);
       data = {
         client: "bot",
-        filename: `Cart - ${docId}`,
+        filename: `Cart-${docId}`,
         type: "cart",
         products,
         object,
         i18n: {
-          cart: ctx.i18n.btn.cart(),
+          cart: ctx.i18n.txt.cart(),
           prodCode: ctx.i18n.product.code(),
           prodName: ctx.i18n.product.name(),
           prodPrice: ctx.i18n.product.price(),
@@ -333,7 +332,10 @@ startActions.push(async (ctx, next) => {
         products: store.sort(order.products),
         object,
         i18n: {
-          cart: ctx.i18n.btn.cart(),
+          order: ctx.i18n.txt.order(),
+          buyer: ctx.i18n.txt.buyer(),
+          delivery: ctx.i18n.txt.delivery(),
+          comment: ctx.i18n.txt.comment(),
           prodCode: ctx.i18n.product.code(),
           prodName: ctx.i18n.product.name(),
           prodPrice: ctx.i18n.product.price(),

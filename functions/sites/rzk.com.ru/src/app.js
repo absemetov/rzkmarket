@@ -52,7 +52,7 @@ window.addEventListener("popstate", function() {
 const productModalEl = document.getElementById("productModal");
 // const productModal = new Modal(productModalEl);
 const addButton = document.getElementById("addToCart");
-const currency = addButton.dataset.currency;
+// const currency = addButton.dataset.currency;
 // btn show product
 let buttonShowProduct;
 // show info after add prod in button
@@ -92,7 +92,7 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
     </div>
     <div class="card-footer">
       <h3>
-        <span class="placeholder">111</span> ${currency}
+        <span class="placeholder">111</span> ${i18n.currency}
       </h3>
       <div class="d-grid gap-2">
         <a href="#" tabindex="-1" class="btn btn-success disabled placeholder"></a>
@@ -112,7 +112,7 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
   const cardFooter = productModalEl.querySelector(".card-footer");
   cardFooter.innerHTML = `
     <h3>
-      ${product.price.toLocaleString("ru-Ru")} ${currency}
+      ${product.price.toLocaleString("ru-Ru")} ${i18n.currency}
     </h3>
     <div class="d-grid gap-2">
     <button type="button" class="btn ${product.qty ? "btn-primary" : "btn-success"}" data-bs-toggle="modal"
@@ -124,10 +124,10 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
       data-seller-id="${sellerId}"
       data-seller="${seller}"
       data-modal-close="true">
-      ${product.qty ? product.qty + " " + product.unit + " " + product.sum + " " + currency : i18n.btn_buy}
+      ${product.qty ? product.qty + " " + product.unit + " " + product.sum + " " + i18n.currency : i18n.btn_buy}
     </button>
     <a href="/o/${sellerId}/cart"  class="btn btn-success position-relative mt-2" role="button">
-      ${i18n.btn_cart} <strong id="totalSumNavAlg">${product.cartInfo.totalSum.toLocaleString("ru-Ru")} ${currency}</strong>
+      ${i18n.btn_cart} <strong id="totalSumNavAlg">${product.cartInfo.totalSum.toLocaleString("ru-Ru")} ${i18n.currency}</strong>
       <span id="cartCountNavAlg" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark">
         ${product.cartInfo.cartCount}
         <span class="visually-hidden">count goods</span>
@@ -247,13 +247,13 @@ addToCartform.addEventListener("submit", async (event) => {
   // set toast header
   toastSeller.innerText = buttonAddProduct.dataset.seller;
   if (qty) {
-    buttonAddProduct.innerHTML = `${qty} ${buttonAddProduct.dataset.productUnit} <span class="text-nowrap">${resJson.price ? roundNumber(qty * resJson.price).toLocaleString("ru-Ru") : "null"} ${currency}</span>`;
+    buttonAddProduct.innerHTML = `${qty} ${buttonAddProduct.dataset.productUnit} <span class="text-nowrap">${resJson.price ? roundNumber(qty * resJson.price).toLocaleString("ru-Ru") : "null"} ${i18n.currency}</span>`;
     buttonAddProduct.setAttribute("data-product-qty", qty);
     buttonAddProduct.classList.remove("btn-success");
     buttonAddProduct.classList.add("btn-primary");
     // btn show add cart info
     if (buttonShowProduct && !buttonShowProduct.dataset.autocomplete) {
-      buttonShowProduct.innerHTML = `${qty} ${buttonAddProduct.dataset.productUnit} <span class="text-nowrap">${resJson.price ? roundNumber(qty * resJson.price).toLocaleString("ru-Ru") : "null"} ${currency}</span>`;
+      buttonShowProduct.innerHTML = `${qty} ${buttonAddProduct.dataset.productUnit} <span class="text-nowrap">${resJson.price ? roundNumber(qty * resJson.price).toLocaleString("ru-Ru") : "null"} ${i18n.currency}</span>`;
       buttonShowProduct.classList.remove("btn-success");
       buttonShowProduct.classList.add("btn-primary");
     }
@@ -262,7 +262,7 @@ addToCartform.addEventListener("submit", async (event) => {
     <span class="text-nowrap fw-bold">${qty} ${buttonAddProduct.dataset.productUnit}</span> ${i18n.added_to_cart}
     <div class="mt-2 pt-2 border-top">
       <a href="/o/${sellerId}/cart" class="btn btn-success btn-sm" role="button">
-        <i class="bi bi-cart3"></i> ${resJson.cartInfo.totalSum.toLocaleString("ru-Ru")} ${currency} (${resJson.cartInfo.cartCount})
+        <i class="bi bi-cart3"></i> ${resJson.cartInfo.totalSum.toLocaleString("ru-Ru")} ${i18n.currency} (${resJson.cartInfo.cartCount})
       </a>
     </div>`;
     // show toast
@@ -283,7 +283,7 @@ addToCartform.addEventListener("submit", async (event) => {
       toastBody.innerHTML = `${buttonAddProduct.getAttribute("data-product-name")} (${buttonAddProduct.getAttribute("data-product-id")}) ${i18n.deleted_from_cart}
       <div class="mt-2 pt-2 border-top">
         <a href="/o/${sellerId}/cart" class="btn btn-success btn-sm" role="button">
-          <i class="bi bi-cart3"></i> ${resJson.cartInfo.totalSum.toLocaleString("ru-Ru")} ${currency} (${resJson.cartInfo.cartCount})
+          <i class="bi bi-cart3"></i> ${resJson.cartInfo.totalSum.toLocaleString("ru-Ru")} ${i18n.currency} (${resJson.cartInfo.cartCount})
         </a>
       </div>`;
       // show toast
@@ -297,18 +297,22 @@ addToCartform.addEventListener("submit", async (event) => {
   const totalSum = document.getElementById("totalSum");
   if (totalQty) {
     totalQty.innerText = resJson.cartInfo.totalQty;
-    totalSum.innerText = `${resJson.cartInfo.totalSum.toLocaleString("ru-Ru")} ${currency}`;
+    totalSum.innerText = `${resJson.cartInfo.totalSum.toLocaleString("ru-Ru")} ${i18n.currency}`;
   }
   // update algolia product
   const cartCountNavAlg = document.getElementById("cartCountNavAlg");
   const totalSumNavAlg = document.getElementById("totalSumNavAlg");
   if (cartCountNavAlg) {
+    const cartNavLink = document.getElementById("cartNavLink");
+    if (cartNavLink) {
+      cartNavLink.href = `/o/${sellerId}/cart`;
+    }
     cartCountNavAlg.innerText = resJson.cartInfo.cartCount;
-    totalSumNavAlg.innerText = `${resJson.cartInfo.totalSum.toLocaleString("ru-Ru")} ${currency}`;
+    totalSumNavAlg.innerText = `${resJson.cartInfo.totalSum.toLocaleString("ru-Ru")} ${i18n.currency}`;
   }
   if (cartCountNav) {
     cartCountNav.innerText = resJson.cartInfo.cartCount;
-    totalSumNav.innerText = `${resJson.cartInfo.totalSum.toLocaleString("ru-Ru")} ${currency}`;
+    totalSumNav.innerText = `${resJson.cartInfo.totalSum.toLocaleString("ru-Ru")} ${i18n.currency}`;
   }
   // hide modal
   cartAddModal.hide();

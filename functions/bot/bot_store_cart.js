@@ -353,12 +353,12 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
       let catalogUrl = `c/${product.catalogId.substring(product.catalogId.lastIndexOf("#") + 1)}`;
       const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathC");
       if (sessionPathCatalog) {
-        catalogUrl = sessionPathCatalog;
+        catalogUrl = sessionPathCatalog + "&b=1";
       }
       const media = await photoCheckUrl(`photos/o/${objectId}/p/${product.id}/${photoId}/2.jpg`);
       await ctx.replyWithPhoto(media,
           {
-            caption: `${product.name} (${product.id}) photo uploaded` + ctx.state.sessionMsg.linkHTML(),
+            caption: `${catalogUrl} ${product.name} (${product.id}) photo uploaded` + ctx.state.sessionMsg.linkHTML(),
             reply_markup: {
               inline_keyboard: [
                 [{text: "📸 Upload photo", callback_data: `u/${product.id}?todo=prod`}],

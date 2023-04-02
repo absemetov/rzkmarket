@@ -4,7 +4,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <link rel="stylesheet" href="/assets/index.6a22e6b9.css">
-      <script type="module" src="/assets/index.8e0f9f45.js"></script>
+      <script type="module" src="/assets/index.4be62b63.js"></script>
       <title>{{#if title}}{{title}} | {{envSite.siteName}}{{else}}{{envSite.i18n.siteTitle}}{{/if}}</title>
       <link rel="icon" href="/favicon-{{envSite.lang}}.ico">
       <link rel="icon" href="/logo/logo-{{envSite.lang}}.svg" type="image/svg+xml">
@@ -21,13 +21,6 @@
       {{#if (equals envSite.lang "ru")}}
       <!-- Yandex.Metrika counter --> <script type="text/javascript" > (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)}; m[i].l=1*new Date(); for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }} k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)}) (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym"); ym(50984510, "init", { clickmap:true, trackLinks:true, accurateTrackBounce:true, webvisor:true, trackHash:true }); </script> <noscript><div><img src="https://mc.yandex.ru/watch/50984510" style="position:absolute; left:-9999px;" alt="" /></div></noscript> <!-- /Yandex.Metrika counter -->
       {{/if}}
-      <script>
-        // set canonical url
-        const linkTag = document.createElement("link");
-        linkTag.setAttribute("rel", "canonical");
-        linkTag.href = location.href.split("?")[0];
-        document.head.appendChild(linkTag);
-      </script>
       {{#if currentCatalog}}
         <script type="application/ld+json">
           {
@@ -105,7 +98,7 @@
           {{#if object.id}}
             <ul class="navbar-nav me-2">
               <li class="nav-item"></li>
-                <a class="text-nowrap text-white nav-link{{#if cart}} active{{/if}} position-relative" href="/o/{{object.id}}/cart">
+                <a id="cartNavLink" class="text-nowrap text-white nav-link{{#if cart}} active{{/if}} position-relative" href="/o/{{object.id}}/cart">
                   <i class="bi bi-cart3"></i> <strong id="totalSumNav">{{formatNumber object.cartInfo.totalSum}} {{envSite.currency}}</strong>
                   <span id="cartCountNav" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success mt-1">
                     {{object.cartInfo.cartCount}}
@@ -271,7 +264,7 @@
               </div>
               <div class="modal-footer">
                 <button type="button" id="deleteFromCart" class="btn btn-danger">{{envSite.i18n.btnDel}}</button>
-                <button type="submit" id="addToCart" class="btn btn-success" data-currency="{{envSite.currency}}" data-lang="{{envSite.lang}}" data-dev-prefix="{{envSite.devPrefix}}">{{envSite.i18n.btnBuy}}</button>
+                <button type="submit" id="addToCart" class="btn btn-success" data-lang="{{envSite.lang}}" data-dev-prefix="{{envSite.devPrefix}}">{{envSite.i18n.btnBuy}}</button>
               </div>
             </form>
           </div>

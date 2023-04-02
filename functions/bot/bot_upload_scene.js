@@ -72,14 +72,15 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
       const NAME = sheet.getCell(j, 2);
       const PURCHASE_PRICE = sheet.getCell(j, 3);
       const PRICE = sheet.getCell(j, 4);
-      const CURRENCY = sheet.getCell(j, 5);
-      const UNIT = sheet.getCell(j, 6);
-      const GROUP = sheet.getCell(j, 7);
-      const TAGS = sheet.getCell(j, 8);
-      const BRAND = sheet.getCell(j, 9);
-      const TIMESTAMP = sheet.getCell(j, 10);
+      // const CURRENCY = sheet.getCell(j, 5);
+      const UNIT = sheet.getCell(j, 5);
+      const GROUP = sheet.getCell(j, 6);
+      const TAGS = sheet.getCell(j, 7);
+      const BRAND = sheet.getCell(j, 8);
+      const TIMESTAMP = sheet.getCell(j, 9);
       const rowUpdatedTime = TIMESTAMP.value || 1;
-      const prodMustDel = ID.value && NAME.value && ID.backgroundColor && Object.keys(ID.backgroundColor).length === 1 && ID.backgroundColor.red === 1 && rowUpdatedTime !== "deleted";
+      // const prodMustDel = ID.value && NAME.value && ID.backgroundColor && Object.keys(ID.backgroundColor).length === 1 && ID.backgroundColor.red === 1 && rowUpdatedTime !== "deleted";
+      const prodMustDel = ID.value && NAME.value && ORDER_BY.value === "delete" && rowUpdatedTime !== "deleted";
       const newDataDetected = !prodMustDel && rowUpdatedTime > lastUplodingTime;
       const row = {
         ORDER_BY: ORDER_BY.value,
@@ -87,7 +88,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
         NAME: NAME.value ? NAME.value.toString().trim() : NAME.value,
         PURCHASE_PRICE: PURCHASE_PRICE.value,
         PRICE: PRICE.value,
-        CURRENCY: CURRENCY.value,
+        // CURRENCY: CURRENCY.value,
         UNIT: UNIT.value,
         GROUP: GROUP.value && GROUP.value.split("#") || [],
         TAGS: TAGS.value && TAGS.value.split(",") || [],
@@ -160,13 +161,13 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
         const product = {
           id: row.ID,
           name: row.NAME,
-          purchasePrice: row.PURCHASE_PRICE ? roundNumber(row.PURCHASE_PRICE) : null,
+          purchasePrice: row.PURCHASE_PRICE ? row.PURCHASE_PRICE : null,
           price: row.PRICE ? roundNumber(row.PRICE) : null,
           group: groupArray.map((cat) => cat.id),
           groupOrder: groupArray.map((cat) => cat.orderNumber),
           groupLength: groupArray.length,
           tags,
-          currency: row.CURRENCY,
+          // currency: row.CURRENCY,
           unit: row.UNIT,
           brand: row.BRAND,
           orderNumber: row.ORDER_BY,
@@ -182,7 +183,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
           "groupOrder.*": "integer|min:1",
           "tags.*": "string|max:40",
           "brand": "string|max:40",
-          "currency": "required|in:USD,EUR,RUB,UAH",
+          // "currency": "required|in:USD,EUR,RUB,UAH",
           "unit": "required|in:м,шт,кг",
           "orderNumber": "required|integer|min:1",
         };
@@ -212,7 +213,8 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
             "name": product.name,
             "purchasePrice": product.purchasePrice,
             "price": product.price,
-            "currency": product.currency,
+            // "currency": product.currency,
+            "currency": firestore.FieldValue.delete(),
             "unit": product.unit,
             "orderNumber": product.orderNumber,
             "catalogId": groupArray[groupArray.length - 1].url.replace(/\//g, "#"),
@@ -337,10 +339,10 @@ const createObject = async (ctx, next) => {
           return `${process.env.BOT_PHONECODE}${phone.trim()}`;
         });
         const address = sheet.getCellByA1("B5").value;
-        const USD = roundNumber(sheet.getCellByA1("B6").value);
-        const EUR = roundNumber(sheet.getCellByA1("B7").value);
-        const UAH = roundNumber(sheet.getCellByA1("B8").value);
-        const RUB = roundNumber(sheet.getCellByA1("B9").value);
+        // const USD = roundNumber(sheet.getCellByA1("B6").value);
+        // const EUR = roundNumber(sheet.getCellByA1("B7").value);
+        // const UAH = roundNumber(sheet.getCellByA1("B8").value);
+        // const RUB = roundNumber(sheet.getCellByA1("B9").value);
         const postId = sheet.getCellByA1("B10").value;
         const objectCheck = {
           id,
@@ -348,10 +350,10 @@ const createObject = async (ctx, next) => {
           description,
           phoneArray,
           address,
-          USD,
-          EUR,
-          UAH,
-          RUB,
+          // USD,
+          // EUR,
+          // UAH,
+          // RUB,
           postId,
         };
         const rulesObject = {
@@ -361,10 +363,10 @@ const createObject = async (ctx, next) => {
           "phoneArray": "required",
           "phoneArray.*": ["required", `regex:/${process.env.BOT_PHONEREGEXP}`],
           "address": "required|string",
-          "USD": "required|numeric",
-          "EUR": "required|numeric",
-          "UAH": "required|numeric",
-          "RUB": "required|numeric",
+          // "USD": "required|numeric",
+          // "EUR": "required|numeric",
+          // "UAH": "required|numeric",
+          // "RUB": "required|numeric",
           "postId": "integer|min:1",
         };
         const validateObject = new Validator(objectCheck, rulesObject, {
@@ -383,12 +385,12 @@ const createObject = async (ctx, next) => {
           description,
           phoneArray,
           address,
-          currencies: {
-            USD,
-            EUR,
-            UAH,
-            RUB,
-          },
+          // currencies: {
+          //   USD,
+          //   EUR,
+          //   UAH,
+          //   RUB,
+          // },
           postId: postId ? postId : firestore.FieldValue.delete(),
         });
         await ctx.replyWithHTML(`Данные обновлены ${objectCheck.name} /objects`);
@@ -488,8 +490,9 @@ const changeProduct = async (ctx, newValue) => {
     await doc.loadInfo(); // loads document properties and worksheets
     const sheet = doc.sheetsByTitle["products"]; // doc.sheetsById[listId];
     await sheet.loadCells(`A${productRowNumber}:K${productRowNumber}`); // loads a range of cells
+    const ORDER_BY = sheet.getCellByA1(`A${productRowNumber}`);
     const ID = sheet.getCellByA1(`B${productRowNumber}`);
-    const TIMESTAMP = sheet.getCellByA1(`K${productRowNumber}`);
+    const TIMESTAMP = sheet.getCellByA1(`J${productRowNumber}`);
     // check current value
     // dont use strict equality diff types
     if (ID.value != productId) {
@@ -502,7 +505,8 @@ const changeProduct = async (ctx, newValue) => {
         // delete from firestore
         await store.getQuery(`objects/${objectId}/products/${productId}`).delete();
         // add color style and note
-        ID.backgroundColor = {red: 1};
+        // ID.backgroundColor = {red: 1};
+        ORDER_BY.value = "delete";
         // ID.note = "deleted";
         TIMESTAMP.value = "deleted";
         await ID.save();
@@ -609,7 +613,7 @@ const uploadMerch = async (ctx, next) => {
   if (ctx.state.routeName === "uploadMerch") {
     const productId = ctx.state.param;
     const objectId = ctx.state.sessionMsg.url.searchParams.get("oId");
-    const object = await store.findRecord(`objects/${objectId}`);
+    // const object = await store.findRecord(`objects/${objectId}`);
     const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
     let publicImgUrl = null;
     if (product.mainPhoto) {
@@ -641,7 +645,8 @@ const uploadMerch = async (ctx, next) => {
         "availability": "in stock",
         "condition": "new",
         "price": {
-          "value": roundNumber(product.price * object.currencies[product.currency]),
+          // "value": roundNumber(product.price * object.currencies[product.currency]),
+          "value": product.price,
           "currency": "UAH",
         },
       },
