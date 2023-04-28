@@ -21,8 +21,36 @@ function checkNestedCat(indexId, delCatalogs) {
   }
   return true;
 }
+// set triger for start uploading
+const uploadProductsTrigger = async (ctx, pageName, objectId) => {
+  const object = await store.findRecord(`objects/${objectId}`);
+  const uploads = await store.findRecord(`objects/${objectId}/uploads/start`);
+  const uploading = uploads && uploads.uploadProductsStart && (Math.floor(new Date() / 1000) - uploads.uploadProductsStart) < 540;
+  if (!uploading) {
+    if (!/^products/.test(pageName)) {
+      await ctx.replyWithHTML(`Use products* name page, ${pageName}`);
+      return;
+    }
+    await ctx.replyWithHTML(`Начинаем загрузку товаров ${object.name}, ${pageName}`);
+    // run trigger event, delete doc if it exist
+    if (uploads) {
+      await store.getQuery(`objects/${objectId}/uploads/start`).delete();
+    }
+    // trigger event
+    const uploadProductsStart = Math.floor(Date.now() / 1000);
+    await store.createRecord(`objects/${objectId}/uploads/start`, {
+      pageName,
+      uploadProductsStart,
+      sheetId: object.sheetId,
+    });
+    // local dev
+    // await uploadProducts(bot.telegram, objectId, object.sheetId, pageName);
+  } else {
+    await ctx.replyWithHTML(`<b>Products loading...please wait ${540 - (Math.floor(new Date() / 1000) - uploads.uploadProductsStart)}s</b>`);
+  }
+};
 // upload from googleSheet
-const uploadProducts = async (telegram, objectId, sheetId) => {
+const uploadProducts = async (telegram, objectId, sheetId, pageName) => {
   const object = await store.findRecord(`objects/${objectId}`);
   const lastUplodingTime = object.lastUplodingTime || 0;
   const startTime = new Date();
@@ -49,10 +77,14 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
   await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
   // loads document properties and worksheets
   await doc.loadInfo();
-  const sheet = doc.sheetsByTitle["products"];
-  await telegram.sendMessage(94899148, `<b>Loading goods from ${doc.title}\n`+
-  `Count rows: ${sheet.rowCount}</b>`,
-  {parse_mode: "html"});
+  const sheet = doc.sheetsByTitle[pageName];
+  if (sheet) {
+    await telegram.sendMessage(94899148, `<b>Loading goods from ${doc.title}\n`+
+    `Count rows: ${sheet.rowCount}</b>`,
+    {parse_mode: "html"});
+  } else {
+    throw new Error(`<b>Sheet title ${pageName} not found!</b>`);
+  }
   const rowCount = sheet.rowCount;
   // read rows
   for (let i = 1; i < rowCount; i += perPage) {
@@ -83,9 +115,9 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
       const prodMustDel = ID.value && NAME.value && ORDER_BY.value === "delete" && rowUpdatedTime !== "deleted";
       const newDataDetected = !prodMustDel && rowUpdatedTime > lastUplodingTime;
       const row = {
-        ORDER_BY: ORDER_BY.value,
-        ID: ID.value ? ID.value.toString() : ID.value,
-        NAME: NAME.value ? NAME.value.toString().trim() : NAME.value,
+        ORDER_BY: ORDER_BY.value && ORDER_BY.value.toString().trim().replace(/^!\s*/, ""),
+        ID: ID.value && ID.value.toString().trim(),
+        NAME: NAME.value && NAME.value.toString().trim(),
         PURCHASE_PRICE: PURCHASE_PRICE.value,
         PRICE: PRICE.value,
         // CURRENCY: CURRENCY.value,
@@ -93,6 +125,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
         GROUP: GROUP.value && GROUP.value.split("#") || [],
         TAGS: TAGS.value && TAGS.value.split(",") || [],
         BRAND: BRAND.value,
+        AVAILABILITY: ORDER_BY.value && ORDER_BY.value.toString().trim().charAt(0) !== "!",
       };
       // generate catalogs array
       const pathArrayHelper = [];
@@ -171,6 +204,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
           unit: row.UNIT,
           brand: row.BRAND,
           orderNumber: row.ORDER_BY,
+          availability: row.AVAILABILITY,
         };
         // validate product
         const rulesProductRow = {
@@ -178,7 +212,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
           "name": "required|string|max:90",
           "purchasePrice": "numeric",
           "price": "required|numeric",
-          "groupLength": "required|min:1|max:5",
+          "groupLength": "required|min:1|max:7",
           "group.*": "alpha_dash|max:40",
           "groupOrder.*": "integer|min:1",
           "tags.*": "string|max:40",
@@ -186,6 +220,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
           // "currency": "required|in:USD,EUR,RUB,UAH",
           "unit": "required|in:м,шт,кг",
           "orderNumber": "required|integer|min:1",
+          "availability": "boolean",
         };
         const validateProductRow = new Validator(product, rulesProductRow);
         // check fails
@@ -227,6 +262,7 @@ const uploadProducts = async (telegram, objectId, sheetId) => {
             "updatedAt": updatedAtTimestamp,
             "objectName": object.name,
             "rowNumber": j + 1,
+            "availability": product.availability,
           }, {merge: true});
           // save catalogs to batch
           const pathArray = [];
@@ -300,27 +336,18 @@ const createObject = async (ctx, next) => {
     const objectId = ctx.state.param;
     const todo = ctx.state.params.get("todo");
     const object = await store.findRecord(`objects/${objectId}`);
-    const uploads = await store.findRecord(`objects/${objectId}/uploads/start`);
+    // const uploads = await store.findRecord(`objects/${objectId}/uploads/start`);
     // test upload local obj Saky
     // await uploadProducts(ctx.telegram, objectId, object.sheetId);
     try {
       // upload goods
       if (todo === "uploadProducts") {
-        const uploading = uploads && uploads.uploadProductsStart && (Math.floor(new Date() / 1000) - uploads.uploadProductsStart) < 540;
-        if (!uploading) {
-          await ctx.replyWithHTML(`Начинаем загрузку товаров ${object.name}\n`);
-          const uploadProductsStart = Math.floor(Date.now() / 1000);
-          // run trigger event, delete doc if it exist
-          if (uploads) {
-            await store.getQuery(`objects/${objectId}/uploads/start`).delete();
-          }
-          await store.createRecord(`objects/${objectId}/uploads/start`, {
-            uploadProductsStart,
-            sheetId: object.sheetId,
-          });
-        } else {
-          await ctx.replyWithHTML(`<b>Products loading...please wait ${540 - (Math.floor(new Date() / 1000) - uploads.uploadProductsStart)}s</b>`);
-        }
+        // new idea set table page name
+        ctx.state.sessionMsg.url.searchParams.set("scene", "uploadProducts");
+        await ctx.replyWithHTML("Введіть ім'я сторінки для завантаження товарів, наприклад <code>products</code>, <code>products-market</code>" + ctx.state.sessionMsg.linkHTML(), {
+          reply_markup: {
+            force_reply: true,
+          }});
         await ctx.answerCbQuery();
         return;
       }
@@ -499,6 +526,20 @@ const changeProduct = async (ctx, newValue) => {
       await ctx.replyWithHTML(`${productName} (${productId}) not found in sheet row ${productRowNumber}`);
       return;
     }
+    // change availability
+    if (todo === "availability") {
+      if (newValue === "true" || newValue === "false") {
+        await store.updateRecord(`objects/${objectId}/products/${productId}`, {
+          [todo]: newValue === "true",
+        });
+        ORDER_BY.value = newValue === "false" ? `!${ORDER_BY.value.toString().trim().replace(/^!\s*/, "")}` : ORDER_BY.value.toString().trim().replace(/^!\s*/, "");
+        await ORDER_BY.save();
+        await ctx.replyWithHTML(`${productName} (${productId}) new value availability: ${newValue}`);
+      } else {
+        await ctx.replyWithHTML(`${productName} (${productId}) to change availability use <code>true</code> or <code>false</code> value!`);
+      }
+      return;
+    }
     // delete product
     if (todo === "del") {
       if (newValue === "del") {
@@ -509,7 +550,7 @@ const changeProduct = async (ctx, newValue) => {
         ORDER_BY.value = "delete";
         // ID.note = "deleted";
         TIMESTAMP.value = "deleted";
-        await ID.save();
+        await ORDER_BY.save();
         await TIMESTAMP.save();
         await ctx.replyWithHTML(`<b>${productName} (${productId}) deleted</b>`);
       } else {
@@ -665,6 +706,7 @@ const runtimeOpts = {
   memory: "1GB",
 };
 
+// add new page param!
 const productsUploadFunction = functions.region("europe-central2")
     .runWith(runtimeOpts).firestore
     .document("objects/{objectId}/uploads/start")
@@ -672,7 +714,7 @@ const productsUploadFunction = functions.region("europe-central2")
       const objectId = context.params.objectId;
       const uploads = snap.data();
       try {
-        await uploadProducts(bot.telegram, objectId, uploads.sheetId);
+        await uploadProducts(bot.telegram, objectId, uploads.sheetId, uploads.pageName);
       } catch (error) {
         await snap.ref.delete();
         await bot.telegram.sendMessage(94899148, `Sheet ${error}`,
@@ -693,4 +735,5 @@ module.exports = {
   changeCatalog,
   uploadActions,
   changeCartProductPrice,
+  uploadProductsTrigger,
 };

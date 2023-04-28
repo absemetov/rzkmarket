@@ -35,6 +35,7 @@ product:
   del: удален
   upd: обновлен
 txt:
+  notAvailable: Нет в наличии
   cart: Корзина
   cartEmpty: Корзина пуста
   orderFuel: ⬇️Для просмотра нажмите на ссылку заказа

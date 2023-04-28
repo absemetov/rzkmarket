@@ -115,7 +115,8 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
       ${product.price.toLocaleString("ru-Ru")} ${i18n.currency}
     </h3>
     <div class="d-grid gap-2">
-    <button type="button" class="btn ${product.qty ? "btn-primary" : "btn-success"}" data-bs-toggle="modal"
+    ${product.availability ?
+    `<button type="button" class="btn ${product.qty ? "btn-primary" : "btn-success"}" data-bs-toggle="modal"
       data-bs-target="#cartAddModal"
       data-product-id="${product.id}"
       data-product-name="${product.name}"
@@ -125,7 +126,7 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
       data-seller="${seller}"
       data-modal-close="true">
       ${product.qty ? product.qty + " " + product.unit + " " + product.sum + " " + i18n.currency : i18n.btn_buy}
-    </button>
+    </button>` : `<button type="button" class="btn btn-success" disabled>${i18n.btnNotAvailable}</button>`}
     <a href="/o/${sellerId}/cart"  class="btn btn-success position-relative mt-2" role="button">
       ${i18n.btn_cart} <strong id="totalSumNavAlg">${product.cartInfo.totalSum.toLocaleString("ru-Ru")} ${i18n.currency}</strong>
       <span id="cartCountNavAlg" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark">

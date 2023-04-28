@@ -30,6 +30,7 @@ siteSeoQuestion:
 placeholderQty: Введите количество товара
 btnFilter: Фильтр
 btnBuy: Купить
+btnNotAvailable: Нет в наличии
 btnDel: Удалить
 btnPurchase: Оформить заказ
 btnСlearCart: 🗑 Очистить корзину

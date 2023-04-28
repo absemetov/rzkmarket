@@ -293,6 +293,7 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
         img1: "/icons/flower3.svg",
         img2: "/icons/flower3.svg",
         sellerId: objectId,
+        availability: product.data().availability,
       };
       if (req.user.uid) {
         const cartProduct = await store.findRecord(`objects/${objectId}/carts/${req.user.uid}`,
@@ -383,6 +384,7 @@ app.post("/o/:objectId/p/:productId", auth, async (req, res) => {
   productAlgolia.id = productId;
   productAlgolia.name = product.name;
   productAlgolia.unit = product.unit;
+  productAlgolia.availability = product.availability;
   // productAlgolia.price = roundNumber(product.price * object.currencies[product.currency]);
   productAlgolia.price = product.price;
   // get cart qty
@@ -763,7 +765,7 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
     for (const cartProduct of cartProducts) {
       // check cart products price exist...
       const product = await store.findRecord(`objects/${objectId}/products/${cartProduct.id}`);
-      if (product) {
+      if (product && product.availability) {
         // update price in cart
         const productOld = (Math.floor(Date.now() / 1000) - cartProduct.updatedAt) > 3600;
         if (productOld && product.price !== cartProduct.price && !admin) {
@@ -810,6 +812,7 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
             img1: product.img1,
             img2: product.img2,
             sellerId: objectId,
+            availability: true,
           });
         }
       } else {

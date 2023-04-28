@@ -261,6 +261,10 @@ const showProduct = async (ctx, next) => {
       prodBtns.push(addButton);
       prodBtns.push({text: ctx.i18n.btn.del(), callback_data: `a/${productId}`});
     } else {
+      if (!product.availability) {
+        addButton.text = ctx.i18n.txt.notAvailable();
+        addButton.callback_data = `p/${product.id}`;
+      }
       prodBtns.push(addButton);
     }
     inlineKeyboardArray.push(prodBtns);
@@ -324,6 +328,8 @@ const showProduct = async (ctx, next) => {
     }
     // set url session
     if (ctx.state.isAdmin && ctx.state.sessionMsg.url.searchParams.get("editMode")) {
+      inlineKeyboardArray.push([{text: `Доступность: ${product.availability ? "В наличии" : "Нет в наличии"}`,
+        callback_data: `b/${product.id}?todo=availability&c=A`}]);
       inlineKeyboardArray.push([{text: "Изменить наименовение товара",
         callback_data: `b/${product.id}?todo=name&c=C`}]);
       inlineKeyboardArray.push([{text: `Изменить закуп цену ${product.purchasePrice.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}`,
@@ -345,7 +351,8 @@ const showProduct = async (ctx, next) => {
       type: "photo",
       media,
       caption: `<b>${object.name}\n${product.brand ? product.brand + "\n" : ""}${product.name} (${product.id})\n</b>` +
-      `${ctx.i18n.product.price()}: ${product.price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY} ${ctx.state.isAdmin && cartProduct ? `в корзине ${cartProduct.price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}` : ""}\n` +
+      `${ctx.i18n.product.price()}: ${product.price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}` +
+      ` ${ctx.state.isAdmin && cartProduct ? `в корзине ${cartProduct.price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}` : ""}\n` +
       `${product.postId ? `RZK Market Channel <a href="t.me/${process.env.BOT_CHANNEL}/${product.postId}">t.me/${process.env.BOT_CHANNEL}/${product.postId}</a>` : ""}` + ctx.state.sessionMsg.linkHTML(),
       parse_mode: "html",
     }, {reply_markup: {
@@ -575,7 +582,7 @@ const showCart = async (ctx, next) => {
     for (const [index, cartProduct] of products.entries()) {
       // check cart products price exist...
       const product = await store.findRecord(`objects/${objectId}/products/${cartProduct.id}`);
-      if (product) {
+      if (product && product.availability) {
         // update price in cart only for users
         const productOld = (Math.floor(Date.now() / 1000) - cartProduct.updatedAt) > 3600;
         if (!ctx.state.isAdmin && productOld && product.price !== cartProduct.price) {
@@ -1194,11 +1201,11 @@ catalogsActions.push( async (ctx, next) => {
     }
     if (todo === "desc") {
       ctx.state.sessionMsg.url.searchParams.set("upload-catalogId", pathUrl);
-      caption = `Добавьте описание, del удалить<b>${pathUrl}</b>`;
+      caption = `Добавьте описание, del удалить <b>${pathUrl}</b>`;
     }
     if (todo === "postId") {
       ctx.state.sessionMsg.url.searchParams.set("upload-catalogId", pathUrl);
-      caption = `Добавьте postId, del удалить<b>${pathUrl}</b>`;
+      caption = `Добавьте postId, del удалить <b>${pathUrl}</b>`;
     }
     await ctx.replyWithHTML(caption + ctx.state.sessionMsg.linkHTML(), {
       reply_markup: {
@@ -1239,7 +1246,10 @@ catalogsActions.push( async (ctx, next) => {
       await ctx.replyWithHTML(`${productName} (${productId})\nИзменить поле <b>${todo}</b>\n` +
       `<b>${objectId}</b>\n` +
       `Закупочная цена (purchasePrice) <b>${purchasePrice.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}</b>\n` +
-      `Продажная цена (price) <b>${price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}</b>\nДля удаления desc введите del\nДля удаления postId введите 0` + ctx.state.sessionMsg.linkHTML(), {
+      `Продажная цена (price) <b>${price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}</b>\n`+
+      "Для удаления desc введите del\n" +
+      "Для удаления postId введите 0\n" +
+      "Наличие товара: <code>true</code> or <code>false</code>" + ctx.state.sessionMsg.linkHTML(), {
         reply_markup: {
           force_reply: true,
           input_field_placeholder: todo,

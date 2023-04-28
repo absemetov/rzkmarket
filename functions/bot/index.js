@@ -3,7 +3,7 @@ const {Telegraf} = require("telegraf");
 const {startActions, startHandler, parseUrl, isAdmin} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
 const {esp32Handler, esp32Actions} = require("./bot_esp32_scene");
-const {uploadActions, uploadForm, changeProduct, changeCatalog, changeCartProductPrice} = require("./bot_upload_scene");
+const {uploadActions, uploadForm, changeProduct, changeCatalog, changeCartProductPrice, uploadProductsTrigger} = require("./bot_upload_scene");
 const {ordersActions, orderWizard} = require("./bot_orders_scene");
 const {catalogsActions, cartWizard} = require("./bot_catalog_scene");
 const {store, uploadPhotoObj, uploadPhotoProduct, uploadPhotoCat, uploadBanner, changeBanner} = require("./bot_store_cart");
@@ -60,8 +60,8 @@ bot.use(async (ctx, next) => {
   ctx.state.sessionMsg = {
     url,
     linkHTML() {
-      // return `<a href="${this.url.href}">\u200c</a>`;
-      return `<a href="${this.url.href}">${this.url.href}</a>`;
+      return `<a href="${this.url.href}">\u200c</a>`;
+      // return `<a href="${this.url.href}">${this.url.href}</a>`;
     },
   };
   return next();
@@ -111,6 +111,12 @@ bot.on(["text", "edited_message"], async (ctx) => {
   const sheetUrl = ctx.state.isAdmin && message.text && message.text.match(/d\/(.*)\//);
   if (sheetUrl) {
     await uploadForm(ctx, sheetUrl[1]);
+    return;
+  }
+  // upload products from page name
+  if (scene === "uploadProducts") {
+    const objectId = ctx.state.sessionMsg.url.searchParams.get("oId");
+    await uploadProductsTrigger(ctx, message.text, objectId);
     return;
   }
   // delete banner
@@ -226,7 +232,7 @@ exports.botFunction = functions.region("europe-central2").
       try {
         // launch local env
         if (process.env.FUNCTIONS_EMULATOR) {
-          await bot.launch();
+          bot.launch();
         } else {
           await bot.handleUpdate(req.body);
         }

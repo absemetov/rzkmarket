@@ -10,7 +10,7 @@ function onEdit(e){
       const cell = range.getCell(i, j);
       const column = cell.getColumn();
       const row = cell.getRow();
-      const validRange = sheet.getName() === "products" && column < 10 && row > 1;
+      const validRange = /^products/.test(sheet.getName()) && column < 10 && row > 1;
       const validCell = validRange && cell.getValue();
       // validate ID
       if (column === 2 && validCell) {
@@ -23,7 +23,7 @@ function onEdit(e){
       // validate NAME
       if (column === 3 && validCell) {
         if (cell.getValue().length > 90) {
-          SpreadsheetApp.getUi().alert(`Error in row ${row}, column ${column}: Value >>${cell.getValue()}<< field not be greater than 90 ${cell.getValue().length} > 90`);
+          SpreadsheetApp.getUi().alert(`Error in row ${row}, column ${column}: Value >>${cell.getValue()}<< field not be greater than  90 ${cell.getValue().length} > 90`);
           sheet.setActiveSelection(`A${row}:J${row}`);
         }
       }

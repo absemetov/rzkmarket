@@ -26,11 +26,17 @@
         {{formatNumber product.price}} {{envSite.currency}}
       </h3>
       <div class="d-grid gap-2">
+        {{#if product.availability}}
         <button type="button" class="btn {{#if product.qty}}btn-primary{{else}}btn-success{{/if}}" data-bs-toggle="modal" data-bs-target="#cartAddModal"
           data-product-id="{{product.id}}" data-product-name="{{product.name}}" data-product-unit="{{product.unit}}" data-product-qty="{{product.qty}}"
           data-seller-id="{{product.sellerId}}" data-seller="{{object.name}}">
           {{#if product.qty}}{{product.qty}} {{product.unit}} <span class="text-nowrap">{{formatNumber product.sum}} {{envSite.currency}}</span>{{else}}{{envSite.i18n.btnBuy}}{{/if}}
         </button>
+        {{else}}
+        <button type="button" class="btn btn-success" disabled>
+          {{envSite.i18n.btnNotAvailable}}
+        </button>
+        {{/if}}
       </div>
     </div>
   </div>
