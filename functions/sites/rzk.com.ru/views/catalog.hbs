@@ -1,30 +1,35 @@
-<nav aria-label="breadcrumb">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="/">{{envSite.i18n.aObjects}}</a></li>
-    <li class="breadcrumb-item"><a href="/o/{{object.id}}">{{object.name}}</a></li>
-    {{#if currentCatalog}}
-      <li class="breadcrumb-item"><a href="/o/{{object.id}}/c">{{envSite.i18n.aCatGoods}}</a></li>
-      {{#each currentCatalog.pathArray as |item|}}
-        {{#if (last @index ../currentCatalog.pathArray.length)}}
-          <li class="breadcrumb-item">
-            <a href="/o/{{../object.id}}/c/{{item.url}}">{{item.name}}</a>
-          </li>
-        {{else}}
-          <li class="breadcrumb-item active">{{../currentCatalog.name}}</li>
-        {{/if}}
-      {{/each}}
-    {{else}}
-      <li class="breadcrumb-item active">{{envSite.i18n.aCatGoods}}</li>  
-    {{/if}}
-  </ol>
-</nav>
+
+<ol class="breadcrumb text-nowrap">
+  <li class="breadcrumb-item">
+    <a href="/">{{envSite.i18n.aObjects}}</a>
+  </li>
+  <li class="breadcrumb-item">
+    <a href="/o/{{object.id}}">{{object.name}}</a>
+  </li>
+  {{#if currentCatalog}}
+    <li class="breadcrumb-item">
+      <a href="/o/{{object.id}}/c">{{envSite.i18n.aCatGoods}}</a>
+    </li>
+    {{#each currentCatalog.pathArray as |item|}}
+      {{#if (last @index ../currentCatalog.pathArray.length)}}
+        <li class="breadcrumb-item">
+          <a href="/o/{{../object.id}}/c/{{item.url}}">{{item.name}}</a>
+        </li>
+      {{else}}
+        <li class="breadcrumb-item active">{{../currentCatalog.name}}</li>
+      {{/if}}
+    {{/each}}
+  {{else}}
+    <li class="breadcrumb-item active">{{envSite.i18n.aCatGoods}}</li>  
+  {{/if}}
+</ol>
 {{#if currentCatalog}}
   <h1>{{object.name}} / {{currentCatalog.name}}{{#if tagActive.name}} / {{tagActive.name}}{{/if}}</h1>
 {{else}}
   <h1>{{object.name}} / {{envSite.i18n.aCatGoods}}</h1>
 {{/if}}
 {{#if tags}}
-  <div class="dropdown mb-3">
+  <div class="dropdown d-block d-md-none mb-3">
     <button class="btn btn-success dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
       {{envSite.i18n.btnFilter}}
       {{#if tagActive.name}}
@@ -41,6 +46,18 @@
       {{/if}}
     </ul>
   </div>
+  <div class="row d-none d-md-block mb-3">
+    <ul class="nav nav-pills">
+      {{#if tagActive.name}}
+        <a class="nav-link" href="{{tagActive.path}}">{{envSite.i18n.aAllGoods}}</a>
+      {{/if}}
+      {{#each tags as |tag|}}
+        <li class="nav-item">
+          <a class="nav-link{{#if tag.active}} active{{/if}}" href="{{tag.url}}">{{catalog.name}} {{tag.text}}</a>
+        </li>
+      {{/each}}
+    </ul>
+  </div>
 {{/if}}
 <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2">
   {{#if catalogs}}
@@ -48,13 +65,13 @@
       <div class="col">
         <div class="card text-center h-100">
           <a href="{{catalog.url}}">
-            <img src="{{photoError catalog.img1 ../envSite.lang}}" class="card-img-top" onerror="this.src = '/icons/photo_error_{{../envSite.lang}}.svg';" alt="{{catalog.name}}">
+            <img src="{{photoProxy catalog.img1 ../envSite.lang}}" class="card-img-top" onerror="this.src = '/icons/photo_error_{{../envSite.lang}}.svg';" alt="{{catalog.name}}">
           </a>
           <div class="card-body">
             <h6>
               <a href="{{catalog.url}}">{{catalog.name}}</a>
               <div class="mt-2">
-                <a href="{{photoError catalog.img2 ../envSite.lang}}" class="js-smartphoto-single text-decoration-none" data-caption="{{catalog.name}}">
+                <a href="{{photoProxy catalog.img2 ../envSite.lang}}" class="js-smartphoto-single text-decoration-none" data-caption="{{catalog.name}}">
                   <img src="/icons/zoom-in.svg" width="28" height="28" class="me-2" alt="zoom img">
                 </a>
                 <a href="https://t.me/share/url?url={{encodeUrl ../envSite.botName ../object.id "c" catalog.id ../envSite.domain}}&text={{encode ../object.name catalog.name}}" target="_blank">

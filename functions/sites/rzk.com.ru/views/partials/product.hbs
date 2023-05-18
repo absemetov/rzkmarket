@@ -1,7 +1,7 @@
 <div class="col">
   <div class="card text-center h-100">
-    <a {{#if smartPhoto}}href="{{photoError product.img2 envSite.lang}}" class="js-smartphoto" data-caption="{{product.name}}"{{else}}href="{{product.url}}"{{/if}}>
-      <img src="{{photoError product.img1 envSite.lang}}" onerror="this.src = '/icons/photo_error_{{envSite.lang}}.svg';" class="card-img-top" alt="{{product.name}}">
+    <a {{#if smartPhoto}}href="{{photoProxy product.img2 envSite.lang}}" class="js-smartphoto" data-caption="{{product.name}}"{{else}}href="{{product.url}}"{{/if}}>
+      <img src="{{photoProxy product.img1 envSite.lang}}" onerror="this.src = '/icons/photo_error_{{envSite.lang}}.svg';" class="card-img-top" alt="{{product.name}}">
     </a>
     <div class="card-body">
       {{#if product.brand}}<h6>{{product.brand}}</h6>{{/if}}
@@ -12,7 +12,7 @@
           <a href="{{product.url}}">{{product.name}}</a> <small class="text-muted">({{product.id}})</small>
         {{/if}}
         <div class="mt-2">
-          <a href="{{photoError product.img2 envSite.lang}}" class="js-smartphoto-single text-decoration-none" data-caption="{{product.name}}">
+          <a href="{{photoProxy product.img2 envSite.lang}}" class="js-smartphoto-single text-decoration-none" data-caption="{{product.name}}">
             <img src="/icons/zoom-in.svg" width="28" height="28" class="me-2" alt="zoom img">
           </a>
           <a href="https://t.me/share/url?url={{encodeUrl envSite.botName object.id "p" product.id envSite.domain}}&text={{encode object.name product.brand product.name}}" target="_blank">

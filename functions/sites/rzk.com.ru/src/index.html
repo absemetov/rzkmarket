@@ -19,7 +19,7 @@
         <a class="d-inline d-md-none px-2" href="/">
           <img src="//rzk.com.ru/logo/logo-ru.svg" alt="" width="" height="40">
         </a>
-        <div id="autocomplete" class="w-100"></div>
+        <div id="autocomplete" class="w-100 overflow-hidden"></div>
         <ul class="navbar-nav me-2">
           <li class="nav-item"></li>
             <a class="text-nowrap nav-link position-relative" id="cartNavLink" href="//rzk.com.ru/o/absemetov/cart">
@@ -206,6 +206,9 @@
         </div>
         </div>
         </div>
+        <button type="button" class="btn btn-success mt-2" data-bs-toggle="modal" data-bs-target="#purchaseModal">
+          Оформить
+        </button>
     </div>
     <!-- Modal show product -->
     <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
@@ -241,6 +244,63 @@
               <button type="submit" id="addToCart" class="btn btn-primary" data-lang="ru" data-dev-prefix="">Купить</button>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
+    <!-- Modal purchase -->
+    <div class="modal fade" id="purchaseModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">{{envSite.i18n.modalPurchase.title}}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="purchase" action="/o/{{object.id}}/cart/purchase">
+              <div class="mb-3">
+                <label for="lastName" class="form-label">{{envSite.i18n.modalPurchase.lastName}}</label>
+                <input type="text" class="form-control" name="lastName" id="lastName" aria-describedby="lastName" required autofocus>
+              </div>
+              <div class="mb-3">
+                <label for="firstName" class="form-label">{{envSite.i18n.modalPurchase.firstName}}</label>
+                <input type="text" class="form-control" name="firstName" id="firstName" aria-describedby="firstName" required>
+              </div>
+              <div class="mb-3">
+                <label for="phoneNumber" class="form-label">{{envSite.i18n.modalPurchase.phoneNumber}}</label>
+                <input type="tel" pattern="{{envSite.phoneregexp}}" placeholder="{{envSite.phonetemplate}}" class="form-control" name="phoneNumber" id="phoneNumber" aria-describedby="phoneNumber" required>
+              </div>
+              <div class="mb-3">
+                <label for="address" class="form-label">{{envSite.i18n.modalPurchase.address}}</label>
+                <input type="text" class="form-control" name="address" id="address" aria-describedby="address" required>
+              </div>
+              <div class="mb-3">
+                <label for="carrierId" class="form-label">{{envSite.i18n.modalPurchase.carrier}}</label>
+                <select name="carrierId" id="carrierId" class="form-select" aria-label="carrierId">
+                  {{#each carriers as |carrier|}}
+                    <option value="{{carrier.id}}" data-bs-reqnumber="{{carrier.reqNumber}}">{{carrier.name}}</option>
+                  {{/each}}
+                </select>
+              </div>
+              <div class="mb-3" id="carrierNumberDiv">
+                <label for="carrierNumber" class="form-label">{{envSite.i18n.modalPurchase.carrierNumber}}</label>
+                <input type="number" min="1" class="form-control" name="carrierNumber" id="carrierNumber" aria-describedby="carrierNumberFeedback">
+                <div id="carrierNumberFeedback" class="invalid-feedback"></div>
+              </div>
+              <div class="mb-3">
+                <label for="paymentId" class="form-label">{{envSite.i18n.modalPurchase.payment}}</label>
+                <select name="paymentId" id="paymentId" class="form-select" aria-label="paymentId">
+                  {{#each payments as |payment|}}
+                    <option value="{{payment.id}}">{{payment.name}}</option>
+                  {{/each}}
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="comment" class="form-label">{{envSite.i18n.modalPurchase.comment}}</label>
+                <textarea class="form-control" id="comment" name="comment" rows="3"></textarea>
+              </div>
+              <button type="submit" id="createOrderButton" class="btn btn-success">{{envSite.i18n.btnPurchaseConfirm}}</button>
+            </form>
+          </div>
         </div>
       </div>
     </div>

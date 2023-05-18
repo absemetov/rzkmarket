@@ -59,19 +59,19 @@
           {{/unless}}
           <div class="mb-3">
             <label for="lastName" class="form-label">{{envSite.i18n.modalPurchase.lastName}}</label>
-            <input type="text" class="form-control" name="lastName" id="lastName" aria-describedby="lastName" required autofocus>
+            <input type="text" class="form-control" name="lastName" id="lastName" title="{{envSite.i18n.modalPurchase.lastName}}" aria-describedby="lastName" required autofocus>
           </div>
           <div class="mb-3">
             <label for="firstName" class="form-label">{{envSite.i18n.modalPurchase.firstName}}</label>
-            <input type="text" class="form-control" name="firstName" id="firstName" aria-describedby="firstName" required>
+            <input type="text" class="form-control" name="firstName" id="firstName" title="{{envSite.i18n.modalPurchase.firstName}}" aria-describedby="firstName" required>
           </div>
           <div class="mb-3">
             <label for="phoneNumber" class="form-label">{{envSite.i18n.modalPurchase.phoneNumber}}</label>
-            <input type="tel" pattern="{{envSite.phoneregexp}}" placeholder="{{envSite.phonetemplate}}" class="form-control" name="phoneNumber" id="phoneNumber" aria-describedby="phoneNumber" required>
+            <input type="tel" pattern="{{envSite.phoneregexp}}" placeholder="{{envSite.phonetemplate}}" class="form-control" name="phoneNumber" id="phoneNumber" title="{{envSite.phonetemplate}}" aria-describedby="phoneNumber" required>
           </div>
           <div class="mb-3">
             <label for="address" class="form-label">{{envSite.i18n.modalPurchase.address}}</label>
-            <input type="text" class="form-control" name="address" id="address" aria-describedby="address" required>
+            <input type="text" class="form-control" name="address" id="address" title="{{envSite.i18n.modalPurchase.address}}" aria-describedby="address" required>
           </div>
           <div class="mb-3">
             <label for="carrierId" class="form-label">{{envSite.i18n.modalPurchase.carrier}}</label>
@@ -83,7 +83,7 @@
           </div>
           <div class="mb-3" id="carrierNumberDiv">
             <label for="carrierNumber" class="form-label">{{envSite.i18n.modalPurchase.carrierNumber}}</label>
-            <input type="number" min="1" class="form-control" name="carrierNumber" id="carrierNumber" aria-describedby="carrierNumberFeedback">
+            <input type="number" min="1" class="form-control" name="carrierNumber" id="carrierNumber" title="{{envSite.i18n.modalPurchase.carrierNumber}}" aria-describedby="carrierNumberFeedback">
             <div id="carrierNumberFeedback" class="invalid-feedback"></div>
           </div>
           <div class="mb-3">

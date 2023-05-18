@@ -813,6 +813,7 @@ const cartWizard = [
   async (ctx, phoneNumberText) => {
     // const phoneNumberText = (ctx.message.contact && ctx.message.contact.phone_number) || ctx.message.text;
     const regexpPhoneRu = new RegExp(process.env.BOT_PHONEREGEXP);
+    phoneNumberText = phoneNumberText.replace(/\s/g, "");
     const checkPhone = phoneNumberText.match(regexpPhoneRu);
     if (!checkPhone) {
       await ctx.replyWithHTML(`${ctx.i18n.txt.phoneNumber()} ${process.env.BOT_PHONETEMPLATE}` + ctx.state.sessionMsg.linkHTML(), {

@@ -336,6 +336,10 @@ if (purchaseModal) {
 const purchaseForm = document.getElementById("purchase");
 if (purchaseForm) {
   const createOrderButton = document.getElementById("createOrderButton");
+  // delete white spaces in phone number
+  document.getElementById("phoneNumber").addEventListener("blur", (event) => {
+    event.target.value = event.target.value.replace(/\s/g, "");
+  });
   // form submit
   purchaseForm.addEventListener("submit", async (event) => {
     event.preventDefault();

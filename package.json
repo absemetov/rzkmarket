@@ -5,11 +5,11 @@
   "scripts": {
     "lint:js": "eslint --ext \".js,.vue\" --ignore-path .gitignore .",
     "lint": "yarn lint:js",
-    "deploy-site-ua": "yarn robots-ua && firebase deploy --project=ua --only functions:site,hosting:rzk.com.ua",
+    "deploy-site-ua": "firebase deploy --project=ua --only functions:site,hosting:rzk.com.ua",
     "deploy-bot-ua": "firebase deploy --project=ua --only functions:bot",
     "deploy-triggers-ua": "firebase deploy --project=ua --only functions:triggers,functions:productsUpload",
     "deploy-triggers-productUpdate": "firebase deploy --project=ua --only functions:triggers-productUpdate",
-    "deploy-site-ru": "yarn robots-ru && firebase deploy --project=ru --only functions:site,hosting:rzk.com.ru",
+    "deploy-site-ru": "firebase deploy --project=ru --only functions:site,hosting:rzk.com.ru",
     "deploy-bot-ru": "firebase deploy --project=ru --only functions:bot",
     "deploy-triggers-ru": "firebase deploy --project=ru --only functions:triggers,functions:productsUpload",
     "deploy-site-dev": "firebase deploy --project=dev -only functions:site,hosting:dev.rzk.com.ua",
@@ -32,7 +32,9 @@
     "sitemap-ru": "node functions/sites/rzk.com.ru/sitemap.js ru sitemap",
     "robots-ua": "node functions/sites/rzk.com.ru/sitemap.js ua robots",
     "robots-ru": "node functions/sites/rzk.com.ru/sitemap.js ru robots",
-    "kill-port": "fuser -k 5001/tcp"
+    "kill-port": "fuser -k 5001/tcp",
+    "disable-hosting": "firebase hosting:disable --project=ru --site absemetov-page",
+    "merchant": "node functions/sites/rzk.com.ru/sitemap.js ua merchant"
   },
   "dependencies": {},
   "devDependencies": {}

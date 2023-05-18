@@ -1,7 +1,7 @@
 import {autocomplete, getAlgoliaResults} from "@algolia/autocomplete-js";
 import {createLocalStorageRecentSearchesPlugin} from "@algolia/autocomplete-plugin-recent-searches";
 import {createQuerySuggestionsPlugin} from "@algolia/autocomplete-plugin-query-suggestions";
-import {setInstantSearchUiState, getInstantSearchUiState, searchPanel} from "./instantsearch";
+import {setInstantSearchUiState, getInstantSearchUiState, searchPanel, photoProxy} from "./instantsearch";
 import {searchClient, devPrefix} from "./searchClient";
 import i18nContext from "./i18n";
 const lang = document.getElementById("addToCart").dataset.lang;
@@ -144,7 +144,7 @@ export function startAutocomplete() {
                 <div class="aa-ItemContent">
                   <div className="aa-ItemIcon aa-ItemIcon--picture aa-ItemIcon--alignTop">
                     <img
-                      src="${item.img1 ? lang === "ru" ? item.img1.replace("storage", "i0.wp.com/storage") : item.img1 : "/icons/flower3.svg"}"
+                      src="${item.img1 ? photoProxy(item.img1) : "/icons/flower3.svg"}"
                       onerror="${(event) => event.currentTarget.src = `/icons/photo_error_${lang}.svg`}"
                       alt="${item.name}"
                       class="${!item.img1 && "w-100"}"
@@ -152,7 +152,7 @@ export function startAutocomplete() {
                   </div>
                   <div class="aa-ItemContentBody">
                     <div class="aa-ItemContentTitle text-wrap">
-                      ${components.Highlight({hit: item, attribute: "name"})} (${components.Highlight({hit: item, attribute: "productId"})}) ${components.Highlight({hit: item, attribute: "brand"})}
+                      ${components.ReverseHighlight({hit: item, attribute: "name"})} (${components.ReverseHighlight({hit: item, attribute: "productId"})}) ${components.ReverseHighlight({hit: item, attribute: "brand"})}
                     </div>
                     ${item.seller}
                     <b>${item.price} ${i18n.currency}</b>
@@ -179,7 +179,7 @@ export function startAutocomplete() {
                     data-product-id="${item.productId}"
                     data-product-name="${item.name}"
                     data-product-brand="${item.brand ? item.brand : "undefined"}"
-                    data-product-img2="${item.img2 ? lang === "ru" ? item.img2.replace("storage", "i0.wp.com/storage") : item.img2 : "/icons/flower3.svg"}"
+                    data-product-img2="${item.img2 ? photoProxy(item.img2) : "/icons/flower3.svg"}"
                     data-seller="${item.seller}"
                     data-seller-id="${item.sellerId}"><i class="bi bi-cart3 text-success"></i></button>
                 </div>
@@ -220,7 +220,7 @@ export function startAutocomplete() {
                 <div class="aa-ItemContent">
                   <div class="aa-ItemIcon aa-ItemIcon--picture aa-ItemIcon--alignTop">
                     <img
-                      src="${item.img1 ? lang === "ru" ? item.img1.replace("storage", "i0.wp.com/storage") : item.img1 : "/icons/folder2.svg"}"
+                      src="${item.img1 ? photoProxy(item.img1) : "/icons/folder2.svg"}"
                       onerror="${(event) => event.currentTarget.src = `/icons/photo_error_${lang}.svg`}"
                       alt="${item.name}"
                       class="${!item.img1 && "w-100"}"
@@ -228,7 +228,7 @@ export function startAutocomplete() {
                   </div>
                   <div class="aa-ItemContentBody">
                     <div class="aa-ItemContentTitle text-wrap">
-                      ${components.Highlight({hit: item, attribute: "name"})} (${components.Highlight({hit: item, attribute: "hierarchicalUrl"})})
+                      ${components.ReverseHighlight({hit: item, attribute: "name"})} (${components.ReverseHighlight({hit: item, attribute: "hierarchicalUrl"})})
                     </div>
                   </div>
                 </div>

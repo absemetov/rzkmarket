@@ -3,8 +3,8 @@
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
-      <link rel="stylesheet" href="/assets/index.6a22e6b9.css">
-      <script type="module" src="/assets/index.a7084c58.js"></script>
+      <link rel="stylesheet" href="/assets/index.008aa9e5.css">
+      <script type="module" src="/assets/index.cf488600.js"></script>
       <title>{{#if title}}{{title}} | {{envSite.siteName}}{{else}}{{envSite.i18n.siteTitle}}{{/if}}</title>
       <link rel="icon" href="/favicon-{{envSite.lang}}.ico">
       <link rel="icon" href="/logo/logo-{{envSite.lang}}.svg" type="image/svg+xml">
@@ -94,7 +94,7 @@
             <img src="/logo/logo-{{envSite.lang}}.svg" alt="{{envSite.siteName}}" height="40" width="40">
             <span class="d-none d-md-inline h4 align-middle">{{envSite.siteName}}</span>
           </a>
-          <div id="autocomplete" class="w-100"></div>
+          <div id="autocomplete" class="w-100 overflow-hidden"></div>
           {{#if object.id}}
             <ul class="navbar-nav me-2">
               <li class="nav-item"></li>
@@ -119,22 +119,19 @@
           <p class="lead">{{{envSite.i18n.desc}}}</p>
           <nav class="nav flex-column">
             {{#if envSite.user.auth}}
-              <a class="nav-link" href="/login">{{envSite.user.firstName}}</a>
+              <a class="nav-link" href="/login"><i class="bi bi-person-fill"></i> {{envSite.user.firstName}}</a>
             {{else}}
-              <a class="nav-link" href="/login">{{envSite.i18n.aLogin}}</a>
+              <a class="nav-link" href="/login"><i class="bi bi-person-fill"></i> {{envSite.i18n.aLogin}}</a>
             {{/if}}
+            {{#each envSite.i18n.phones as |phone|}}
+              <a class="nav-link" href="tel:{{phone}}"><i class="bi bi-telephone-fill"></i> {{phone}}</a>
+            {{/each}}
+            <a class="nav-link" href="//t.me/{{envSite.botName}}" target="_blank"><i class="bi bi-telegram"></i> Бот @{{envSite.botName}}</a>
+            <a class="nav-link" href="//t.me/{{envSite.chatName}}" target="_blank"><i class="bi bi-telegram"></i> Чат @{{envSite.chatName}}</a>
+            <a class="nav-link" href="mailto:{{envSite.email}}"><i class="bi bi-envelope-fill"></i> {{envSite.email}}</a>
             <a class="nav-link" href="/delivery-info">{{envSite.i18n.aDelivery}}</a>
             <a class="nav-link" href="/return-policy">{{envSite.i18n.aReturn}}</a>
             <a class="nav-link" href="{{envSite.gmaps}}">{{envSite.i18n.aReview}}</a>
-            {{#each envSite.i18n.phones as |phone|}}
-              <a class="nav-link" href="tel:{{phone}}">{{phone}}</a>
-            {{/each}}
-            <a class="nav-link" href="mailto:{{envSite.email}}">{{envSite.email}}</a>
-            <a class="nav-link" href="//t.me/{{envSite.botName}}">
-              <i class="bi bi-telegram"></i>
-              @{{envSite.botName}}
-            </a>
-            <a class="nav-link" href="//absemetov.org.ua/">Nadir Absemetov</a>
             <a class="nav-link disabled" href="https://github.com/absemetov/rzk-com-ua">RZK Market 2.0.1 © {{year}}</a>
             </nav>
         </div>

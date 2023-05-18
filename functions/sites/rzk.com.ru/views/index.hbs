@@ -22,7 +22,7 @@
         <div class="carousel-inner">
           {{#each banners as |banner|}}
             <div class="carousel-item{{#if (equals @index 0)}} active{{/if}}">
-              <a href="{{banner.url}}"><img src="{{photoError banner.photoUrl ../envSite.lang}}" class="d-block w-100"></a>
+              <a href="{{banner.url}}"><img src="{{photoProxy banner.photoUrl ../envSite.lang}}" class="d-block w-100"></a>
             </div>
           {{/each}}
         </div>
@@ -49,13 +49,13 @@
     <div class="col">
       <div class="card text-center h-100">
         <a href="/o/{{object.id}}">
-          <img src="{{photoError object.img1 ../envSite.lang}}" class="card-img-top" onerror="this.src = '/icons/photo_error_{{../envSite.lang}}.svg';" alt="{{object.name}}">
+          <img src="{{photoProxy object.img1 ../envSite.lang}}" class="card-img-top" onerror="this.src = '/icons/photo_error_{{../envSite.lang}}.svg';" alt="{{object.name}}">
         </a>
         <div class="card-body">
           <h5>
             <a href="/o/{{object.id}}">{{object.name}}</a>
             <div class="mt-2">
-              <a href="{{photoError object.img2 ../envSite.lang}}" class="js-smartphoto-single text-decoration-none" title="zoom" data-caption="{{object.name}}">
+              <a href="{{photoProxy object.img2 ../envSite.lang}}" class="js-smartphoto-single text-decoration-none" title="zoom" data-caption="{{object.name}}">
                 <img src="/icons/zoom-in.svg" width="28" height="28" class="me-2" alt="zoom img">
               </a>
               <a href="https://t.me/share/url?url={{encodeUrl ../envSite.botName object.id "c" "c"}}&text={{encode object.name envSite.i18n.aCatGoods}}" target="_blank">
@@ -73,8 +73,11 @@
           </li>
           <li class="list-group-item">
             {{#each object.phoneArray as |phone|}}
-              <a href="tel:{{phone}}" class="text-decoration-none">{{phone}}</a>
+              <a href="tel:{{phone}}" class="text-decoration-none"><i class="bi bi-telephone-fill"></i> {{phone}}</a>
             {{/each}}
+          </li>
+          <li class="list-group-item">
+            <a href="//t.me/{{../envSite.chatName}}" target="_blank"><i class="bi bi-telegram"></i> Чат @{{../envSite.chatName}}</a>
           </li>
           <li class="list-group-item">
             <div class="d-grid gap-2">

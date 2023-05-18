@@ -1,21 +1,19 @@
-<nav aria-label="breadcrumb">
-  <ol class="breadcrumb">
+<ol class="breadcrumb text-nowrap">
+  <li class="breadcrumb-item">
+    <a href="/">{{envSite.i18n.aObjects}}</a>
+  </li>
+  <li class="breadcrumb-item">
+    <a href="/o/{{object.id}}">{{object.name}}</a>
+  </li>
+  <li class="breadcrumb-item">
+    <a href="/o/{{object.id}}/c">{{envSite.i18n.aCatGoods}}</a>
+  </li>
+  {{#each product.pathArray as |item|}}
     <li class="breadcrumb-item">
-      <a href="/">{{envSite.i18n.aObjects}}</a>
+      <a href="/o/{{../object.id}}/c/{{item.url}}">{{item.name}}</a>
     </li>
-    <li class="breadcrumb-item">
-      <a href="/o/{{object.id}}">{{object.name}}</a>
-    </li>
-    <li class="breadcrumb-item">
-      <a href="/o/{{object.id}}/c">{{envSite.i18n.aCatGoods}}</a>
-    </li>
-    {{#each product.pathArray as |item|}}
-      <li class="breadcrumb-item">
-        <a href="/o/{{../object.id}}/c/{{item.url}}">{{item.name}}</a>
-      </li>
-    {{/each}}
-  </ol>
-</nav>
+  {{/each}}
+</ol>
 <h1>{{object.name}} / {{#if product.brand}}{{product.brand}} / {{/if}}{{product.name}}</h1>
 <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2 pb-3">
   {{> product product=product object=object envSite=envSite smartPhoto=true}}
@@ -40,8 +38,8 @@
     {{#each photos as |photo|}}
       <div class="col">
         <div class="card text-center h-100">
-          <a href="{{photoError photo.img2 ../envSite.lang}}" class="js-smartphoto" data-caption="{{../product.name}}">
-            <img src="{{photoError photo.img1 ../envSite.lang}}" onerror="this.src = '/icons/photo_error_{{../envSite.lang}}.svg';" class="card-img-top" alt="{{../product.name}}">
+          <a href="{{photoProxy photo.img2 ../envSite.lang}}" class="js-smartphoto" data-caption="{{../product.name}}">
+            <img src="{{photoProxy photo.img1 ../envSite.lang}}" onerror="this.src = '/icons/photo_error_{{../envSite.lang}}.svg';" class="card-img-top" alt="{{../product.name}}">
           </a>
         </div>
       </div>

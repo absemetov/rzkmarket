@@ -43,7 +43,7 @@ const uploadProductsTrigger = async (ctx, pageName, objectId) => {
       uploadProductsStart,
       sheetId: object.sheetId,
     });
-    // local dev
+    // local dev obj Saky
     // await uploadProducts(bot.telegram, objectId, object.sheetId, pageName);
   } else {
     await ctx.replyWithHTML(`<b>Products loading...please wait ${540 - (Math.floor(new Date() / 1000) - uploads.uploadProductsStart)}s</b>`);
@@ -203,7 +203,7 @@ const uploadProducts = async (telegram, objectId, sheetId, pageName) => {
           // currency: row.CURRENCY,
           unit: row.UNIT,
           brand: row.BRAND,
-          orderNumber: row.ORDER_BY,
+          orderNumber: + row.ORDER_BY,
           availability: row.AVAILABILITY,
         };
         // validate product
@@ -337,7 +337,7 @@ const createObject = async (ctx, next) => {
     const todo = ctx.state.params.get("todo");
     const object = await store.findRecord(`objects/${objectId}`);
     // const uploads = await store.findRecord(`objects/${objectId}/uploads/start`);
-    // test upload local obj Saky
+    // test upload local obj
     // await uploadProducts(ctx.telegram, objectId, object.sheetId);
     try {
       // upload goods

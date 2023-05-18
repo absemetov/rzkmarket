@@ -38,6 +38,7 @@ const envSite = {
   gmaps: process.env.BOT_GMAPS,
   email: process.env.BOT_EMAIL,
   botName: process.env.BOT_NAME,
+  chatName: process.env.SITE_CHAT_NAME,
   phoneregexp: process.env.BOT_PHONEREGEXP,
   phonetemplate: process.env.BOT_PHONETEMPLATE,
   domain: process.env.BOT_SITE,
@@ -71,9 +72,10 @@ const hbs = exphbs.create({
     year() {
       return new Date().getFullYear();
     },
-    photoError(src, locale) {
+    photoProxy(src, locale) {
       // proxy img for Crimea
-      return locale === "ru" ? src.replace("storage", "i0.wp.com/storage") : src;
+      // return locale === "ru" ? src.replace("storage", "i0.wp.com/storage") : src;
+      return src.replace("storage.googleapis.com", "i0.wp.com/storage.googleapis.com");
     },
     not(value1, value2) {
       return value1 !== value2;

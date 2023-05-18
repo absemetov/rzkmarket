@@ -9,7 +9,7 @@ import {connectSearchBox,
   connectCurrentRefinements, connectStats} from "instantsearch.js/es/connectors";
 import {poweredBy} from "instantsearch.js/es/widgets";
 import historyRouter from "instantsearch.js/es/lib/routers/history";
-import {highlight} from "instantsearch.js/es/helpers";
+import {reverseHighlight} from "instantsearch.js/es/helpers";
 import {searchClient, devPrefix} from "./searchClient";
 
 const INSTANT_SEARCH_INDEX_NAME = `${devPrefix}products`;
@@ -149,7 +149,12 @@ const virtualSearchBox = connectSearchBox((renderOptions, isFirstRender) => {
   hitsPage.hidden = isSearchStalled;
   loadingIndicator.hidden = !isSearchStalled;
 });
-
+// proxy image
+export const photoProxy = (src, locale) => {
+  // proxy img for Crimea
+  // return locale === "ru" ? src.replace("storage", "i0.wp.com/storage") : src;
+  return src.replace("storage.googleapis.com", "i0.wp.com/storage.googleapis.com");
+};
 // Create the render function for hits
 const renderHits = async (renderOptions, isFirstRender) => {
   const {hits, widgetParams} = renderOptions;
@@ -160,12 +165,12 @@ const renderHits = async (renderOptions, isFirstRender) => {
             `<div class="col">
               <div class="card text-center h-100">
                 <a href="/o/${item.sellerId}/p/${item.productId}">
-                  <img src="${item.img1 ? lang === "ru" ? item.img1.replace("storage", "i0.wp.com/storage") : item.img1 : "/icons/flower3.svg"}" onerror="this.onerror=null;this.src = '/icons/photo_error_${lang}.svg';" class="card-img-top" alt="${item.name}">
+                  <img src="${item.img1 ? photoProxy(item.img1) : "/icons/flower3.svg"}" onerror="this.onerror=null;this.src = '/icons/photo_error_${lang}.svg';" class="card-img-top" alt="${item.name}">
                 </a>
                 <div class="card-body">
-                  ${item.brand ? `<h6>${highlight({attribute: "brand", hit: item})}</h6>` : ""}
+                  ${item.brand ? `<h6>${reverseHighlight({attribute: "brand", hit: item})}</h6>` : ""}
                   <h6>
-                    <a href="/o/${item.sellerId}/p/${item.productId}">${highlight({attribute: "name", hit: item})}</a> <small class="text-muted">(${highlight({attribute: "productId", hit: item})})</small>
+                    <a href="/o/${item.sellerId}/p/${item.productId}">${reverseHighlight({attribute: "name", hit: item})}</a> <small class="text-muted">(${reverseHighlight({attribute: "productId", hit: item})})</small>
                     <div class="mt-2">
                       <a href="https://t.me/share/url?url=${encodeURIComponent(`https://t.me/${i18n.bot_name}?start=${btoa(`o_${item.sellerId}_p_${item.productId}`)}`)}&text=${encodeURIComponent(`${item.seller} ${item.brand ? ` - ${item.brand} - ` : "-"} ${item.name}`)}" target="_blank">
                         <i class="bi bi-telegram fs-4"></i>
@@ -181,7 +186,7 @@ const renderHits = async (renderOptions, isFirstRender) => {
                     data-product-id="${item.productId}"
                     data-product-name="${item.name}"
                     data-product-brand="${item.brand}"
-                    data-product-img2="${item.img2 ? lang === "ru" ? item.img2.replace("storage", "i0.wp.com/storage") : item.img2 : "/icons/flower3.svg"}"
+                    data-product-img2="${item.img2 ? photoProxy(item.img2) : "/icons/flower3.svg"}"
                     data-seller="${item.seller}"
                     data-seller-id="${item.sellerId}">${i18n.btn_show}</button>
                   </div>
@@ -207,7 +212,7 @@ const renderPagination = (renderOptions, isFirstRender) => {
     createURL,
   } = renderOptions;
   const container = document.querySelector("#pagination");
-  if (!nbPages) {
+  if (nbPages <= 1) {
     container.innerHTML = "";
     return;
   }
@@ -414,7 +419,7 @@ const renderBreadcrumbItem = ({item, createURL}) => `
 const renderBreadcrumb = (renderOptions, isFirstRender) => {
   const {items, refine, createURL, widgetParams} = renderOptions;
   widgetParams.container.innerHTML = `
-    <ol class="breadcrumb">
+    <ol class="breadcrumb text-nowrap">
       <li class="breadcrumb-item">
         <a href="/search"  id="home">${i18n.a_search}</a>
       </li>
