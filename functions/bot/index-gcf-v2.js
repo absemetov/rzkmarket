@@ -1,4 +1,7 @@
-const functions = require("firebase-functions");
+// 2nd generation functions
+const {onRequest} = require("firebase-functions/v2/https");
+
+// const functions = require("firebase-functions");
 const {Telegraf} = require("telegraf");
 const {startActions, startHandler, parseUrl, isAdmin} = require("./bot_start_scene");
 const {monoHandler, monoActions} = require("./bot_mono_scene");
@@ -223,20 +226,33 @@ bot.catch((error) => {
 });
 
 // memory value 128MB 256MB 512MB 1GB 2GB 4GB 8GB
-const runtimeOpts = {
-  memory: "1GB",
-};
+// const runtimeOpts = {
+//   memory: "1GB",
+// };
 // run bot in Warsaw
-exports.botFunction = functions.region("europe-central2").
-    runWith(runtimeOpts).https.onRequest(async (req, res) => {
-      try {
-        // launch local env
-        if (process.env.FUNCTIONS_EMULATOR) {
-          bot.launch();
-        } else {
-          await bot.handleUpdate(req.body);
-        }
-      } finally {
-        res.status(200).end();
-      }
-    });
+// exports.botFunction = functions.region("europe-central2").
+//     runWith(runtimeOpts).https.onRequest(async (req, res) => {
+//       try {
+//         // launch local env
+//         if (process.env.FUNCTIONS_EMULATOR) {
+//           bot.launch();
+//         } else {
+//           await bot.handleUpdate(req.body);
+//         }
+//       } finally {
+//         res.status(200).end();
+//       }
+//     });
+// 2nd gen function
+exports.botFunctionSecondGen = onRequest({region: "europe-central2", maxInstances: 10, memory: "1GiB"}, async (req, res) => {
+  try {
+    // launch local env
+    if (process.env.FUNCTIONS_EMULATOR) {
+      bot.launch();
+    } else {
+      await bot.handleUpdate(req.body);
+    }
+  } finally {
+    res.status(200).end();
+  }
+});

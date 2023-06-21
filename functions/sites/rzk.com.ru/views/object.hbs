@@ -14,11 +14,6 @@
       <div class="card-body">
         <h5 class="card-title">
           {{object.name}}
-          <div class="mt-2">
-            <a href="https://t.me/share/url?url={{encodeUrl envSite.botName object.id "c" "c"}}&text={{encode object.name envSite.i18n.aCatGoods}}" target="_blank">
-              <i class="bi bi-telegram fs-4"></i>
-            </a>
-          </div>
         </h5>
         <p class="card-text">
           {{object.description}}
@@ -34,7 +29,17 @@
           {{/each}}
         </li>
         <li class="list-group-item">
-          <a href="//t.me/{{envSite.chatName}}" target="_blank"><i class="bi bi-telegram"></i> Чат @{{envSite.chatName}}</a>
+          <div class="dropdown">
+            <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Telegram
+            </button>
+            <ul class="dropdown-menu">
+              <a href="//t.me/{{envSite.chatName}}" target="_blank" class="dropdown-item"><i class="bi bi-telegram"></i> Чат @{{envSite.chatName}}</a>
+              <a href="https://t.me/share/url?url={{encodeUrl envSite.botName object.id "c" "c"}}&text={{encode object.name envSite.i18n.aCatGoods}}" class="dropdown-item" target="_blank">
+                <i class="bi bi-telegram"></i> Share
+              </a>
+            </ul>
+          </div>
         </li>
         <li class="list-group-item">
           <div class="d-grid gap-2">
@@ -56,13 +61,3 @@
     </div>
   </div>
 </div>
-{{#if object.postId}}
-<div class="row row-cols-1 row-cols-md-1 row-cols-lg-2 mt-3">
-  <div class="col">
-    <div class="card p-2">
-      <script async src="https://telegram.org/js/telegram-widget.js?21" data-telegram-post="{{envSite.channel}}/{{object.postId}}" data-width="100%"></script>
-      <script async src="https://telegram.org/js/telegram-widget.js?21" data-telegram-discussion="{{envSite.channel}}/{{object.postId}}" data-comments-limit="5"></script>
-    </div>
-  </div>
-</div>
-{{/if}}

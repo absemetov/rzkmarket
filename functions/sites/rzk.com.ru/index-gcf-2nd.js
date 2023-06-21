@@ -1,7 +1,13 @@
-const functions = require("firebase-functions");
-const firebase = require("firebase-admin");
+// 2nd generation functions
+const {onRequest} = require("firebase-functions/v2/https");
+const {getFirestore} = require("firebase-admin/firestore");
+const {getStorage} = require("firebase-admin/storage");
+
+// const functions = require("firebase-functions");
+// const firebase = require("firebase-admin");
 const firestore = require("firebase-admin/firestore");
-const bucket = firebase.storage().bucket();
+// const bucket = firebase.storage().bucket();
+const bucket = getStorage().bucket();
 const express = require("express");
 const exphbs = require("express-handlebars");
 const {store, cart, roundNumber} = require("../.././bot/bot_store_cart.js");
@@ -50,7 +56,7 @@ const app = express();
 app.use((req, res, next) => {
   if (req.path.substr(-1) == "/" && req.path.length > 1) {
     const query = req.url.slice(req.path.length);
-    res.redirect(301, req.path.slice(0, -1) + query);
+    return res.redirect(301, req.path.slice(0, -1) + query);
   } else {
     next();
   }
@@ -151,6 +157,16 @@ app.get("/", auth, async (req, res) => {
     }
   }
   const objects = await store.findAll("objects");
+  const newsSnapshot = await getFirestore().collection("news").orderBy("createdAt", "desc").limit(5).get();
+  const news = [];
+  for (const model of newsSnapshot.docs) {
+    news.push({
+      id: model.id,
+      title: model.data().title,
+      preview: model.data().preview,
+      createdAt: moment.unix(model.data().createdAt.seconds).locale(process.env.BOT_LANG).fromNow(),
+    });
+  }
   // generate cart link
   for (const object of objects) {
     object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
@@ -164,7 +180,7 @@ app.get("/", auth, async (req, res) => {
   }
   // banners
   const banners = await store.findAll("banners");
-  res.render("index", {objects, catalogs, banners, envSite});
+  return res.render("index", {objects, catalogs, banners, news, envSite});
 });
 
 // search products
@@ -178,7 +194,7 @@ app.get("/search*", auth, async (req, res) => {
   //   page,
   //   hitsPerPage: 40,
   // });
-  res.render("search", {envSite});
+  return res.render("search", {envSite});
 });
 
 // show object
@@ -194,7 +210,7 @@ app.get("/o/:objectId", auth, async (req, res) => {
       object.img1 = "/icons/shop.svg";
       object.img2 = "/icons/shop.svg";
     }
-    res.render("object", {
+    return res.render("object", {
       title: `${object.description} - ${object.name}`,
       description: object.address,
       object,
@@ -226,7 +242,7 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
   const catalogs = [];
   const tags = [];
   // get catalog sibl
-  const catalogsSiblingsSnapshot = await firebase.firestore().collection("objects").doc(objectId)
+  const catalogsSiblingsSnapshot = await getFirestore().collection("objects").doc(objectId)
       .collection("catalogs").where("parentId", "==", catalogId).orderBy("orderNumber").get();
   catalogsSiblingsSnapshot.docs.forEach((doc) => {
     const catalogSibl = {
@@ -245,8 +261,8 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
   });
   // products query
   const products = [];
-  let prevLink = {};
-  let nextLink = {};
+  const prevLink = {};
+  const nextLink = {};
   const tagActive = {};
   if (catalogId) {
     currentCatalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
@@ -256,7 +272,7 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
     }
     // generate title
     title = `${currentCatalog.name} ${envSite.i18n.btnBuy().toLowerCase()} ${envSite.i18n.siteCatTitle()} - ${object.name}`;
-    let mainQuery = firebase.firestore().collection("objects").doc(objectId).collection("products")
+    let mainQuery = getFirestore().collection("objects").doc(objectId).collection("products")
         .where("catalogId", "==", catalogId).orderBy("orderNumber");
     // Filter by tag
     let tagUrl = "";
@@ -267,13 +283,13 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
     // paginate goods, copy main query
     let query = mainQuery;
     if (startAfter) {
-      const startAfterProduct = await firebase.firestore().collection("objects").doc(objectId)
+      const startAfterProduct = await getFirestore().collection("objects").doc(objectId)
           .collection("products").doc(startAfter).get();
       query = query.startAfter(startAfterProduct);
     }
     // prev button
     if (endBefore) {
-      const endBeforeProduct = await firebase.firestore().collection("objects").doc(objectId)
+      const endBeforeProduct = await getFirestore().collection("objects").doc(objectId)
           .collection("products").doc(endBefore).get();
       query = query.endBefore(endBeforeProduct).limitToLast(12);
     } else {
@@ -344,22 +360,18 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
       // endBefore prev button e paaram
       const endBeforeSnap = productsSnapshot.docs[0];
       const ifBeforeProducts = await mainQuery.endBefore(endBeforeSnap).limitToLast(1).get();
-      prevLink = {
-        hide: ifBeforeProducts.empty,
-        url: `${req.path}?endBefore=${endBeforeSnap.id}${tagUrl}`,
-      };
+      prevLink.hide = ifBeforeProducts.empty;
+      prevLink.url = `${req.path}?endBefore=${endBeforeSnap.id}${tagUrl}`;
       // startAfter
       const startAfterSnap = productsSnapshot.docs[productsSnapshot.docs.length - 1];
       const ifAfterProducts = await mainQuery.startAfter(startAfterSnap).limit(1).get();
-      nextLink = {
-        hide: ifAfterProducts.empty,
-        url: `${req.path}?startAfter=${startAfterSnap.id}${tagUrl}`,
-      };
+      nextLink.hide = ifAfterProducts.empty;
+      nextLink.url = `${req.path}?startAfter=${startAfterSnap.id}${tagUrl}`;
     }
   }
   // count cart items
   object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
-  res.render("catalog", {
+  return res.render("catalog", {
     title,
     description: `${currentCatalog ? `${currentCatalog.name} ${envSite.i18n.btnBuy().toLowerCase()}` : envSite.i18n.aCatGoods()} ${envSite.i18n.siteCatDesc()}`,
     object,
@@ -440,7 +452,7 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
     }
     // count cart items
     object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
-    res.render("product", {
+    return res.render("product", {
       title: `${product.name}${product.brand ? ` ${product.brand}` : ""} ${productId} ${envSite.i18n.btnBuy().toLowerCase()} за ${product.price} ${envSite.currency} ${envSite.i18n.siteCatTitle()} - ${object.name}`,
       description: `${product.name}${product.brand ? ` ${product.brand}` : ""} ${productId} ${envSite.i18n.btnBuy().toLowerCase()} за ${product.price} ${envSite.currency} ${envSite.i18n.siteCatDesc()}`,
       object,
@@ -498,7 +510,7 @@ app.get("/o/:objectId/s/:orderId", auth, async (req, res) => {
       envSite,
     });
   }
-  res.send("Order not found");
+  return res.status(404).send(`<h1>404! Order not found <a href="${envSite.domain}">${envSite.domain}</a></h1>`);
 });
 
 // share cart
@@ -508,8 +520,8 @@ app.get("/o/:objectId/share-cart/:cartId", auth, async (req, res) => {
   const object = await store.findRecord(`objects/${objectId}`);
   object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
   const cartData = await store.findRecord(`objects/${objectId}/carts/${cartId}`);
-  const cartProducts = store.sort(cartData.products);
-  if (cartProducts.length) {
+  if (cartData) {
+    const cartProducts = store.sort(cartData.products);
     const products = [];
     let totalQty = 0;
     let totalSum = 0;
@@ -540,7 +552,7 @@ app.get("/o/:objectId/share-cart/:cartId", auth, async (req, res) => {
       envSite,
     });
   }
-  res.send("Cart not found");
+  return res.status(404).send(`<h1>404! Cart not found <a href="${envSite.domain}">${envSite.domain}</a></h1>`);
 });
 
 // login with telegram
@@ -612,7 +624,7 @@ app.get("/login/:objectId?", auth, async (req, res) => {
   // data is not authenticated
   // Set Cache-Control
   // res.set("Cache-Control", "public, max-age=300, s-maxage=600");
-  res.render("login", {title: envSite.i18n.aLogin, envSite, redirectPage});
+  return res.render("login", {title: envSite.i18n.aLogin, envSite, redirectPage});
 });
 
 app.get("/logout", auth, (req, res) => {
@@ -699,7 +711,7 @@ app.get("/o/:objectId/cart/json", auth, async (req, res) => {
   receipt.push({type: 0, content: "", bold: 0, align: 0});
   // sending QR entry
   // products.push({type: 3, value: "https://rzk.com.ru", size: 20, align: 1});
-  res.json({...Object.assign({}, receipt)});
+  return res.json({...Object.assign({}, receipt)});
 });
 
 // show cart
@@ -715,7 +727,7 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
   // clear cart
   if (clearCart) {
     await cart.clear(objectId, req.user.uid);
-    res.redirect(`/o/${objectId}/cart`);
+    return res.redirect(`/o/${objectId}/cart`);
   }
   // import cart
   if (importCart) {
@@ -746,7 +758,7 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
         }
       }
     }
-    res.redirect(`/o/${objectId}/cart`);
+    return res.redirect(`/o/${objectId}/cart`);
   }
   // parse products
   const productsImport = [];
@@ -828,7 +840,7 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
   }
   object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
   res.setHeader("X-Robots-Tag", "noindex");
-  res.render("cart", {
+  return res.render("cart", {
     cart: true,
     title: `${envSite.i18n.aCart()} - ${object.name}`,
     object,
@@ -904,7 +916,7 @@ app.post("/o/:objectId/cart/purchase", auth, (req, res) => {
     if (cartProducts && Object.keys(cartProducts).length) {
       const objectId = req.params.objectId;
       const object = await store.findRecord(`objects/${objectId}`);
-      const newOrderRef = firebase.firestore().collection("objects").doc(objectId).collection("orders").doc();
+      const newOrderRef = getFirestore().collection("objects").doc(objectId).collection("orders").doc();
       // if useer auth
       const userId = req.user.auth ? + req.user.uid : 94899148;
       await store.createRecord(`users/${userId}`, {orderCount: firestore.FieldValue.increment(1)});
@@ -947,7 +959,7 @@ app.post("/o/:objectId/cart/add", auth, jsonParser, async (req, res) => {
   }
   // check uid or create new
   if (!req.user.uid) {
-    const newCartRef = firebase.firestore().collection("objects").doc(objectId).collection("carts").doc();
+    const newCartRef = getFirestore().collection("objects").doc(objectId).collection("carts").doc();
     const token = jwt.sign({uid: newCartRef.id, auth: false}, process.env.BOT_TOKEN);
     req.user.uid = newCartRef.id;
     req.user.auth = false;
@@ -1024,7 +1036,7 @@ app.post("/o/:objectId/cart/add", auth, jsonParser, async (req, res) => {
 
 // payments-and-deliveries
 app.get("/delivery-info", (req, res) => {
-  res.render("delivery", {
+  return res.render("delivery", {
     envSite,
     title: envSite.i18n.aDelivery,
     carriers: Array.from(store.carriers(), ([id, obj]) => ({id, name: obj.name, reqNumber: obj.reqNumber ? 1 : 0})),
@@ -1034,18 +1046,71 @@ app.get("/delivery-info", (req, res) => {
 
 // exchange-and-refund
 app.get("/return-policy", (req, res) => {
-  res.render("return_" + process.env.BOT_LANG, {envSite, title: envSite.i18n.aReturn});
+  return res.render("return_" + process.env.BOT_LANG, {envSite, title: envSite.i18n.aReturn});
 });
 
 // news page
 app.get("/news", auth, async (req, res) => {
-  const news = await store.findAll("news");
-  res.render("news/index", {title: "News page", news, envSite});
+  const startAfter = req.query.startAfter;
+  const endBefore = req.query.endBefore;
+  const prevLink = {};
+  const nextLink = {};
+  const newsInPage = 7;
+  const mainQuery = getFirestore().collection("news").orderBy("createdAt", "desc");
+  let query = mainQuery;
+  if (startAfter) {
+    const startAfterProduct = await getFirestore().collection("news").doc(startAfter).get();
+    query = query.startAfter(startAfterProduct);
+  }
+  // prev button
+  if (endBefore) {
+    const endBeforeProduct = await getFirestore().collection("news").doc(endBefore).get();
+    query = query.endBefore(endBeforeProduct).limitToLast(newsInPage);
+  } else {
+    query = query.limit(newsInPage);
+  }
+  const news = [];
+  const newsSnapshot = await query.get();
+  for (const model of newsSnapshot.docs) {
+    news.push({
+      id: model.id,
+      title: model.data().title,
+      preview: model.data().preview,
+      createdAt: moment.unix(model.data().createdAt.seconds).locale(process.env.BOT_LANG).fromNow(),
+    });
+  }
+  if (!newsSnapshot.empty) {
+    // endBefore prev button e paaram
+    const endBeforeSnap = newsSnapshot.docs[0];
+    const ifBeforeProducts = await mainQuery.endBefore(endBeforeSnap).limitToLast(1).get();
+    prevLink.hide = ifBeforeProducts.empty,
+    prevLink.url = `${req.path}?endBefore=${endBeforeSnap.id}`;
+    // startAfter
+    const startAfterSnap = newsSnapshot.docs[newsSnapshot.docs.length - 1];
+    const ifAfterProducts = await mainQuery.startAfter(startAfterSnap).limit(1).get();
+    nextLink.hide = ifAfterProducts.empty;
+    nextLink.url = `${req.path}?startAfter=${startAfterSnap.id}`;
+  }
+  return res.render("news/index", {
+    title: envSite.i18n.tNews,
+    news,
+    envSite,
+    prevLink,
+    nextLink,
+    loadMore: !prevLink.hide || !nextLink.hide,
+  });
 });
-// get news
+// show news
 app.get("/news/:newsId", auth, async (req, res) => {
   const news = await store.findRecord(`news/${req.params.newsId}`);
-  res.render("news/news", {title: news.title, news, envSite});
+  return res.render("news/news", {
+    title: `${news.title} - ${envSite.i18n.tNews()}`,
+    description: news.desc,
+    news,
+    products: news.products,
+    createdAt: moment.unix(news.createdAt.seconds).locale(process.env.BOT_LANG).fromNow(),
+    envSite,
+  });
 });
 
 // not found route
@@ -1055,9 +1120,11 @@ app.get("*", (req, res) => {
 });
 
 // config GCP
-const runtimeOpts = {
-  memory: "1GB",
-};
+// const runtimeOpts = {
+//   memory: "1GB",
+// };
 
-exports.siteFunction = functions.runWith(runtimeOpts).https.onRequest(app);
-exports.siteWarsaw = functions.region("europe-central2").runWith(runtimeOpts).https.onRequest(app);
+// exports.siteFunction = functions.runWith(runtimeOpts).https.onRequest(app);
+// exports.siteWarsaw = functions.region("europe-central2").runWith(runtimeOpts).https.onRequest(app);
+// regions: us-central1 europe-central2
+exports.siteWarsawSecondGen = onRequest({region: "europe-central2", memory: "1GiB", maxInstances: 10}, app);

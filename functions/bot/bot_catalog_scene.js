@@ -1,5 +1,6 @@
-const firebase = require("firebase-admin");
-const firestore = require("firebase-admin/firestore");
+const {getFirestore, FieldValue} = require("firebase-admin/firestore");
+// const firebase = require("firebase-admin");
+// const firestore = require("firebase-admin/firestore");
 const {cart, store, roundNumber, photoCheckUrl, deletePhotoStorage, encodeCyrillic} = require("./bot_store_cart");
 const {searchProductHandle, algoliaIndexProducts} = require("./bot_search");
 const {parseUrl} = require("./bot_start_scene");
@@ -66,11 +67,11 @@ const showCatalog = async (ctx, next) => {
           callback_data: `u/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?todo=cat`}]);
         inlineKeyboardArray.push([{text: `📖 Описание ${currentCatalog.name}`,
           callback_data: `u/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?todo=desc`}]);
-        inlineKeyboardArray.push([{text: `📖 PostId ${currentCatalog.name}`,
-          callback_data: `u/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?todo=postId`}]);
+        // inlineKeyboardArray.push([{text: `📖 PostId ${currentCatalog.name}`,
+        //   callback_data: `u/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?todo=postId`}]);
       }
       // products query
-      let mainQuery = firebase.firestore().collection("objects").doc(objectId)
+      let mainQuery = getFirestore().collection("objects").doc(objectId)
           .collection("products").where("catalogId", "==", currentCatalog.id)
           .orderBy("orderNumber");
       // Filter by tag
@@ -80,7 +81,7 @@ const showCatalog = async (ctx, next) => {
         tagUrl = `&t=${tag}`;
       }
       // show catalog siblings, get catalogs snap index or siblings
-      const catalogsSnapshot = await firebase.firestore().collection("objects").doc(objectId)
+      const catalogsSnapshot = await getFirestore().collection("objects").doc(objectId)
           .collection("catalogs").where("parentId", "==", catalogId).orderBy("orderNumber").get();
       catalogsSnapshot.docs.forEach((doc) => {
         inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id.substring(doc.id.lastIndexOf("#") + 1)}?in=1`}]);
@@ -92,7 +93,7 @@ const showCatalog = async (ctx, next) => {
         const startAfterSession = back ? ctx.state.sessionMsg.url.searchParams.get("sPrev") : ctx.state.sessionMsg.url.searchParams.get("s");
         // for back btn
         ctx.state.sessionMsg.url.searchParams.set("sPrev", startAfterSession);
-        const startAfterProduct = await firebase.firestore().collection("objects").doc(objectId)
+        const startAfterProduct = await getFirestore().collection("objects").doc(objectId)
             .collection("products")
             .doc(startAfterSession).get();
         query = query.startAfter(startAfterProduct);
@@ -101,7 +102,7 @@ const showCatalog = async (ctx, next) => {
       if (endBefore) {
         const endBeforeSession = back ? ctx.state.sessionMsg.url.searchParams.get("ePrev") : ctx.state.sessionMsg.url.searchParams.get("e");
         ctx.state.sessionMsg.url.searchParams.set("ePrev", endBeforeSession);
-        const endBeforeProduct = await firebase.firestore().collection("objects").doc(objectId)
+        const endBeforeProduct = await getFirestore().collection("objects").doc(objectId)
             .collection("products")
             .doc(endBeforeSession).get();
         query = query.endBefore(endBeforeProduct).limitToLast(10);
@@ -168,7 +169,7 @@ const showCatalog = async (ctx, next) => {
       }
     } else {
       ctx.state.sessionMsg.url.searchParams.delete("pathU");
-      const catalogsSnapshot = await firebase.firestore().collection("objects").doc(objectId)
+      const catalogsSnapshot = await getFirestore().collection("objects").doc(objectId)
           .collection("catalogs")
           .where("parentId", "==", null).orderBy("orderNumber").get();
       catalogsSnapshot.docs.forEach((doc) => {
@@ -189,8 +190,7 @@ const showCatalog = async (ctx, next) => {
     await ctx.editMessageMedia({
       type: "photo",
       media,
-      caption: `<b>${object.name} > ${currentCatalog && currentCatalog.pathArray ? `${ctx.i18n.btn.catalog()} > ${currentCatalog.pathArray.map((cat) => cat.name).join(" > ")}` : ctx.i18n.btn.catalog()}</b>\n` +
-        `${currentCatalog && currentCatalog.postId ? `RZK Market Channel <a href="t.me/${process.env.BOT_CHANNEL}/${currentCatalog.postId}">t.me/${process.env.BOT_CHANNEL}/${currentCatalog.postId}</a>` : ""} ` + ctx.state.sessionMsg.linkHTML(),
+      caption: `<b>${object.name} > ${currentCatalog && currentCatalog.pathArray ? `${ctx.i18n.btn.catalog()} > ${currentCatalog.pathArray.map((cat) => cat.name).join(" > ")}` : ctx.i18n.btn.catalog()}</b>` + ctx.state.sessionMsg.linkHTML(),
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: inlineKeyboardArray,
@@ -237,8 +237,12 @@ const showProduct = async (ctx, next) => {
     const cartButtons = await cart.cartButtons(objectId, ctx);
     let catalogUrl = `c/${product.catalogId.substring(product.catalogId.lastIndexOf("#") + 1)}`;
     const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathC");
-    if (sessionPathCatalog && !page && !fromCart) {
-      catalogUrl = sessionPathCatalog + "&b=1";
+    if (sessionPathCatalog && !page && !fromCart && sessionPathCatalog.includes("?")) {
+      if (sessionPathCatalog.includes("&b=1")) {
+        catalogUrl = sessionPathCatalog;
+      } else {
+        catalogUrl = sessionPathCatalog + "&b=1";
+      }
     } else {
       ctx.state.sessionMsg.url.searchParams.set("pathC", catalogUrl);
     }
@@ -338,8 +342,8 @@ const showProduct = async (ctx, next) => {
         callback_data: `b/${product.id}?todo=price&c=E`}]);
       inlineKeyboardArray.push([{text: "Добавить описание",
         callback_data: `b/${product.id}?todo=desc`}]);
-      inlineKeyboardArray.push([{text: "Добавить пост из канала",
-        callback_data: `b/${product.id}?todo=postId`}]);
+      // inlineKeyboardArray.push([{text: "Добавить пост из канала",
+      //   callback_data: `b/${product.id}?todo=postId`}]);
       inlineKeyboardArray.push([{text: "Удалить товар",
         callback_data: `b/${product.id}?todo=del`}]);
       inlineKeyboardArray.push([{text: "Загрузить в Merch",
@@ -352,8 +356,7 @@ const showProduct = async (ctx, next) => {
       media,
       caption: `<b>${object.name}\n${product.brand ? product.brand + "\n" : ""}${product.name} (${product.id})\n</b>` +
       `${ctx.i18n.product.price()}: ${product.price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}` +
-      ` ${ctx.state.isAdmin && cartProduct ? `в корзине ${cartProduct.price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}` : ""}\n` +
-      `${product.postId ? `RZK Market Channel <a href="t.me/${process.env.BOT_CHANNEL}/${product.postId}">t.me/${process.env.BOT_CHANNEL}/${product.postId}</a>` : ""}` + ctx.state.sessionMsg.linkHTML(),
+      ` ${ctx.state.isAdmin && cartProduct ? `в корзине ${cartProduct.price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}` : ""}` + ctx.state.sessionMsg.linkHTML(),
       parse_mode: "html",
     }, {reply_markup: {
       inline_keyboard: inlineKeyboardArray,
@@ -1111,7 +1114,7 @@ catalogsActions.push( async (ctx, next) => {
       await ctx.deleteMessage();
       return;
     }
-    const productRef = firebase.firestore().collection("objects").doc(objectId)
+    const productRef = getFirestore().collection("objects").doc(objectId)
         .collection("products").doc(productId);
     const productSnapshot = await productRef.get();
     // delete photo
@@ -1124,20 +1127,20 @@ catalogsActions.push( async (ctx, next) => {
             if (photosId !== photoId) {
               await productRef.update({
                 mainPhoto: photosId,
-                photos: firestore.FieldValue.arrayRemove(photoId),
+                photos: FieldValue.arrayRemove(photoId),
               });
               break;
             }
           }
         } else {
           await productRef.update({
-            mainPhoto: firestore.FieldValue.delete(),
-            photos: firestore.FieldValue.arrayRemove(photoId),
+            mainPhoto: FieldValue.delete(),
+            photos: FieldValue.arrayRemove(photoId),
           });
         }
       } else {
         await productRef.update({
-          photos: firestore.FieldValue.arrayRemove(photoId),
+          photos: FieldValue.arrayRemove(photoId),
         });
       }
       // delete photos from bucket
@@ -1189,7 +1192,7 @@ catalogsActions.push( async (ctx, next) => {
     let caption;
     if (todo === "prod") {
       ctx.state.sessionMsg.url.searchParams.set("upload-productId", paramId);
-      caption = `Добавьте фото <b>${paramId}</b>${pathUrl}`;
+      caption = `Добавьте фото <b>${paramId}</b> ${pathUrl}`;
     }
     if (todo === "cat") {
       ctx.state.sessionMsg.url.searchParams.set("upload-catalogId", pathUrl);
@@ -1204,10 +1207,10 @@ catalogsActions.push( async (ctx, next) => {
       ctx.state.sessionMsg.url.searchParams.set("upload-catalogId", pathUrl);
       caption = `Добавьте описание, del удалить <b>${pathUrl}</b>`;
     }
-    if (todo === "postId") {
-      ctx.state.sessionMsg.url.searchParams.set("upload-catalogId", pathUrl);
-      caption = `Добавьте postId, del удалить <b>${pathUrl}</b>`;
-    }
+    // if (todo === "postId") {
+    //   ctx.state.sessionMsg.url.searchParams.set("upload-catalogId", pathUrl);
+    //   caption = `Добавьте postId, del удалить <b>${pathUrl}</b>`;
+    // }
     await ctx.replyWithHTML(caption + ctx.state.sessionMsg.linkHTML(), {
       reply_markup: {
         force_reply: true,
@@ -1249,7 +1252,6 @@ catalogsActions.push( async (ctx, next) => {
       `Закупочная цена (purchasePrice) <b>${purchasePrice.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}</b>\n` +
       `Продажная цена (price) <b>${price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}</b>\n`+
       "Для удаления desc введите del\n" +
-      "Для удаления postId введите 0\n" +
       "Наличие товара: <code>true</code> or <code>false</code>" + ctx.state.sessionMsg.linkHTML(), {
         reply_markup: {
           force_reply: true,

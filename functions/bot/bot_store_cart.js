@@ -1,6 +1,9 @@
-const firebase = require("firebase-admin");
-const firestore = require("firebase-admin/firestore");
-const bucket = firebase.storage().bucket();
+// const firebase = require("firebase-admin");
+const {getFirestore, FieldValue} = require("firebase-admin/firestore");
+const {getStorage} = require("firebase-admin/storage");
+// const firestore = require("firebase-admin/firestore");
+// const bucket = firebase.storage().bucket();
+const bucket = getStorage().bucket();
 const {download} = require("./download");
 const fs = require("fs");
 // round to 2 decimals
@@ -95,11 +98,11 @@ const store = {
   },
   async deleteRecord(path, field) {
     await this.getQuery(path).set({
-      [field]: firestore.FieldValue.delete(),
+      [field]: FieldValue.delete(),
     }, {merge: true});
   },
   async findAll(collectionName) {
-    const modelSnap = await firebase.firestore().collection(collectionName).get();
+    const modelSnap = await getFirestore().collection(collectionName).get();
     const outputArray = [];
     modelSnap.docs.forEach((model) => {
       outputArray.push({id: model.id, ...model.data()});
@@ -107,7 +110,7 @@ const store = {
     return outputArray;
   },
   getQuery(path) {
-    return firebase.firestore().doc(path);
+    return getFirestore().doc(path);
   },
   payments() {
     const paymentsTxt = process.env.BOT_PAYMENT;
@@ -185,7 +188,7 @@ const cart = {
   async delete(value) {
     await store.createRecord(`objects/${value.objectId}/carts/${value.userId}`, {
       "products": {
-        [value.id]: firestore.FieldValue.delete(),
+        [value.id]: FieldValue.delete(),
       }});
   },
   async addOld(objectId, userId, product, qty) {
@@ -219,7 +222,7 @@ const cart = {
       if (typeof product !== "object") {
         await store.createRecord(`objects/${objectId}/carts/${userId}`,
             {"products": {
-              [product]: firestore.FieldValue.delete(),
+              [product]: FieldValue.delete(),
             }});
       }
     }
@@ -230,17 +233,17 @@ const cart = {
   },
   async clear(objectId, userId) {
     if (parseInt(userId) === 94899148) {
-      await store.createRecord(`objects/${objectId}/carts/${userId}`, {"products": firestore.FieldValue.delete()});
+      await store.createRecord(`objects/${objectId}/carts/${userId}`, {"products": FieldValue.delete()});
     } else {
       await store.getQuery(`objects/${objectId}/carts/${userId}`).delete();
     }
   },
   async createOrder(ctx, wizardData) {
     const userId = ctx.from.id;
-    await store.createRecord(`users/${userId}`, {orderCount: firestore.FieldValue.increment(1)});
+    await store.createRecord(`users/${userId}`, {orderCount: FieldValue.increment(1)});
     const userData = await store.findRecord(`users/${userId}`);
     const objectId = wizardData.objectId;
-    const orderQuery = firebase.firestore().collection("objects").doc(objectId).collection("orders");
+    const orderQuery = getFirestore().collection("objects").doc(objectId).collection("orders");
     const cartProducts = await store.findRecord(`objects/${objectId}/carts/${userId}`, "products");
     // if cart empty alert error
     if (cartProducts && Object.keys(cartProducts).length) {
@@ -342,23 +345,27 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
         // set main photo
         await store.updateRecord(`objects/${objectId}/products/${productId}`, {
           mainPhoto: photoId,
-          photos: firestore.FieldValue.arrayUnion(photoId),
+          photos: FieldValue.arrayUnion(photoId),
         });
       } else {
         await store.updateRecord(`objects/${objectId}/products/${productId}`, {
-          photos: firestore.FieldValue.arrayUnion(photoId),
+          photos: FieldValue.arrayUnion(photoId),
         });
       }
       // get catalog url (path)
       let catalogUrl = `c/${product.catalogId.substring(product.catalogId.lastIndexOf("#") + 1)}`;
       const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathC");
-      if (sessionPathCatalog) {
-        catalogUrl = sessionPathCatalog + "&b=1";
+      if (sessionPathCatalog && sessionPathCatalog.includes("?")) {
+        if (sessionPathCatalog.includes("&b=1")) {
+          catalogUrl = sessionPathCatalog;
+        } else {
+          catalogUrl = sessionPathCatalog + "&b=1";
+        }
       }
       const media = await photoCheckUrl(`photos/o/${objectId}/p/${product.id}/${photoId}/2.jpg`);
       await ctx.replyWithPhoto(media,
           {
-            caption: `${catalogUrl} ${product.name} (${product.id}) photo uploaded` + ctx.state.sessionMsg.linkHTML(),
+            caption: `${product.name} (${product.id}) photo uploaded` + ctx.state.sessionMsg.linkHTML(),
             reply_markup: {
               inline_keyboard: [
                 [{text: "📸 Upload photo", callback_data: `u/${product.id}?todo=prod`}],

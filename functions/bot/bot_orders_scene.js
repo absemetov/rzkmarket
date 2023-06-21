@@ -356,6 +356,7 @@ const orderWizard = [
     const fieldName = ctx.state.sessionMsg.url.searchParams.get("fieldName");
     if (fieldName === "phoneNumber") {
       const regexpPhone = new RegExp(process.env.BOT_PHONEREGEXP);
+      newValue = newValue.replace(/\s/g, "");
       const checkPhone = newValue.match(regexpPhone);
       if (!checkPhone) {
         await ctx.replyWithHTML(`Введите номер телефона в формате ${process.env.BOT_PHONETEMPLATE}` + ctx.state.sessionMsg.linkHTML(), {

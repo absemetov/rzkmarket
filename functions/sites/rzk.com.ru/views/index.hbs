@@ -1,8 +1,8 @@
 <div class="row mb-4">
   <div class="col-lg-3">
-    <div class="offcanvas-lg offcanvas-start" tabindex="-1" id="offcanvasResponsive1" aria-labelledby="offcanvasResponsiveLabel">
+    <div class="offcanvas-lg offcanvas-start" tabindex="-1" id="offcanvasResponsive1" aria-labelledby="offcanvasResponsiveLabel1">
       <div class="offcanvas-header">
-        <h5 class="offcanvas-title" id="offcanvasResponsiveLabel">{{envSite.i18n.aCatGoods}}</h5>
+        <h5 class="offcanvas-title" id="offcanvasResponsiveLabel1">{{envSite.i18n.aCatGoods}}</h5>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#offcanvasResponsive1" aria-label="Close"></button>
       </div>
       <div class="offcanvas-body flex-column">
@@ -22,7 +22,7 @@
         <div class="carousel-inner">
           {{#each banners as |banner|}}
             <div class="carousel-item{{#if (equals @index 0)}} active{{/if}}">
-              <a href="{{banner.url}}"><img src="{{photoProxy banner.photoUrl ../envSite.lang}}" class="d-block w-100"></a>
+              <a href="{{banner.url}}"><img src="{{photoProxy banner.photoUrl ../envSite.lang}}" class="d-block w-100" alt="Banners"></a>
             </div>
           {{/each}}
         </div>
@@ -44,7 +44,8 @@
     {{envSite.i18n.aCatGoods}}
   </button>
 </div>
-<div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2">
+<h1>{{envSite.i18n.aObjects}}</h1>
+<div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2 my-3">
   {{#each objects as |object|}}
     <div class="col">
       <div class="card text-center h-100">
@@ -54,14 +55,6 @@
         <div class="card-body">
           <h5>
             <a href="/o/{{object.id}}">{{object.name}}</a>
-            <div class="mt-2">
-              <a href="{{photoProxy object.img2 ../envSite.lang}}" class="js-smartphoto-single text-decoration-none" title="zoom" data-caption="{{object.name}}">
-                <img src="/icons/zoom-in.svg" width="28" height="28" class="me-2" alt="zoom img">
-              </a>
-              <a href="https://t.me/share/url?url={{encodeUrl ../envSite.botName object.id "c" "c"}}&text={{encode object.name envSite.i18n.aCatGoods}}" target="_blank">
-                <i class="bi bi-telegram fs-4"></i>
-              </a>
-            </div>
           </h5>
           <p class="card-text">
             {{object.description}}
@@ -77,7 +70,17 @@
             {{/each}}
           </li>
           <li class="list-group-item">
-            <a href="//t.me/{{../envSite.chatName}}" target="_blank"><i class="bi bi-telegram"></i> Чат @{{../envSite.chatName}}</a>
+            <div class="dropdown">
+              <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Telegram
+              </button>
+              <ul class="dropdown-menu">
+                <a href="//t.me/{{../envSite.chatName}}" class="dropdown-item" target="_blank"><i class="bi bi-telegram"></i> Чат @{{../envSite.chatName}}</a>
+                <a href="https://t.me/share/url?url={{encodeUrl ../envSite.botName object.id "c" "c"}}&text={{encode object.name envSite.i18n.aCatGoods}}" class="dropdown-item" target="_blank">
+                  <i class="bi bi-telegram"></i> Share
+                </a>
+              </ul>
+            </div>
           </li>
           <li class="list-group-item">
             <div class="d-grid gap-2">
@@ -100,37 +103,17 @@
     </div>
   {{/each}}
 </div>
-<div class="row mt-3">
-  {{#each envSite.i18n.siteSeoText as |text|}}
-    <h2>{{@key}}</h2>
-    <p class="lead">
-      {{text}}
-    </p>
-  {{/each}}
-</div>
-<div class="accordion mt-3" id="accordionExample">
-  {{#each envSite.i18n.siteSeoQuestion as |answer|}}
-    <div class="accordion-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
-      <h2 class="accordion-header" id="headingOne">
-        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{@index}}" aria-expanded="true" aria-controls="collapse{{@index}}">
-          <div itemprop="name">{{@key}}</div>
-        </button>
-      </h2>
-      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer" id="collapse{{@index}}" class="accordion-collapse collapse {{#unless @index}}show{{/unless}}" aria-labelledby="headingOne">
-        <div itemprop="text" class="accordion-body">
-          {{answer}}
-        </div>
-      </div>
+<h1>{{envSite.i18n.tNews}}</h1>
+{{#each news as |newsObj|}}
+  <div class="card my-3">
+    <div class="card-body">
+      <h5 class="card-title">
+        <a href="/news/{{newsObj.id}}">{{newsObj.title}}</a>
+      </h5>
+      <p class="card-text">{{{newsObj.preview}}}</p>
     </div>
-  {{/each}}
-</div>
-{{#if envSite.postId}}
-<div class="row row-cols-1 row-cols-md-1 row-cols-lg-2 mt-3">
-  <div class="col">
-    <div class="card p-2">
-      <script async src="https://telegram.org/js/telegram-widget.js?21" data-telegram-post="{{envSite.channel}}/{{envSite.postId}}" data-width="100%"></script>
-      <script async src="https://telegram.org/js/telegram-widget.js?21" data-telegram-discussion="{{envSite.channel}}/{{envSite.postId}}" data-comments-limit="5"></script>
+    <div class="card-footer">
+      {{newsObj.createdAt}}
     </div>
   </div>
-</div>
-{{/if}}
+{{/each}}

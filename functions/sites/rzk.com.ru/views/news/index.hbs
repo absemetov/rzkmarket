@@ -1,0 +1,30 @@
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb text-nowrap">
+    <li class="breadcrumb-item"><a href="/">{{envSite.i18n.aObjects}}</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{envSite.i18n.tNews}}</li>
+  </ol>
+</nav>
+<h1>{{envSite.i18n.tNews}}</h1>
+{{#each news as |newsObj|}}
+  <div class="card my-3">
+    <div class="card-body">
+      <h5 class="card-title">
+        <a href="/news/{{newsObj.id}}">{{newsObj.title}}</a>
+      </h5>
+      <p class="card-text">{{{newsObj.preview}}}</p>
+    </div>
+    <div class="card-footer">
+      {{newsObj.createdAt}}
+    </div>
+  </div>
+{{/each}}
+{{#if news}}
+  {{#if loadMore}}
+    <nav aria-label="Page navigation example">
+      <ul class="pagination mt-4">
+        <li class="page-item"><a class="page-link{{#if prevLink.hide}} disabled{{/if}}" href="{{prevLink.url}}"><i class="bi bi-chevron-left"></i> {{envSite.i18n.aPagPrevious}}</a></li>
+        <li class="page-item"><a class="page-link{{#if nextLink.hide}} disabled{{/if}}" href="{{nextLink.url}}">{{envSite.i18n.aPagNext}} <i class="bi bi-chevron-right"></i></a></li>
+      </ul>
+    </nav>
+  {{/if}}
+{{/if}}

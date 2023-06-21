@@ -5,16 +5,16 @@
   "scripts": {
     "lint:js": "eslint --ext \".js,.vue\" --ignore-path .gitignore .",
     "lint": "yarn lint:js",
-    "deploy-site-ua": "firebase deploy --project=ua --only functions:site,hosting:rzk.com.ua",
-    "deploy-bot-ua": "firebase deploy --project=ua --only functions:bot",
+    "deploy-site-ua": "firebase deploy --project=ua --only functions:siteWarsawSecondGen,hosting:rzk.com.ua",
+    "deploy-bot-ua": "firebase deploy --project=ua --only functions:botFunctionSecondGen",
     "deploy-triggers-ua": "firebase deploy --project=ua --only functions:triggers,functions:productsUpload",
-    "deploy-triggers-productUpdate": "firebase deploy --project=ua --only functions:triggers-productUpdate",
-    "deploy-site-ru": "firebase deploy --project=ru --only functions:site,hosting:rzk.com.ru",
-    "deploy-bot-ru": "firebase deploy --project=ru --only functions:bot",
+    "deploy-triggers-productUpdate": "firebase deploy --project=ua --only functions:triggers-productUpdateSecondGen",
+    "deploy-site-ru": "firebase deploy --project=ru --only functions:siteWarsawSecondGen,hosting:rzk.com.ru",
+    "deploy-bot-ru": "firebase deploy --project=ru --only functions:botFunctionSecondGen",
     "deploy-triggers-ru": "firebase deploy --project=ru --only functions:triggers,functions:productsUpload",
     "deploy-site-dev": "firebase deploy --project=dev -only functions:site,hosting:dev.rzk.com.ua",
     "deploy-triggers-dev": "firebase deploy --project=dev --only functions:triggers,functions:productsUpload",
-    "deploy-bot-dev": "firebase deploy --project=dev --only functions:bot",
+    "deploy-bot-dev": "firebase deploy --project=dev --only functions:botFunctionSecond",
     "pl": "firebase use",
     "s-gunsan": "firebase --project=ua emulators:start --only hosting:gunsan.com.ua",
     "deploy-gunsan": "firebase deploy --project=ua --only hosting:gunsan.com.ua",
@@ -36,6 +36,5 @@
     "disable-hosting": "firebase hosting:disable --project=ru --site absemetov-page",
     "merchant": "node functions/sites/rzk.com.ru/sitemap.js ua merchant"
   },
-  "dependencies": {},
-  "devDependencies": {}
+  "dependencies": {}
 }

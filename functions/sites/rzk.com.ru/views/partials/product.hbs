@@ -11,16 +11,20 @@
         {{else}}
           <a href="{{product.url}}">{{product.name}}</a> <small class="text-muted">({{product.id}})</small>
         {{/if}}
-        <div class="mt-2">
-          <a href="{{photoProxy product.img2 envSite.lang}}" class="js-smartphoto-single text-decoration-none" data-caption="{{product.name}}">
-            <img src="/icons/zoom-in.svg" width="28" height="28" class="me-2" alt="zoom img">
-          </a>
-          <a href="https://t.me/share/url?url={{encodeUrl envSite.botName object.id "p" product.id envSite.domain}}&text={{encode object.name product.brand product.name}}" target="_blank">
-            <i class="bi bi-telegram fs-4"></i>
-          </a>
-        </div>
       </h6>
     </div>
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        {{#if (not product.img2 "/icons/flower3.svg")}}
+          <a href="{{photoProxy product.img2 envSite.lang}}" class="js-smartphoto-single text-decoration-none me-3" data-caption="{{product.name}}">
+            <img src="/icons/zoom-in.svg" width="21" height="21" alt="zoom img">
+          </a>
+        {{/if}}
+        <a href="https://t.me/share/url?url={{encodeUrl envSite.botName object.id "p" product.id envSite.domain}}&text={{encode object.name product.brand product.name}}" target="_blank">
+          <i class="bi bi-telegram"></i> Share
+        </a>
+      </li>
+    </ul>
     <div class="card-footer">
       <h3>
         {{formatNumber product.price}} {{envSite.currency}}

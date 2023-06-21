@@ -1,6 +1,9 @@
-const firebase = require("firebase-admin");
-const firestore = require("firebase-admin/firestore");
-const functions = require("firebase-functions");
+// 2nd generation functions
+const {getFirestore, FieldValue} = require("firebase-admin/firestore");
+const {onDocumentCreated} = require("firebase-functions/v2/firestore");
+// const firebase = require("firebase-admin");
+// const firestore = require("firebase-admin/firestore");
+// const functions = require("firebase-functions");
 const {Telegraf} = require("telegraf");
 const {GoogleSpreadsheet} = require("google-spreadsheet");
 const creds = require("./rzk-com-ua-d1d3248b8410.json");
@@ -70,7 +73,8 @@ const uploadProducts = async (telegram, objectId, sheetId, pageName) => {
   // array for save tags
   // const catalogsTagsMap = new Map();
   // batch catalogs
-  let batchCatalogs = firebase.firestore().batch();
+  // let batchCatalogs = firebase.firestore().batch();
+  let batchCatalogs = getFirestore().batch();
   let batchCatalogsCount = 0;
   // load sheet
   const doc = new GoogleSpreadsheet(sheetId);
@@ -89,9 +93,12 @@ const uploadProducts = async (telegram, objectId, sheetId, pageName) => {
   // read rows
   for (let i = 1; i < rowCount; i += perPage) {
     // write batch
-    const batchGoods = firebase.firestore().batch();
-    const batchGoodsDelete = firebase.firestore().batch();
-    const batchCatalogsDelete = firebase.firestore().batch();
+    // const batchGoods = firebase.firestore().batch();
+    // const batchGoodsDelete = firebase.firestore().batch();
+    // const batchCatalogsDelete = firebase.firestore().batch();
+    const batchGoods = getFirestore().batch();
+    const batchGoodsDelete = getFirestore().batch();
+    const batchCatalogsDelete = getFirestore().batch();
     // get rows data, use get cell because this method have numder formats
     await sheet.loadCells({
       startRowIndex: i, endRowIndex: i + perPage, startColumnIndex: 0, endColumnIndex: 11,
@@ -242,23 +249,23 @@ const uploadProducts = async (telegram, objectId, sheetId, pageName) => {
           } else {
             productIsSet.add(product.id);
           }
-          const productRef = firebase.firestore().collection("objects").doc(objectId)
+          const productRef = getFirestore().collection("objects").doc(objectId)
               .collection("products").doc(product.id);
           batchGoods.set(productRef, {
             "name": product.name,
             "purchasePrice": product.purchasePrice,
             "price": product.price,
             // "currency": product.currency,
-            "currency": firestore.FieldValue.delete(),
+            "currency": FieldValue.delete(),
             "unit": product.unit,
             "orderNumber": product.orderNumber,
             "catalogId": groupArray[groupArray.length - 1].url.replace(/\//g, "#"),
             "pathArray": groupArray.map((catalog) => {
               return {name: catalog.name, url: catalog.url};
             }),
-            "tags": tags.length ? tags : firestore.FieldValue.delete(),
+            "tags": tags.length ? tags : FieldValue.delete(),
             // "tagsNames": firestore.FieldValue.delete(),
-            "brand": product.brand ? product.brand : firestore.FieldValue.delete(),
+            "brand": product.brand ? product.brand : FieldValue.delete(),
             "updatedAt": updatedAtTimestamp,
             "objectName": object.name,
             "rowNumber": j + 1,
@@ -279,7 +286,7 @@ const uploadProducts = async (telegram, objectId, sheetId, pageName) => {
             });
             if (!catalogsIsSet.has(pathArray.join("#"))) {
               catalogsIsSet.add(pathArray.join("#"));
-              const catalogRef = firebase.firestore().collection("objects").doc(objectId)
+              const catalogRef = getFirestore().collection("objects").doc(objectId)
                   .collection("catalogs").doc(pathArray.join("#"));
               batchCatalogs.set(catalogRef, {
                 "name": catalog.name,
@@ -291,7 +298,8 @@ const uploadProducts = async (telegram, objectId, sheetId, pageName) => {
               // if 500 items commit
               if (++batchCatalogsCount === perPage) {
                 await batchCatalogs.commit();
-                batchCatalogs = firebase.firestore().batch();
+                // batchCatalogs = firebase.firestore().batch();
+                batchCatalogs = getFirestore().batch();
                 batchCatalogsCount = 0;
               }
             }
@@ -370,7 +378,7 @@ const createObject = async (ctx, next) => {
         // const EUR = roundNumber(sheet.getCellByA1("B7").value);
         // const UAH = roundNumber(sheet.getCellByA1("B8").value);
         // const RUB = roundNumber(sheet.getCellByA1("B9").value);
-        const postId = sheet.getCellByA1("B10").value;
+        // const postId = sheet.getCellByA1("B10").value;
         const objectCheck = {
           id,
           name,
@@ -381,7 +389,7 @@ const createObject = async (ctx, next) => {
           // EUR,
           // UAH,
           // RUB,
-          postId,
+          // postId,
         };
         const rulesObject = {
           "id": "required|alpha_dash|max:20",
@@ -394,7 +402,7 @@ const createObject = async (ctx, next) => {
           // "EUR": "required|numeric",
           // "UAH": "required|numeric",
           // "RUB": "required|numeric",
-          "postId": "integer|min:1",
+          // "postId": "integer|min:1",
         };
         const validateObject = new Validator(objectCheck, rulesObject, {
           "regex": `The :attribute phone number is not in the format ${process.env.BOT_PHONETEMPLATE}`,
@@ -418,7 +426,7 @@ const createObject = async (ctx, next) => {
           //   UAH,
           //   RUB,
           // },
-          postId: postId ? postId : firestore.FieldValue.delete(),
+          // postId: postId ? postId : firestore.FieldValue.delete(),
         });
         await ctx.replyWithHTML(`Данные обновлены ${objectCheck.name} /objects`);
       }
@@ -485,29 +493,29 @@ const changeProduct = async (ctx, newValue) => {
   // add desc
   if (todo === "desc") {
     await store.updateRecord(`objects/${objectId}/products/${productId}`, {
-      [todo]: newValue === "del" ? firestore.FieldValue.delete() : newValue,
+      [todo]: newValue === "del" ? FieldValue.delete() : newValue,
     });
     await ctx.replyWithHTML(`<b>${productName} (${productId}) desc ${newValue === "del" ? "deleted" : newValue}</b>`);
     return;
   }
   // add postId
-  if (todo === "postId") {
-    // validate and save
-    newValue = + newValue;
-    if (Number.isInteger(newValue)) {
-      await store.updateRecord(`objects/${objectId}/products/${productId}`, {
-        [todo]: newValue ? newValue : firestore.FieldValue.delete(),
-      });
-      await ctx.replyWithHTML(`<b>${productName} (${productId}) postId ${newValue ? newValue : "deleted"}</b>`);
-    } else {
-      await ctx.replyWithHTML(`<b>${todo}</b> must be a integer!` + ctx.state.sessionMsg.linkHTML(), {
-        reply_markup: {
-          force_reply: true,
-          input_field_placeholder: todo,
-        }});
-    }
-    return;
-  }
+  // if (todo === "postId") {
+  //   // validate and save
+  //   newValue = + newValue;
+  //   if (Number.isInteger(newValue)) {
+  //     await store.updateRecord(`objects/${objectId}/products/${productId}`, {
+  //       [todo]: newValue ? newValue : firestore.FieldValue.delete(),
+  //     });
+  //     await ctx.replyWithHTML(`<b>${productName} (${productId}) postId ${newValue ? newValue : "deleted"}</b>`);
+  //   } else {
+  //     await ctx.replyWithHTML(`<b>${todo}</b> must be a integer!` + ctx.state.sessionMsg.linkHTML(), {
+  //       reply_markup: {
+  //         force_reply: true,
+  //         input_field_placeholder: todo,
+  //       }});
+  //   }
+  //   return;
+  // }
   const productRowNumber = ctx.state.sessionMsg.url.searchParams.get("cRowN");
   const object = await store.findRecord(`objects/${objectId}`);
   const doc = new GoogleSpreadsheet(object.sheetId);
@@ -621,28 +629,28 @@ const changeCatalog = async (ctx, newValue) => {
   if (scene === "upload-desc") {
     field = "desc";
     if (newValue === "del") {
-      newValue = firestore.FieldValue.delete();
+      newValue = FieldValue.delete();
       caption = "deleted";
     }
   }
-  if (scene === "upload-postId") {
-    field = "postId";
-    if (newValue === "del") {
-      newValue = firestore.FieldValue.delete();
-      caption = "deleted";
-    } else {
-      // validate postId
-      newValue = + newValue;
-      if (!Number.isInteger(newValue)) {
-        await ctx.replyWithHTML(`<b>${newValue}</b> must be a integer!` + ctx.state.sessionMsg.linkHTML(), {
-          reply_markup: {
-            force_reply: true,
-            input_field_placeholder: "postId",
-          }});
-        return;
-      }
-    }
-  }
+  // if (scene === "upload-postId") {
+  //   field = "postId";
+  //   if (newValue === "del") {
+  //     newValue = firestore.FieldValue.delete();
+  //     caption = "deleted";
+  //   } else {
+  //     // validate postId
+  //     newValue = + newValue;
+  //     if (!Number.isInteger(newValue)) {
+  //       await ctx.replyWithHTML(`<b>${newValue}</b> must be a integer!` + ctx.state.sessionMsg.linkHTML(), {
+  //         reply_markup: {
+  //           force_reply: true,
+  //           input_field_placeholder: "postId",
+  //         }});
+  //       return;
+  //     }
+  //   }
+  // }
   await store.updateRecord(`objects/${objectId}/catalogs/${catalogId}`, {
     [field]: newValue,
   });
@@ -701,39 +709,52 @@ const uploadMerch = async (ctx, next) => {
 uploadActions.push(uploadMerch);
 
 // upload trigger
-const runtimeOpts = {
-  timeoutSeconds: 540,
-  memory: "1GB",
-};
+// const runtimeOpts = {
+//   timeoutSeconds: 540,
+//   memory: "1GB",
+// };
 
 // add new page param!
-const productsUploadFunction = functions.region("europe-central2")
-    .runWith(runtimeOpts).firestore
-    .document("objects/{objectId}/uploads/start")
-    .onCreate(async (snap, context) => {
-      const objectId = context.params.objectId;
-      const uploads = snap.data();
-      try {
-        await uploadProducts(bot.telegram, objectId, uploads.sheetId, uploads.pageName);
-      } catch (error) {
-        await snap.ref.delete();
-        await bot.telegram.sendMessage(94899148, `Sheet ${error}`,
-            {parse_mode: "html"});
-      }
-      await snap.ref.delete();
-      return null;
-    });
-// exports.uploadForm = uploadForm;
-// exports.changeProduct = changeProduct;
-// exports.changeCatalog = changeCatalog;
-// exports.uploadActions = uploadActions;
-
-module.exports = {
-  productsUploadFunction,
-  uploadForm,
-  changeProduct,
-  changeCatalog,
-  uploadActions,
-  changeCartProductPrice,
-  uploadProductsTrigger,
-};
+// const productsUploadFunction = functions.region("europe-central2")
+//     .runWith(runtimeOpts).firestore
+//     .document("objects/{objectId}/uploads/start")
+//     .onCreate(async (snap, context) => {
+//       const objectId = context.params.objectId;
+//       const uploads = snap.data();
+//       try {
+//         await uploadProducts(bot.telegram, objectId, uploads.sheetId, uploads.pageName);
+//       } catch (error) {
+//         await snap.ref.delete();
+//         await bot.telegram.sendMessage(94899148, `Sheet ${error}`,
+//             {parse_mode: "html"});
+//       }
+//       await snap.ref.delete();
+//       return null;
+//     });
+// 2nd generation
+const productsUploadFunction = onDocumentCreated({
+  document: "objects/{objectId}/uploads/start",
+  region: "europe-central2",
+  timeoutSeconds: 540,
+  maxInstances: 10,
+  memory: "1GiB"}, async (event) => {
+  const objectId = event.params.objectId;
+  const uploads = event.data.data();
+  try {
+    await uploadProducts(bot.telegram, objectId, uploads.sheetId, uploads.pageName);
+  } catch (error) {
+    await event.data.ref.delete();
+    await bot.telegram.sendMessage(94899148, `Sheet ${error}`,
+        {parse_mode: "html"});
+  }
+  await event.data.ref.delete();
+  return null;
+});
+// exports
+exports.productsUploadFunction = productsUploadFunction;
+exports.uploadForm = uploadForm;
+exports.changeProduct = changeProduct;
+exports.changeCatalog = changeCatalog;
+exports.uploadActions = uploadActions;
+exports.changeCartProductPrice = changeCartProductPrice;
+exports.uploadProductsTrigger = uploadProductsTrigger;

@@ -143,8 +143,7 @@ startActions.push(async (ctx, next) => {
         `${object.phoneArray.join()}\n` +
         `${object.address}\n` +
         `${object.description}</b>\n` +
-        `${process.env.BOT_SITE}/o/${objectId}\n` +
-        `${object.postId ? `RZK Market Channel <a href="t.me/${process.env.BOT_CHANNEL}/${object.postId}">t.me/${process.env.BOT_CHANNEL}/${object.postId}</a>\n` : ""}`;
+        `${process.env.BOT_SITE}/o/${objectId}`;
       const cartButtons = await cart.cartButtons(objectId, ctx);
       inlineKeyboardArray.push([{text: ctx.i18n.btn.catalog(), callback_data: "c"}]);
       inlineKeyboardArray.push([cartButtons[1]]);

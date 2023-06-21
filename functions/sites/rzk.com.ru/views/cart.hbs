@@ -11,33 +11,31 @@
     <li class="list-group-item">{{inc @index 1}}. {{product.id}} = {{product.qty}}</li>
   {{/each}}
   </ul>
-  <a href="?{{productParam}}&import=true" class="btn btn-success mt-2">{{envSite.i18n.cartImport}}</a>
+  <a href="?{{productParam}}&import=true" class="btn btn-success my-3">{{envSite.i18n.cartImport}}</a>
 {{/if}}
 <h1>{{object.name}} / {{envSite.i18n.aCart}}</h1>
 {{#if products}}
-  <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2 pb-3">
+  <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2 my-3">
   {{#each products as |product|}}
     {{> product product=product object=../object envSite=../envSite}}
   {{/each}}
   </div>
   <div class="row">
-    <div class="col">
-      <h5>{{envSite.i18n.tQty}}: <strong id="totalQty">{{object.cartInfo.totalQty}}</strong></h5>
-    </div>
+    <h5>{{envSite.i18n.tQty}}: <strong id="totalQty">{{object.cartInfo.totalQty}}</strong></h5>
   </div>
   <div class="row">
-    <div class="col">
-      <h5>{{envSite.i18n.tSum}}: <strong class="text-nowrap" id="totalSum">{{formatNumber object.cartInfo.totalSum}} {{envSite.currency}}</strong></h5>
-    </div>
+    <h4>{{envSite.i18n.tSum}}: <strong class="text-nowrap" id="totalSum">{{formatNumber object.cartInfo.totalSum}} {{envSite.currency}}</strong></h4>
   </div>
-  <button type="button" class="btn btn-success mt-2" data-bs-toggle="modal" data-bs-target="#purchaseModal">
-    {{envSite.i18n.btnPurchase}}
-  </button>
-  <a href="?clear=true" class="btn btn-primary mt-2">{{envSite.i18n.btnСlearCart}}</a>
-  <a href="/o/{{object.id}}/pdf?docId={{envSite.user.uid}}" target="_blank" class="btn btn-primary mt-2">{{envSite.i18n.btnSavePdf}}</a>
-  {{#if admin}}
-    <button type="button" class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#receiptModaL">Печать</button>
-  {{/if}}
+  <div class="my-3">
+    <button type="button" class="btn btn-success mt-3" data-bs-toggle="modal" data-bs-target="#purchaseModal">
+      {{envSite.i18n.btnPurchase}}
+    </button>
+    <a href="?clear=true" class="btn btn-primary mt-3">{{envSite.i18n.btnСlearCart}}</a>
+    <a href="/o/{{object.id}}/pdf?docId={{envSite.user.uid}}" target="_blank" class="btn btn-primary mt-3">{{envSite.i18n.btnSavePdf}}</a>
+    {{#if admin}}
+      <button type="button" class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#receiptModaL">Печать</button>
+    {{/if}}
+  </div>
 {{else}}
   <h3>{{envSite.i18n.tCartEmpty}} <a href="/o/{{object.id}}/c">{{envSite.i18n.aChuseGoods}}</a></h3>
 {{/if}}

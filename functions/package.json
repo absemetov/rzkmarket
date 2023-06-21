@@ -13,12 +13,13 @@
     "logs": "firebase functions:log"
   },
   "engines": {
-    "node": "16"
+    "node": "18"
   },
   "main": "index.js",
   "targets": {
     "main": false,
     "web": {
+      "outputFormat": "esmodule",
       "context": "browser",
       "source": "sites/rzk.com.ru/src/index.html",
       "distDir": "../sites/rzk.com.ru/assets"
@@ -32,43 +33,43 @@
     }
   },
   "dependencies": {
-    "@algolia/autocomplete-js": "^1.9.2",
-    "@algolia/autocomplete-plugin-query-suggestions": "^1.9.2",
-    "@algolia/autocomplete-plugin-recent-searches": "^1.9.2",
-    "@algolia/autocomplete-theme-classic": "^1.9.2",
+    "@algolia/autocomplete-js": "^1.9.3",
+    "@algolia/autocomplete-plugin-query-suggestions": "^1.9.3",
+    "@algolia/autocomplete-plugin-recent-searches": "^1.9.3",
+    "@algolia/autocomplete-theme-classic": "^1.9.3",
     "@googleapis/content": "^7.1.0",
-    "@popperjs/core": "^2.11.5",
-    "algoliasearch": "^4.17.0",
+    "@popperjs/core": "^2.11.8",
+    "algoliasearch": "^4.17.2",
     "axios": "^0.24.0",
-    "bootstrap": "^5.2.0",
-    "bootstrap-icons": "^1.8.2",
+    "bootstrap": "5.3.0",
+    "bootstrap-icons": "^1.10.5",
     "busboy": "^1.4.0",
     "cookie-parser": "^1.4.6",
     "currency-codes": "^2.1.0",
     "express": "^4.18.1",
     "express-handlebars": "^6.0.6",
-    "firebase-admin": "^11.0.1",
-    "firebase-functions": "^4.4.0",
+    "firebase-admin": "^11.9.0",
+    "firebase-functions": "^4.4.1",
     "google-spreadsheet": "^3.3.0",
     "googleapis": "^105.0.0",
-    "instantsearch.js": "^4.49.0",
+    "instantsearch.js": "^4.56.1",
     "isbot": "^3.6.6",
     "jsonwebtoken": "^8.5.1",
     "moment": "^2.29.1",
     "mqtt": "^4.3.7",
     "pdfkit": "^0.13.0",
-    "smartphoto": "^1.6.4",
+    "smartphoto": "^1.6.5",
     "telegraf": "^4.12.2",
     "telegraf-i18n": "^6.6.0",
     "validatorjs": "^3.22.1"
   },
   "devDependencies": {
-    "@parcel/transformer-sass": "2.6.2",
+    "@parcel/transformer-sass": "^2.9.2",
     "algolia-sitemap": "^2.2.0",
     "eslint": "^8.14.0",
     "eslint-config-google": "^0.14.0",
     "firebase-functions-test": "^0.2.0",
-    "parcel": "^2.6.2"
+    "parcel": "^2.9.2"
   },
   "private": true
 }

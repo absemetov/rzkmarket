@@ -1,35 +1,37 @@
 
-<ol class="breadcrumb text-nowrap">
-  <li class="breadcrumb-item">
-    <a href="/">{{envSite.i18n.aObjects}}</a>
-  </li>
-  <li class="breadcrumb-item">
-    <a href="/o/{{object.id}}">{{object.name}}</a>
-  </li>
-  {{#if currentCatalog}}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb text-nowrap">
     <li class="breadcrumb-item">
-      <a href="/o/{{object.id}}/c">{{envSite.i18n.aCatGoods}}</a>
+      <a href="/">{{envSite.i18n.aObjects}}</a>
     </li>
-    {{#each currentCatalog.pathArray as |item|}}
-      {{#if (last @index ../currentCatalog.pathArray.length)}}
-        <li class="breadcrumb-item">
-          <a href="/o/{{../object.id}}/c/{{item.url}}">{{item.name}}</a>
-        </li>
-      {{else}}
-        <li class="breadcrumb-item active">{{../currentCatalog.name}}</li>
-      {{/if}}
-    {{/each}}
-  {{else}}
-    <li class="breadcrumb-item active">{{envSite.i18n.aCatGoods}}</li>  
-  {{/if}}
-</ol>
+    <li class="breadcrumb-item">
+      <a href="/o/{{object.id}}">{{object.name}}</a>
+    </li>
+    {{#if currentCatalog}}
+      <li class="breadcrumb-item">
+        <a href="/o/{{object.id}}/c">{{envSite.i18n.aCatGoods}}</a>
+      </li>
+      {{#each currentCatalog.pathArray as |item|}}
+        {{#if (last @index ../currentCatalog.pathArray.length)}}
+          <li class="breadcrumb-item">
+            <a href="/o/{{../object.id}}/c/{{item.url}}">{{item.name}}</a>
+          </li>
+        {{else}}
+          <li class="breadcrumb-item active">{{../currentCatalog.name}}</li>
+        {{/if}}
+      {{/each}}
+    {{else}}
+      <li class="breadcrumb-item active">{{envSite.i18n.aCatGoods}}</li>  
+    {{/if}}
+  </ol>
+</nav>
 {{#if currentCatalog}}
-  <h1>{{object.name}} / {{currentCatalog.name}}{{#if tagActive.name}} / {{tagActive.name}}{{/if}}</h1>
+  <h1>{{object.name}} / {{currentCatalog.name}}</h1>
 {{else}}
   <h1>{{object.name}} / {{envSite.i18n.aCatGoods}}</h1>
 {{/if}}
 {{#if tags}}
-  <div class="dropdown d-block d-md-none mb-3">
+  <div class="dropdown d-block d-md-none mt-3">
     <button class="btn btn-success dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
       {{envSite.i18n.btnFilter}}
       {{#if tagActive.name}}
@@ -46,7 +48,7 @@
       {{/if}}
     </ul>
   </div>
-  <div class="row d-none d-md-block mb-3">
+  <div class="row d-none d-md-block mt-3">
     <ul class="nav nav-pills">
       {{#if tagActive.name}}
         <a class="nav-link" href="{{tagActive.path}}">{{envSite.i18n.aAllGoods}}</a>
@@ -59,7 +61,7 @@
     </ul>
   </div>
 {{/if}}
-<div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2">
+<div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2 my-3">
   {{#if catalogs}}
     {{#each catalogs as |catalog|}}
       <div class="col">
@@ -70,15 +72,17 @@
           <div class="card-body">
             <h6>
               <a href="{{catalog.url}}">{{catalog.name}}</a>
-              <div class="mt-2">
-                <a href="{{photoProxy catalog.img2 ../envSite.lang}}" class="js-smartphoto-single text-decoration-none" data-caption="{{catalog.name}}">
-                  <img src="/icons/zoom-in.svg" width="28" height="28" class="me-2" alt="zoom img">
-                </a>
-                <a href="https://t.me/share/url?url={{encodeUrl ../envSite.botName ../object.id "c" catalog.id ../envSite.domain}}&text={{encode ../object.name catalog.name}}" target="_blank">
-                  <i class="bi bi-telegram fs-4"></i>
-                </a>
-              </div>
             </h6>
+          </div>
+          <div class="card-footer">
+            {{#if (not catalog.img2 "/icons/folder2.svg")}}
+              <a href="{{photoProxy catalog.img2 ../envSite.lang}}" class="js-smartphoto-single text-decoration-none me-3" data-caption="{{catalog.name}}">
+                <img src="/icons/zoom-in.svg" width="21" height="21" alt="zoom img">
+              </a>
+            {{/if}}
+            <a href="https://t.me/share/url?url={{encodeUrl ../envSite.botName ../object.id "c" catalog.id ../envSite.domain}}&text={{encode ../object.name catalog.name}}" target="_blank">
+              <i class="bi bi-telegram"></i> Share
+            </a>
           </div>
         </div>
       </div>
@@ -102,14 +106,4 @@
 {{/if}}
 {{#if currentCatalog.desc}}
   <p class="lead"><h2>{{currentCatalog.desc}}</h2></p>
-{{/if}}
-{{#if currentCatalog.postId}}
-<div class="row row-cols-1 row-cols-md-1 row-cols-lg-2 mt-3">
-  <div class="col">
-    <div class="card p-2">
-      <script async src="https://telegram.org/js/telegram-widget.js?21" data-telegram-post="{{envSite.channel}}/{{currentCatalog.postId}}" data-width="100%"></script>
-      <script async src="https://telegram.org/js/telegram-widget.js?21" data-telegram-discussion="{{envSite.channel}}/{{currentCatalog.postId}}" data-comments-limit="5"></script>
-    </div>
-  </div>
-</div>
 {{/if}}

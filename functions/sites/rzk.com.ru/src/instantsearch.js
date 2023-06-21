@@ -171,13 +171,15 @@ const renderHits = async (renderOptions, isFirstRender) => {
                   ${item.brand ? `<h6>${reverseHighlight({attribute: "brand", hit: item})}</h6>` : ""}
                   <h6>
                     <a href="/o/${item.sellerId}/p/${item.productId}">${reverseHighlight({attribute: "name", hit: item})}</a> <small class="text-muted">(${reverseHighlight({attribute: "productId", hit: item})})</small>
-                    <div class="mt-2">
-                      <a href="https://t.me/share/url?url=${encodeURIComponent(`https://t.me/${i18n.bot_name}?start=${btoa(`o_${item.sellerId}_p_${item.productId}`)}`)}&text=${encodeURIComponent(`${item.seller} ${item.brand ? ` - ${item.brand} - ` : "-"} ${item.name}`)}" target="_blank">
-                        <i class="bi bi-telegram fs-4"></i>
-                      </a>
-                    </div>
                   </h6>
                 </div>
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item">
+                    <a href="https://t.me/share/url?url=${encodeURIComponent(`https://t.me/${i18n.bot_name}?start=${btoa(`o_${item.sellerId}_p_${item.productId}`)}`)}&text=${encodeURIComponent(`${item.seller} ${item.brand ? ` - ${item.brand} - ` : "-"} ${item.name}`)}" target="_blank">
+                      <i class="bi bi-telegram"></i> Share
+                    </a>
+                  </li>
+                </ul>
                 <div class="card-footer">
                   <h3>${item.price} ${i18n.currency}</h3>
                   <h6>${item.seller}</h6>
