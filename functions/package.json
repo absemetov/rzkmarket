@@ -10,7 +10,9 @@
     "shell": "firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "vite": "vite --host 172.26.14.10",
+    "vite-b": "vite build"
   },
   "engines": {
     "node": "18"
@@ -69,7 +71,9 @@
     "eslint": "^8.14.0",
     "eslint-config-google": "^0.14.0",
     "firebase-functions-test": "^0.2.0",
-    "parcel": "^2.9.3"
+    "parcel": "^2.9.3",
+    "sass": "^1.63.6",
+    "vite": "^4.4.4"
   },
   "private": true
 }

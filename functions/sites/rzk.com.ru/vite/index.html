@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Rzk.com.ru w/ Vite</title>
+    <script type="module" src="./js/app.js"></script>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand navbar-light bg-light">
+      <div class="container">
+        <button class="navbar-toggler d-inline" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <a class="d-none d-md-inline px-2" href="/">
+          <img src="//rzk.com.ru/logo/logo-long-ru.svg" alt="" width="" height="40">
+        </a>
+        <a class="d-inline d-md-none px-2" href="/">
+          <img src="//rzk.com.ru/logo/logo-ru.svg" alt="" width="" height="40">
+        </a>
+        <div id="autocomplete" class="w-100 overflow-hidden"></div>
+        <ul class="navbar-nav me-2">
+          <li class="nav-item"></li>
+            <a class="text-nowrap nav-link position-relative" id="cartNavLink" href="//rzk.com.ru/o/absemetov/cart">
+              <i class="bi bi-cart3"></i> <strong id="totalSumNav">16545678р</strong>
+              <span id="cartCountNav" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger mt-1">
+                4
+                <span class="visually-hidden">count goods</span>
+              </span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="offcanvasNavbarLabel">RZK Маркет Крым</h5>
+        <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body">
+        <p class="lead">RZK Маркет Крым - это маркетплейс, здесь можно купить товары по выгодным ценам напрямую со склада.
+          Мы полностью контролируем процесс обработки заказа.
+          С нами легко, быстро и удобно!
+        </p>
+        <nav class="nav flex-column">
+          {{#if user.auth}}
+            <a class="nav-link" href="/login">{{user.firstName}}</a>
+          {{else}}
+            <a class="nav-link" href="/login">Войти</a>
+          {{/if}}
+          <a class="nav-link" href="/delivery-info">Доставка и оплата</a>
+          <a class="nav-link" href="/return-policy">Обмен и возврат</a>
+          <a class="nav-link" href="//maps.app.goo.gl/F46h38LnK3Dq3jC7A">Оставить отзыв</a>
+          <a class="nav-link" href="tel:+79788986431">+7 978 89 86 431</a>
+          <a class="nav-link text-decoration-none" href="//t.me/RzkCrimeaBot?start=fromsite">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-telegram" viewBox="0 0 16 16">
+              <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8.287 5.906c-.778.324-2.334.994-4.666 2.01-.378.15-.577.298-.595.442-.03.243.275.339.69.47l.175.055c.408.133.958.288 1.243.294.26.006.549-.1.868-.32 2.179-1.471 3.304-2.214 3.374-2.23.05-.012.12-.026.166.016.047.041.042.12.037.141-.03.129-1.227 1.241-1.846 1.817-.193.18-.33.307-.358.336a8.154 8.154 0 0 1-.188.186c-.38.366-.664.64.015 1.088.327.216.589.393.85.571.284.194.568.387.936.629.093.06.183.125.27.187.331.236.63.448.997.414.214-.02.435-.22.547-.82.265-1.417.786-4.486.906-5.751a1.426 1.426 0 0 0-.013-.315.337.337 0 0 0-.114-.217.526.526 0 0 0-.31-.093c-.3.005-.763.166-2.984 1.09z"></path>
+            </svg>
+            @RzkCrimeaBot
+          </a>
+          <a class="nav-link disabled">rzk-warsaw-ru v.2.0.0 © 2022</a>
+          <a class="nav-link" href="//absemetov.org.ua/">Nadir Absemetov</a>
+        </nav>
+      </div>
+    </div>
+    <div class="container d-none pt-2" id="search">
+      <div class="d-grid gap-2">
+        <button class="btn btn-primary d-block d-lg-none mb-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasResponsive" aria-controls="offcanvasResponsive">Фильтр</button>
+      </div>
+      <div class="row">
+        <div class="col fs-3" id="stats"></div>
+      </div>
+      <div class="row">
+        <div class="col-lg-3">
+          <div class="offcanvas-lg offcanvas-start" tabindex="-1" id="offcanvasResponsive" aria-labelledby="offcanvasResponsiveLabel">
+            <div class="offcanvas-header">
+              <h5 class="offcanvas-title" id="offcanvasResponsiveLabel">Фильтр</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#offcanvasResponsive" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body flex-column">
+              <div class="accordion accordion-flush" id="accordionPanelsStayOpenExample">
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="panelsStayOpen-headingOne">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseOne" aria-expanded="true" aria-controls="panelsStayOpen-collapseOne">
+                      Каталог
+                    </button>
+                  </h2>
+                  <div id="panelsStayOpen-collapseOne" class="accordion-collapse collapse show" aria-labelledby="panelsStayOpen-headingOne">
+                    <div class="accordion-body p-0">
+                      <div id="hierarchical-menu" class="list-group list-group-flush py-2"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="panelsStayOpen-heading3">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapse3" aria-expanded="true" aria-controls="panelsStayOpen-collapse3">
+                      Категория
+                    </button>
+                  </h2>
+                  <div id="panelsStayOpen-collapse3" class="accordion-collapse collapse show" aria-labelledby="panelsStayOpen-heading3">
+                    <div class="accordion-body p-0">
+                      <div id="refinement-list-subcategory" class="list-group py-2"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="panelsStayOpen-headingTwo">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseTwo" aria-expanded="true" aria-controls="panelsStayOpen-collapseTwo">
+                      Бренд
+                    </button>
+                  </h2>
+                  <div id="panelsStayOpen-collapseTwo" class="accordion-collapse collapse show" aria-labelledby="panelsStayOpen-headingTwo">
+                    <div class="accordion-body p-0">
+                      <div id="refinement-list-brand" class="py-2"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="panelsStayOpen-heading4">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapse4" aria-expanded="true" aria-controls="panelsStayOpen-collapse4">
+                      Продавец
+                    </button>
+                  </h2>
+                  <div id="panelsStayOpen-collapse4" class="accordion-collapse collapse show" aria-labelledby="panelsStayOpen-heading4">
+                    <div class="accordion-body p-0">
+                      <div id="refinement-list-seller" class="list-group py-2"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div id="powered-by" class="pt-2"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-12 col-lg-9">
+          <div class="row">
+            <nav id="breadcrumb" aria-label="breadcrumb"></nav>
+          </div>
+          <h1 id="cat_header"></h1>
+          <ul id="current-refinements" class="nav"></ul>
+          <div id="loading-indicator">
+            <div class="d-flex justify-content-center">
+              <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+          </div>
+          <div id="hits" class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2"></div>
+          <div class="row pt-4">
+            <nav id="pagination" aria-label="Page navigation example"></nav>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="container" id="main">
+      <div id="myCarousel" class="carousel slide position-relative" data-bs-ride="carousel">
+        <div class="carousel-inner">
+          <div class="carousel-item active">
+            <img src="https://i0.wp.com/storage.googleapis.com/rzk-warsaw-dev.appspot.com/photos%2Fo%2Fsaki%2Flogo%2FAQADu8IxG6ozCEly%2F1.jpg" class="d-block w-100" alt="...">
+          </div>
+          <div class="carousel-item">
+            <img src="https://i0.wp.com/storage.googleapis.com/rzk-warsaw-dev.appspot.com/photos%2Fo%2Fsaki%2Flogo%2FAQADu8IxG6ozCEly%2F1.jpg" class="d-block w-100" alt="...">
+          </div>
+          <div class="carousel-item">
+            <img src="https://i0.wp.com/storage.googleapis.com/rzk-warsaw-dev.appspot.com/photos%2Fo%2Fsaki%2Flogo%2FAQADu8IxG6ozCEly%2F1.jpg" class="d-block w-100" alt="...">
+          </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#myCarousel" data-bs-slide="prev">
+          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#myCarousel" data-bs-slide="next">
+          <span class="carousel-control-next-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Next</span>
+        </button>
+        <div class="position-absolute bottom-0 end-0 badge rounded-pill bg-secondary"><span id="activeSlide">1</span>/<span id="totalSlides"></span></div>
+      </div>
+      <div class="col">
+        <div class="card text-center h-100">
+        <a href="/o/saki/p/shvvp-2-0-5-coax">
+        <img src="https://i0.wp.com/storage.googleapis.com/rzk-warsaw-ru.appspot.com/photos%2Fo%2Fsaki%2Fp%2Fshvvp-2-0-5-coax%2FAQADVcAxG0qwsEty%2F1.jpg" onerror="this.src = '/icons/photo_error_ru.svg';" class="card-img-top" alt="Провод ШВВП 2x0.5 ГОСТ">
+        </a>
+        <div class="card-body">
+        <h6>
+        <a href="/o/saki/p/shvvp-2-0-5-coax">Провод ШВВП 2x0.5 ГОСТ</a> <small class="text-muted">(shvvp-2-0-5-coax)</small>
+        <div class="mt-2">
+        <a href="https://i0.wp.com/storage.googleapis.com/rzk-warsaw-ru.appspot.com/photos%2Fo%2Fsaki%2Fp%2Fshvvp-2-0-5-coax%2FAQADVcAxG0qwsEty%2F2.jpg" class="js-smartphoto-single text-decoration-none" data-caption="Провод ШВВП 2x0.5 ГОСТ" data-group="nogroup" data-id="0" data-index="0">
+        
+        </a>
+        <a href="https://t.me/share/url?url=https%3A%2F%2Ft.me%2FRzkCrimeaBot%3Fstart%3Db19zYWtpX3Bfc2h2dnAtMi0wLTUtY29heA%3D%3D&amp;text=RZK%20%D0%A1%D0%B0%D0%BA%D0%B8%20-%20%D0%9F%D1%80%D0%BE%D0%B2%D0%BE%D0%B4%20%D0%A8%D0%92%D0%92%D0%9F%202x0.5%20%D0%93%D0%9E%D0%A1%D0%A2" target="_blank">
+        <i class="bi bi-telegram fs-4"></i>
+        </a>
+        </div>
+        </h6>
+        </div>
+        <div class="card-footer">
+        <h3>
+        13.22 <small class="text-muted">₽</small>
+        </h3>
+        <div class="d-grid gap-2">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#cartAddModal" data-product-id="shvvp-2-0-5-coax" data-product-name="Провод ШВВП 2x0.5 ГОСТ" data-product-unit="м" data-product-qty="" data-seller-id="saki" data-seller="RZK Саки">
+        Купить
+        </button>
+        </div>
+        </div>
+        </div>
+        </div>
+        <button type="button" class="btn btn-success mt-2" data-bs-toggle="modal" data-bs-target="#purchaseModal">
+          Оформить
+        </button>
+    </div>
+    <!-- Modal show product -->
+    <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h6 class="modal-title" id="productModalLabel">Просмотр</h6>
+            <a id="fullscreen" href="#" class="ms-2"><i class="bi bi-arrows-fullscreen"></i></a>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Modal cart -->
+    <div class="modal fade" id="cartAddModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form id="addToCartForm">
+            <div class="modal-body">
+              <div class="input-group mb-3">
+                <input type="number" min="0" id="qty" name="qty" class="form-control" placeholder="Введите количество товара" aria-label="Введите количество товара" aria-describedby="basic-addon2">
+                <span class="input-group-text" id="basic-addon2"></span>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" id="deleteFromCart" class="btn btn-danger">Удалить</button>
+              <button type="submit" id="addToCart" class="btn btn-primary" data-lang="ru" data-dev-prefix="">Купить</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <!-- Modal purchase -->
+    <div class="modal fade" id="purchaseModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">{{envSite.i18n.modalPurchase.title}}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="purchase" action="/o/{{object.id}}/cart/purchase">
+              <div class="mb-3">
+                <label for="lastName" class="form-label">{{envSite.i18n.modalPurchase.lastName}}</label>
+                <input type="text" class="form-control" name="lastName" id="lastName" aria-describedby="lastName" required autofocus>
+              </div>
+              <div class="mb-3">
+                <label for="firstName" class="form-label">{{envSite.i18n.modalPurchase.firstName}}</label>
+                <input type="text" class="form-control" name="firstName" id="firstName" aria-describedby="firstName" required>
+              </div>
+              <div class="mb-3">
+                <label for="phoneNumber" class="form-label">{{envSite.i18n.modalPurchase.phoneNumber}}</label>
+                <input type="tel" pattern="{{envSite.phoneregexp}}" placeholder="{{envSite.phonetemplate}}" class="form-control" name="phoneNumber" id="phoneNumber" aria-describedby="phoneNumber" required>
+              </div>
+              <div class="mb-3">
+                <label for="address" class="form-label">{{envSite.i18n.modalPurchase.address}}</label>
+                <input type="text" class="form-control" name="address" id="address" aria-describedby="address" required>
+              </div>
+              <div class="mb-3">
+                <label for="carrierId" class="form-label">{{envSite.i18n.modalPurchase.carrier}}</label>
+                <select name="carrierId" id="carrierId" class="form-select" aria-label="carrierId">
+                  {{#each carriers as |carrier|}}
+                    <option value="{{carrier.id}}" data-bs-reqnumber="{{carrier.reqNumber}}">{{carrier.name}}</option>
+                  {{/each}}
+                </select>
+              </div>
+              <div class="mb-3" id="carrierNumberDiv">
+                <label for="carrierNumber" class="form-label">{{envSite.i18n.modalPurchase.carrierNumber}}</label>
+                <input type="number" min="1" class="form-control" name="carrierNumber" id="carrierNumber" aria-describedby="carrierNumberFeedback">
+                <div id="carrierNumberFeedback" class="invalid-feedback"></div>
+              </div>
+              <div class="mb-3">
+                <label for="paymentId" class="form-label">{{envSite.i18n.modalPurchase.payment}}</label>
+                <select name="paymentId" id="paymentId" class="form-select" aria-label="paymentId">
+                  {{#each payments as |payment|}}
+                    <option value="{{payment.id}}">{{payment.name}}</option>
+                  {{/each}}
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="comment" class="form-label">{{envSite.i18n.modalPurchase.comment}}</label>
+                <textarea class="form-control" id="comment" name="comment" rows="3"></textarea>
+              </div>
+              <button type="submit" id="createOrderButton" class="btn btn-success">{{envSite.i18n.btnPurchaseConfirm}}</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Toast -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+      <div id="liveToast" class="toast text-bg-light" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+          <img src="//rzk.com.ru/logo/logo-ru.svg" width="" height="30" class="me-2" alt="...">
+          <strong class="me-auto" id="toast-seller">RZK Market UA</strong>
+          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+          Hello, world! This is a toast message.
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
