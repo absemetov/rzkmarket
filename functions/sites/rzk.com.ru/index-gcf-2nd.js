@@ -80,7 +80,7 @@ const hbs = exphbs.create({
     photoProxy(src, locale) {
       // proxy img for Crimea
       // return locale === "ru" ? src.replace("storage", "i0.wp.com/storage") : src;
-      return src.replace("storage.googleapis.com", "i0.wp.com/storage.googleapis.com");
+      return src?.replace("storage.googleapis.com", "i0.wp.com/storage.googleapis.com");
     },
     not(value1, value2) {
       return value1 !== value2;
@@ -581,21 +581,28 @@ app.get("/login/:objectId?", auth, async (req, res) => {
   const redirectPage = req.query.r;
   if (req.query && checkSignature(req.query)) {
     // migrate cart if exist from all objects!!!
-    if (req.user.uid) {
+    // check if user not login!!!
+    if (req.user.uid !== req.query.id) {
       const objects = await store.findAll("objects");
       // use for of for async func
       for (const obj of objects) {
-        const products = await store.findRecord(`objects/${obj.id}/carts/${req.user.uid}`, "products");
-        const productsImp = await store.findRecord(`objects/${obj.id}/carts/${req.query.id}`, "products");
+        const cartProducts = await store.findRecord(`objects/${obj.id}/carts/${req.user.uid}`, "products");
+        const cartproductsImport = await store.findRecord(`objects/${obj.id}/carts/${req.query.id}`, "products");
         // check empry cart!!! {} add keys lenght
-        if (products && Object.keys(products).length) {
-          if (productsImp) {
-            await store.updateRecord(`objects/${obj.id}/carts/${req.query.id}`, {products});
+        if (cartProducts) {
+          if (cartproductsImport) {
+            // rewrite new products???? or stay
+            // await store.updateRecord(`objects/${obj.id}/carts/${req.query.id}`, {cartProducts});
           } else {
-            await store.createRecord(`objects/${obj.id}/carts/${req.query.id}`, {products});
+            await store.createRecord(`objects/${obj.id}/carts/${req.query.id}`, {
+              products: cartProducts,
+              fromBot: false,
+              updatedAt: Math.floor(Date.now() / 1000),
+            });
           }
+          // clear old cart
+          await store.getQuery(`objects/${obj.id}/carts/${req.user.uid}`).delete();
         }
-        await store.getQuery(`objects/${obj.id}/carts/${req.user.uid}`).delete();
       }
     }
     // save user data
@@ -913,7 +920,7 @@ app.post("/o/:objectId/cart/purchase", auth, (req, res) => {
     fields.phoneNumber = `${process.env.BOT_PHONECODE}${checkPhone[2]}`;
     const objectId = req.params.objectId;
     const cartProducts = await store.findRecord(`objects/${objectId}/carts/${req.user.uid}`, "products");
-    if (cartProducts && Object.keys(cartProducts).length) {
+    if (cartProducts) {
       const objectId = req.params.objectId;
       const object = await store.findRecord(`objects/${objectId}`);
       const newOrderRef = getFirestore().collection("objects").doc(objectId).collection("orders").doc();

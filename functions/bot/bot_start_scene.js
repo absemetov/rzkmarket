@@ -142,8 +142,7 @@ startActions.push(async (ctx, next) => {
       caption = `<b>${object.name}\n` +
         `${object.phoneArray.join()}\n` +
         `${object.address}\n` +
-        `${object.description}</b>\n` +
-        `${process.env.BOT_SITE}/o/${objectId}`;
+        `${object.description}</b>`;
       const cartButtons = await cart.cartButtons(objectId, ctx);
       inlineKeyboardArray.push([{text: ctx.i18n.btn.catalog(), callback_data: "c"}]);
       inlineKeyboardArray.push([cartButtons[1]]);
@@ -167,6 +166,12 @@ startActions.push(async (ctx, next) => {
       }
       caption += ctx.state.sessionMsg.linkHTML();
       inlineKeyboardArray.push([{text: ctx.i18n.btn.main(), callback_data: "o"}]);
+      inlineKeyboardArray.push([
+        {
+          text: `${object.name}`,
+          url: `${process.env.BOT_SITE}/o/${objectId}`,
+        },
+      ]);
       // set logo obj
       if (object.photoId) {
         imgUrl = `photos/o/${objectId}/logo/${object.photoId}/2.jpg`;

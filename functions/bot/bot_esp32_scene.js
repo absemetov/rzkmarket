@@ -1,5 +1,8 @@
 const mqtt = require("mqtt");
-const client = mqtt.connect("mqtt://broker.hivemq.com");
+const client = mqtt.connect("mqtt://mqtt.rzk.com.ua", {
+  username: "admin",
+  password: "admin",
+});
 client.subscribe("home/rele/status");
 let editMsg = null;
 // subsc callback

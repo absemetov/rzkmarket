@@ -246,7 +246,7 @@ const cart = {
     const orderQuery = getFirestore().collection("objects").doc(objectId).collection("orders");
     const cartProducts = await store.findRecord(`objects/${objectId}/carts/${userId}`, "products");
     // if cart empty alert error
-    if (cartProducts && Object.keys(cartProducts).length) {
+    if (cartProducts) {
       const object = await store.findRecord(`objects/${objectId}`);
       await orderQuery.add({
         userId,

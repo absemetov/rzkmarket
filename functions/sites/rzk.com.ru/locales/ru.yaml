@@ -54,7 +54,7 @@ tLoginAuth2: Можно войти прямо из приложения Telegram
 tLoginAuth3: внизу списка объектов есть кнопка Войти на сайт
 tCategory: Категория
 tSeller: Продавец
-tNews: Новини
+tNews: Новости
 tProducts: Товары
 product:
   code: Код товара

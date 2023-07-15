@@ -34,7 +34,8 @@
     "robots-ru": "node functions/sites/rzk.com.ru/sitemap.js ru robots",
     "kill-port": "fuser -k 5001/tcp",
     "disable-hosting": "firebase hosting:disable --project=ru --site absemetov-page",
-    "merchant": "node functions/sites/rzk.com.ru/sitemap.js ua merchant"
+    "merchant": "node functions/sites/rzk.com.ru/sitemap.js ua merchant",
+    "start-bot": "curl http://localhost:5001/rzk-warsaw-dev/europe-central2/botFunctionSecondGen"
   },
   "dependencies": {}
 }

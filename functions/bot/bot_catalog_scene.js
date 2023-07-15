@@ -1102,7 +1102,7 @@ catalogsActions.push( async (ctx, next) => {
             reply_markup: {
               inline_keyboard: [
                 [{text: "🗑 Delete", callback_data: `s/${productId}?todo=delete`}],
-                [{text: "❎ Закрыть", callback_data: `s/${productId}?todo=close`}],
+                [{text: ctx.i18n.btn.close(), callback_data: `s/${productId}?todo=close`}],
               ],
             },
             parse_mode: "html",
@@ -1162,7 +1162,7 @@ catalogsActions.push( async (ctx, next) => {
         inlineKeyboardArray.push([{text: "🗑 Delete",
           callback_data: `s/${product.id}?todo=delete`}]);
       }
-      inlineKeyboardArray.push([{text: "❎ Закрыть", callback_data: `s/${product.id}?todo=close`}]);
+      inlineKeyboardArray.push([{text: ctx.i18n.btn.close(), callback_data: `s/${product.id}?todo=close`}]);
       let caption = `<b>Фото #${index + 1}</b> ${product.name} (${product.id})`;
       if (product.mainPhoto === photoId) {
         caption = "✅ " + caption;
