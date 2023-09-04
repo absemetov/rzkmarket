@@ -28,9 +28,6 @@
         ],
         "viko.org.ua": [
           "viko-orgua"
-        ],
-        "test2nd": [
-          "rzk-second-generation"
         ]
       }
     },
@@ -41,6 +38,9 @@
         ],
         "dev.rzk.com.ua": [
           "rzk-com-ua-dev"
+        ],
+        "dev.viko.org.ua": [
+          "rzk-sites"
         ]
       }
     }

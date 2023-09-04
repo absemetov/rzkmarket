@@ -73,8 +73,9 @@ if (process.argv[3] === "sitemap") {
     console.log("Done generating sitemaps");
   }).catch(console.error);
 }
-// upload goods to merchant center
-if (process.argv[3] === "merchant") {
+
+// test merchant api
+const uploadToMerchnt = async () => {
   const content = google.content("v2.1");
   // add scope content in admin.google!!!
   const auth = new google.auth.JWT({
@@ -83,49 +84,69 @@ if (process.argv[3] === "merchant") {
     subject: "nadir@absemetov.org.ua",
   });
   google.options({auth});
-
-  // Use an API key with `browse` ACL
   const client = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
   const index = client.initIndex("products");
-
-  let hits = [];
   const promises = [];
-  // Get all records, retrieve only `title` and `content` attributes
-  index.browseObjects({
+  await index.browseObjects({
     query: "",
-    attributesToRetrieve: ["productId", "brand", "sellerId", "img1", "name", "price"],
-    batch: (batch) => {
-      hits = hits.concat(batch);
-    },
-  }).then(async () => {
-    for (const params of hits) {
-      // merchant uploader
-      // Do the magic
-      // const res = await content.products.insert({
-      promises.push(content.products.insert({
-        merchantId: "120890507",
-        resource: {
-          "channel": "online",
-          "contentLanguage": "uk",
-          "offerId": params.productId,
-          "targetCountry": "UA",
-          "title": `${params.brand ? params.brand + " " : ""}${params.name} (${params.productId})`,
-          "brand": `${params.brand ? params.brand : "RZK Маркет"}`,
-          "description": "RZK Маркет Україна - це маркетплейс, тут можна купити товари за вигідними цінами безпосередньо зі складу. Ми повністю контролюємо процес обробки замовлення. З нами легко, швидко та зручно!",
-          "link": `https://rzk.com.ua/o/${params.sellerId}/p/${params.productId}`,
-          "imageLink": params.img1 ? params.img1 : "https://rzk.com.ua/icons/flower3.svg",
-          "availability": "in stock",
-          "condition": "new",
-          "price": {
-            // "value": roundNumber(product.price * object.currencies[product.currency]),
-            "value": params.price,
-            "currency": "UAH",
+    facetFilters: [["seller:RZK Дніпро"]],
+    attributesToRetrieve: ["productId", "brand", "sellerId", "img1", "name", "nameRu", "price"],
+    shouldStop: () => true,
+    batch: (hits) => {
+      for (const params of hits) {
+        promises.push(content.products.insert({
+          merchantId: "120890507",
+          resource: {
+            "channel": "online",
+            "contentLanguage": "uk",
+            "offerId": params.productId,
+            "targetCountry": "UA",
+            "title": `${params.brand ? params.brand + " " : ""}${params.name} (${params.productId})`,
+            "brand": `${params.brand ? params.brand : "RZK Маркет Україна"}`,
+            "description": "Купити розетки та вимикачі Viko, Gunsan, Nilson оптом!",
+            "link": `https://rzk.com.ua/o/${params.sellerId}/p/${params.productId}`,
+            "imageLink": params.img1 ? params.img1 : "https://rzk.com.ua/icons/flower3.svg",
+            "availability": "in stock",
+            "condition": "new",
+            "price": {
+              // "value": roundNumber(product.price * object.currencies[product.currency]),
+              "value": params.price,
+              "currency": "UAH",
+            },
           },
-        },
-      }));
-    }
-    Promise.all(promises).then((values) => {
-      // console.log(values); // [3, 1337, "foo"]
-    });
+        }));
+        if (params.nameRu) {
+          promises.push(content.products.insert({
+            merchantId: "120890507",
+            resource: {
+              "channel": "online",
+              "contentLanguage": "ru",
+              "offerId": params.productId,
+              "targetCountry": "UA",
+              "title": `${params.brand ? params.brand + " " : ""}${params.nameRu} (${params.productId})`,
+              "brand": `${params.brand ? params.brand : "RZK Маркет Украина"}`,
+              "description": "Купить розетки и выключатели Viko, Gunsan, Nilson оптом!",
+              "link": `https://rzk.com.ua/ru/o/${params.sellerId}/p/${params.productId}`,
+              "imageLink": params.img1 ? params.img1 : "https://rzk.com.ua/icons/flower3.svg",
+              "availability": "in stock",
+              "condition": "new",
+              "price": {
+                // "value": roundNumber(product.price * object.currencies[product.currency]),
+                "value": params.price,
+                "currency": "UAH",
+              },
+            },
+          }));
+        }
+      }
+    },
+  }).then(() => console.log("browse done!"));
+  await Promise.all(promises).then(() => {
+    console.log(`then ${promises.length}`);
   });
+};
+
+// upload goods to merchant center
+if (process.argv[3] === "merchant") {
+  uploadToMerchnt();
 }

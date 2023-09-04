@@ -1,6 +1,6 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="/">{{envSite.i18n.aObjects}}</a></li>
+    <li class="breadcrumb-item"><a href="/{{#if (equals envSite.data.lang "ru-ua")}}ru{{/if}}">{{envSite.i18n.aObjects}}</a></li>
     <li class="breadcrumb-item active" aria-current="page">{{object.name}}</li>
   </ol>
 </nav>
@@ -35,7 +35,7 @@
             </button>
             <ul class="dropdown-menu">
               <a href="//t.me/{{envSite.chatName}}" target="_blank" class="dropdown-item"><i class="bi bi-telegram"></i> Чат @{{envSite.chatName}}</a>
-              <a href="https://t.me/share/url?url={{encodeUrl envSite.botName object.id "c" "c"}}&text={{encode object.name envSite.i18n.aCatGoods}}" class="dropdown-item" target="_blank">
+              <a href="https://t.me/share/url?url={{encodeUrl envSite.botName object.id "c" "c"}}&text={{encode object.name}}" class="dropdown-item" target="_blank">
                 <i class="bi bi-telegram"></i> Share
               </a>
             </ul>
@@ -43,13 +43,13 @@
         </li>
         <li class="list-group-item">
           <div class="d-grid gap-2">
-            <a href="/o/{{object.id}}/c" class="btn btn-success"><i class="bi bi-folder2"></i> {{envSite.i18n.aCatGoods}}</a>
+            <a href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{object.id}}/c" class="btn btn-success"><i class="bi bi-folder2"></i> {{envSite.i18n.aCatGoods}}</a>
           </div>
         </li>
       </ul>
       <div class="card-footer">
         <div class="d-grid gap-2">
-          <a href="/o/{{object.id}}/cart"  class="btn btn-success position-relative mt-2">
+          <a href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{object.id}}/cart"  class="btn btn-success position-relative mt-2">
             <span class="text-nowrap"><i class="bi bi-cart3"></i> {{formatNumber object.cartInfo.totalSum}} {{envSite.currency}}</span>
             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark">
               {{object.cartInfo.cartCount}}

@@ -2,19 +2,32 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb text-nowrap">
     <li class="breadcrumb-item">
-      <a href="/">{{envSite.i18n.aObjects}}</a>
+      <a href="/{{#if (equals envSite.data.lang "ru-ua")}}ru{{/if}}">{{envSite.i18n.aObjects}}</a>
     </li>
     <li class="breadcrumb-item">
-      <a href="/o/{{object.id}}">{{object.name}}</a>
+      <a href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{object.id}}">{{object.name}}</a>
     </li>
     {{#if currentCatalog}}
       <li class="breadcrumb-item">
-        <a href="/o/{{object.id}}/c">{{envSite.i18n.aCatGoods}}</a>
+        <a href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{object.id}}/c">{{envSite.i18n.aCatGoods}}</a>
+      </li>
+      <li class="breadcrumb-item d-block d-md-none">
+        ...
       </li>
       {{#each currentCatalog.pathArray as |item|}}
-        {{#if (last @index ../currentCatalog.pathArray.length)}}
-          <li class="breadcrumb-item">
-            <a href="/o/{{../object.id}}/c/{{item.url}}">{{item.name}}</a>
+        {{#if (last @index ../currentCatalog.pathArray.length 2)}}
+          <li class="breadcrumb-item {{#if (last @index ../currentCatalog.pathArray.length 3)}}d-none d-md-inline{{/if}}">
+            <a href="{{#if (equals ../envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{../object.id}}/c/{{item.url}}">
+            {{#if (equals ../envSite.data.lang "ru-ua")}}
+              {{#if item.nameRu}}
+                {{item.nameRu}}
+              {{else}}
+                {{item.name}}
+              {{/if}}
+            {{else}}
+              {{item.name}}
+            {{/if}}
+            </a>
           </li>
         {{else}}
           <li class="breadcrumb-item active">{{../currentCatalog.name}}</li>
@@ -66,12 +79,12 @@
     {{#each catalogs as |catalog|}}
       <div class="col">
         <div class="card text-center h-100">
-          <a href="{{catalog.url}}">
+          <a href="{{#if (equals ../envSite.data.lang "ru-ua")}}/ru{{/if}}{{catalog.url}}">
             <img src="{{photoProxy catalog.img1 ../envSite.lang}}" class="card-img-top" onerror="this.src = '/icons/photo_error_{{../envSite.lang}}.svg';" alt="{{catalog.name}}">
           </a>
           <div class="card-body">
             <h6>
-              <a href="{{catalog.url}}">{{catalog.name}}</a>
+              <a href="{{#if (equals ../envSite.data.lang "ru-ua")}}/ru{{/if}}{{catalog.url}}">{{catalog.name}}</a>
             </h6>
           </div>
           <div class="card-footer">

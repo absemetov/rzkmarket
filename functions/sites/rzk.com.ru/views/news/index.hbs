@@ -1,6 +1,6 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb text-nowrap">
-    <li class="breadcrumb-item"><a href="/">{{envSite.i18n.aObjects}}</a></li>
+    <li class="breadcrumb-item"><a href="/{{#if (equals envSite.data.lang "ru-ua")}}ru{{/if}}">{{envSite.i18n.aObjects}}</a></li>
     <li class="breadcrumb-item active" aria-current="page">{{envSite.i18n.tNews}}</li>
   </ol>
 </nav>
@@ -9,7 +9,7 @@
   <div class="card my-3">
     <div class="card-body">
       <h5 class="card-title">
-        <a href="/news/{{newsObj.id}}">{{newsObj.title}}</a>
+        <a href="{{#if (equals ../envSite.data.lang "ru-ua")}}/ru{{/if}}/news/{{newsObj.id}}">{{newsObj.title}}</a>
       </h5>
       <p class="card-text">{{{newsObj.preview}}}</p>
     </div>

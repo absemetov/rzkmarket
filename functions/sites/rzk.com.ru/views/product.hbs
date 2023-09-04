@@ -1,16 +1,29 @@
 <ol class="breadcrumb text-nowrap">
   <li class="breadcrumb-item">
-    <a href="/">{{envSite.i18n.aObjects}}</a>
+    <a href="/{{#if (equals envSite.data.lang "ru-ua")}}ru{{/if}}">{{envSite.i18n.aObjects}}</a>
   </li>
   <li class="breadcrumb-item">
-    <a href="/o/{{object.id}}">{{object.name}}</a>
+    <a href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{object.id}}">{{object.name}}</a>
   </li>
   <li class="breadcrumb-item">
-    <a href="/o/{{object.id}}/c">{{envSite.i18n.aCatGoods}}</a>
+    <a href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{object.id}}/c">{{envSite.i18n.aCatGoods}}</a>
+  </li>
+  <li class="breadcrumb-item d-block d-md-none">
+    ...
   </li>
   {{#each product.pathArray as |item|}}
-    <li class="breadcrumb-item">
-      <a href="/o/{{../object.id}}/c/{{item.url}}">{{item.name}}</a>
+    <li class="breadcrumb-item {{#if (last @index ../product.pathArray.length 3)}}d-none d-md-inline{{/if}}">
+      <a href="{{#if (equals ../envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{../object.id}}/c/{{item.url}}">
+      {{#if (equals ../envSite.data.lang "ru-ua")}}
+        {{#if item.nameRu}}
+          {{item.nameRu}}
+        {{else}}
+          {{item.name}}
+        {{/if}}
+      {{else}}
+        {{item.name}}
+      {{/if}}
+      </a>
     </li>
   {{/each}}
 </ol>
@@ -25,7 +38,7 @@
       <div class="col">
         <div class="card text-center h-100">
           <ul class="list-group list-group-flush">
-            <li class="list-group-item"><a href="/o/{{../object.id}}/c/{{../product.tagPath}}?tag={{url tag}}">{{tag}}</a></li>
+            <li class="list-group-item"><a href="{{#if (equals ../envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{../object.id}}/c/{{../product.tagPath}}?tag={{url tag}}">{{tag}}</a></li>
           </ul>
         </div>
       </div>

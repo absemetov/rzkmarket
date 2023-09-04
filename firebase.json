@@ -48,8 +48,8 @@
       ]
     },
     {
-      "target": "test2nd",
-      "public": "sites/rzk.com.ru",
+      "target": "dev.viko.org.ua",
+      "public": "sites/viko.org.ua",
       "ignore": [
         "firebase.json",
         "**/.*",
@@ -58,7 +58,8 @@
       "rewrites": [
         {
           "source": "**",
-          "function": "siteWarsawSecondGen"
+          "function": "siteBrand",
+          "region": "europe-central2"
         }
       ]
     },
@@ -117,8 +118,9 @@
       ],
       "rewrites": [
         {
-          "source": "/",
-          "destination": "/index.html"
+          "source": "**",
+          "function": "siteBrand",
+          "region": "europe-central2"
         }
       ]
     }

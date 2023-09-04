@@ -18,8 +18,8 @@
     "pl": "firebase use",
     "s-gunsan": "firebase --project=ua emulators:start --only hosting:gunsan.com.ua",
     "deploy-gunsan": "firebase deploy --project=ua --only hosting:gunsan.com.ua",
-    "s-viko": "firebase --project=ua emulators:start --only hosting:viko.org.ua",
-    "deploy-viko": "firebase deploy --project=ua --only hosting:viko.org.ua",
+    "s-viko": "firebase --project=dev emulators:start --only functions:siteBrand,hosting:dev.viko.org.ua",
+    "deploy-viko": "firebase deploy --project=ua --only functions:siteBrand,hosting:viko.org.ua",
     "s-nilson": "firebase --project=ru emulators:start --only hosting:nilson.com.ua",
     "deploy-nilson": "firebase deploy --project=ru --only hosting:nilson.com.ua",
     "s-abs": "firebase --project=ru emulators:start --only hosting:absemetov.org.ua",
@@ -36,6 +36,5 @@
     "disable-hosting": "firebase hosting:disable --project=ru --site absemetov-page",
     "merchant": "node functions/sites/rzk.com.ru/sitemap.js ua merchant",
     "start-bot": "curl http://localhost:5001/rzk-warsaw-dev/europe-central2/botFunctionSecondGen"
-  },
-  "dependencies": {}
+  }
 }

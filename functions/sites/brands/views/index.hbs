@@ -1,0 +1,22 @@
+<h1>{{site.locale.products}}</h1>
+<div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2 my-3">
+  {{#each site.pages as |page|}}
+    <div class="col">
+      <div class="card text-center h-100">
+        <a href="{{#if (equals ../site.lang "ru")}}/ru{{/if}}/pages/{{page.id}}">
+          <img src="{{page.img}}" class="card-img-top" alt="{{page.name}}">
+        </a>
+        <div class="card-body">
+          <h5 class="card-title"><a href="{{#if (equals ../site.lang "ru")}}/ru{{/if}}/pages/{{page.id}}">{{page.name}}</a></h5>
+          <p class="card-text">{{page.preview}}</p>
+        </div>
+      </div>
+    </div>
+  {{/each}}
+</div>
+<div class="row my-3">
+  <h1>{{site.locale.about}}</h1>
+  <div class="lead">
+    {{{site.about}}}
+  </div>
+</div>

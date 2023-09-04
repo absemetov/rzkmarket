@@ -49,12 +49,12 @@
   {{#each objects as |object|}}
     <div class="col">
       <div class="card text-center h-100">
-        <a href="/o/{{object.id}}">
+        <a href="{{#if (equals ../envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{object.id}}">
           <img src="{{photoProxy object.img1 ../envSite.lang}}" class="card-img-top" onerror="this.src = '/icons/photo_error_{{../envSite.lang}}.svg';" alt="{{object.name}}">
         </a>
         <div class="card-body">
           <h5>
-            <a href="/o/{{object.id}}">{{object.name}}</a>
+            <a href="{{#if (equals ../envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{object.id}}">{{object.name}}</a>
           </h5>
           <p class="card-text">
             {{object.description}}
@@ -84,13 +84,13 @@
           </li>
           <li class="list-group-item">
             <div class="d-grid gap-2">
-              <a href="/o/{{object.id}}/c"  class="btn btn-success"><i class="bi bi-folder2"></i> {{../envSite.i18n.aCatGoods}}</a>
+              <a href="{{#if (equals ../envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{object.id}}/c"  class="btn btn-success"><i class="bi bi-folder2"></i> {{../envSite.i18n.aCatGoods}}</a>
             </div>
           </li>
         </ul>
         <div class="card-footer">
           <div class="d-grid gap-2">
-            <a href="/o/{{object.id}}/cart"  class=" btn btn-success position-relative mt-2">
+            <a href="{{#if (equals ../envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{object.id}}/cart"  class=" btn btn-success position-relative mt-2">
               <span class="text-nowrap"><i class="bi bi-cart3"></i> {{formatNumber object.cartInfo.totalSum}} {{../envSite.currency}}</span>
               <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark">
                 {{object.cartInfo.cartCount}}
@@ -108,7 +108,7 @@
   <div class="card my-3">
     <div class="card-body">
       <h5 class="card-title">
-        <a href="/news/{{newsObj.id}}">{{newsObj.title}}</a>
+        <a href="{{#if (equals ../envSite.data.lang "ru-ua")}}/ru{{/if}}/news/{{newsObj.id}}">{{newsObj.title}}</a>
       </h5>
       <p class="card-text">{{{newsObj.preview}}}</p>
     </div>

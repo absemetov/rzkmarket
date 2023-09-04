@@ -10,6 +10,7 @@ $ yarn pl
 
 # serve frontend
 $ yarn --cwd functions/ parcel-s
+$ yarn --cwd functions/ vite
 
 # serve functions
 $ yarn s-f
@@ -20,11 +21,12 @@ $ yarn s-fh
 # serve functions firestore and hosting
 $ yarn s-ffh
 # start bot
-$ curl http://localhost:5001/rzk-warsaw-dev/europe-central2/botFunctionSecondGen
+$ yarn start-bot
 # generate sitemap file
 $ node functions/sites/rzk.com.ru/sitemap.js env
 # build for production and launch server
 $ yarn --cwd functions/ parcel-b
+$ yarn --cwd functions/ vite-b
 $ yarn deploy-site-*
 $ yarn deploy-bot-*
 $ yarn deploy-triggers-*

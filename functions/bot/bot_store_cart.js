@@ -502,18 +502,13 @@ const lettersRuUk = {
   "т": "t",
   "у": "u",
   "ф": "f",
-  "ь": "",
   "г": "g",
   "и": "i",
-  "ъ": "",
   "ы": "i",
   "э": "e",
   "ґ": "g",
   "е": "e",
   "і": "i",
-  "'": "",
-  "’": "",
-  "ʼ": "",
   "ё": "yo",
   "ж": "zh",
   "х": "kh",
@@ -531,7 +526,7 @@ const lettersRuUk = {
 function translit(word) {
   return word.toString().split("").map((letter) => {
     const lowLetter = letter.toLowerCase();
-    return lowLetter in lettersRuUk ? lettersRuUk[lowLetter] : lowLetter;
+    return lowLetter in lettersRuUk ? lettersRuUk[lowLetter] : (/[a-z]/.test(lowLetter) ? lowLetter : "");
   }).join("");
 }
 

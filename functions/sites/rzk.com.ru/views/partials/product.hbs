@@ -1,15 +1,23 @@
 <div class="col">
   <div class="card text-center h-100">
-    <a {{#if smartPhoto}}href="{{photoProxy product.img2 envSite.lang}}" class="js-smartphoto" data-caption="{{product.name}}"{{else}}href="{{product.url}}"{{/if}}>
+    <a {{#if smartPhoto}}href="{{photoProxy product.img2 envSite.lang}}" class="js-smartphoto" data-caption="{{product.name}}"{{else}}href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}{{product.url}}"{{/if}}>
       <img src="{{photoProxy product.img1 envSite.lang}}" onerror="this.src = '/icons/photo_error_{{envSite.lang}}.svg';" class="card-img-top" alt="{{product.name}}">
     </a>
     <div class="card-body">
-      {{#if product.brand}}<h6>{{product.brand}}</h6>{{/if}}
+      {{#if product.brand}}
+        <h4>
+        {{#if product.brandSite}}
+          <a href="{{product.brandSite}}">{{product.brand}}</a>
+        {{else}}
+          {{product.brand}}
+        {{/if}}
+        </h4>
+      {{/if}}
       <h6>
         {{#if smartPhoto}}
           {{product.name}} <small class="text-muted">({{product.id}})</small>
         {{else}}
-          <a href="{{product.url}}">{{product.name}}</a> <small class="text-muted">({{product.id}})</small>
+          <a href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}{{product.url}}">{{product.name}}</a> <small class="text-muted">({{product.id}})</small>
         {{/if}}
       </h6>
     </div>

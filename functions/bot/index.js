@@ -45,7 +45,7 @@ bot.use(async (ctx, next) => {
     url.searchParams.delete("search_text");
     url.searchParams.delete("page");
     url.searchParams.delete("productAddedQty");
-    url.searchParams.delete("productAddedId");
+    url.searchParams.deete("productAddedId");
     url.searchParams.delete("productAddedObjectId");
     url.searchParams.delete("tag");
     url.searchParams.delete("pName");
@@ -140,8 +140,9 @@ bot.on(["text", "edited_message"], async (ctx) => {
     return;
   }
 
-  // edit catalog desc
-  if (scene === "upload-desc") {
+  // edit catalog desc, siteDesc
+  console.log(scene);
+  if (scene === "upload-changeCatalog") {
     await changeCatalog(ctx, message.text);
     return;
   }

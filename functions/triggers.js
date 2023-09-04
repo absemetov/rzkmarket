@@ -29,8 +29,9 @@ exports.userCreateSecondGen = onDocumentCreated({
   region: "europe-central2",
   maxInstances: 5}, async (event) => {
   const userId = event.params.userId;
+  const user = event.data.data();
   // admin notify
-  await bot.telegram.sendMessage(94899148, `New subsc! <a href="tg://user?id=${userId}">${userId}</a>`, {parse_mode: "html"});
+  await bot.telegram.sendMessage(94899148, `New subsc! <a href="tg://user?id=${userId}">${userId}</a>\nFrom: ${JSON.stringify(user.from)}`, {parse_mode: "html"});
   // add createdAt timestamp
   // return snap.ref.set({
   //   createdAt: Math.floor(Date.now() / 1000),
@@ -259,6 +260,9 @@ exports.productCreateSecondGen = onDocumentCreated({
   if (product.brand) {
     productAlgolia.brand = product.brand;
   }
+  if (product.nameRu) {
+    productAlgolia.nameRu = product.nameRu;
+  }
   // add subCategory
   if (product.tags) {
     // productAlgolia.subCategory = product.tagsNames.map((item) => item.name);
@@ -371,6 +375,10 @@ exports.productUpdateSecondGen = onDocumentUpdated({
   // add brand if changed
   if (product.brand) {
     productAlgolia.brand = product.brand;
+  }
+  // ru locale
+  if (product.nameRu) {
+    productAlgolia.nameRu = product.nameRu;
   }
   // add subCategory
   if (product.tags) {

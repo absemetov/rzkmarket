@@ -1,11 +1,11 @@
 // 2nd generation functions
 const {onRequest} = require("firebase-functions/v2/https");
-const {getFirestore} = require("firebase-admin/firestore");
+const {getFirestore, FieldValue} = require("firebase-admin/firestore");
 const {getStorage} = require("firebase-admin/storage");
 
 // const functions = require("firebase-functions");
 // const firebase = require("firebase-admin");
-const firestore = require("firebase-admin/firestore");
+// const firestore = require("firebase-admin/firestore");
 // const bucket = firebase.storage().bucket();
 const bucket = getStorage().bucket();
 const express = require("express");
@@ -32,11 +32,10 @@ const isbot = require("isbot");
 const i18n = new TelegrafI18n({
   directory: path.resolve(__dirname, "locales"),
 });
-const i18nContext = i18n.createContext(process.env.BOT_LANG);
+
 // site env
 const envSite = {
-  i18n: i18nContext.repository[process.env.BOT_LANG],
-  siteName: process.env.SITE_NAME,
+  // siteName: process.env.SITE_NAME,
   lang: process.env.BOT_LANG,
   currency: process.env.BOT_CURRENCY,
   priceCurrency: process.env.SITE_CURRENCY,
@@ -50,10 +49,30 @@ const envSite = {
   domain: process.env.BOT_SITE,
   devPrefix: process.env.ALGOLIA_PREFIX,
   channel: process.env.BOT_CHANNEL,
+  data: {},
 };
 const app = express();
-// tralling slashes
+
 app.use((req, res, next) => {
+  // parse params
+  envSite.data.lang = process.env.BOT_LANG;
+  envSite.data.domain = req.header("x-forwarded-host");
+  const match = req.url.match(/^\/([A-Z]{2})([/?].*)?$/i);
+  let url = req.url;
+  if (match && process.env.BOT_LANG === "uk") {
+    if (match[1] === "ru") {
+      envSite.data.lang = "ru-ua";
+    }
+    url = match[2] || "";
+  }
+  if (url === "/") {
+    url = "";
+  }
+  envSite.data.urlUk = "https://" + envSite.data.domain + url;
+  envSite.data.urlRu = "https://" + envSite.data.domain + "/ru" + url;
+  const i18nContext = i18n.createContext(envSite.data.lang);
+  envSite.i18n = i18nContext.repository[envSite.data.lang];
+  // tralling slashes
   if (req.path.substr(-1) == "/" && req.path.length > 1) {
     const query = req.url.slice(req.path.length);
     return res.redirect(301, req.path.slice(0, -1) + query);
@@ -88,8 +107,8 @@ const hbs = exphbs.create({
     equals(value1, value2) {
       return value1 === value2;
     },
-    last(value1, value2) {
-      return value1 + 1 !== value2;
+    last(value1, value2, number) {
+      return value1 + number <= value2;
     },
     inc(value, inc) {
       return value + inc;
@@ -109,7 +128,7 @@ const hbs = exphbs.create({
     },
     encode(...value) {
       // delete options element
-      return encodeURIComponent(value.filter((n) =>n).slice(0, -1).join(" - "));
+      return encodeURIComponent(value.filter((n) => n).slice(0, -1).join(" - "));
     },
   },
 });
@@ -137,7 +156,7 @@ const auth = (req, res, next) => {
 };
 
 // show objects
-app.get("/", auth, async (req, res) => {
+app.get("/:lang(ru)?", auth, async (req, res) => {
   const catalogs = [];
   // get algolia catalogs
   if (envSite.notBot) {
@@ -162,9 +181,9 @@ app.get("/", auth, async (req, res) => {
   for (const model of newsSnapshot.docs) {
     news.push({
       id: model.id,
-      title: model.data().title,
-      preview: model.data().preview,
-      createdAt: moment.unix(model.data().createdAt.seconds).locale(process.env.BOT_LANG).fromNow(),
+      title: envSite.data.lang === "ru-ua" ? (model.data().titleRu || model.data().title) : model.data().title,
+      preview: envSite.data.lang === "ru-ua" ? (model.data().previewRu || model.data().preview) : model.data().preview,
+      createdAt: moment.unix(model.data().createdAt.seconds).locale(envSite.data.lang === "ru-ua" ? "ru" : process.env.BOT_LANG).fromNow(),
     });
   }
   // generate cart link
@@ -176,6 +195,12 @@ app.get("/", auth, async (req, res) => {
     } else {
       object.img1 = "/icons/shop.svg";
       object.img2 = "/icons/shop.svg";
+    }
+    if (envSite.data.lang === "ru-ua") {
+      object.name = object.nameRu || object.name;
+      object.description = object.descriptionRu || object.description;
+      object.address = object.addressRu || object.address;
+      object.siteDesc = object.siteDescRu || object.siteDesc;
     }
   }
   // banners
@@ -198,7 +223,7 @@ app.get("/search*", auth, async (req, res) => {
 });
 
 // show object
-app.get("/o/:objectId", auth, async (req, res) => {
+app.get("/:lang(ru)?/o/:objectId", auth, async (req, res) => {
   const object = await store.findRecord(`objects/${req.params.objectId}`);
   if (object) {
     // count cart items
@@ -210,9 +235,15 @@ app.get("/o/:objectId", auth, async (req, res) => {
       object.img1 = "/icons/shop.svg";
       object.img2 = "/icons/shop.svg";
     }
+    if (envSite.data.lang === "ru-ua") {
+      object.name = object.nameRu || object.name;
+      object.description = object.descriptionRu || object.description;
+      object.address = object.addressRu || object.address;
+      object.siteDesc = object.siteDescRu || object.siteDesc;
+    }
     return res.render("object", {
       title: `${object.description} - ${object.name}`,
-      description: object.address,
+      description: object.siteDesc,
       object,
       envSite});
   } else {
@@ -224,7 +255,7 @@ app.get("/o/:objectId", auth, async (req, res) => {
 // show
 
 // show catalogs
-app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
+app.get("/:lang(ru)?/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
   const objectId = req.params.objectId;
   // const catalogId = req.params.catalogPath ? req.params.catalogPath.replace(/\/$/, "").split("/")[req.params.catalogPath.replace(/\/$/, "").split("/").length - 1] : null;
   const catalogId = req.params.catalogPath && req.params.catalogPath.replace(/\/+$/, "").replace(/\//g, "#") || null;
@@ -247,7 +278,7 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
   catalogsSiblingsSnapshot.docs.forEach((doc) => {
     const catalogSibl = {
       id: doc.id,
-      name: doc.data().name,
+      name: envSite.data.lang === "ru-ua" ? (doc.data().nameRu || doc.data().name) : doc.data().name,
       url: `/o/${objectId}/c/${doc.id.replace(/#/g, "/")}`,
     };
     if (doc.data().photoId) {
@@ -269,6 +300,12 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
     if (!currentCatalog) {
       console.log(`404 error: ${req.url}`);
       return res.status(404).send(`<h1>404! Page not found <a href="${envSite.domain}">${envSite.domain}</a></h1>`);
+    }
+    // set page description
+    if (envSite.data.lang === "ru-ua") {
+      currentCatalog.name = currentCatalog.nameRu || currentCatalog.name;
+      currentCatalog.desc = currentCatalog.descRu || currentCatalog.desc;
+      currentCatalog.siteDesc = currentCatalog.siteDescRu || currentCatalog.siteDesc;
     }
     // generate title
     title = `${currentCatalog.name} ${envSite.i18n.btnBuy().toLowerCase()} ${envSite.i18n.siteCatTitle()} - ${object.name}`;
@@ -301,8 +338,9 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
     for (const product of productsSnapshot.docs) {
       const productObj = {
         id: product.id,
-        name: product.data().name,
+        name: envSite.data.lang === "ru-ua" ? (product.data().nameRu || product.data().name) : product.data().name,
         brand: product.data().brand ? product.data().brand : null,
+        brandSite: product.data().brand && object.brandsSites && object.brandsSites[product.data().brand],
         // price: roundNumber(product.data().price * object.currencies[product.data().currency]),
         price: product.data().price,
         unit: product.data().unit,
@@ -369,11 +407,14 @@ app.get("/o/:objectId/c/:catalogPath(*)?", auth, async (req, res) => {
       nextLink.url = `${req.path}?startAfter=${startAfterSnap.id}${tagUrl}`;
     }
   }
+  if (envSite.data.lang === "ru-ua") {
+    object.name = object.nameRu || object.name;
+  }
   // count cart items
   object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
   return res.render("catalog", {
     title,
-    description: `${currentCatalog ? `${currentCatalog.name} ${envSite.i18n.btnBuy().toLowerCase()}` : envSite.i18n.aCatGoods()} ${envSite.i18n.siteCatDesc()}`,
+    description: currentCatalog && currentCatalog.siteDesc ? currentCatalog.siteDesc : envSite.i18n.siteDesc(),
     object,
     currentCatalog,
     catalogs,
@@ -414,13 +455,20 @@ app.post("/o/:objectId/p/:productId", auth, async (req, res) => {
 });
 
 // show product
-app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
+app.get("/:lang(ru)?/o/:objectId/p/:productId", auth, async (req, res) => {
   const objectId = req.params.objectId;
   const productId = req.params.productId;
   const object = await store.findRecord(`objects/${objectId}`);
   const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
   if (object && product) {
     // product.price = roundNumber(product.price * object.currencies[product.currency]);
+    // set page description
+    if (envSite.data.lang === "ru-ua") {
+      product.name = product.nameRu || product.name;
+      product.desc = product.descRu || product.desc;
+      object.name = object.nameRu || object.name;
+    }
+    product.brandSite = product.brand && object.brandsSites && object.brandsSites[product.brand],
     product.img1 = "/icons/flower3.svg";
     product.img2 = "/icons/flower3.svg";
     product.sellerId = objectId;
@@ -454,7 +502,7 @@ app.get("/o/:objectId/p/:productId", auth, async (req, res) => {
     object.cartInfo = await cart.cartInfo(object.id, req.user.uid);
     return res.render("product", {
       title: `${product.name}${product.brand ? ` ${product.brand}` : ""} ${productId} ${envSite.i18n.btnBuy().toLowerCase()} за ${product.price} ${envSite.currency} ${envSite.i18n.siteCatTitle()} - ${object.name}`,
-      description: `${product.name}${product.brand ? ` ${product.brand}` : ""} ${productId} ${envSite.i18n.btnBuy().toLowerCase()} за ${product.price} ${envSite.currency} ${envSite.i18n.siteCatDesc()}`,
+      description: `${product.name}${product.brand ? ` ${product.brand}` : ""} ${productId} ${envSite.i18n.btnBuy().toLowerCase()} за ${product.price} ${envSite.currency} ${envSite.i18n.siteDesc()}`,
       object,
       product,
       photos,
@@ -575,7 +623,7 @@ const checkSignature = ({hash, ...userData}) => {
   return hmac === hash;
 };
 
-app.get("/login/:objectId?", auth, async (req, res) => {
+app.get("/:lang(ru)?/login/:objectId?", auth, async (req, res) => {
   const objectId = req.params.objectId;
   // redirect params
   const redirectPage = req.query.r;
@@ -722,7 +770,7 @@ app.get("/o/:objectId/cart/json", auth, async (req, res) => {
 });
 
 // show cart
-app.get("/o/:objectId/cart", auth, async (req, res) => {
+app.get("/:lang(ru)?/o/:objectId/cart", auth, async (req, res) => {
   const objectId = req.params.objectId;
   const object = await store.findRecord(`objects/${objectId}`);
   const admin = req.user.uid === "94899148";
@@ -823,6 +871,7 @@ app.get("/o/:objectId/cart", auth, async (req, res) => {
           products.push({
             id: product.id,
             brand: product.brand ? product.brand : null,
+            brandSite: product.brand && object.brandsSites && object.brandsSites[product.brand],
             name: product.name,
             price: cartProduct.price,
             unit: product.unit,
@@ -926,7 +975,7 @@ app.post("/o/:objectId/cart/purchase", auth, (req, res) => {
       const newOrderRef = getFirestore().collection("objects").doc(objectId).collection("orders").doc();
       // if useer auth
       const userId = req.user.auth ? + req.user.uid : 94899148;
-      await store.createRecord(`users/${userId}`, {orderCount: firestore.FieldValue.increment(1)});
+      await store.createRecord(`users/${userId}`, {orderCount: FieldValue.increment(1)});
       const userData = await store.findRecord(`users/${userId}`);
       await newOrderRef.set({
         userId,
@@ -1042,7 +1091,7 @@ app.post("/o/:objectId/cart/add", auth, jsonParser, async (req, res) => {
 });
 
 // payments-and-deliveries
-app.get("/delivery-info", (req, res) => {
+app.get("/:lang(ru)?/delivery-info", (req, res) => {
   return res.render("delivery", {
     envSite,
     title: envSite.i18n.aDelivery,
@@ -1052,12 +1101,12 @@ app.get("/delivery-info", (req, res) => {
 });
 
 // exchange-and-refund
-app.get("/return-policy", (req, res) => {
+app.get("/:lang(ru)?/return-policy", (req, res) => {
   return res.render("return_" + process.env.BOT_LANG, {envSite, title: envSite.i18n.aReturn});
 });
 
 // news page
-app.get("/news", auth, async (req, res) => {
+app.get("/:lang(ru)?/news", auth, async (req, res) => {
   const startAfter = req.query.startAfter;
   const endBefore = req.query.endBefore;
   const prevLink = {};
@@ -1081,9 +1130,9 @@ app.get("/news", auth, async (req, res) => {
   for (const model of newsSnapshot.docs) {
     news.push({
       id: model.id,
-      title: model.data().title,
-      preview: model.data().preview,
-      createdAt: moment.unix(model.data().createdAt.seconds).locale(process.env.BOT_LANG).fromNow(),
+      title: envSite.data.lang === "ru-ua" ? (model.data().titleRu || model.data().title) : model.data().title,
+      preview: envSite.data.lang === "ru-ua" ? (model.data().previewRu || model.data().preview) : model.data().preview,
+      createdAt: moment.unix(model.data().createdAt.seconds).locale(envSite.data.lang === "ru-ua" ? "ru" : process.env.BOT_LANG).fromNow(),
     });
   }
   if (!newsSnapshot.empty) {
@@ -1108,14 +1157,19 @@ app.get("/news", auth, async (req, res) => {
   });
 });
 // show news
-app.get("/news/:newsId", auth, async (req, res) => {
+app.get("/:lang(ru)?/news/:newsId", auth, async (req, res) => {
   const news = await store.findRecord(`news/${req.params.newsId}`);
+  if (envSite.data.lang === "ru-ua") {
+    news.title = news.titleRu || news.title;
+    news.description = news.descriptionRu || news.description;
+    news.body = news.bodyRu || news.body;
+  }
   return res.render("news/news", {
     title: `${news.title} - ${envSite.i18n.tNews()}`,
     description: news.desc,
     news,
     products: news.products,
-    createdAt: moment.unix(news.createdAt.seconds).locale(process.env.BOT_LANG).fromNow(),
+    createdAt: moment.unix(news.createdAt.seconds).locale(envSite.data.lang === "ru-ua" ? "ru" : process.env.BOT_LANG).fromNow(),
     envSite,
   });
 });

@@ -1,7 +1,7 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="/">{{envSite.i18n.aObjects}}</a></li>
-    <li class="breadcrumb-item"><a href="/o/{{object.id}}">{{object.name}}</a></li>
+    <li class="breadcrumb-item"><a href="/{{#if (equals envSite.data.lang "ru-ua")}}ru{{/if}}">{{envSite.i18n.aObjects}}</a></li>
+    <li class="breadcrumb-item"><a href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{object.id}}">{{object.name}}</a></li>
     <li class="breadcrumb-item active" aria-current="page">{{envSite.i18n.aCart}}</li>
   </ol>
 </nav>
@@ -30,14 +30,14 @@
     <button type="button" class="btn btn-success mt-3" data-bs-toggle="modal" data-bs-target="#purchaseModal">
       {{envSite.i18n.btnPurchase}}
     </button>
-    <a href="?clear=true" class="btn btn-primary mt-3">{{envSite.i18n.btnСlearCart}}</a>
+    <a href="/o/{{object.id}}/cart?clear=true" class="btn btn-primary mt-3">{{envSite.i18n.btnСlearCart}}</a>
     <a href="/o/{{object.id}}/pdf?docId={{envSite.user.uid}}" target="_blank" class="btn btn-primary mt-3">{{envSite.i18n.btnSavePdf}}</a>
     {{#if admin}}
       <button type="button" class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#receiptModaL">Печать</button>
     {{/if}}
   </div>
 {{else}}
-  <h3>{{envSite.i18n.tCartEmpty}} <a href="/o/{{object.id}}/c">{{envSite.i18n.aChuseGoods}}</a></h3>
+  <h3>{{envSite.i18n.tCartEmpty}} <a href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{object.id}}/c">{{envSite.i18n.aChuseGoods}}</a></h3>
 {{/if}}
 <!-- Modal purchase -->
 <div class="modal fade" id="purchaseModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">

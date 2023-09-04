@@ -143,8 +143,8 @@ bot.on(["text", "edited_message"], async (ctx) => {
     return;
   }
 
-  // edit catalog desc
-  if (scene === "upload-desc") {
+  // edit catalog desc, siteDesc
+  if (scene === "upload-changeCatalog") {
     await changeCatalog(ctx, message.text);
     return;
   }

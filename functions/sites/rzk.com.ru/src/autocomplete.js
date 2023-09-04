@@ -98,18 +98,23 @@ export function startAutocomplete() {
               params.facets = ["seller"];
               params.facetFilters = [["seller:RZK Саки"]];
             }
-            return getAlgoliaResults({
-              searchClient,
-              queries: [
-                {
-                  indexName: `${devPrefix}products`,
-                  query,
-                  params: {
-                    ...params,
+            // load promo goods on initial state
+            if (query !== "") {
+              return getAlgoliaResults({
+                searchClient,
+                queries: [
+                  {
+                    indexName: `${devPrefix}products`,
+                    query,
+                    params: {
+                      ...params,
+                    },
                   },
-                },
-              ],
-            });
+                ],
+              });
+            } else {
+              return [];
+            }
           },
           onSelect({item, setQuery}) {
             recentSearchesPlugin.data.addItem({id: item.objectID, label: item.name});
@@ -190,18 +195,22 @@ export function startAutocomplete() {
         {
           sourceId: "catalogs",
           getItems() {
-            return getAlgoliaResults({
-              searchClient,
-              queries: [
-                {
-                  indexName: `${devPrefix}catalogs`,
-                  query,
-                  params: {
-                    hitsPerPage: 3,
+            if (query !== "") {
+              return getAlgoliaResults({
+                searchClient,
+                queries: [
+                  {
+                    indexName: `${devPrefix}catalogs`,
+                    query,
+                    params: {
+                      hitsPerPage: 3,
+                    },
                   },
-                },
-              ],
-            });
+                ],
+              });
+            } else {
+              return [];
+            }
           },
           onSelect({item, setQuery}) {
             searchPanel("show");

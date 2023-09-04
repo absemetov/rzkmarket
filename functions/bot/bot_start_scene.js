@@ -154,6 +154,8 @@ startActions.push(async (ctx, next) => {
             callback_data: `u/${object.id}?todo=obj`}]);
           inlineKeyboardArray.push([{text: "📥 Загрузить товары",
             callback_data: `upload/${object.id}?todo=uploadProducts`}]);
+          inlineKeyboardArray.push([{text: "📥 Загрузить товары в мерч",
+            callback_data: `upload/${object.id}?todo=uploadToMerchant`}]);
           caption += `https://docs.google.com/spreadsheets/d/${object.sheetId}\n`;
         }
         if (ctx.state.sessionMsg.url.searchParams.get("editMode")) {

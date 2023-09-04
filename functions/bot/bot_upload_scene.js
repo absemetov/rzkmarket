@@ -6,6 +6,7 @@ const {onDocumentCreated} = require("firebase-functions/v2/firestore");
 // const functions = require("firebase-functions");
 const {Telegraf} = require("telegraf");
 const {GoogleSpreadsheet} = require("google-spreadsheet");
+const algoliasearch = require("algoliasearch");
 const creds = require("./rzk-com-ua-d1d3248b8410.json");
 const Validator = require("validatorjs");
 const {google} = require("googleapis");
@@ -29,9 +30,11 @@ const uploadProductsTrigger = async (ctx, pageName, objectId) => {
   const object = await store.findRecord(`objects/${objectId}`);
   const uploads = await store.findRecord(`objects/${objectId}/uploads/start`);
   const uploading = uploads && uploads.uploadProductsStart && (Math.floor(new Date() / 1000) - uploads.uploadProductsStart) < 540;
+  // local dev upload products obj Saky
+  // await uploadProducts(bot.telegram, objectId, object.sheetId, pageName);
   if (!uploading) {
-    if (!/^products/.test(pageName)) {
-      await ctx.replyWithHTML(`Use products* name page, ${pageName}`);
+    if (!(/^products/.test(pageName) || pageName === "upload-to-merchant")) {
+      await ctx.replyWithHTML(`Use products-namePage, ${pageName}`);
       return;
     }
     await ctx.replyWithHTML(`Начинаем загрузку товаров ${object.name}, ${pageName}`);
@@ -46,15 +49,94 @@ const uploadProductsTrigger = async (ctx, pageName, objectId) => {
       uploadProductsStart,
       sheetId: object.sheetId,
     });
-    // local dev obj Saky
-    // await uploadProducts(bot.telegram, objectId, object.sheetId, pageName);
   } else {
     await ctx.replyWithHTML(`<b>Products loading...please wait ${540 - (Math.floor(new Date() / 1000) - uploads.uploadProductsStart)}s</b>`);
   }
 };
+
+// upload to merchant
+const uploadToMerchant = async (telegram, seller) => {
+  const content = google.content("v2.1");
+  // add scope content in admin.google!!!
+  const auth = new google.auth.JWT({
+    keyFile: "./bot/rzk-com-ua-d1d3248b8410.json",
+    scopes: ["https://www.googleapis.com/auth/content"],
+    subject: "nadir@absemetov.org.ua",
+  });
+  google.options({auth});
+
+  // Use an API key with `browse` ACL
+  const client = algoliasearch(process.env.ALGOLIA_ID, process.env.ALGOLIA_ADMIN_KEY);
+  const index = client.initIndex("products");
+
+  await telegram.sendMessage(94899148, `<b>Start upload goods from Algolia to Merchant center Seller = ${seller}</b>`, {parse_mode: "html"});
+  // Get all records, retrieve only `title` and `content` attributes
+  const promises = [];
+  await index.browseObjects({
+    query: "",
+    attributesToRetrieve: ["productId", "brand", "sellerId", "img1", "name", "nameRu", "price"],
+    facetFilters: [[`seller:${seller}`]],
+    batch: (hits) => {
+      for (const params of hits) {
+        promises.push(content.products.insert({
+          merchantId: "120890507",
+          resource: {
+            "channel": "online",
+            "contentLanguage": "uk",
+            "offerId": params.productId,
+            "targetCountry": "UA",
+            "title": `${params.brand ? params.brand + " " : ""}${params.name} (${params.productId})`,
+            "brand": `${params.brand ? params.brand : "RZK Маркет Україна"}`,
+            "description": "Купити розетки та вимикачі Viko, Gunsan, Nilson оптом!",
+            "link": `https://rzk.com.ua/o/${params.sellerId}/p/${params.productId}`,
+            "imageLink": params.img1 ? params.img1 : "https://rzk.com.ua/icons/flower3.svg",
+            "availability": "in stock",
+            "condition": "new",
+            "price": {
+              // "value": roundNumber(product.price * object.currencies[product.currency]),
+              "value": params.price,
+              "currency": "UAH",
+            },
+          },
+        }));
+        if (params.nameRu) {
+          promises.push(content.products.insert({
+            merchantId: "120890507",
+            resource: {
+              "channel": "online",
+              "contentLanguage": "ru",
+              "offerId": params.productId,
+              "targetCountry": "UA",
+              "title": `${params.brand ? params.brand + " " : ""}${params.nameRu} (${params.productId})`,
+              "brand": `${params.brand ? params.brand : "RZK Маркет Украина"}`,
+              "description": "Купить розетки и выключатели Viko, Gunsan, Nilson оптом!",
+              "link": `https://rzk.com.ua/ru/o/${params.sellerId}/p/${params.productId}`,
+              "imageLink": params.img1 ? params.img1 : "https://rzk.com.ua/icons/flower3.svg",
+              "availability": "in stock",
+              "condition": "new",
+              "price": {
+                // "value": roundNumber(product.price * object.currencies[product.currency]),
+                "value": params.price,
+                "currency": "UAH",
+              },
+            },
+          }));
+        }
+      }
+    },
+  }).then(async () => await telegram.sendMessage(94899148, "<b>Browse done!</b>", {parse_mode: "html"}));
+  await Promise.all(promises).then(async () => {
+    await telegram.sendMessage(94899148, `<b>${promises.length} Goods uploaded to merch successful!</b>`, {parse_mode: "html"});
+  });
+};
 // upload from googleSheet
 const uploadProducts = async (telegram, objectId, sheetId, pageName) => {
   const object = await store.findRecord(`objects/${objectId}`);
+  // upload to merchant
+  if (pageName === "upload-to-merchant") {
+    await uploadToMerchant(telegram, object.name);
+    return;
+  }
   const lastUplodingTime = object.lastUplodingTime || 0;
   const startTime = new Date();
   // for goods and catalogs
@@ -117,6 +199,7 @@ const uploadProducts = async (telegram, objectId, sheetId, pageName) => {
       const TAGS = sheet.getCell(j, 7);
       const BRAND = sheet.getCell(j, 8);
       const TIMESTAMP = sheet.getCell(j, 9);
+      const NAME_RU = sheet.getCell(j, 10);
       const rowUpdatedTime = TIMESTAMP.value || 1;
       // const prodMustDel = ID.value && NAME.value && ID.backgroundColor && Object.keys(ID.backgroundColor).length === 1 && ID.backgroundColor.red === 1 && rowUpdatedTime !== "deleted";
       const prodMustDel = ID.value && NAME.value && ORDER_BY.value === "delete" && rowUpdatedTime !== "deleted";
@@ -125,6 +208,7 @@ const uploadProducts = async (telegram, objectId, sheetId, pageName) => {
         ORDER_BY: ORDER_BY.value && ORDER_BY.value.toString().trim().replace(/^!\s*/, ""),
         ID: ID.value && ID.value.toString().trim(),
         NAME: NAME.value && NAME.value.toString().trim(),
+        NAME_RU: NAME_RU.value && NAME_RU.value.toString().trim(),
         PURCHASE_PRICE: PURCHASE_PRICE.value,
         PRICE: PRICE.value,
         // CURRENCY: CURRENCY.value,
@@ -137,25 +221,25 @@ const uploadProducts = async (telegram, objectId, sheetId, pageName) => {
       // generate catalogs array
       const pathArrayHelper = [];
       const delCatalogs = [];
-      const groupArray = row.GROUP.map((catalogName, index, groupArrayOrigin) => {
+      const groupArray = row.GROUP.map((catalogName) => {
         let id = null;
         // let parentId = null;
         let orderNumber = null;
         // let postId = null;
-        let name = catalogName.trim();
+        let nameCat = catalogName.trim();
         // parce catalog url
-        const url = name.match(/(.+)\[(.+)\]$/);
+        const url = nameCat.match(/(.+)\[(.+)\]$/);
         if (url) {
-          name = url[1].trim();
+          nameCat = url[1].trim();
           const partial = url[2].split(",");
-          id = partial[0] ? partial[0].trim() : translit(name);
+          id = partial[0] ? partial[0].trim() : translit(nameCat);
           orderNumber = partial[1] && + partial[1];
           // postId = partial[2] && + partial[2];
         } else {
-          id = translit(name);
+          id = translit(nameCat);
         }
         // delete catalogs
-        if (name.charAt(0) === "%") {
+        if (nameCat.charAt(0) === "%") {
           if (id.charAt(0) === "%") {
             id = id.replace(/^%-*/, "");
           }
@@ -165,10 +249,12 @@ const uploadProducts = async (telegram, objectId, sheetId, pageName) => {
           pathArrayHelper.push(id);
           delCatalogs.push({id: pathArrayHelper.join("#"), del: false});
         }
-        // delete special char
+        // use ru locale
+        const [name, nameRu] = nameCat.split("|").map((item) => item.trim());
         return {
           id,
           name,
+          nameRu,
           url: pathArrayHelper.join("/"),
           parentId: pathArrayHelper.length > 1 ? pathArrayHelper.slice(0, -1).join("#") : null,
           orderNumber,
@@ -198,11 +284,16 @@ const uploadProducts = async (telegram, objectId, sheetId, pageName) => {
           return tag.trim();
         });
         // product data
+        // use ru locale todo custom column NAME_RU
+        // const [name, nameRu] = row.NAME.split("|").map((item) => item.trim());
         const product = {
           id: row.ID,
           name: row.NAME,
+          nameRu: row.NAME_RU,
           purchasePrice: row.PURCHASE_PRICE ? row.PURCHASE_PRICE : null,
           price: row.PRICE ? roundNumber(row.PRICE) : null,
+          groupName: groupArray.map((cat) => cat.name),
+          groupNameRu: groupArray.map((cat) => cat.nameRu),
           group: groupArray.map((cat) => cat.id),
           groupOrder: groupArray.map((cat) => cat.orderNumber),
           groupLength: groupArray.length,
@@ -213,17 +304,21 @@ const uploadProducts = async (telegram, objectId, sheetId, pageName) => {
           orderNumber: + row.ORDER_BY,
           availability: row.AVAILABILITY,
         };
+        const regExpNames = /^[^[\]]+$/;
         // validate product
         const rulesProductRow = {
           "id": "required|alpha_dash|max:40",
-          "name": "required|string|max:90",
+          "name": `required|string|max:90|regex:${regExpNames}`,
+          "nameRu": `string|max:90|regex:${regExpNames}`,
           "purchasePrice": "numeric",
           "price": "required|numeric",
           "groupLength": "required|min:1|max:7",
-          "group.*": "alpha_dash|max:40",
-          "groupOrder.*": "integer|min:1",
-          "tags.*": "string|max:40",
-          "brand": "string|max:40",
+          "groupName.*": `required|string|max:90|regex:${regExpNames}`,
+          "groupNameRu.*": `string|max:90|regex:${regExpNames}`,
+          "group.*": "required|alpha_dash|max:40",
+          "groupOrder.*": "required|integer|min:1",
+          "tags.*": `string|max:40|regex:${regExpNames}`,
+          "brand": `string|max:40|regex:${regExpNames}`,
           // "currency": "required|in:USD,EUR,RUB,UAH",
           "unit": "required|in:м,шт,кг",
           "orderNumber": "required|integer|min:1",
@@ -253,15 +348,20 @@ const uploadProducts = async (telegram, objectId, sheetId, pageName) => {
               .collection("products").doc(product.id);
           batchGoods.set(productRef, {
             "name": product.name,
+            "nameRu": product.nameRu || FieldValue.delete(),
             "purchasePrice": product.purchasePrice,
             "price": product.price,
             // "currency": product.currency,
-            "currency": FieldValue.delete(),
+            // "currency": FieldValue.delete(),
             "unit": product.unit,
             "orderNumber": product.orderNumber,
             "catalogId": groupArray[groupArray.length - 1].url.replace(/\//g, "#"),
             "pathArray": groupArray.map((catalog) => {
-              return {name: catalog.name, url: catalog.url};
+              if (catalog.nameRu) {
+                return {name: catalog.name, nameRu: catalog.nameRu, url: catalog.url};
+              } else {
+                return {name: catalog.name, url: catalog.url};
+              }
             }),
             "tags": tags.length ? tags : FieldValue.delete(),
             // "tagsNames": firestore.FieldValue.delete(),
@@ -280,18 +380,27 @@ const uploadProducts = async (telegram, objectId, sheetId, pageName) => {
             // check if catalog added to batch
             // helper arrays
             pathArray.push(catalog.id);
-            catUrlArray.push({
-              name: catalog.name,
-              url: pathArray.join("/"),
-            });
+            if (catalog.nameRu) {
+              catUrlArray.push({
+                name: catalog.name,
+                nameRu: catalog.nameRu,
+                url: pathArray.join("/"),
+              });
+            } else {
+              catUrlArray.push({
+                name: catalog.name,
+                url: pathArray.join("/"),
+              });
+            }
             if (!catalogsIsSet.has(pathArray.join("#"))) {
               catalogsIsSet.add(pathArray.join("#"));
               const catalogRef = getFirestore().collection("objects").doc(objectId)
                   .collection("catalogs").doc(pathArray.join("#"));
               batchCatalogs.set(catalogRef, {
                 "name": catalog.name,
+                "nameRu": catalog.nameRu || FieldValue.delete(),
                 "parentId": catalog.parentId,
-                "orderNumber": catalog.orderNumber ? catalog.orderNumber : catalogsIsSet.size,
+                "orderNumber": catalog.orderNumber,
                 "updatedAt": updatedAtTimestamp,
                 "pathArray": [...catUrlArray],
               }, {merge: true});
@@ -344,18 +453,22 @@ const createObject = async (ctx, next) => {
     const objectId = ctx.state.param;
     const todo = ctx.state.params.get("todo");
     const object = await store.findRecord(`objects/${objectId}`);
-    // const uploads = await store.findRecord(`objects/${objectId}/uploads/start`);
-    // test upload local obj
-    // await uploadProducts(ctx.telegram, objectId, object.sheetId);
     try {
       // upload goods
       if (todo === "uploadProducts") {
         // new idea set table page name
         ctx.state.sessionMsg.url.searchParams.set("scene", "uploadProducts");
-        await ctx.replyWithHTML("Введіть ім'я сторінки для завантаження товарів, наприклад <code>products</code>, <code>products-market</code>" + ctx.state.sessionMsg.linkHTML(), {
+        await ctx.replyWithHTML("Введіть ім'я сторінки для завантаження товарів, наприклад <code>products</code>, <code>products-market</code>,  <code>upload-to-merchant</code>" + ctx.state.sessionMsg.linkHTML(), {
           reply_markup: {
             force_reply: true,
           }});
+        await ctx.answerCbQuery();
+        return;
+      }
+      // upload to Merch
+      if (todo === "uploadToMerchant") {
+        // new idea set table page name
+        await uploadToMerchant(ctx.telegram, object.name);
         await ctx.answerCbQuery();
         return;
       }
@@ -490,12 +603,12 @@ const changeProduct = async (ctx, newValue) => {
   const productName = encodeCyrillic(ctx.state.sessionMsg.url.searchParams.get("pName"), true);
   const productId = ctx.state.sessionMsg.url.searchParams.get("cPId");
   // const sheetId = ctx.state.sessionMsg.url.searchParams.get("sheetId");
-  // add desc
-  if (todo === "desc") {
+  // add desc[Ru]
+  if (todo === "desc" || todo === "descRu") {
     await store.updateRecord(`objects/${objectId}/products/${productId}`, {
       [todo]: newValue === "del" ? FieldValue.delete() : newValue,
     });
-    await ctx.replyWithHTML(`<b>${productName} (${productId}) desc ${newValue === "del" ? "deleted" : newValue}</b>`);
+    await ctx.replyWithHTML(`<b>${productName} (${productId})</b>, ${todo}: ${newValue === "del" ? "deleted" : " updated"}`);
     return;
   }
   // add postId
@@ -624,10 +737,10 @@ const changeCatalog = async (ctx, newValue) => {
   const objectId = ctx.state.sessionMsg.url.searchParams.get("oId");
   const catalogId = ctx.state.sessionMsg.url.searchParams.get("upload-catalogId");
   const scene = ctx.state.sessionMsg.url.searchParams.get("scene");
+  const field = ctx.state.sessionMsg.url.searchParams.get("field");
   let caption = "updated";
-  let field = "";
-  if (scene === "upload-desc") {
-    field = "desc";
+  // let field = "";
+  if (scene === "upload-changeCatalog") {
     if (newValue === "del") {
       newValue = FieldValue.delete();
       caption = "deleted";
@@ -679,6 +792,29 @@ const uploadMerch = async (ctx, next) => {
     google.options({auth: auth});
     // Do the magic
     // const res = await content.products.insert({
+    if (product.nameRu) {
+      await content.products.insert({
+        merchantId: "120890507",
+        resource: {
+          "channel": "online",
+          "contentLanguage": "ru",
+          "offerId": product.id,
+          "targetCountry": "UA",
+          "title": `${product.brand ? product.brand + " - " : ""}${product.nameRu}`,
+          "brand": `${product.brand ? product.brand : "RZK Маркет Украина"}`,
+          "description": "Купить выключатели и розетки Viko, Gunsan, Nilson оптом!",
+          "link": `https://rzk.com.ua/ru/o/${objectId}/p/${product.id}`,
+          "imageLink": photoUrl,
+          "availability": "in stock",
+          "condition": "new",
+          "price": {
+            "value": product.price,
+            "currency": "UAH",
+          },
+        },
+      });
+    }
+    // uk lang
     await content.products.insert({
       merchantId: "120890507",
       resource: {
@@ -688,7 +824,7 @@ const uploadMerch = async (ctx, next) => {
         "targetCountry": "UA",
         "title": `${product.brand ? product.brand + " - " : ""}${product.name}`,
         "brand": `${product.brand ? product.brand : "RZK Маркет"}`,
-        "description": "Rzk.com.ua - Каждая вторая розетка в Украине будет куплена у нас!",
+        "description": "Купити вимикачі Viko, Gunsan, Nilson оптом!",
         "link": `https://rzk.com.ua/o/${objectId}/p/${product.id}`,
         "imageLink": photoUrl,
         "availability": "in stock",

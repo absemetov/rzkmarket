@@ -1,7 +1,7 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb text-nowrap">
-    <li class="breadcrumb-item"><a href="/">{{envSite.i18n.aObjects}}</a></li>
-    <li class="breadcrumb-item"><a href="/news">{{envSite.i18n.tNews}}</a></li>
+    <li class="breadcrumb-item"><a href="/{{#if (equals envSite.data.lang "ru-ua")}}ru{{/if}}">{{envSite.i18n.aObjects}}</a></li>
+    <li class="breadcrumb-item"><a href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/news">{{envSite.i18n.tNews}}</a></li>
     <li class="breadcrumb-item active" aria-current="page">{{news.title}}</li>
   </ol>
 </nav>
@@ -15,10 +15,10 @@
     <div class="col">
         <div class="card text-center h-100">
             <a href="{{product.url}}">
-              <img src="{{photoProxy product.img1}}" onerror="this.src = '/icons/photo_error_{{../envSite.lang}}.svg';" class="card-img-top" alt="{{product.name}}">
+              <img src="{{photoProxy product.img1}}" onerror="this.src = '/icons/photo_error_{{../envSite.lang}}.svg';" class="card-img-top" alt="{{#if (equals ../envSite.data.lang "ru-ua")}}{{product.nameRu}}{{else}}{{product.name}}{{/if}}">
             </a>
             <div class="card-body">
-              <h6>{{product.name}}</h6>
+              <h6>{{#if (equals ../envSite.data.lang "ru-ua")}}{{product.nameRu}}{{else}}{{product.name}}{{/if}}</h6>
             </div>
             <div class="card-footer">
               <div class="d-grid gap-2">

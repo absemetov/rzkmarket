@@ -1,4 +1,4 @@
-/** @OnlyCurrentDoc */
+/** @OnlyCurrentDoc 20.07.2023*/
 function onEdit(e){
   const range = e.range;
   // range.setNote('Last modified: ' + new Date());
@@ -39,12 +39,15 @@ function onEdit(e){
         const delCatalogs = [];
         cell.getValue().split("#").forEach((catalogName) => {
           let id = null;
+          let orderNumber = null;
           let name = catalogName.trim();
           const url = name.match(/(.+)\[(.+)\]$/);
           if (url) {
             name = url[1].trim();
             const partial = url[2].split(",");
             id = partial[0] ? partial[0].trim() : translit(name);
+            // validate orderNumber
+            orderNumber = partial[1] && + partial[1];
           } else {
             id = translit(name);
           }
@@ -59,6 +62,11 @@ function onEdit(e){
           const valid_fail = validate(id, 40);
           if (valid_fail) {
             SpreadsheetApp.getUi().alert(`Error in row ${row}, column ${column}: ${valid_fail}`);
+            sheet.setActiveSelection(`A${row}:J${row}`);
+          }
+          // validate orderNumber
+          if (!Number.isInteger(orderNumber) || orderNumber <= 0) {
+            SpreadsheetApp.getUi().alert(`Error in row ${row}, column ${column}: Please set int value [, orderNumber]`);
             sheet.setActiveSelection(`A${row}:J${row}`);
           }
         });
@@ -142,18 +150,13 @@ const lettersRuUk = {
   "т": "t",
   "у": "u",
   "ф": "f",
-  "ь": "",
   "г": "g",
   "и": "i",
-  "ъ": "",
   "ы": "i",
   "э": "e",
   "ґ": "g",
   "е": "e",
   "і": "i",
-  "'": "",
-  "’": "",
-  "ʼ": "",
   "ё": "yo",
   "ж": "zh",
   "х": "kh",
@@ -171,6 +174,6 @@ const lettersRuUk = {
 function translit(word) {
   return word.toString().split("").map((letter) => {
     const lowLetter = letter.toLowerCase();
-    return lowLetter in lettersRuUk ? lettersRuUk[lowLetter] : lowLetter;
+    return lowLetter in lettersRuUk ? lettersRuUk[lowLetter] : (/[a-z]/.test(lowLetter) ? lowLetter : "");
   }).join("");
 }

@@ -65,8 +65,14 @@ const showCatalog = async (ctx, next) => {
       if (ctx.state.isAdmin && ctx.state.sessionMsg.url.searchParams.get("editMode")) {
         inlineKeyboardArray.push([{text: `📸 Загрузить фото каталога ${currentCatalog.name}`,
           callback_data: `u/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?todo=cat`}]);
-        inlineKeyboardArray.push([{text: `📖 Описание ${currentCatalog.name}`,
-          callback_data: `u/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?todo=desc`}]);
+        inlineKeyboardArray.push([{text: `📖 Описание Uk ${currentCatalog.name}`,
+          callback_data: `u/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?todo=changeCatalog&field=desc`}]);
+        inlineKeyboardArray.push([{text: `📖 Описание Ru ${currentCatalog.name}`,
+          callback_data: `u/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?todo=changeCatalog&field=descRu`}]);
+        inlineKeyboardArray.push([{text: `📖 Site desc Uk ${currentCatalog.name}`,
+          callback_data: `u/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?todo=changeCatalog&field=siteDesc`}]);
+        inlineKeyboardArray.push([{text: `📖 Site desc Ru ${currentCatalog.name}`,
+          callback_data: `u/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?todo=changeCatalog&field=siteDescRu`}]);
         // inlineKeyboardArray.push([{text: `📖 PostId ${currentCatalog.name}`,
         //   callback_data: `u/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?todo=postId`}]);
       }
@@ -340,8 +346,10 @@ const showProduct = async (ctx, next) => {
         callback_data: `b/${product.id}?todo=pPrice&c=D`}]);
       inlineKeyboardArray.push([{text: `Изменить прод цену ${product.price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}`,
         callback_data: `b/${product.id}?todo=price&c=E`}]);
-      inlineKeyboardArray.push([{text: "Добавить описание",
+      inlineKeyboardArray.push([{text: "Добавить описание Uk",
         callback_data: `b/${product.id}?todo=desc`}]);
+      inlineKeyboardArray.push([{text: "Добавить описание Ru",
+        callback_data: `b/${product.id}?todo=descRu`}]);
       // inlineKeyboardArray.push([{text: "Добавить пост из канала",
       //   callback_data: `b/${product.id}?todo=postId`}]);
       inlineKeyboardArray.push([{text: "Удалить товар",
@@ -1187,6 +1195,7 @@ catalogsActions.push( async (ctx, next) => {
     const objectId = ctx.state.sessionMsg.url.searchParams.get("oId");
     const pathUrl = ctx.state.sessionMsg.url.searchParams.get("pathU");
     const todo = ctx.state.params.get("todo");
+    const field = ctx.state.params.get("field");
     ctx.state.sessionMsg.url.searchParams.set("scene", `upload-${todo}`);
     const paramId = ctx.state.param;
     let caption;
@@ -1203,9 +1212,11 @@ catalogsActions.push( async (ctx, next) => {
       // const object = await store.findRecord(`objects/${paramId}`);
       caption = `Добавьте фото <b>${objectId}</b>`;
     }
-    if (todo === "desc") {
+    if (todo === "changeCatalog") {
+      const currentCatalog = await store.findRecord(`objects/${objectId}/catalogs/${pathUrl}`);
       ctx.state.sessionMsg.url.searchParams.set("upload-catalogId", pathUrl);
-      caption = `Добавьте описание, del удалить <b>${pathUrl}</b>`;
+      ctx.state.sessionMsg.url.searchParams.set("field", field);
+      caption = `<b>${pathUrl}</b>\nИзменить поле <b>${field}</b>\nТекущее значение: ${currentCatalog[field]}\nUse <b>del</b> for delete`;
     }
     // if (todo === "postId") {
     //   ctx.state.sessionMsg.url.searchParams.set("upload-catalogId", pathUrl);
@@ -1226,8 +1237,8 @@ catalogsActions.push( async (ctx, next) => {
     ctx.state.sessionMsg.url.searchParams.set("TTL", 1);
     const objectId = ctx.state.sessionMsg.url.searchParams.get("oId");
     const productName = encodeCyrillic(ctx.state.sessionMsg.url.searchParams.get("pName"), true);
-    const price = ctx.state.sessionMsg.url.searchParams.get("ePrice");
-    const purchasePrice = ctx.state.sessionMsg.url.searchParams.get("ePurchase");
+    // const price = ctx.state.sessionMsg.url.searchParams.get("ePrice");
+    // const purchasePrice = ctx.state.sessionMsg.url.searchParams.get("ePurchase");
     // const productCurrency = ctx.state.sessionMsg.url.searchParams.get("eCurrency");
     ctx.state.sessionMsg.url.searchParams.set("scene", "changeProduct");
     const todo = ctx.state.params.get("todo");
@@ -1247,11 +1258,13 @@ catalogsActions.push( async (ctx, next) => {
           force_reply: true,
         }});
     } else {
-      await ctx.replyWithHTML(`${productName} (${productId})\nИзменить поле <b>${todo}</b>\n` +
-      `<b>${objectId}</b>\n` +
-      `Закупочная цена (purchasePrice) <b>${purchasePrice.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}</b>\n` +
-      `Продажная цена (price) <b>${price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}</b>\n`+
-      "Для удаления desc введите del\n" +
+      const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
+      await ctx.replyWithHTML(`<b>${productName} (${productId})</b>\n` +
+      `Изменить поле <b>${todo}</b>\n` +
+      `Значение поля <b>${todo}</b>: ${product[todo]}\n` +
+      // `Закупочная цена (purchasePrice) <b>${purchasePrice.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}</b>\n` +
+      // `Продажная цена (price) <b>${price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}</b>\n`+
+      "Use <b>del</b> for delete desc\n" +
       "Наличие товара: <code>true</code> or <code>false</code>" + ctx.state.sessionMsg.linkHTML(), {
         reply_markup: {
           force_reply: true,
