@@ -409,27 +409,51 @@ const customRefinementList = connectRefinementList(
 
 // connect breadcrumb
 // render function
-const renderBreadcrumbItem = ({item, createURL}) => `
-    ${
-      item.value ? `
-        <li class="breadcrumb-item">
-        <a href="${createURL(item.value)}" data-value="${item.value}">
-          ${item.label}
-        </a></li>` : `<li class="breadcrumb-item active" aria-current="page">${item.label}</li>`}
-`;
+// const renderBreadcrumbItem = ({item, createURL}) => `
+//     ${
+//       item.value ? `
+//         <li class="breadcrumb-item">
+//         <a href="${createURL(item.value)}" data-value="${item.value}">
+//           ${item.label}
+//         </a></li>` : `<li class="breadcrumb-item active" aria-current="page">${item.label}</li>`}
+// `;
+const renderBreadcrumbItem = (items, createURL) => {
+  const itemsList = [];
+  const breadcrumbCount = items.length;
+  if (breadcrumbCount > 2) {
+    itemsList.push("<li class=\"breadcrumb-item d-block d-md-none\">...</li>");
+  }
+  for (const [index, item] of items.entries()) {
+    // show only last 2 items
+    if (item.value) {
+      itemsList.push(`<li class="breadcrumb-item ${breadcrumbCount - 2 > index ? "d-none d-md-inline" : ""}"><a href="${createURL(item.value)}" data-value="${item.value}">${item.label}</a></li>`);
+    } else {
+      itemsList.push(`<li class="breadcrumb-item active" aria-current="page">${item.label}</li>`);
+    }
+  }
+  return itemsList.join("");
+};
 
 const renderBreadcrumb = (renderOptions, isFirstRender) => {
   const {items, refine, createURL, widgetParams} = renderOptions;
+  // widgetParams.container.innerHTML = `
+  //   <ol class="breadcrumb">
+  //     <li class="breadcrumb-item">
+  //       <a href="/search"  id="home">${i18n.a_search}</a>
+  //     </li>
+  //     ${items.map((item) =>
+  //   renderBreadcrumbItem({
+  //     item,
+  //     createURL,
+  //   })).join("")}
+  //   </ol>
+  // `;
   widgetParams.container.innerHTML = `
-    <ol class="breadcrumb text-nowrap">
+    <ol class="breadcrumb">
       <li class="breadcrumb-item">
         <a href="/search"  id="home">${i18n.a_search}</a>
       </li>
-      ${items.map((item) =>
-    renderBreadcrumbItem({
-      item,
-      createURL,
-    })).join("")}
+      ${renderBreadcrumbItem(items, createURL)}
     </ol>
   `;
 

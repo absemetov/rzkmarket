@@ -1,31 +1,13 @@
 const express = require("express");
+const path = require("path");
 const app = express();
-const mqtt = require("mqtt");
-// const fetch = require("node-fetch");
 const port = 3000;
 
-const client = mqtt.connect("mqtt://broker.hivemq.com");
+app.use(express.static(__dirname, {dotfiles: "allow"} ));
 
 app.get("/", async (req, res) => {
-  res.send("Hello World!");
-});
-
-app.get("/on", async (req, res) => {
-  // await fetch("http://10.66.66.8/on");
-  client.publish("home/rele", "ON");
-  res.send("Hello World on!");
-});
-
-app.get("/off", async (req, res) => {
-  // await fetch("http://10.66.66.8/off");
-  client.publish("home/rele", "OFF");
-  res.send("Hello World off!");
-});
-
-app.get("/status", async (req, res) => {
-  // await fetch("http://10.66.66.8/off");
-  client.publish("home/rele", "status");
-  res.send("Hello World off!");
+  // res.send("Hello World!");
+  res.sendFile(path.join(__dirname, "/index.html"));
 });
 
 app.listen(port, () => {

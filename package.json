@@ -23,7 +23,7 @@
     "s-nilson": "firebase --project=ru emulators:start --only hosting:nilson.com.ua",
     "deploy-nilson": "firebase deploy --project=ru --only hosting:nilson.com.ua",
     "s-abs": "firebase --project=ru emulators:start --only hosting:absemetov.org.ua",
-    "deploy-absemetov": "firebase deploy --project=ru --only hosting:absemetov.org.ua",
+    "deploy-abs": "firebase deploy --project=ru --only hosting:absemetov.org.ua",
     "s-f": "firebase --project=dev emulators:start --only functions",
     "s-ff": "firebase --project=dev emulators:start --only functions,firestore",
     "s-fh": "firebase --project=dev emulators:start --only functions,hosting:dev.rzk.com.ru",

@@ -21,8 +21,8 @@ aObjects: Склади
 aCatGoods: Каталог товарів
 aAllGoods: Усі товари
 aChuseGoods: Вибрати товари
-aPagPrevious: Попередня
-aPagNext: Наступна
+aPagPrevious: Назад
+aPagNext: Уперед
 aCart: Кошик
 modalShowTitle: Перегляд
 modalPurchase:

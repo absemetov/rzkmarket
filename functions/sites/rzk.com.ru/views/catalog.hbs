@@ -1,6 +1,6 @@
 
 <nav aria-label="breadcrumb">
-  <ol class="breadcrumb text-nowrap">
+  <ol class="breadcrumb">
     <li class="breadcrumb-item">
       <a href="/{{#if (equals envSite.data.lang "ru-ua")}}ru{{/if}}">{{envSite.i18n.aObjects}}</a>
     </li>
@@ -11,9 +11,11 @@
       <li class="breadcrumb-item">
         <a href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{object.id}}/c">{{envSite.i18n.aCatGoods}}</a>
       </li>
+      {{#if (last 1 currentCatalog.pathArray.length 2)}}
       <li class="breadcrumb-item d-block d-md-none">
         ...
       </li>
+      {{/if}}
       {{#each currentCatalog.pathArray as |item|}}
         {{#if (last @index ../currentCatalog.pathArray.length 2)}}
           <li class="breadcrumb-item {{#if (last @index ../currentCatalog.pathArray.length 3)}}d-none d-md-inline{{/if}}">

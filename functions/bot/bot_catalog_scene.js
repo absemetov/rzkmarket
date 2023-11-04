@@ -406,12 +406,13 @@ catalogsActions.push(async (ctx, next) => {
       if (pCart) {
         if (qty) {
           // add updatedAt for control price updater
+          // Dont update price!!!
           await cart.update({
             objectId,
             userId: ctx.from.id,
             product: {
               [id]: {
-                price: product.price,
+                // price: product.price,
                 qty,
                 updatedAt: Math.floor(Date.now() / 1000),
               },

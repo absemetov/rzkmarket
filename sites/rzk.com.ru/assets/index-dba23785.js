@@ -167,18 +167,12 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
           </div>
           <span class="badge bg-success rounded-pill">${d.count}</span>
         </a>
-        `).join(""):"No resalts",[...c.container.querySelectorAll("a")].forEach(d=>{d.addEventListener("click",y=>{y.preventDefault(),i(y.currentTarget.dataset.value)})});const f=c.container.querySelector("button");f.classList.add("d-none"),s&&f.classList.remove("d-none"),f.textContent=o?fe.btn_ref_hide:fe.btn_ref_show},ha=Ew(w0),P0=({item:e,createURL:t})=>`
-    ${e.value?`
-        <li class="breadcrumb-item">
-        <a href="${t(e.value)}" data-value="${e.value}">
-          ${e.label}
-        </a></li>`:`<li class="breadcrumb-item active" aria-current="page">${e.label}</li>`}
-`,O0=(e,t)=>{const{items:r,refine:n,createURL:i,widgetParams:a}=e;a.container.innerHTML=`
-    <ol class="breadcrumb text-nowrap">
+        `).join(""):"No resalts",[...c.container.querySelectorAll("a")].forEach(d=>{d.addEventListener("click",y=>{y.preventDefault(),i(y.currentTarget.dataset.value)})});const f=c.container.querySelector("button");f.classList.add("d-none"),s&&f.classList.remove("d-none"),f.textContent=o?fe.btn_ref_hide:fe.btn_ref_show},ha=Ew(w0),P0=(e,t)=>{const r=[],n=e.length;n>2&&r.push('<li class="breadcrumb-item d-block d-md-none">...</li>');for(const[i,a]of e.entries())a.value?r.push(`<li class="breadcrumb-item ${n-2>i?"d-none d-md-inline":""}"><a href="${t(a.value)}" data-value="${a.value}">${a.label}</a></li>`):r.push(`<li class="breadcrumb-item active" aria-current="page">${a.label}</li>`);return r.join("")},O0=(e,t)=>{const{items:r,refine:n,createURL:i,widgetParams:a}=e;a.container.innerHTML=`
+    <ol class="breadcrumb">
       <li class="breadcrumb-item">
         <a href="/search"  id="home">${fe.a_search}</a>
       </li>
-      ${r.map(o=>P0({item:o,createURL:i})).join("")}
+      ${P0(r,i)}
     </ol>
   `,[...a.container.querySelectorAll("a")].forEach(o=>{o.id!=="home"&&o.addEventListener("click",s=>{s.preventDefault(),n(s.currentTarget.dataset.value)})})},E0=Qw(O0),A0=e=>Object.keys(e).map(t=>`data-${t}="${e[t]}"`).join(" "),I0=e=>`
   ${e.refinements.map(t=>`<li class="nav-item"><span class="badge text-bg-success m-1">
@@ -201,9 +195,8 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
                   </div>
                   <div class="aa-ItemContentBody">
                     <div class="aa-ItemContentTitle text-wrap">
-                      ${i.ReverseHighlight({hit:r,attribute:"name"})} (${i.ReverseHighlight({hit:r,attribute:"productId"})}) ${i.ReverseHighlight({hit:r,attribute:"brand"})}
+                      ${i.ReverseHighlight({hit:r,attribute:"name"})} (${i.ReverseHighlight({hit:r,attribute:"productId"})}) ${i.ReverseHighlight({hit:r,attribute:"brand"})} (<b>${r.seller}</b>)
                     </div>
-                    ${r.seller}
                     <b>${r.price} ${ni.currency}</b>
                   </div>
                 </div>

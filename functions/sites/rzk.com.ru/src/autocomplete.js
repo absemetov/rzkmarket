@@ -157,9 +157,8 @@ export function startAutocomplete() {
                   </div>
                   <div class="aa-ItemContentBody">
                     <div class="aa-ItemContentTitle text-wrap">
-                      ${components.ReverseHighlight({hit: item, attribute: "name"})} (${components.ReverseHighlight({hit: item, attribute: "productId"})}) ${components.ReverseHighlight({hit: item, attribute: "brand"})}
+                      ${components.ReverseHighlight({hit: item, attribute: "name"})} (${components.ReverseHighlight({hit: item, attribute: "productId"})}) ${components.ReverseHighlight({hit: item, attribute: "brand"})} (<b>${item.seller}</b>)
                     </div>
-                    ${item.seller}
                     <b>${item.price} ${i18n.currency}</b>
                   </div>
                 </div>

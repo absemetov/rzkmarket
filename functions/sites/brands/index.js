@@ -7,7 +7,7 @@ const app = express();
 const locale = {
   "Uk": {
     "contact": "Контакти",
-    "products": "Продукти",
+    "products": "Продукція",
     "about": "Компанія",
   },
   "Ru": {

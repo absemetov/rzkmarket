@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSockets with Mosquitto</title>
+  <script src=""></script>
+</head>
+<body>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/mqtt@5.1.3/dist/mqtt.min.js"></script>
+
+  <div id="app">
+    <div v-if="lamps.length">
+      <div v-for="(lamp, index) in lamps">
+        <button v-if="lamp === 'ON'" @click="toggleLamp(`OFF_${ index + 1 }`)">✅💡 Lamp {{ index + 1 }}</button>
+        <button v-else @click="toggleLamp(`ON_${ index + 1 }`)">☑️💡 Lamp {{ index + 1 }}</button>
+      </div>
+    </div>
+    <div v-else>
+      Загружаем меню
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref } = Vue;
+    const url = "wss://mqtt.rzk.com.ua/websocket";
+    const options = {
+      // Clean session
+      clean: true,
+      connectTimeout: 4000,
+      // Authentication
+      clientId: 'emqx_test',
+      username: 'admin',
+      password: 'admin',
+    }
+    const client  = mqtt.connect(url, options)
+    client.on("connect", function () {
+      // Subscribe to a topic
+      client.subscribe("home/rele/status");
+      client.publish("home/rele", "update");
+    })
+    // Receive messages
+    const lamps = ref([]);
+
+    client.on("message", function (topic, message) {
+      // message is Buffer
+      lamps.value = message.toString().split(",");
+      // client.end()
+    });
+
+    createApp({
+      setup() {
+        function toggleLamp(lamp) {
+          client.publish("home/rele", lamp);
+        }
+        return {
+          toggleLamp,
+          lamps
+        }
+      }
+    }).mount('#app')
+  </script>
+</body>
+</html>
