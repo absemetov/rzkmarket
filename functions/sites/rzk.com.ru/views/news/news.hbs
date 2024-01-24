@@ -1,7 +1,7 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="/{{#if (equals envSite.data.lang "ru-ua")}}ru{{/if}}">{{envSite.i18n.aObjects}}</a></li>
-    <li class="breadcrumb-item"><a href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/news">{{envSite.i18n.tNews}}</a></li>
+    <li class="breadcrumb-item"><a class="link-dark link-underline-opacity-0 link-underline-opacity-100-hover" href="/{{#if (equals envSite.data.lang "ru-ua")}}ru{{/if}}"><i class="bi bi-house"></i></a></li>
+    <li class="breadcrumb-item"><a class="link-dark link-underline-opacity-0 link-underline-opacity-100-hover" href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/news">{{envSite.i18n.tNews}}</a></li>
     <li class="breadcrumb-item active" aria-current="page">{{news.title}}</li>
   </ol>
 </nav>

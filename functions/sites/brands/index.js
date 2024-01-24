@@ -4,35 +4,27 @@ const express = require("express");
 const exphbs = require("express-handlebars");
 const app = express();
 // tralling slashes set domain and locale
-const locale = {
-  "Uk": {
-    "contact": "Контакти",
-    "products": "Продукція",
-    "about": "Компанія",
-  },
-  "Ru": {
-    "contact": "Контакты",
-    "products": "Продукция",
-    "about": "О компании",
-  },
-};
 app.use((req, res, next) => {
   // parse params
   req.data = {};
   req.data.domain = req.header("x-forwarded-host");
-  req.data.lang = "uk";
-  const match = req.url.match(/^\/([A-Z]{2})([/?].*)?$/i);
-  let url = req.url;
-  if (match) {
-    req.data.lang = "ru";
-    url = match[2] || "";
+  req.data.lang = process.env.BOT_LANG;
+  const match = req.url.match(/\/(ru)?\/?(.*)?/);
+  // let url = "";
+  // if (match) {
+  //   req.data.lang = "ru";
+  //   url = match[2] || "";
+  // }
+  if (match[1] === "ru" && process.env.BOT_LANG === "uk") {
+    req.data.lang = "ru-ua";
   }
-  if (url === "/") {
-    url = "";
-  }
-  req.data.urlUk = "https://" + req.data.domain + url;
-  req.data.urlRu = "https://" + req.data.domain + "/ru" + url;
-  req.data.langUpper = req.data.lang.charAt(0).toUpperCase() + req.data.lang.slice(1);
+  req.data.url = match[2] ? "/" + match[2] : "";
+  // if (url === "/") {
+  //   url = "";
+  // }
+  req.data.urlUk = "https://" + req.data.domain + req.data.url;
+  req.data.urlRu = "https://" + req.data.domain + "/ru" + req.data.url;
+  req.data.langUpper = req.data.lang.charAt(0).toUpperCase() + req.data.lang.slice(1, 2);
   if (req.path.substr(-1) == "/" && req.path.length > 1) {
     const query = req.url.slice(req.path.length);
     return res.redirect(301, req.path.slice(0, -1) + query);
@@ -70,16 +62,17 @@ app.get("/:lang(ru)?", async (req, res) => {
       name: siteFire[`name${req.data.langUpper}`],
       title: siteFire[`title${req.data.langUpper}`],
       about: siteFire[`about${req.data.langUpper}`],
-      description: siteFire[`siteDesc${req.data.langUpper}`],
+      description: siteFire[`desc${req.data.langUpper}`],
+      contact: siteFire.contact,
       rzkId: siteFire.rzkId,
       gtag: siteFire.gtag,
-      ...req.data,
+      data: req.data,
+      lang: process.env.BOT_LANG,
       pages,
-      locale: locale[req.data.langUpper],
     };
     return res.render("index", {site});
   } else {
-    return res.status(404).send("<h1>404! Page not found <a href=\"//rzk.com.ua\">rzk.com.ua</a></h1>");
+    return res.status(404).send(`<h1>404! Brand page not found <a href="${process.env.BOT_SITE}">${process.env.BOT_SITE}</a></h1>`);
   }
 });
 
@@ -88,22 +81,45 @@ app.get("/:lang(ru)?/pages/:pageId", async (req, res) => {
   const pageId = req.params.pageId;
   const siteSnap = await getFirestore().doc(`sites/${req.data.domain}`).get();
   const pageSnap = await getFirestore().doc(`sites/${req.data.domain}/pages/${pageId}`).get();
-  const pageFire = pageSnap.data();
-  const siteFire = siteSnap.data();
-  const site = {
-    name: siteFire[`name${req.data.langUpper}`],
-    rzkId: siteFire.rzkId,
-    gtag: siteFire.gtag,
-    title: pageFire[`title${req.data.langUpper}`] + " - " + siteFire[`title${req.data.langUpper}`],
-    description: pageFire[`siteDesc${req.data.langUpper}`],
-    ...req.data,
-    locale: locale[req.data.langUpper],
-  };
-  const page = {
-    name: pageFire[`name${req.data.langUpper}`],
-    about: pageFire[`about${req.data.langUpper}`],
-  };
-  return res.render("page", {site, page});
+  if (pageSnap.exists) {
+    const pageFire = pageSnap.data();
+    const siteFire = siteSnap.data();
+    const site = {
+      name: siteFire[`name${req.data.langUpper}`],
+      rzkId: siteFire.rzkId,
+      gtag: siteFire.gtag,
+      title: pageFire[`title${req.data.langUpper}`] + " - " + siteFire[`title${req.data.langUpper}`],
+      contact: siteFire.contact,
+      description: pageFire[`desc${req.data.langUpper}`] || siteFire[`desc${req.data.langUpper}`],
+      data: req.data,
+      lang: process.env.BOT_LANG,
+      currency: process.env.BOT_CURRENCY,
+    };
+    const products = [];
+    if (pageFire.catalogId) {
+      const query = getFirestore().collectionGroup("products").where("catalogId", "==", pageFire.catalogId).orderBy("orderNumber").limit(20);
+      // get products
+      const productsSnapshot = await query.get();
+      // generate products array
+      for (const product of productsSnapshot.docs) {
+        products.push({
+          id: product.id,
+          name: site.data.lang === "ru-ua" ? (product.data().nameRu || product.data().name) : product.data().name,
+          price: product.data().price,
+          unit: product.data().unit,
+          objectName: product.data().objectName,
+        });
+      }
+    }
+    const page = {
+      name: pageFire[`name${req.data.langUpper}`],
+      about: pageFire[`about${req.data.langUpper}`],
+      products,
+    };
+    return res.render("page", {site, page});
+  } else {
+    return res.status(404).send(`<h1>404! Brand page not found <a href="${process.env.BOT_SITE}">${process.env.BOT_SITE}</a></h1>`);
+  }
 });
 // second gen
 exports.siteBrand = onRequest({region: "europe-central2", memory: "1GiB", maxInstances: 10}, app);

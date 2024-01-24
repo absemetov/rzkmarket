@@ -1,21 +1,23 @@
 /* eslint-disable max-len */
 import instantsearch from "instantsearch.js";
 import {connectSearchBox,
-  connectHits,
-  connectPagination,
+  connectInfiniteHits,
+  // connectHits,
+  // connectPagination,
   connectHierarchicalMenu,
   connectRefinementList,
-  connectBreadcrumb,
+  // connectBreadcrumb,
   connectCurrentRefinements, connectStats} from "instantsearch.js/es/connectors";
 import {poweredBy} from "instantsearch.js/es/widgets";
 import historyRouter from "instantsearch.js/es/lib/routers/history";
-import {reverseHighlight} from "instantsearch.js/es/helpers";
+import * as components from "instantsearch.js/es/helpers/components";
 import {searchClient, devPrefix} from "./searchClient";
-
+import {html, render} from "htm/preact";
 const INSTANT_SEARCH_INDEX_NAME = `${devPrefix}products`;
 import i18nContext from "./i18n";
 const lang = document.getElementById("addToCart").dataset.lang;
 const i18n = i18nContext[lang];
+
 // export const INSTANT_SEARCH_HIERARCHICAL_ATTRIBUTE = "categories.lvl0";
 function getCategorySlug(name) {
   return name.map(encodeURIComponent).join("/");
@@ -36,9 +38,9 @@ const instantSearchRouter = historyRouter({
     }
     if (category && category[0]) {
       title = `${title ? `${title} – ` : ""}${category[category.length - 1]}`;
-      document.getElementById("cat_header").innerHTML = category[category.length - 1] || "";
+      // document.getElementById("cat_header").innerHTML = category[category.length - 1] || "";
     } else {
-      document.getElementById("cat_header").innerHTML = "";
+      // document.getElementById("cat_header").innerHTML = "";
     }
     if (brand && brand[0]) {
       title = `${title ? `${title} – ` : ""}${brand.join(" – ")}`;
@@ -52,8 +54,6 @@ const instantSearchRouter = historyRouter({
   },
   createURL({qsModule, routeState, location}) {
     const urlParts = location.href.match(/^(.*?)\/search/);
-    // console.log(urlParts);
-    // console.log(routeState);
     const baseUrl = `${urlParts ? urlParts[1] : ""}/`;
     const categoryPath = routeState.category ? `/${getCategorySlug(routeState.category)}` : "";
     const queryParameters = {};
@@ -61,9 +61,9 @@ const instantSearchRouter = historyRouter({
     if (routeState.query) {
       queryParameters.query = encodeURIComponent(routeState.query);
     }
-    if (routeState.page !== 1) {
-      queryParameters.page = routeState.page;
-    }
+    // if (routeState.page !== 1) {
+    //   queryParameters.page = routeState.page;
+    // }
     if (routeState.brand) {
       queryParameters.brand = routeState.brand.map(encodeURIComponent);
     }
@@ -86,7 +86,7 @@ const instantSearchRouter = historyRouter({
     const category = getCategoryName(
         (pathnameMatches && pathnameMatches[1]) || "",
     );
-    const {query = "", page, brand = [], subCategory = [], seller = []} = qsModule.parse(
+    const {query = "", brand = [], subCategory = [], seller = []} = qsModule.parse(
         location.search.slice(1), {
           comma: true,
         },
@@ -97,18 +97,22 @@ const instantSearchRouter = historyRouter({
     const allSellers = Array.isArray(seller) ? seller : [seller].filter(Boolean);
     return {
       query: decodeURIComponent(query),
-      page,
       brand: allBrands.map(decodeURIComponent),
       subCategory: allSubCategories.map(decodeURIComponent),
       seller: allSellers.map(decodeURIComponent),
       category,
     };
   },
+  cleanUrlOnDispose: true,
 });
 
 export const search = instantsearch({
   searchClient,
   indexName: INSTANT_SEARCH_INDEX_NAME,
+  future: {
+    preserveSharedStateOnUnmount: false,
+  },
+  insights: false,
   routing: {
     router: instantSearchRouter,
     stateMapping: {
@@ -116,7 +120,7 @@ export const search = instantsearch({
         const indexUiState = uiState[INSTANT_SEARCH_INDEX_NAME] || {};
         return {
           query: indexUiState.query,
-          page: indexUiState.page,
+          // page: indexUiState.page,
           brand: indexUiState.refinementList && indexUiState.refinementList.brand,
           seller: indexUiState.refinementList && indexUiState.refinementList.seller,
           subCategory: indexUiState.refinementList && indexUiState.refinementList.subCategory,
@@ -127,7 +131,7 @@ export const search = instantsearch({
         return {
           [INSTANT_SEARCH_INDEX_NAME]: {
             query: routeState.query,
-            page: routeState.page,
+            // page: routeState.page,
             hierarchicalMenu: {
               "categories.lvl0": [routeState.category ? routeState.category.join(" > ") : ""],
             },
@@ -143,11 +147,11 @@ export const search = instantsearch({
   },
 });
 const virtualSearchBox = connectSearchBox((renderOptions, isFirstRender) => {
-  const {isSearchStalled} = renderOptions;
-  const loadingIndicator = document.querySelector("#loading-indicator");
-  const hitsPage = document.getElementById("hits");
-  hitsPage.hidden = isSearchStalled;
-  loadingIndicator.hidden = !isSearchStalled;
+  // const {isSearchStalled} = renderOptions;
+  // const loadingIndicator = document.querySelector("#loading-indicator");
+  // const hitsPage = document.getElementById("hits");
+  // hitsPage.hidden = isSearchStalled;
+  // loadingIndicator.hidden = !isSearchStalled;
 });
 // proxy image
 export const photoProxy = (src, locale) => {
@@ -155,136 +159,196 @@ export const photoProxy = (src, locale) => {
   // return locale === "ru" ? src.replace("storage", "i0.wp.com/storage") : src;
   return src.replace("storage.googleapis.com", "i0.wp.com/storage.googleapis.com");
 };
-// Create the render function for hits
-const renderHits = async (renderOptions, isFirstRender) => {
-  const {hits, widgetParams} = renderOptions;
-  widgetParams.container.innerHTML = `
-    ${hits
-      .map(
-          (item) =>
-            `<div class="col">
-              <div class="card text-center h-100">
-                <a href="/o/${item.sellerId}/p/${item.productId}">
-                  <img src="${item.img1 ? photoProxy(item.img1) : "/icons/flower3.svg"}" onerror="this.onerror=null;this.src = '/icons/photo_error_${lang}.svg';" class="card-img-top" alt="${item.name}">
-                </a>
-                <div class="card-body">
-                  ${item.brand ? `<h6>${reverseHighlight({attribute: "brand", hit: item})}</h6>` : ""}
-                  <h6>
-                    <a href="/o/${item.sellerId}/p/${item.productId}">${reverseHighlight({attribute: "name", hit: item})}</a> <small class="text-muted">(${reverseHighlight({attribute: "productId", hit: item})})</small>
-                  </h6>
-                </div>
-                <ul class="list-group list-group-flush">
-                  <li class="list-group-item">
-                    <a href="https://t.me/share/url?url=${encodeURIComponent(`https://t.me/${i18n.bot_name}?start=${btoa(`o_${item.sellerId}_p_${item.productId}`)}`)}&text=${encodeURIComponent(`${item.seller} ${item.brand ? ` - ${item.brand} - ` : "-"} ${item.name}`)}" target="_blank">
-                      <i class="bi bi-telegram"></i> Share
-                    </a>
-                  </li>
-                </ul>
-                <div class="card-footer">
-                  <h3>${item.price} ${i18n.currency}</h3>
-                  <h6>${item.seller}</h6>
-                  <div class="d-grid gap-2">
-                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#productModal"
-                    data-product-id="${item.productId}"
-                    data-product-name="${item.name}"
-                    data-product-brand="${item.brand}"
-                    data-product-img2="${item.img2 ? photoProxy(item.img2) : "/icons/flower3.svg"}"
-                    data-seller="${item.seller}"
-                    data-seller-id="${item.sellerId}">${i18n.btn_show}</button>
-                  </div>
-                </div>
-              </div>
-            </div>`,
-      ).join("")}
-  `;
-};
 
 // Create the custom widget hits
-const customHits = connectHits(renderHits);
+// const customHits = connectHits(async (renderOptions, isFirstRender) => {
+//   const {hits, widgetParams} = renderOptions;
+//   // first clear
+//   render("", widgetParams.container);
+//   render(html`${hits.map(
+//       (item) => html`<div class="col">
+//        <div class="card text-center h-100">
+//          <a href="/o/${item.sellerId}/p/${item.productId}">
+//            <img src="${item.img1 ? photoProxy(item.img1) : "/icons/flower3.svg"}" onerror="this.onerror=null;this.src = '/icons/photo_error_${lang}.svg';" class="card-img-top" alt="${item.name}"/>
+//          </a>
+//          <div class="card-body">
+//            ${item.brand ? html`<h6>${item.brandSite ? html`<a href="${item.brandSite}">${components.Highlight({attribute: "brand", hit: item})}</a>` : components.Highlight({attribute: "brand", hit: item})}</h6>` : ""}
+//            <h6>
+//              <a href="/o/${item.sellerId}/p/${item.productId}" class="link-dark link-underline-opacity-0">${components.Highlight({attribute: "name", hit: item})}</a> <small class="text-muted">(${components.Highlight({attribute: "productId", hit: item})})</small>
+//            </h6>
+//          </div>
+//          <ul class="list-group list-group-flush">
+//            <li class="list-group-item">
+//              Склад: <a href="/o/${item.sellerId}" class="link-primary link-underline-opacity-0">${item.seller}</a>
+//            </li>
+//            <li class="list-group-item">
+//              <a href="https://t.me/share/url?url=${encodeURIComponent(`https://t.me/${i18n.bot_name}?start=${btoa(`o_${item.sellerId}_p_${item.productId}`)}`)}&text=${encodeURIComponent(`${item.seller} ${item.brand ? ` - ${item.brand} - ` : "-"} ${item.name}`)}" target="_blank">
+//                <i class="bi bi-telegram"></i> Share
+//              </a>
+//            </li>
+//          </ul>
+//          <div class="card-footer">
+//            <h3>${item.price} ${i18n.currency}</h3>
+//            <div class="d-grid gap-2">
+//             <button type="button" class="btn btn-success  ${item.availability ? "" : "disabled"}" data-bs-toggle="modal"
+//               data-bs-target="#cartAddModal"
+//               data-product-id="${item.productId}"
+//               data-product-name="${item.name}"
+//               data-product-unit="${item.unit}"
+//               data-seller-id="${item.sellerId}"
+//               data-seller="${item.seller}"
+//               data-modal-close="true">${item.availability ? i18n.btn_buy : i18n.btnNotAvailable}</button>
+//            </div>
+//          </div>
+//        </div>
+//      </div>`,
+//   )}`, widgetParams.container);
+// });
 
-// render pagination
-const renderPagination = (renderOptions, isFirstRender) => {
-  const {
-    pages,
-    currentRefinement,
-    nbPages,
-    isFirstPage,
-    isLastPage,
-    refine,
-    createURL,
-  } = renderOptions;
-  const container = document.querySelector("#pagination");
-  if (nbPages <= 1) {
-    container.innerHTML = "";
+// Infinity hits
+const more = document.querySelector("#loading-indicator");
+let lastRenderArgs;
+const customInfinityHits = connectInfiniteHits((renderArgs, isFirstRender) => {
+  const {hits, showMore, widgetParams} = renderArgs;
+  const {container} = widgetParams;
+  lastRenderArgs = renderArgs;
+  more.classList.remove("d-none");
+  if (isFirstRender) {
+    // const sentinel = document.createElement("div");
+    // container.appendChild(sentinel);
+    const observer = new IntersectionObserver((entries) => {
+      // entries.forEach((entry) => {
+      //   if (entry.isIntersecting && !lastRenderArgs.isLastPage) {
+      //     showMore();
+      //     console.log("show more");
+      //   }
+      // });
+      if (entries[0].intersectionRatio <= 0) return;
+      if (lastRenderArgs.isLastPage) {
+        more.classList.add("d-none");
+      } else {
+        showMore();
+      }
+    });
+    observer.observe(more);
     return;
   }
-  container.innerHTML = `
-    <ul class="pagination">
-      ${ !isFirstPage ?
-      `<li class="page-item">
-        <a class="page-link" href="${createURL(0)}" data-value="${0}" title="${i18n.a_pag_first}">
-          <i class="bi bi-chevron-bar-left"></i>
-        </a>
-      </li>
-      <li class="page-item">
-        <a class="page-link" href="${createURL(currentRefinement - 1)}" data-value="${currentRefinement - 1}" title="${i18n.a_pag_previous}">
-          <i class="bi bi-chevron-left"></i>
-        </a>
-      </li>` : `<li class="page-item disabled">
-        <a class="page-link " href="#">
-          <i class="bi bi-chevron-bar-left"></i>
-        </a>
-      </li>
-      <li class="page-item disabled">
-        <a class="page-link" href="#">
-          <i class="bi bi-chevron-left"></i>
-        </a>
-      </li>`}
-      <li class="d-inline d-md-none page-item">
-        <a class="page-link" href="${createURL(currentRefinement)}" data-value="${currentRefinement}">
-          ${i18n.t_pag_page} ${currentRefinement + 1} ${i18n.t_pag_of} ${nbPages}
-        </a>
-      </li>
-      ${pages.map((page) => `
-        <li class="d-none d-md-inline page-item ${currentRefinement === page ? "active" : ""}">
-          <a class="page-link" href="${createURL(page)}" data-value="${page}">
-            ${page + 1}
-          </a>
-        </li>`).join("")}
-        ${!isLastPage ?
-        `<li class="page-item">
-          <a class="page-link" href="${createURL(currentRefinement + 1)}" data-value="${currentRefinement + 1}" title="${i18n.a_pag_next}">
-            <i class="bi bi-chevron-right"></i>
-          </a>
-        </li>
-        <li class="page-item">
-          <a class="page-link" href="${createURL(nbPages - 1)}" data-value="${nbPages - 1}" title="${i18n.a_pag_last}">
-            <i class="bi bi-chevron-bar-right"></i>
-          </a>
-        </li>` :
-        `<li class="page-item disabled">
-          <a class="page-link" href="#">
-            <i class="bi bi-chevron-right"></i>
-          </a>
-        </li>
-        <li class="page-item disabled">
-          <a class="page-link" href="#">
-            <i class="bi bi-chevron-bar-right"></i>
-          </a>
-        </li>`}
-  </ul>`;
-  [...container.querySelectorAll("a")].forEach((element) => {
-    element.addEventListener("click", (event) => {
-      event.preventDefault();
-      refine(event.currentTarget.dataset.value);
-    });
-  });
-};
+  render("", container);
+  render(html`${hits.map((item) => html`<div class="col"><div class="card text-center h-100">
+       <a href="/o/${item.sellerId}/p/${item.productId}">
+         <img src="${item.img1 ? photoProxy(item.img1) : "/icons/flower3.svg"}" onerror="this.onerror=null;this.src = '/icons/photo_error_${lang}.svg';" class="card-img-top" alt="${item.name}"/>
+       </a>
+       <div class="card-body">
+         ${item.brand ? html`<h6>${item.brandSite ? html`<a href="${item.brandSite}">${components.Highlight({attribute: "brand", hit: item})}</a>` : components.Highlight({attribute: "brand", hit: item})}</h6>` : ""}
+         <h6>
+           <a href="/o/${item.sellerId}/p/${item.productId}" class="link-dark link-underline-opacity-0">${components.Highlight({attribute: "name", hit: item})}</a> <small class="text-muted">(${components.Highlight({attribute: "productId", hit: item})})</small>
+         </h6>
+       </div>
+       <ul class="list-group list-group-flush">
+         <li class="list-group-item">  
+           Склад: <a href="/o/${item.sellerId}" class="link-primary link-underline-opacity-0">${item.seller}</a>
+         </li>
+         <li class="list-group-item">
+           <a href="https://t.me/share/url?url=${encodeURIComponent(`https://t.me/${i18n.bot_name}?start=${btoa(`o_${item.sellerId}_p_${item.productId}`)}`)}&text=${encodeURIComponent(`${item.seller} ${item.brand ? ` - ${item.brand} - ` : "-"} ${item.name}`)}" target="_blank">
+             <i class="bi bi-telegram"></i> Share
+           </a>
+         </li>
+       </ul>
+       <div class="card-footer">
+         <h3>${item.price} ${i18n.currency}</h3>
+         <div class="d-grid gap-2">
+          <button type="button" class="btn btn-success  ${item.availability ? "" : "disabled"}" data-bs-toggle="modal"
+            data-bs-target="#cartAddModal"
+            data-product-id="${item.productId}"
+            data-product-name="${item.name}"
+            data-product-unit="${item.unit}"
+            data-seller-id="${item.sellerId}"
+            data-seller="${item.seller}"
+            data-modal-close="true">${item.availability ? i18n.btn_buy : i18n.btnNotAvailable}</button>
+         </div>
+       </div>
+     </div>
+    </div`)}`, container);
+});
 
 // Create the custom widget pagination
-const customPagination = connectPagination(
-    renderPagination,
-);
+// const customPagination = connectPagination((renderOptions, isFirstRender) => {
+//   const {
+//     pages,
+//     currentRefinement,
+//     nbPages,
+//     isFirstPage,
+//     isLastPage,
+//     refine,
+//     createURL,
+//   } = renderOptions;
+//   const container = document.querySelector("#pagination");
+//   if (nbPages <= 1) {
+//     container.innerHTML = "";
+//     return;
+//   }
+//   container.innerHTML = `
+//     <ul class="pagination">
+//       ${ !isFirstPage ?
+//       `<li class="page-item">
+//         <a class="page-link" href="${createURL(0)}" data-value="${0}" title="${i18n.a_pag_first}">
+//           <i class="bi bi-chevron-bar-left"></i>
+//         </a>
+//       </li>
+//       <li class="page-item">
+//         <a class="page-link" href="${createURL(currentRefinement - 1)}" data-value="${currentRefinement - 1}" title="${i18n.a_pag_previous}">
+//           <i class="bi bi-chevron-left"></i>
+//         </a>
+//       </li>` : `<li class="page-item disabled">
+//         <a class="page-link " href="#">
+//           <i class="bi bi-chevron-bar-left"></i>
+//         </a>
+//       </li>
+//       <li class="page-item disabled">
+//         <a class="page-link" href="#">
+//           <i class="bi bi-chevron-left"></i>
+//         </a>
+//       </li>`}
+//       <li class="d-inline d-md-none page-item">
+//         <a class="page-link" href="${createURL(currentRefinement)}" data-value="${currentRefinement}">
+//           ${i18n.t_pag_page} ${currentRefinement + 1} ${i18n.t_pag_of} ${nbPages}
+//         </a>
+//       </li>
+//       ${pages.map((page) => `
+//         <li class="d-none d-md-inline page-item ${currentRefinement === page ? "active" : ""}">
+//           <a class="page-link" href="${createURL(page)}" data-value="${page}">
+//             ${page + 1}
+//           </a>
+//         </li>`).join("")}
+//         ${!isLastPage ?
+//         `<li class="page-item">
+//           <a class="page-link" href="${createURL(currentRefinement + 1)}" data-value="${currentRefinement + 1}" title="${i18n.a_pag_next}">
+//             <i class="bi bi-chevron-right"></i>
+//           </a>
+//         </li>
+//         <li class="page-item">
+//           <a class="page-link" href="${createURL(nbPages - 1)}" data-value="${nbPages - 1}" title="${i18n.a_pag_last}">
+//             <i class="bi bi-chevron-bar-right"></i>
+//           </a>
+//         </li>` :
+//         `<li class="page-item disabled">
+//           <a class="page-link" href="#">
+//             <i class="bi bi-chevron-right"></i>
+//           </a>
+//         </li>
+//         <li class="page-item disabled">
+//           <a class="page-link" href="#">
+//             <i class="bi bi-chevron-bar-right"></i>
+//           </a>
+//         </li>`}
+//   </ul>`;
+//   [...container.querySelectorAll("a")].forEach((element) => {
+//     element.addEventListener("click", (event) => {
+//       event.preventDefault();
+//       refine(event.currentTarget.dataset.value);
+//     });
+//   });
+// });
 
 // create the render functions hierarchical-menu
 const renderList = ({newitems, createURL}) => `
@@ -417,60 +481,62 @@ const customRefinementList = connectRefinementList(
 //           ${item.label}
 //         </a></li>` : `<li class="breadcrumb-item active" aria-current="page">${item.label}</li>`}
 // `;
-const renderBreadcrumbItem = (items, createURL) => {
-  const itemsList = [];
-  const breadcrumbCount = items.length;
-  if (breadcrumbCount > 2) {
-    itemsList.push("<li class=\"breadcrumb-item d-block d-md-none\">...</li>");
-  }
-  for (const [index, item] of items.entries()) {
-    // show only last 2 items
-    if (item.value) {
-      itemsList.push(`<li class="breadcrumb-item ${breadcrumbCount - 2 > index ? "d-none d-md-inline" : ""}"><a href="${createURL(item.value)}" data-value="${item.value}">${item.label}</a></li>`);
-    } else {
-      itemsList.push(`<li class="breadcrumb-item active" aria-current="page">${item.label}</li>`);
-    }
-  }
-  return itemsList.join("");
-};
+// const renderBreadcrumbItem = (items, createURL) => {
+//   const itemsList = [];
+//   const breadcrumbCount = items.length;
+//   for (const [index, item] of items.entries()) {
+//     // show only last 2 items
+//     if (index > 2) {
+//       itemsList.push("<li class=\"breadcrumb-item d-block d-md-none\">...</li>");
+//     }
+//     if (item.value) {
+//       itemsList.push(`<li class="breadcrumb-item ${breadcrumbCount - 3 > index ? "d-none d-md-inline" : ""}"><a href="${createURL(item.value)}" data-value="${item.value}" class="link-dark link-underline-opacity-0 link-underline-opacity-100-hover">${item.label}</a></li>`);
+//     } else {
+//       itemsList.push(`<li class="breadcrumb-item active" aria-current="page">${item.label}</li>`);
+//     }
+//   }
+//   return itemsList.join("");
+// };
 
-const renderBreadcrumb = (renderOptions, isFirstRender) => {
-  const {items, refine, createURL, widgetParams} = renderOptions;
-  // widgetParams.container.innerHTML = `
-  //   <ol class="breadcrumb">
-  //     <li class="breadcrumb-item">
-  //       <a href="/search"  id="home">${i18n.a_search}</a>
-  //     </li>
-  //     ${items.map((item) =>
-  //   renderBreadcrumbItem({
-  //     item,
-  //     createURL,
-  //   })).join("")}
-  //   </ol>
-  // `;
-  widgetParams.container.innerHTML = `
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item">
-        <a href="/search"  id="home">${i18n.a_search}</a>
-      </li>
-      ${renderBreadcrumbItem(items, createURL)}
-    </ol>
-  `;
+// const renderBreadcrumb = (renderOptions, isFirstRender) => {
+//   const {items, refine, createURL, widgetParams} = renderOptions;
+//   // widgetParams.container.innerHTML = `
+//   //   <ol class="breadcrumb">
+//   //     <li class="breadcrumb-item">
+//   //       <a href="/search"  id="home">${i18n.a_search}</a>
+//   //     </li>
+//   //     ${items.map((item) =>
+//   //   renderBreadcrumbItem({
+//   //     item,
+//   //     createURL,
+//   //   })).join("")}
+//   //   </ol>
+//   // `;
+//   if (items.length) {
+//     widgetParams.container.classList.remove("d-none");
+//   } else {
+//     widgetParams.container.classList.add("d-none");
+//   }
+//   widgetParams.container.innerHTML = `
+//     <ol class="breadcrumb">
+//       ${renderBreadcrumbItem(items, createURL)}
+//     </ol>
+//   `;
 
-  [...widgetParams.container.querySelectorAll("a")].forEach((element) => {
-    if (element.id !== "home") {
-      element.addEventListener("click", (event) => {
-        event.preventDefault();
-        refine(event.currentTarget.dataset.value);
-      });
-    }
-  });
-};
+//   [...widgetParams.container.querySelectorAll("a")].forEach((element) => {
+//     if (element.id !== "home") {
+//       element.addEventListener("click", (event) => {
+//         event.preventDefault();
+//         refine(event.currentTarget.dataset.value);
+//       });
+//     }
+//   });
+// };
 
 // Create the custom widget
-const customBreadcrumb = connectBreadcrumb(
-    renderBreadcrumb,
-);
+// const customBreadcrumb = connectBreadcrumb(
+//     renderBreadcrumb,
+// );
 
 // connect current refinements
 // Create the render function
@@ -572,16 +638,20 @@ search.addWidgets([
       "categories.lvl3",
       "categories.lvl4",
       "categories.lvl5",
+      "categories.lvl6",
     ],
     showParentLevel: false,
     sortBy: ["isRefined", "count:desc", "name:asc"],
   }),
-  customHits({
+  customInfinityHits({
     container: document.querySelector("#hits"),
+    searchParameters: {
+      hitsPerPage: 8,
+    },
   }),
-  customPagination({
-    container: document.querySelector("#pagination"),
-  }),
+  // customPagination({
+  //   container: document.querySelector("#pagination"),
+  // }),
   customRefinementList({
     container: document.querySelector("#refinement-list-brand"),
     attribute: "brand",
@@ -609,17 +679,17 @@ search.addWidgets([
   poweredBy({
     container: "#powered-by",
   }),
-  customBreadcrumb({
-    container: document.querySelector("#breadcrumb"),
-    attributes: [
-      "categories.lvl0",
-      "categories.lvl1",
-      "categories.lvl2",
-      "categories.lvl3",
-      "categories.lvl4",
-      "categories.lvl5",
-    ],
-  }),
+  // customBreadcrumb({
+  //   container: document.querySelector("#breadcrumb"),
+  //   attributes: [
+  //     "categories.lvl0",
+  //     "categories.lvl1",
+  //     "categories.lvl2",
+  //     "categories.lvl3",
+  //     "categories.lvl4",
+  //     "categories.lvl5",
+  //   ],
+  // }),
   customCurrentRefinements({
     container: document.querySelector("#current-refinements"),
     excludedAttributes: [

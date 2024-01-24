@@ -79,21 +79,6 @@
       ]
     },
     {
-      "target": "nilson.com.ua",
-      "public": "sites/nilson.com.ua",
-      "ignore": [
-        "firebase.json",
-        "**/.*",
-        "**/node_modules/**"
-      ],
-      "rewrites": [
-        {
-          "source": "/",
-          "destination": "/index.html"
-        }
-      ]
-    },
-    {
       "target": "gunsan.com.ua",
       "public": "sites/gunsan.com.ua",
       "ignore": [
@@ -110,6 +95,22 @@
     },
     {
       "target": "viko.org.ua",
+      "public": "sites/viko.org.ua",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "function": "siteBrand",
+          "region": "europe-central2"
+        }
+      ]
+    },
+    {
+      "target": "nilson.com.ua",
       "public": "sites/viko.org.ua",
       "ignore": [
         "firebase.json",

@@ -1,44 +1,27 @@
-<nav aria-label="breadcrumb">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="/{{#if (equals envSite.data.lang "ru-ua")}}ru{{/if}}">{{envSite.i18n.aObjects}}</a></li>
-    <li class="breadcrumb-item"><a href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{object.id}}">{{object.name}}</a></li>
-    <li class="breadcrumb-item active" aria-current="page">{{envSite.i18n.aCart}}</li>
-  </ol>
-</nav>
-{{#if productsImport}}
-  <ul class="list-group">
-  {{#each productsImport as |product|}}
-    <li class="list-group-item">{{inc @index 1}}. {{product.id}} = {{product.qty}}</li>
-  {{/each}}
-  </ul>
-  <a href="?{{productParam}}&import=true" class="btn btn-success my-3">{{envSite.i18n.cartImport}}</a>
-{{/if}}
-<h1>{{object.name}} / {{envSite.i18n.aCart}}</h1>
-{{#if products}}
-  <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2 my-3">
-  {{#each products as |product|}}
-    {{> product product=product object=../object envSite=../envSite}}
-  {{/each}}
-  </div>
-  <div class="row">
-    <h5>{{envSite.i18n.tQty}}: <strong id="totalQty">{{object.cartInfo.totalQty}}</strong></h5>
-  </div>
-  <div class="row">
-    <h4>{{envSite.i18n.tSum}}: <strong class="text-nowrap" id="totalSum">{{formatNumber object.cartInfo.totalSum}} {{envSite.currency}}</strong></h4>
-  </div>
-  <div class="my-3">
-    <button type="button" class="btn btn-success mt-3" data-bs-toggle="modal" data-bs-target="#purchaseModal">
-      {{envSite.i18n.btnPurchase}}
-    </button>
-    <a href="/o/{{object.id}}/cart?clear=true" class="btn btn-primary mt-3">{{envSite.i18n.btnСlearCart}}</a>
-    <a href="/o/{{object.id}}/pdf?docId={{envSite.user.uid}}" target="_blank" class="btn btn-primary mt-3">{{envSite.i18n.btnSavePdf}}</a>
-    {{#if admin}}
-      <button type="button" class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#receiptModaL">Печать</button>
-    {{/if}}
-  </div>
-{{else}}
-  <h3>{{envSite.i18n.tCartEmpty}} <a href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{object.id}}/c">{{envSite.i18n.aChuseGoods}}</a></h3>
-{{/if}}
+<div id="cartContent">
+  {{#if products}}
+    <h1>{{envSite.i18n.aCart}}</h1>
+    <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 g-2 my-3">
+    {{#each products as |product|}}
+      {{> product product=product envSite=../envSite}}
+    {{/each}}
+    </div>
+    <div class="row mt-4">
+      <h4>{{envSite.i18n.tSum}}: <strong class="text-nowrap" id="totalSum">{{formatNumber cartInfo.cartTotal}} {{envSite.currency}}</strong></h4>
+    </div>
+    <p class="d-inline-flex gap-1">
+      <button type="button" class="btn btn-success mt-3" data-bs-toggle="modal" data-bs-target="#purchaseModal">
+        {{envSite.i18n.btnPurchase}}
+      </button>
+      <a href="/pdf?docId={{envSite.user.uid}}" target="_blank" class="btn btn-primary mt-3">{{envSite.i18n.btnSavePdf}}</a>
+      {{#if admin}}
+        <button type="button" class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#receiptModaL">Печать</button>
+      {{/if}}
+    </p>
+  {{else}}
+    <h3>{{envSite.i18n.tCartEmpty}}</h3>
+  {{/if}}
+</div>
 <!-- Modal purchase -->
 <div class="modal fade" id="purchaseModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog">
@@ -48,10 +31,10 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <form id="purchase" action="/o/{{object.id}}/cart/purchase">
+        <form id="purchase" action="/cart/purchase">
           {{#unless envSite.user.auth}}
             <div class="alert alert-warning alert-dismissible fade show" role="alert">
-              <a href="/login?r={{object.id}}"><i class="bi bi-person-circle"></i> {{envSite.i18n.aLoginTelegram}}</a>
+              <a href="/login?r=cart"><i class="bi bi-person-circle"></i> {{envSite.i18n.aLoginTelegram}}</a>
               <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
           {{/unless}}
@@ -103,28 +86,28 @@
   </div>
 </div>
 <!-- Modal Receipt-->
-  <div class="modal fade" id="receiptModaL" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5" id="exampleModalLabel">Сдача клиенту</h1>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<div class="modal fade" id="receiptModaL" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="exampleModalLabel">Сдача клиенту</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="receiptSum" class="h5"></div>
+        <div class="input-group mb-3">
+          <input type="number" min="0" id="cash" name="cash" class="form-control" placeholder="Введите сумму">
+          <span class="input-group-text">руб</span>
         </div>
-        <div class="modal-body">
-          <div id="receiptSum" class="h5"></div>
-          <div class="input-group mb-3">
-            <input type="number" min="0" id="cash" name="cash" class="form-control" placeholder="Введите сумму">
-            <span class="input-group-text">руб</span>
-          </div>
-          <div id="change" class="h3"></div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="receiptCash">Print receip</button>
-        </div>
+        <div id="change" class="h3"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="receiptCash">Print receip</button>
       </div>
     </div>
   </div>
+</div>
 <script>
   const cashInput = document.getElementById("cash");
   const btnReceipt = document.getElementById("receiptCash");

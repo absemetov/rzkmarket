@@ -43,10 +43,10 @@ const esp32Handler = async (ctx) => {
 };
 // esp32 controller
 esp32Actions.push(async (ctx, next) => {
-  if (ctx.state.routeName === "esp32") {
+  if (ctx.state.pathParams[0] === "esp32") {
     editMsg = ctx;
-    const releNumber = ctx.state.param;
-    const action = ctx.state.params.get("action");
+    const releNumber = ctx.state.pathParams[1];
+    const action = ctx.state.searchParams.get("action");
     // on off rele
     client.publish("home/rele", `${action}_${releNumber}`);
     // client.publish("home/rele/status", "status");

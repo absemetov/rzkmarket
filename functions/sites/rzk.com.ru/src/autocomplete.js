@@ -145,6 +145,10 @@ export function startAutocomplete() {
               //         {class: "thumbnail", src: "/icons/flower3q.svg", onError: (event) => event.currentTarget.src = "/icons/flower3.svg"},
               //         null,
               //     ));
+              const itemActionButtonOnClick = (event) => {
+                event.stopPropagation();
+                setIsOpen(false);
+              };
               return html`<div class="aa-ItemWrapper">
                 <div class="aa-ItemContent">
                   <div className="aa-ItemIcon aa-ItemIcon--picture aa-ItemIcon--alignTop">
@@ -157,7 +161,7 @@ export function startAutocomplete() {
                   </div>
                   <div class="aa-ItemContentBody">
                     <div class="aa-ItemContentTitle text-wrap">
-                      ${components.ReverseHighlight({hit: item, attribute: "name"})} (${components.ReverseHighlight({hit: item, attribute: "productId"})}) ${components.ReverseHighlight({hit: item, attribute: "brand"})} (<b>${item.seller}</b>)
+                      ${components.Highlight({hit: item, attribute: "name"})} (${components.Highlight({hit: item, attribute: "productId"})}) ${item.brand ? components.Highlight({hit: item, attribute: "brand"}) : ""}
                     </div>
                     <b>${item.price} ${i18n.currency}</b>
                   </div>
@@ -174,18 +178,15 @@ export function startAutocomplete() {
                       />
                     </svg>
                   </button>
-                  <button type="button" class="aa-ItemActionButton me-2" style="font-size: 1.5rem; color: cornflowerblue;" data-bs-toggle="modal" data-bs-target="#productModal"
-                    onClick="${(event) => {
-    event.stopPropagation();
-    setIsOpen(false);
-  }}"
+                  <button type="button" class="btn aa-ItemActionButton me-2 ${item.availability ? "" : "disabled"}" style="font-size: 1.5rem; color: cornflowerblue;" data-bs-toggle="modal" data-bs-target="#cartAddModal"
+                    onClick="${itemActionButtonOnClick}"
                     data-autocomplete="true"
                     data-product-id="${item.productId}"
                     data-product-name="${item.name}"
-                    data-product-brand="${item.brand ? item.brand : "undefined"}"
-                    data-product-img2="${item.img2 ? photoProxy(item.img2) : "/icons/flower3.svg"}"
+                    data-product-unit="${item.unit}"
+                    data-seller-id="${item.sellerId}"
                     data-seller="${item.seller}"
-                    data-seller-id="${item.sellerId}"><i class="bi bi-cart3 text-success"></i></button>
+                    data-modal-close="true"><i class="bi bi-${item.availability ? "cart3" : "cart-x-fill"} text-success"></i></button>
                 </div>
               </div>`;
             },
@@ -236,7 +237,7 @@ export function startAutocomplete() {
                   </div>
                   <div class="aa-ItemContentBody">
                     <div class="aa-ItemContentTitle text-wrap">
-                      ${components.ReverseHighlight({hit: item, attribute: "name"})} (${components.ReverseHighlight({hit: item, attribute: "hierarchicalUrl"})})
+                      ${components.Highlight({hit: item, attribute: "name"})} (${components.Highlight({hit: item, attribute: "hierarchicalUrl"})})
                     </div>
                   </div>
                 </div>

@@ -1,12 +1,29 @@
-<div class="row my-3">
+<div class="my-3">
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="/{{#if (equals site.lang "ru")}}ru{{/if}}">{{site.locale.products}}</a></li>
+      <li class="breadcrumb-item"><a href="/{{#if (equals site.data.lang "ru-ua")}}ru{{/if}}"><i class="bi bi-house"></i></a></li>
       <li class="breadcrumb-item active" aria-current="page">{{page.name}}</li>
     </ol>
   </nav>
   <h1>{{page.name}}</h1>
-  <p class="lead">
+  <div class="lead">
     {{{page.about}}}
-  </p>
+  </div>
+  {{#if page.products}}
+  <div class="table-responsive-lg mt-3">
+    <table class="table table-hover">
+      <tbody>
+        {{#each page.products as |product|}}
+          <tr>
+            <th scope="row">{{product.id}}</th>
+            <td>{{product.name}}</td>
+            <td>{{product.price}} {{../site.currency}}</td>
+            <td>{{product.unit}}</td>
+            <td>{{product.objectName}}</td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>  
+  </div>
+  {{/if}}
 </div>

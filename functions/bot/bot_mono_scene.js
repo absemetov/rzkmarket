@@ -20,8 +20,8 @@ const monoHandler = async (ctx) => {
 };
 // currency controller
 monoActions.push(async (ctx, next) => {
-  if (ctx.state.routeName === "mono") {
-    const currencyName = ctx.state.param;
+  if (ctx.state.pathParams[0] === "mono") {
+    const currencyName = ctx.state.pathParams[1];
     const currencyObj = await getCurrency();
     const dateTimestamp = Math.floor(Date.now() / 1000);
     await ctx.editMessageText(monoMarkdown(currencyObj[currencyName]), {

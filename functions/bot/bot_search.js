@@ -5,24 +5,22 @@ const algoliaIndexProducts = client.initIndex(`${process.env.ALGOLIA_PREFIX}prod
 const algoliaIndexOrders = client.initIndex(`${process.env.ALGOLIA_PREFIX}orders`);
 const moment = require("moment");
 
-const searchProductHandle = async (ctx) => {
-  const page = + ctx.state.param || 0;
-  const formOpen = ctx.state.params && ctx.state.params.get("formOpen");
+const searchProductHandle = async (ctx, page = 0) => {
+  // const page = + Array.isArray(ctx.state.pathParams) && ctx.state.pathParams[1] || 0;
   const productAddedQty = + ctx.state.sessionMsg.url.searchParams.get("sQty");
   const productAddedId = ctx.state.sessionMsg.url.searchParams.get("sId");
-  const productAddedObjectId = ctx.state.sessionMsg.url.searchParams.get("sObjectId");
+  // const productAddedObjectId = ctx.state.sessionMsg.url.searchParams.get("sObjectId");
   let searchText = ctx.state.sessionMsg.url.searchParams.get("search_text");
   ctx.state.sessionMsg.url.searchParams.set("TTL", 1);
-  if (formOpen) {
-    await searchFormProduct(ctx);
-    return;
-  }
   const inlineKeyboard = [];
-  inlineKeyboard.push([{text: ctx.i18n.btn.main(), callback_data: "o"}, {text: ctx.i18n.btn.search(), callback_data: "search?formOpen=true"}]);
+  if (ctx.state.sessionMsg.url.searchParams.get("orderData_id")) {
+    inlineKeyboard.push([{text: `📝 Редактор заказа 🏪 ${ctx.state.sessionMsg.url.searchParams.get("orderData_objectId")}`, callback_data: "cart"}]);
+  }
+  inlineKeyboard.push([{text: ctx.i18n.btn.main(), callback_data: "o"}]);
   try {
     // get resalts from algolia
     const params = {
-      attributesToRetrieve: ["name", "price", "productId", "brand", "seller", "sellerId"],
+      attributesToRetrieve: ["name", "price", "productId", "brand", "seller", "sellerId", "unit", "availability"],
       hitsPerPage: 10,
       page,
     };
@@ -31,20 +29,24 @@ const searchProductHandle = async (ctx) => {
       params.facets = ["seller"];
       params.facetFilters = [["seller:RZK Саки"]];
     }
+    if (ctx.state.sessionMsg.url.searchParams.get("orderData_objectId")) {
+      params.facets = ["seller"];
+      params.facetFilters = [[`seller:${ctx.state.sessionMsg.url.searchParams.get("orderData_objectName")}`]];
+    }
     const resalt = await algoliaIndexProducts.search(searchText, {
       ...params,
     });
     for (const product of resalt.hits) {
       const btnSearch = [];
       btnSearch.push({
-        text: `${product.price}${process.env.BOT_CURRENCY} ${product.name} (${product.productId}) ${product.brand ? product.brand + " " : ""} - ${product.seller}`,
-        callback_data: `p/${product.productId}?o=${product.sellerId}`,
+        text: `${product.availability ? "📦" : "🚫"} ${product.price}${process.env.BOT_CURRENCY} ${product.name} (${product.productId}) ${product.brand ? product.brand + " " : ""} - ${product.seller}`,
+        callback_data: `k/${product.productId}/${product.sellerId}`,
       });
       // add cart btn
-      if (productAddedId === product.productId && productAddedObjectId === product.sellerId && productAddedQty) {
+      if (productAddedId === product.productId && productAddedQty) {
         btnSearch.push({
-          text: `🛒 ${productAddedQty}`,
-          callback_data: `cart?o=${product.sellerId}`,
+          text: `🛒 + ${productAddedQty}`,
+          callback_data: "cart",
         });
       }
       inlineKeyboard.push(btnSearch);
@@ -61,7 +63,7 @@ const searchProductHandle = async (ctx) => {
     }
     inlineKeyboard.push(prevNext);
     const media = await photoCheckUrl();
-    ctx.state.sessionMsg.url.searchParams.delete("scene");
+    // ctx.state.sessionMsg.url.searchParams.delete("scene");
     ctx.state.sessionMsg.url.searchParams.set("page", page);
     let caption;
     if (resalt.nbHits) {
@@ -76,6 +78,7 @@ const searchProductHandle = async (ctx) => {
       caption = `<b>&#171;${searchText}&#187; ${ctx.i18n.txt.searchFound()} ${resalt.nbHits} ${pluralizeResult}\n` +
       `${ctx.i18n.txt.page()} ${page + 1} ${ctx.i18n.txt.pageOf()} ${resalt.nbPages}</b>` + ctx.state.sessionMsg.linkHTML();
     } else {
+      inlineKeyboard.push([{text: ctx.i18n.btn.search(), callback_data: "search?formOpen=true"}]);
       caption = `<b>&#171;${searchText}&#187; ${ctx.i18n.txt.searchNotFound()}</b>` + ctx.state.sessionMsg.linkHTML();
     }
     if (ctx.callbackQuery) {
@@ -103,8 +106,13 @@ const searchProductHandle = async (ctx) => {
 };
 
 const searchProductAction = async (ctx, next) => {
-  if (ctx.state.routeName === "search") {
-    await searchProductHandle(ctx);
+  if (ctx.state.pathParams[0] === "search") {
+    const formOpen = ctx.state.searchParams.get("formOpen");
+    if (formOpen) {
+      await searchFormProduct(ctx);
+      return;
+    }
+    await searchProductHandle(ctx, ctx.state.pathParams[1] ? + ctx.state.pathParams[1] : 0);
     await ctx.answerCbQuery();
   } else {
     return next();
@@ -114,37 +122,33 @@ const searchProductAction = async (ctx, next) => {
 // form search
 const searchFormProduct = async (ctx) => {
   // open search dialog
-  ctx.state.sessionMsg.url.searchParams.set("scene", "search");
-  await ctx.replyWithHTML(`<b>${ctx.i18n.txt.searchForm()}</b>` + ctx.state.sessionMsg.linkHTML(),
-      {
-        reply_markup: {
-          force_reply: true,
-        },
-      });
+  // ctx.state.sessionMsg.url.searchParams.set("scene", "search");
+  // await ctx.replyWithHTML(`<b>${ctx.i18n.txt.searchForm()}</b>` + ctx.state.sessionMsg.linkHTML(),
+  //     {
+  //       reply_markup: {
+  //         force_reply: true,
+  //       },
+  //     });
+  // use fire session test
+  await store.defaultSession(ctx);
+  await ctx.replyWithHTML(`<b>${ctx.i18n.txt.searchForm()}</b>`);
+  await ctx.answerCbQuery();
 };
 
 // order search handler
-const searchOrderHandle = async (ctx) => {
-  const page = + ctx.state.param || 0;
-  const formOpen = ctx.state.params && ctx.state.params.get("formOpen");
-  const statusOpen = ctx.state.params && ctx.state.params.get("statusOpen");
-  const status = ctx.state.params && ctx.state.params.get("status");
+const searchOrderHandle = async (ctx, page = 0) => {
+  // const page = + ctx.state.pathParams[1] || 0;
+  const statusOpen = ctx.state.searchParams && ctx.state.searchParams.get("statusOpen");
+  const status = ctx.state.searchParams && ctx.state.searchParams.get("status");
   const searchText = ctx.state.sessionMsg.url.searchParams.get("search_order_text") || "";
+  ctx.state.sessionMsg.url.searchParams.set("TTL", 1);
   const inlineKeyboard = [];
-  // show msg
-  if (formOpen) {
-    ctx.state.sessionMsg.url.searchParams.set("scene", "searchOrder");
-    await ctx.replyWithHTML("<b>Поиск заказа по параметрам Номер заказа, фамилия имя, телефон</b>" + ctx.state.sessionMsg.linkHTML(),
-        {
-          reply_markup: {
-            force_reply: true,
-          },
-        });
-    return;
+  if (ctx.state.sessionMsg.url.searchParams.get("orderData_id")) {
+    inlineKeyboard.push([{text: `📝 Редактор заказа 🏪 ${ctx.state.sessionMsg.url.searchParams.get("orderData_objectId")}`, callback_data: "cart"}]);
   }
   // show statuses
   if (statusOpen) {
-    const selectedStatus = + ctx.state.params.get("selectedStatus");
+    const selectedStatus = + ctx.state.searchParams.get("selectedStatus");
     inlineKeyboard.push([{text: "Search Orders", callback_data: "searchOrder"}]);
     const algoliaSearch = await algoliaIndexOrders.search(searchText, {
       hitsPerPage: 0,
@@ -161,9 +165,10 @@ const searchOrderHandle = async (ctx) => {
     await renderOrders(ctx, "Statuses" + ctx.state.sessionMsg.linkHTML(), inlineKeyboard);
     return;
   }
-  inlineKeyboard.push([{text: ctx.i18n.btn.main(), callback_data: "o"}, {text: "Search order", callback_data: "searchOrder?formOpen=true"}]);
+  inlineKeyboard.push([{text: ctx.i18n.btn.main(), callback_data: "o"}]);
+  inlineKeyboard.push([{text: "🔍 Поиск заказа", callback_data: "searchOrder?formOpen=true"}]);
   const statusBtn = [];
-  statusBtn.push({text: "Status", callback_data: "searchOrder?statusOpen=true"});
+  statusBtn.push({text: "🎚 Status", callback_data: "searchOrder?statusOpen=true"});
   if (status) {
     statusBtn[0].callback_data = `searchOrder?statusOpen=true&selectedStatus=${status}`;
     statusBtn.push({text: `❎ ${store.statuses().get(+ status)}`, callback_data: "searchOrder"});
@@ -180,12 +185,12 @@ const searchOrderHandle = async (ctx) => {
     for (const order of resalt.hits) {
       const date = moment.unix(order.createdAt).locale("ru");
       inlineKeyboard.push([{
-        text: `${order.lastName} ${order.firstName} #${order.orderNumber}, ${order.status}, ${date.fromNow()} - ${order.objectName}`,
-        callback_data: `r/${order.objectID}?o=${order.objectId}`,
+        text: `${order.status}, ${order._highlightResult.lastName.value} ${order._highlightResult.firstName.value} #${order.orderNumber}, ${date.fromNow()} - ${order.objectName}`,
+        callback_data: `r/${order.objectID}?o=${order.sellerId}`,
       }]);
     }
     // Set load more button
-    const urlParams = status ? `&status=${status}` : "";
+    const urlParams = status ? `?status=${status}` : "";
     const prevNext = [];
     if (resalt.page > 0) {
       prevNext.push({text: "⬅️ Назад",
@@ -240,15 +245,21 @@ const renderOrders = async (ctx, caption, keyboard) => {
 // searc order actions
 // show search form
 const searchOrderAction = async (ctx, next) => {
-  if (ctx.state.routeName === "searchOrder") {
-    await searchOrderHandle(ctx);
+  if (ctx.state.pathParams[0] === "searchOrder") {
+    const formOpen = ctx.state.searchParams.get("formOpen");
+    if (formOpen) {
+      await store.setSession(ctx, "searchOrder");
+      await ctx.replyWithHTML("<b>Поиск заказа по параметрам Номер заказа, фамилия имя, телефон, комментарий</b>" + ctx.state.sessionMsg.linkHTML());
+      await ctx.answerCbQuery();
+      return;
+    }
+    await searchOrderHandle(ctx, ctx.state.pathParams[1] ? + ctx.state.pathParams[1] : 0);
     await ctx.answerCbQuery();
   } else {
     return next();
   }
 };
 
-exports.searchFormProduct = searchFormProduct;
 exports.searchProductAction = searchProductAction;
 exports.searchProductHandle = searchProductHandle;
 exports.algoliaIndexProducts = algoliaIndexProducts;

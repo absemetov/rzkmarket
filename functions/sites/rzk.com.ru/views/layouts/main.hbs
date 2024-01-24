@@ -3,7 +3,7 @@
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
-      <script type="module" crossorigin src="/assets/index-dba23785.js"></script>
+      <script type="module" crossorigin src="/assets/index-bb08dec8.js"></script>
       <link rel="stylesheet" href="/assets/index-5b326555.css">
       <title>{{#if title}}{{title}} | {{envSite.i18n.siteName}}{{else}}{{envSite.i18n.siteTitle}}{{/if}}</title>
       <link rel="icon" href="/favicon-{{envSite.lang}}.ico">
@@ -27,24 +27,14 @@
           {
             "@context": "https://schema.org",
             "@type": "BreadcrumbList",
-            "itemListElement": [{
-              "@type": "ListItem",
-              "position": 1,
-              "name": "{{object.name}}",
-              "item": "{{envSite.domain}}/o/{{object.id}}"
-            },{
-              "@type": "ListItem",
-              "position": 2,
-              "name": "{{envSite.i18n.aCatGoods}}",
-              "item": "{{envSite.domain}}/o/{{object.id}}/c"
-            },
+            "itemListElement": [
           {{#each currentCatalog.pathArray as |item|}}
             {
               "@type": "ListItem",
-              "position": {{inc @index 3}},
+              "position": {{@index }},
             {{#if (not item.name ../currentCatalog.name)}}
               "name": "{{item.name}}",
-              "item": "{{../envSite.domain}}/o/{{../object.id}}/c/{{item.url}}"
+              "item": "{{../envSite.domain}}/c/{{item.url}}"
             },
             {{else}}
               "name": "{{item.name}}"
@@ -91,7 +81,7 @@
       height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <!-- End Google Tag Manager (noscript) -->
       <nav class="navbar navbar-expand navbar-dark bg-dark">
-        <div class="container">
+        <div class="container-xl">
           <button class="navbar-toggler d-inline" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
             <span class="navbar-toggler-icon"></span>
           </button>
@@ -107,19 +97,14 @@
             </li>
           </ul>
           <div id="autocomplete" class="w-100 overflow-hidden"></div>
-          {{#if object.id}}
-            <ul class="navbar-nav me-2">
-              <li class="nav-item"></li>
-                <a id="cartNavLink" class="text-nowrap text-white nav-link{{#if cart}} active{{/if}} position-relative" href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{object.id}}/cart">
-                  <i class="bi bi-cart3"></i> <strong id="totalSumNav">{{formatNumber object.cartInfo.totalSum}} {{envSite.currency}}</strong>
-                  <span id="cartCountNav" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success mt-1">
-                    {{object.cartInfo.cartCount}}
-                    <span class="visually-hidden">count goods</span>
-                  </span>
-                </a>
-              </li>
-            </ul>
-          {{/if}}
+          <ul class="navbar-nav me-2">
+            <li class="nav-item"></li>
+              <a class="text-nowrap text-white nav-link{{#if cart}} active{{/if}} position-relative" href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/cart">
+                <i class="bi bi-cart3"></i> <strong>{{envSite.i18n.aCart}}</strong>
+                <span id="cartCountNav" class="{{#if (equals cartInfo.cartCount 0)}}d-none {{/if}}position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success mt-1">{{cartInfo.cartCount}}</span>
+              </a>
+            </li>
+          </ul>
         </div>
       </nav>
       <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
@@ -141,6 +126,7 @@
             <a class="nav-link" href="//t.me/{{envSite.botName}}" target="_blank"><i class="bi bi-telegram"></i> Бот @{{envSite.botName}}</a>
             <a class="nav-link" href="//t.me/{{envSite.chatName}}" target="_blank"><i class="bi bi-telegram"></i> Чат @{{envSite.chatName}}</a>
             <a class="nav-link" href="mailto:{{envSite.email}}"><i class="bi bi-envelope-fill"></i> {{envSite.email}}</a>
+            <a class="nav-link" href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/news">{{envSite.i18n.tNews}}</a>
             <a class="nav-link" href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/delivery-info">{{envSite.i18n.aDelivery}}</a>
             <a class="nav-link" href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/return-policy">{{envSite.i18n.aReturn}}</a>
             {{#if (equals envSite.lang "uk")}}
@@ -148,11 +134,11 @@
               <a class="nav-link" href="//gunsan.com.ua" target="_blank">Gunsan.com.ua</a>
               <a class="nav-link" href="//nilson.com.ua" target="_blank">Nilson.com.ua</a>
             {{/if}}
-            <a class="nav-link disabled" href="https://github.com/absemetov/rzk-com-ua">RZK Market 2.2.0 © {{year}}</a>
+            <a class="nav-link disabled" href="https://github.com/absemetov/rzk-com-ua">RZK Market 2.3.0 © {{year}}</a>
             </nav>
         </div>
       </div>
-      <div class="container d-none mt-3 mb-5" id="search">
+      <div class="container-xl d-none mt-3 mb-5" id="search">
         <div class="d-grid gap-2">
           <button class="btn btn-success d-block d-lg-none mb-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasResponsive" aria-controls="offcanvasResponsive">
             {{envSite.i18n.btnFilter}}
@@ -224,26 +210,19 @@
             </div>
           </div>
           <div class="col-md-12 col-lg-9">
-            <div class="row">
-              <nav id="breadcrumb" aria-label="breadcrumb"></nav>
-            </div>
-            <h1 id="cat_header"></h1>
             <ul id="current-refinements" class="nav"></ul>
+            <div id="hits" class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 g-2"></div>
             <div id="loading-indicator">
-            <div class="d-flex justify-content-center">
+              <div class="d-flex justify-content-center mt-3">
                 <div class="spinner-border" role="status">
                   <span class="visually-hidden">Loading...</span>
                 </div>
               </div>
             </div>
-            <div id="hits" class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2"></div>
-            <div class="row mt-4">
-              <nav id="pagination" aria-label="Page navigation example"></nav>
-            </div>
           </div>
         </div>
       </div>
-      <div class="container mt-3 mb-5"  id="main">
+      <div class="container-xl mt-3 mb-5"  id="main">
         {{{body}}}
       </div>
       <!-- Modal show product -->

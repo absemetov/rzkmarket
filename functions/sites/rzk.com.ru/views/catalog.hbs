@@ -2,14 +2,11 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
     <li class="breadcrumb-item">
-      <a href="/{{#if (equals envSite.data.lang "ru-ua")}}ru{{/if}}">{{envSite.i18n.aObjects}}</a>
-    </li>
-    <li class="breadcrumb-item">
-      <a href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{object.id}}">{{object.name}}</a>
+      <a href="/{{#if (equals envSite.data.lang "ru-ua")}}ru{{/if}}" class="link-dark link-underline-opacity-0 link-underline-opacity-100-hover"><i class="bi bi-house"></i></a>
     </li>
     {{#if currentCatalog}}
       <li class="breadcrumb-item">
-        <a href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{object.id}}/c">{{envSite.i18n.aCatGoods}}</a>
+        <a href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/c" class="link-dark link-underline-opacity-0 link-underline-opacity-100-hover">{{envSite.i18n.aCatGoods}}</a>
       </li>
       {{#if (last 1 currentCatalog.pathArray.length 2)}}
       <li class="breadcrumb-item d-block d-md-none">
@@ -19,7 +16,7 @@
       {{#each currentCatalog.pathArray as |item|}}
         {{#if (last @index ../currentCatalog.pathArray.length 2)}}
           <li class="breadcrumb-item {{#if (last @index ../currentCatalog.pathArray.length 3)}}d-none d-md-inline{{/if}}">
-            <a href="{{#if (equals ../envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{../object.id}}/c/{{item.url}}">
+            <a href="{{#if (equals ../envSite.data.lang "ru-ua")}}/ru{{/if}}/c/{{item.url}}" class="link-dark link-underline-opacity-0 link-underline-opacity-100-hover">
             {{#if (equals ../envSite.data.lang "ru-ua")}}
               {{#if item.nameRu}}
                 {{item.nameRu}}
@@ -41,9 +38,9 @@
   </ol>
 </nav>
 {{#if currentCatalog}}
-  <h1>{{object.name}} / {{currentCatalog.name}}</h1>
+  <h1>{{currentCatalog.name}}</h1>
 {{else}}
-  <h1>{{object.name}} / {{envSite.i18n.aCatGoods}}</h1>
+  <h1>{{envSite.i18n.aCatGoods}}</h1>
 {{/if}}
 {{#if tags}}
   <div class="dropdown d-block d-md-none mt-3">
@@ -63,7 +60,7 @@
       {{/if}}
     </ul>
   </div>
-  <div class="row d-none d-md-block mt-3">
+  <div class="row d-none d-md-block mt-2">
     <ul class="nav nav-pills">
       {{#if tagActive.name}}
         <a class="nav-link" href="{{tagActive.path}}">{{envSite.i18n.aAllGoods}}</a>
@@ -76,7 +73,7 @@
     </ul>
   </div>
 {{/if}}
-<div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2 my-3">
+<div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 g-2 my-2">
   {{#if catalogs}}
     {{#each catalogs as |catalog|}}
       <div class="col">
@@ -86,7 +83,7 @@
           </a>
           <div class="card-body">
             <h6>
-              <a href="{{#if (equals ../envSite.data.lang "ru-ua")}}/ru{{/if}}{{catalog.url}}">{{catalog.name}}</a>
+              <a href="{{#if (equals ../envSite.data.lang "ru-ua")}}/ru{{/if}}{{catalog.url}}" class="link-dark link-underline-opacity-0">{{catalog.name}}</a>
             </h6>
           </div>
           <div class="card-footer">
@@ -95,7 +92,7 @@
                 <img src="/icons/zoom-in.svg" width="21" height="21" alt="zoom img">
               </a>
             {{/if}}
-            <a href="https://t.me/share/url?url={{encodeUrl ../envSite.botName ../object.id "c" catalog.id ../envSite.domain}}&text={{encode ../object.name catalog.name}}" target="_blank">
+            <a href="https://t.me/share/url?url={{encodeUrl ../envSite.botName "_" "c" catalog.id ../envSite.domain}}&text={{encode catalog.name}}" target="_blank">
               <i class="bi bi-telegram"></i> Share
             </a>
           </div>
@@ -105,7 +102,7 @@
   {{/if}}
   {{#if products}}
     {{#each products as |product|}}
-      {{> product product=product object=../object envSite=../envSite}}
+      {{> product product=product envSite=../envSite}}
     {{/each}}
   {{/if}}
 </div>
@@ -120,5 +117,7 @@
   {{/if}}
 {{/if}}
 {{#if currentCatalog.desc}}
-  <p class="lead"><h2>{{currentCatalog.desc}}</h2></p>
+  <div class="lead my-5">
+    {{{currentCatalog.desc}}}
+  </div>
 {{/if}}

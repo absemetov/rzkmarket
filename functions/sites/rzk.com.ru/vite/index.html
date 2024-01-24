@@ -22,11 +22,8 @@
         <ul class="navbar-nav me-2">
           <li class="nav-item"></li>
             <a class="text-nowrap nav-link position-relative" id="cartNavLink" href="//rzk.com.ru/o/absemetov/cart">
-              <i class="bi bi-cart3"></i> <strong id="totalSumNav">16545678р</strong>
-              <span id="cartCountNav" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger mt-1">
-                4
-                <span class="visually-hidden">count goods</span>
-              </span>
+              <i class="bi bi-cart3"></i> Корзина 
+              <span id="cartCountNav" class="d-none top-0 start-100 translate-middle badge rounded-pill bg-danger ms-2 mt-1"></span>
             </a>
           </li>
         </ul>
@@ -63,7 +60,7 @@
         </nav>
       </div>
     </div>
-    <div class="container d-none pt-2" id="search">
+    <div class="container d-none my-3" id="search">
       <div class="d-grid gap-2">
         <button class="btn btn-primary d-block d-lg-none mb-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasResponsive" aria-controls="offcanvasResponsive">Фильтр</button>
       </div>
@@ -111,7 +108,7 @@
                   </h2>
                   <div id="panelsStayOpen-collapseTwo" class="accordion-collapse collapse show" aria-labelledby="panelsStayOpen-headingTwo">
                     <div class="accordion-body p-0">
-                      <div id="refinement-list-brand" class="py-2"></div>
+                      <div id="refinement-list-brand" class="list-group py-2"></div>
                     </div>
                   </div>
                 </div>
@@ -133,19 +130,15 @@
           </div>
         </div>
         <div class="col-md-12 col-lg-9">
-          <div class="row">
-            <nav id="breadcrumb" aria-label="breadcrumb"></nav>
-          </div>
-          <h1 id="cat_header"></h1>
           <ul id="current-refinements" class="nav"></ul>
+          <div id="hits" class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 g-2"></div>
           <div id="loading-indicator">
-            <div class="d-flex justify-content-center">
+            <div class="d-flex justify-content-center mt-3">
               <div class="spinner-border" role="status">
                 <span class="visually-hidden">Loading...</span>
               </div>
             </div>
           </div>
-          <div id="hits" class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2"></div>
           <div class="row pt-4">
             <nav id="pagination" aria-label="Page navigation example"></nav>
           </div>
@@ -198,7 +191,7 @@
         13.22 <small class="text-muted">₽</small>
         </h3>
         <div class="d-grid gap-2">
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#cartAddModal" data-product-id="shvvp-2-0-5-coax" data-product-name="Провод ШВВП 2x0.5 ГОСТ" data-product-unit="м" data-product-qty="" data-seller-id="saki" data-seller="RZK Саки">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#cartAddModal" data-product-id="beet" data-product-name="Свекла" data-product-unit="кг" data-product-qty="" data-seller-id="saki" data-seller="RZK Дніпро">
         Купить
         </button>
         </div>
@@ -208,6 +201,14 @@
         <button type="button" class="btn btn-success mt-2" data-bs-toggle="modal" data-bs-target="#purchaseModal">
           Оформить
         </button>
+    </div>
+    <div id="products" class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2 my-2">
+    </div>
+    <input class="d-none" id="nextLink" type="text" value="products?startAfter=sweet-red-pepper&objectId=saki">
+    <div class="more d-flex justify-content-center my-3 d-none">
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
     </div>
     <!-- Modal show product -->
     <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">

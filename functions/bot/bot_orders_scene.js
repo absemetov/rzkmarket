@@ -1,19 +1,51 @@
-const firebase = require("firebase-admin");
 const {showCart, cartWizard} = require("./bot_catalog_scene");
 const {store, cart, roundNumber, photoCheckUrl} = require("./bot_store_cart");
 const {parseUrl} = require("./bot_start_scene");
-const firestore = require("firebase-admin/firestore");
+const {getFirestore, FieldValue} = require("firebase-admin/firestore");
 const moment = require("moment");
 const ordersActions = [];
-// user orders
+// user orders deprecated!!! because for edit order products need msg with media(
+// const userOrdersHandler = async (ctx) => {
+//   const inlineKeyboardArray = [];
+//   const userId = ctx.from.id;
+//   const mainQuery = getFirestore().collectionGroup("orders").where("userId", "==", userId).orderBy("createdAt", "desc");
+//   let query = mainQuery;
+//   query = query.limit(10);
+//   const ordersSnapshot = await query.get();
+//   // render orders
+//   ordersSnapshot.docs.forEach((doc) => {
+//     const order = {id: doc.id, ...doc.data()};
+//     const date = moment.unix(order.createdAt).locale(process.env.BOT_LANG);
+//     inlineKeyboardArray.push([{text: `${ctx.i18n.txt.order()} #${order.userId}-${order.orderNumber},` +
+//       `${store.statuses().get(order.statusId)}, ${date.fromNow()}`,
+//     callback_data: `m/${userId}?oId=${order.id}&o=${order.objectId}`}]);
+//   });
+//   // load more button
+//   if (!ordersSnapshot.empty) {
+//     const prevNext = [];
+//     // startAfter
+//     const startAfterSnap = ordersSnapshot.docs[ordersSnapshot.docs.length - 1];
+//     const ifAfterProducts = await mainQuery.startAfter(startAfterSnap).limit(1).get();
+//     if (!ifAfterProducts.empty) {
+//       prevNext.push({text: ctx.i18n.btn.next(),
+//         callback_data: `m/${userId}?s=${startAfterSnap.id}&o=${startAfterSnap.data().objectId}`});
+//     }
+//     inlineKeyboardArray.push(prevNext);
+//   }
+//   await ctx.replyWithHTML(`<b>${ctx.i18n.btn.orders()}</b>` + ctx.state.sessionMsg.linkHTML(),
+//       {
+//         reply_markup: {
+//           inline_keyboard: inlineKeyboardArray,
+//         }});
+// };
 const userOrders = async (ctx, next) => {
-  if (ctx.state.routeName === "m") {
-    const startAfter = ctx.state.params.get("s");
-    const endBefore = ctx.state.params.get("e");
-    const userId = + ctx.state.param;
+  if (ctx.state.pathParams[0] === "m") {
+    const startAfter = ctx.state.searchParams.get("s");
+    const endBefore = ctx.state.searchParams.get("e");
+    const userId = + ctx.state.pathParams[1];
     const inlineKeyboardArray = [];
-    const orderId = ctx.state.params.get("oId");
-    const objectId = ctx.state.params.get("o");
+    const orderId = ctx.state.searchParams.get("oId");
+    const objectId = ctx.state.searchParams.get("o");
     let caption = `<b>${ctx.i18n.btn.orders()}</b>`;
     const pathOrderCurrent = ctx.state.sessionMsg.url.searchParams.get("pathOrderCurrent");
     if (pathOrderCurrent) {
@@ -21,12 +53,19 @@ const userOrders = async (ctx, next) => {
     }
     const limit = 10;
     if (orderId) {
+      const copyOrder = ctx.state.searchParams.get("c");
       const order = await store.findRecord(`objects/${objectId}/orders/${orderId}`);
       if (order) {
+        // copy order change owner
+        if (copyOrder) {
+          const userId = + ctx.from.id;
+          await store.updateRecord(`objects/${objectId}/orders/${orderId}`, {userId});
+          await ctx.answerCbQuery(`Order #${order.userId}-${order.orderNumber} copied!`);
+        }
         // show order
         const date = moment.unix(order.createdAt).locale(process.env.BOT_LANG);
         caption += "<b> > " +
-        `${ctx.i18n.txt.order()} #${store.formatOrderNumber(order.userId, order.orderNumber)} (${date.fromNow()})\n` +
+        `${ctx.i18n.txt.order()} #${order.userId}-${order.orderNumber} (${date.fromNow()})\n` +
         `${order.objectName}\n` +
         `Статус: ${store.statuses().get(order.statusId)}\n` +
         `${order.lastName} ${order.firstName} ${order.phoneNumber}\n` +
@@ -38,9 +77,10 @@ const userOrders = async (ctx, next) => {
         let totalQty = 0;
         let totalSum = 0;
         let itemShow = 0;
-        const orderProductsSorted = store.sort(order.products);
+        // dont use store.sort()
+        const orderProductsSorted = order.products;
         orderProductsSorted.forEach((product, index) => {
-          const productTxt = `${index + 1})<b>${product.name}</b> (${product.id})` +
+          const productTxt = `${index + 1})<b>${product.name}</b> (${product.productId})` +
         `=<b>${product.qty}${product.unit}</b>*${product.price} ${process.env.BOT_CURRENCY}` +
         `=${roundNumber(product.price * product.qty)}${process.env.BOT_CURRENCY}`;
           // truncate long string
@@ -57,17 +97,18 @@ const userOrders = async (ctx, next) => {
         caption += `<b>${ctx.i18n.product.qty()}: ${totalQty}\n` +
           `${ctx.i18n.product.sum()}: ${roundNumber(totalSum)} ${process.env.BOT_CURRENCY}</b>`;
       }
+      const myPathOrder = ctx.state.sessionMsg.url.searchParams.get("myPathOrder");
+      inlineKeyboardArray.push([{text: ctx.i18n.btn.orders(),
+        callback_data: `${myPathOrder ? myPathOrder : "m/" + userId}`}]);
       // share link
       inlineKeyboardArray.push([
         {text: ctx.i18n.btn.linkOrder(), url: `${process.env.BOT_SITE}/o/${objectId}/s/${order.id}`},
       ]);
-      const myPathOrder = ctx.state.sessionMsg.url.searchParams.get("myPathOrder");
-      inlineKeyboardArray.push([{text: ctx.i18n.btn.orders(),
-        callback_data: `${myPathOrder ? myPathOrder : "m/" + userId}`}]);
     } else {
+      inlineKeyboardArray.push([{text: ctx.i18n.btn.main(), callback_data: "o"}]);
       // show all orders
       ctx.state.sessionMsg.url.searchParams.set("myPathOrder", ctx.callbackQuery.data);
-      const mainQuery = firebase.firestore().collectionGroup("orders").where("userId", "==", userId).orderBy("createdAt", "desc");
+      const mainQuery = getFirestore().collectionGroup("orders").where("userId", "==", userId).orderBy("createdAt", "desc");
       let query = mainQuery;
       if (startAfter) {
         const startAfterProduct = await store.getQuery(`objects/${objectId}/orders/${startAfter}`).get();
@@ -88,7 +129,7 @@ const userOrders = async (ctx, next) => {
       ordersSnapshot.docs.forEach((doc) => {
         const order = {id: doc.id, ...doc.data()};
         const date = moment.unix(order.createdAt).locale(process.env.BOT_LANG);
-        inlineKeyboardArray.push([{text: `${ctx.i18n.txt.order()} #${store.formatOrderNumber(order.userId, order.orderNumber)},` +
+        inlineKeyboardArray.push([{text: `${ctx.i18n.txt.order()} #${order.userId}-${order.orderNumber},` +
           `${store.statuses().get(order.statusId)}, ${date.fromNow()}`,
         callback_data: `m/${userId}?oId=${order.id}&o=${order.objectId}`}]);
       });
@@ -116,9 +157,14 @@ const userOrders = async (ctx, next) => {
         inlineKeyboardArray.push([{text: "🏠 Вернуться к заказу",
           callback_data: `${pathOrderCurrent}`}]);
       }
-      inlineKeyboardArray.push([{text: ctx.i18n.btn.main(), callback_data: "o"}]);
     }
     const media = await photoCheckUrl();
+    // await ctx.editMessageText(caption + ctx.state.sessionMsg.linkHTML(), {
+    //   parse_mode: "html",
+    //   reply_markup: {
+    //     inline_keyboard: inlineKeyboardArray,
+    //   },
+    // });
     await ctx.editMessageMedia({
       type: "photo",
       media,
@@ -135,25 +181,34 @@ const userOrders = async (ctx, next) => {
   }
 };
 // admin orders
+const formatNumber = (value) =>{
+  const matches = value.match(/([\d]*)([\d]{3})([\d]{3})([\d]{2})([\d]{2})$/);
+  if (matches) {
+    return `+${matches[1]} ${matches[2]} ${matches[3]} ${matches[4]} ${matches[5]}`;
+  } else {
+    return value;
+  }
+};
 const adminOrders = async (ctx, next) => {
-  if (ctx.state.routeName === "r") {
-    const startAfter = ctx.state.params.get("s");
-    const endBefore = ctx.state.params.get("e");
-    const todo = ctx.state.params.get("todo");
-    const objectId = ctx.state.params.get("o") || ctx.state.sessionMsg.url.searchParams.get("oId");
-    if (ctx.state.params.get("o")) {
+  if (ctx.state.pathParams[0] === "r") {
+    const startAfter = ctx.state.searchParams.get("s");
+    const endBefore = ctx.state.searchParams.get("e");
+    const todo = ctx.state.searchParams.get("todo");
+    const objectId = ctx.state.searchParams.get("o") || ctx.state.sessionMsg.url.searchParams.get("oId");
+    if (ctx.state.searchParams.get("o")) {
       ctx.state.sessionMsg.url.searchParams.set("oId", objectId);
     }
+    ctx.state.sessionMsg.url.searchParams.set("TTL", 1);
     const page = ctx.state.sessionMsg.url.searchParams.get("page_order");
     const inlineKeyboardArray = [];
-    const orderId = ctx.state.param;
+    const orderId = ctx.state.pathParams[1];
     const limit = 10;
     const object = await store.findRecord(`objects/${objectId}`);
     let caption = `<b>Заказы ${object.name}</b>`;
     // todo
     // show statuses
     if (todo === "showStatuses") {
-      const selectedStatus = + ctx.state.params.get("selectedStatus");
+      const selectedStatus = + ctx.state.searchParams.get("selectedStatus");
       const inlineKeyboardArray = [];
       store.statuses().forEach((value, key) => {
         if (key === selectedStatus) {
@@ -169,28 +224,26 @@ const adminOrders = async (ctx, next) => {
       return;
     }
     if (orderId) {
+      ctx.state.sessionMsg.url.searchParams.delete("orderData_id");
+      ctx.state.sessionMsg.url.searchParams.delete("orderData_objectId");
+      ctx.state.sessionMsg.url.searchParams.delete("orderData_objectName");
+      ctx.state.sessionMsg.url.searchParams.delete("orderData_orderNumber");
+      ctx.state.sessionMsg.url.searchParams.delete("orderData_lastName");
+      ctx.state.sessionMsg.url.searchParams.delete("orderData_firstName");
       // show order
       const order = await store.findRecord(`objects/${objectId}/orders/${orderId}`);
       if (order) {
         // show order
         ctx.state.sessionMsg.url.searchParams.set("pathOrderCurrent", ctx.callbackQuery.data);
-        const date = moment.unix(order.createdAt).locale("ru");
-        caption = `<b>${order.objectName} >` +
-        ` ${ctx.i18n.txt.order()} #${store.formatOrderNumber(order.userId, order.orderNumber)}` +
-        ` (${date.fromNow()})\n` +
-        `${ctx.i18n.txt.buyer()}: ${order.lastName} ${order.firstName} ${order.phoneNumber}\n` +
-        `${ctx.i18n.txt.delivery()}: ${order.address}, ` +
-        `${store.carriers().get(order.carrierId).name} ` +
-        `${order.carrierNumber ? "#" + order.carrierNumber : ""}\n` +
-        `Оплата: ${store.payments().get(order.paymentId)}\n` +
-        `${order.comment ? `${ctx.i18n.txt.comment()}: ` + order.comment + "\n" : ""}</b>`;
+        const date = moment.unix(order.createdAt).locale(process.env.BOT_LANG);
+        caption = `Call phone: ${order.phoneNumber}\n`;
         let totalQty = 0;
         let totalSum = 0;
         let itemShow = 0;
-        const orderProductsSorted = store.sort(order.products);
+        const orderProductsSorted = order.products;
         orderProductsSorted.forEach((product, index) => {
-          const productTxt = `${index + 1})<b>${product.name}</b> (${product.id})` +
-        `=<b>${product.qty}${product.unit}</b>*${product.price}${process.env.BOT_CURRENCY}` +
+          const productTxt = `<b>${index + 1})${product.name} (${product.productId})</b>` +
+        `=${product.qty}${product.unit}*${product.price}${process.env.BOT_CURRENCY}` +
         `=${roundNumber(product.price * product.qty)}${process.env.BOT_CURRENCY}`;
           // truncate long string
           if ((caption + `${productTxt}\n`).length < 950) {
@@ -203,9 +256,20 @@ const adminOrders = async (ctx, next) => {
         if (itemShow !== orderProductsSorted.length) {
           caption += "⬇️Весь список нажмите на ссылку ⬇️\n";
         }
-        caption += `<b>Количество товара: ${totalQty}\n` +
-          `Сумма: ${roundNumber(totalSum)} ${process.env.BOT_CURRENCY}</b>`;
+        caption += `<code>${order.objectName} > ${ctx.i18n.txt.order()} #${order.userId}-${order.orderNumber} (${date.fromNow()})\n` +
+        `${ctx.i18n.txt.buyer()}: ${order.lastName} ${order.firstName} ${formatNumber(order.phoneNumber)}\n` +
+        `${ctx.i18n.txt.delivery()}: ${order.address}, ${store.carriers().get(order.carrierId).name}${order.carrierNumber ? " #" + order.carrierNumber : ""}\n` +
+        `Оплата: ${store.payments().get(order.paymentId)}${order.paymentId === 3 ? ` ${roundNumber(totalSum)} ${process.env.BOT_CURRENCY}` : ""}</code>\n` +
+        `${order.comment ? `${ctx.i18n.txt.comment()}: ` + order.comment + "\n" : ""}` +
+        `${ctx.i18n.product.qty()}: ${totalQty}\n` +
+          `<code>${ctx.i18n.product.sum()}: ${roundNumber(totalSum)} ${process.env.BOT_CURRENCY}</code>`;
       }
+      if (page) {
+        inlineKeyboardArray.push([{text: "🔍 Вернуться к поиску", callback_data: `searchOrder/${page}`}]);
+      }
+      const pathOrder = ctx.state.sessionMsg.url.searchParams.get("pathOrder");
+      inlineKeyboardArray.push([{text: "🧾 Заказы",
+        callback_data: `${pathOrder ? pathOrder : "r"}`}]);
       // share link
       inlineKeyboardArray.push([
         {text: "Ссылка на заказ", url: `${process.env.BOT_SITE}/o/${objectId}/s/${order.id}`},
@@ -242,19 +306,13 @@ const adminOrders = async (ctx, next) => {
         callback_data: `e?userId=${order.userId}`}]);
       inlineKeyboardArray.push([{text: "🔄 Обновить",
         callback_data: `r/${order.id}`}]);
-      const pathOrder = ctx.state.sessionMsg.url.searchParams.get("pathOrder");
-      inlineKeyboardArray.push([{text: "🧾 Заказы",
-        callback_data: `${pathOrder ? pathOrder : "r"}`}]);
-      if (page) {
-        inlineKeyboardArray.push([{text: "🔍 Вернуться к поиску", callback_data: `searchOrder/${page}`}]);
-      }
     } else {
       // show orders
       ctx.state.sessionMsg.url.searchParams.set("pathOrder", ctx.callbackQuery.data);
-      let mainQuery = firebase.firestore().collection("objects").doc(objectId)
+      let mainQuery = getFirestore().collection("objects").doc(objectId)
           .collection("orders").orderBy("createdAt", "desc");
       // filter statusId
-      const statusId = + ctx.state.params.get("statusId");
+      const statusId = + ctx.state.searchParams.get("statusId");
       let statusUrl = "";
       if (statusId) {
         mainQuery = mainQuery.where("statusId", "==", statusId);
@@ -276,6 +334,8 @@ const adminOrders = async (ctx, next) => {
       }
       // get orders
       const ordersSnapshot = await query.get();
+      // obj btn
+      inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `o/${objectId}`}]);
       const tagsArray = [];
       tagsArray.push({text: "📌 Статус заказа",
         callback_data: "r?todo=showStatuses"});
@@ -288,9 +348,9 @@ const adminOrders = async (ctx, next) => {
       // render orders
       ordersSnapshot.docs.forEach((doc) => {
         const order = {id: doc.id, ...doc.data()};
-        const date = moment.unix(order.createdAt).locale("ru");
-        inlineKeyboardArray.push([{text: `🧾 ${order.lastName} ${order.firstName} ${store.statuses().get(order.statusId)} ` +
-        `#${store.formatOrderNumber(order.userId, order.orderNumber)}, ${date.fromNow()}`,
+        const date = moment.unix(order.createdAt).locale(process.env.BOT_LANG);
+        inlineKeyboardArray.push([{text: `${store.statuses().get(order.statusId)}, ${order.lastName} ${order.firstName}, ` +
+        `#${order.userId}-${order.orderNumber}, ${date.fromNow()}`,
         callback_data: `r/${order.id}`}]);
       });
       // set load more button
@@ -314,7 +374,6 @@ const adminOrders = async (ctx, next) => {
       } else {
         inlineKeyboardArray.push([{text: "Заказов нет", callback_data: `o/${objectId}`}]);
       }
-      inlineKeyboardArray.push([{text: `🏪 ${object.name}`, callback_data: `o/${objectId}`}]);
     }
     let publicImgUrl = null;
     if (object.photoId) {
@@ -342,14 +401,12 @@ ordersActions.push(userOrders);
 // order wizard
 const orderWizard = [
   async (ctx) => {
-    ctx.state.sessionMsg.url.searchParams.set("scene", "editOrder");
+    // ctx.state.sessionMsg.url.searchParams.set("scene", "editOrder");
     ctx.state.sessionMsg.url.searchParams.set("cursor", 1);
+    await store.setSession(ctx, "editOrder");
     const fieldName = ctx.state.sessionMsg.url.searchParams.get("fieldName");
     const fieldValue = ctx.state.sessionMsg.url.searchParams.get("fieldValue");
-    await ctx.replyWithHTML(`Текущее значение ${fieldName}: <b>${fieldValue}</b>, ${fieldName === "comment" ? "del for delete" : ""}` + ctx.state.sessionMsg.linkHTML(), {
-      reply_markup: {
-        force_reply: true,
-      }});
+    await ctx.replyWithHTML(`Текущее значение ${fieldName}: <b>${fieldValue}</b>${fieldName === "comment" ? ", enter del for delete comment" : ""}` + ctx.state.sessionMsg.linkHTML());
   },
   async (ctx, newValue) => {
     // save order field
@@ -359,10 +416,7 @@ const orderWizard = [
       newValue = newValue.replace(/\s/g, "");
       const checkPhone = newValue.match(regexpPhone);
       if (!checkPhone) {
-        await ctx.replyWithHTML(`Введите номер телефона в формате ${process.env.BOT_PHONETEMPLATE}` + ctx.state.sessionMsg.linkHTML(), {
-          reply_markup: {
-            force_reply: true,
-          }});
+        await ctx.replyWithHTML(`Введите номер телефона в формате ${process.env.BOT_PHONETEMPLATE}` + ctx.state.sessionMsg.linkHTML());
         return;
       }
       newValue = `${process.env.BOT_PHONECODE}${checkPhone[2]}`;
@@ -371,38 +425,34 @@ const orderWizard = [
     const orderId = ctx.state.sessionMsg.url.searchParams.get("orderId");
     if (fieldName === "comment" && newValue === "del") {
       await store.updateRecord(`objects/${objectId}/orders/${orderId}`,
-          {[fieldName]: firestore.FieldValue.delete()});
+          {[fieldName]: FieldValue.delete()});
       // exit scene
-      await ctx.reply(`Комментарий удален. Обновите заказ! ${fieldName}=>${newValue} 🔄`, {
-        reply_markup: {
-          remove_keyboard: true,
-        }});
+      await ctx.reply(`Комментарий удален. Обновите заказ! ${fieldName}=>${newValue} 🔄`);
     } else {
       await store.updateRecord(`objects/${objectId}/orders/${orderId}`,
           {[fieldName]: newValue});
       // exit scene
-      await ctx.reply(`Данные сохранены. Обновите заказ! ${fieldName}=>${newValue} 🔄`, {
-        reply_markup: {
-          remove_keyboard: true,
-        }});
+      await ctx.reply(`Данные сохранены. Обновите заказ! ${fieldName}=>${newValue} 🔄`);
     }
+    // clear session
+    await store.defaultSession(ctx);
   },
 ];
 // edit order fields
 ordersActions.push(async (ctx, next) => {
-  if (ctx.state.routeName === "e") {
-    const orderId = ctx.state.param;
-    const editField = ctx.state.params.get("e");
-    const showCarrier = + ctx.state.params.get("showCarrier");
-    const qty = + ctx.state.params.get("qty") || 0;
-    const carrierNumber = + ctx.state.params.get("cN") || 0;
-    const carrierId = + ctx.state.params.get("saveCarrier");
-    const showPaymentId = + ctx.state.params.get("showPay");
-    const paymentId = + ctx.state.params.get("paymentId");
-    const showStatus = + ctx.state.params.get("showStatus");
-    const statusId = + ctx.state.params.get("saveStatus");
+  if (ctx.state.pathParams[0] === "e") {
+    const orderId = ctx.state.pathParams[1];
+    const editField = ctx.state.searchParams.get("e");
+    const showCarrier = + ctx.state.searchParams.get("showCarrier");
+    const qty = + ctx.state.searchParams.get("qty") || 0;
+    const carrierNumber = + ctx.state.searchParams.get("cN") || 0;
+    const carrierId = + ctx.state.searchParams.get("saveCarrier");
+    const showPaymentId = + ctx.state.searchParams.get("showPay");
+    const paymentId = + ctx.state.searchParams.get("paymentId");
+    const showStatus = + ctx.state.searchParams.get("showStatus");
+    const statusId = + ctx.state.searchParams.get("saveStatus");
     const objectId = ctx.state.sessionMsg.url.searchParams.get("oId");
-    const userId = ctx.state.params.get("userId");
+    const userId = ctx.state.searchParams.get("userId");
     // show user info creator
     if (userId) {
       const inlineKeyboardArray = [];
@@ -416,14 +466,21 @@ ordersActions.push(async (ctx, next) => {
       `${userData.from ? JSON.stringify(userData.from) : ""}\nCount orders: ${userData.orderCount || 0}`, inlineKeyboardArray);
     }
     // edit produc
-    const editProducts = ctx.state.params.get("editProd");
-    const saveProducts = ctx.state.params.get("saveProd");
+    const editProducts = ctx.state.searchParams.get("editProd");
+    const saveProducts = ctx.state.searchParams.get("saveProd");
     // save products from cart
     if (saveProducts) {
-      const products = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`, "products");
+      // ctx.state.sessionMsg.url.searchParams.delete("orderData_id");
+      // ctx.state.sessionMsg.url.searchParams.delete("orderData_objectId");
+      // ctx.state.sessionMsg.url.searchParams.delete("orderData_objectName");
+      // ctx.state.sessionMsg.url.searchParams.delete("orderData_orderNumber");
+      // ctx.state.sessionMsg.url.searchParams.delete("orderData_lastName");
+      // ctx.state.sessionMsg.url.searchParams.delete("orderData_firstName");
+      // const products = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`, "products");
+      const products = await cart.products(ctx.from.id);
       // clear cart
       await Promise.all([
-        cart.clear(objectId, ctx.from.id),
+        cart.clear(ctx.from.id),
         store.updateRecord(`objects/${objectId}/orders/${orderId}`, {products}),
       ]);
       // redirect to order
@@ -434,11 +491,21 @@ ordersActions.push(async (ctx, next) => {
       // clear cart then export!!!
       const order = await store.findRecord(`objects/${objectId}/orders/${orderId}`);
       ctx.state.sessionMsg.url.searchParams.set("orderData_id", order.id);
+      ctx.state.sessionMsg.url.searchParams.set("orderData_objectId", objectId);
+      ctx.state.sessionMsg.url.searchParams.set("orderData_objectName", order.objectName);
       ctx.state.sessionMsg.url.searchParams.set("orderData_orderNumber", order.orderNumber);
       ctx.state.sessionMsg.url.searchParams.set("orderData_lastName", order.lastName);
       ctx.state.sessionMsg.url.searchParams.set("orderData_firstName", order.firstName);
-      await cart.clear(objectId, ctx.from.id);
-      await store.createRecord(`objects/${objectId}/carts/${ctx.from.id}`, {products: order.products}),
+      await cart.clear(ctx.from.id);
+      // import products
+      for (const product of order.products) {
+        await cart.add({
+          userId: ctx.from.id,
+          fromBot: true,
+          product,
+        });
+      }
+      // await store.createRecord(`objects/${objectId}/carts/${ctx.from.id}`, {products: order.products}),
       // set route name
       parseUrl(ctx, "cart");
       await showCart(ctx, next);

@@ -1,4 +1,4 @@
-/** @OnlyCurrentDoc 20.07.2023*/
+/** @OnlyCurrentDoc 5.01.2024*/
 function onEdit(e){
   const range = e.range;
   // range.setNote('Last modified: ' + new Date());
@@ -12,6 +12,13 @@ function onEdit(e){
       const row = cell.getRow();
       const validRange = /^products/.test(sheet.getName()) && column < 10 && row > 1;
       const validCell = validRange && cell.getValue();
+      
+      // validateGroup upd timestamp catalogs sheet
+      if (/^catalogs/.test(sheet.getName()) && column < 2 && row > 1 && cell.getValue()) {
+        validateGroup(cell, row, column, sheet);
+        sheet.getRange(row, 2).setValue(timestamp);
+      }
+      
       // validate ID
       if (column === 2 && validCell) {
         const valid_fail = validate(cell.getValue(), 40);
@@ -36,51 +43,7 @@ function onEdit(e){
       }
       // validate GROUP
       if (column === 7 && validCell) {
-        const delCatalogs = [];
-        cell.getValue().split("#").forEach((catalogName) => {
-          let id = null;
-          let orderNumber = null;
-          let name = catalogName.trim();
-          const url = name.match(/(.+)\[(.+)\]$/);
-          if (url) {
-            name = url[1].trim();
-            const partial = url[2].split(",");
-            id = partial[0] ? partial[0].trim() : translit(name);
-            // validate orderNumber
-            orderNumber = partial[1] && + partial[1];
-          } else {
-            id = translit(name);
-          }
-          if (name.charAt(0) === "%") {
-            if (id.charAt(0) === "%") {
-              id = id.replace(/^%-*/, "");
-            }
-            delCatalogs.push({id, del: true});
-          } else {
-            delCatalogs.push({id, del: false});
-          }
-          const valid_fail = validate(id, 40);
-          if (valid_fail) {
-            SpreadsheetApp.getUi().alert(`Error in row ${row}, column ${column}: ${valid_fail}`);
-            sheet.setActiveSelection(`A${row}:J${row}`);
-          }
-          // validate orderNumber
-          if (!Number.isInteger(orderNumber) || orderNumber <= 0) {
-            SpreadsheetApp.getUi().alert(`Error in row ${row}, column ${column}: Please set int value [, orderNumber]`);
-            sheet.setActiveSelection(`A${row}:J${row}`);
-          }
-        });
-        // cheack delete catalogs
-        for (const [index, value] of delCatalogs.entries()) {
-          if (value.del) {
-            if (!checkNestedCat(index, delCatalogs)) {
-              // alert error
-              // throw new Error(Delete catalog problem ${value.id}, first delete nested cat!!!);
-              SpreadsheetApp.getUi().alert(`Error in row ${row}, column ${column}: Delete catalog problem ${value.id}, first delete nested cat!!!`);
-              sheet.setActiveSelection(`A${row}:J${row}`);
-            }
-          }
-        }
+        validateGroup(cell, row, column, sheet);
       }
       // validate TAGS
       if (column === 8 && validCell) {
@@ -95,6 +58,11 @@ function onEdit(e){
       }
       // validate Brand
       if (column === 9 && validCell) {
+        const brandFormat = cell.getValue().match(/^\s*([\wа-яА-ЯіїєґІЇЄҐ][\wа-яА-ЯіїєґІЇЄҐ\s-]*[\wа-яА-ЯіїєґІЇЄҐ])\s*\[?\s*(\w[\w.-]*\w\s*)?\]?\s*$/) || []
+        if (!brandFormat.length) {
+          SpreadsheetApp.getUi().alert(`Error in row ${row}, column ${column}: Value >>${cell.getValue()}<< field format wrong use Brand name(min:2)[site.com?]`);
+          sheet.setActiveSelection(`A${row}:J${row}`);
+        }
         if (cell.getValue().length > 40) {
           SpreadsheetApp.getUi().alert(`Error in row ${row}, column ${column}: Value >>${cell.getValue()}<< field not be greater than ${cell.getValue().length} > 40`);
           sheet.setActiveSelection(`A${row}:J${row}`);
@@ -108,17 +76,52 @@ function onEdit(e){
   }
 }
 
-// check nested catalogs
-function checkNestedCat(indexId, delCatalogs) {
-  for (const [index, value] of delCatalogs.entries()) {
-    if (index > indexId) {
-      if (!value.del) {
-        return false;
-      }
-    }
+// validate group
+function validateGroup(cell, row, column, sheet) {
+  const catalogsArray = cell.getValue().split("#");
+  if (catalogsArray.length > 7) {
+    SpreadsheetApp.getUi().alert(`Error in row ${row}, column ${column}: The groupLength may not be greater than 7.`);
+      sheet.setActiveSelection(`A${row}:J${row}`);
   }
-  return true;
+  // const delCatalogs = [];
+  catalogsArray.forEach((catalogName) => {
+    const options = catalogName.match(/^\s*([\wа-яА-ЯіїєґІЇЄҐ][\wа-яА-ЯіїєґІЇЄҐ\s(),-]*[\wа-яА-ЯіїєґІЇЄҐ)])\s*\|?\s*([\wа-яА-Я][\wа-яА-Я\s(),-]*[\wа-яА-Я)])?\s*\[\s*([\w][\w-]*[\w])?\s*,\s*([\d]+\s*)\s*,?\s*(del)?\s*\]\s*$/) || [];
+    if (options.length) {
+      const id = options[3] ? options[3] : translit(options[1]);
+      const valid_fail = validate(id, 40);
+      if (valid_fail) {
+        SpreadsheetApp.getUi().alert(`Error in row ${row}, column ${column}: ${valid_fail}`);
+        sheet.setActiveSelection(`A${row}:J${row}`);
+      }
+    } else {
+      SpreadsheetApp.getUi().alert(`Error in row ${row}, column ${column}: Error format Name | NameRu [id?, orderNumber, del?]`);
+      sheet.setActiveSelection(`A${row}:J${row}`);
+    }
+  });
+  // cheack delete catalogs
+  // for (const [index, value] of delCatalogs.entries()) {
+  //   if (value.del) {
+  //     if (!checkNestedCat(index, delCatalogs)) {
+  //       // alert error
+  //       // throw new Error(Delete catalog problem ${value.id}, first delete nested cat!!!);
+  //       SpreadsheetApp.getUi().alert(`Error in row ${row}, column ${column}: Delete catalog problem ${value.id}, first delete nested cat!!!`);
+  //       sheet.setActiveSelection(`A${row}:J${row}`);
+  //     }
+  //   }
+  // }
 }
+
+// check nested catalogs
+// function checkNestedCat(indexId, delCatalogs) {
+//   for (const [index, value] of delCatalogs.entries()) {
+//     if (index > indexId) {
+//       if (!value.del) {
+//         return false;
+//       }
+//     }
+//   }
+//   return true;
+// }
 
 // validate field
 function validate(field, length) {
@@ -169,6 +172,7 @@ const lettersRuUk = {
   "є": "ye",
   "ї": "yi",
   " ": "-",
+  "-": "-",
 };
 
 function translit(word) {

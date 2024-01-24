@@ -152,143 +152,146 @@ const store = {
     }
     return statusesMap;
   },
-  sort(field) {
-    const sortedArray = [];
-    if (field) {
-      for (const [id, product] of Object.entries(field)) {
-        sortedArray.push({id, ...product});
-      }
-      // sort products by createdAt
-      sortedArray.sort(function(a, b) {
-        return a.createdAt - b.createdAt;
-      });
-    }
-    return sortedArray;
+  sort(array) {
+    // const sortedArray = [];
+    // if (array.length) {
+    // for (const [id, product] of Object.entries(field)) {
+    //   sortedArray.push({id, ...product});
+    // }
+    // sort products by updatedAt
+    return array.sort(function(a, b) {
+      return a.updatedAt - b.updatedAt;
+    });
+    // }
+    // return array;
   },
-  formatOrderNumber(userId, orderNumber) {
-    return `${userId}-${("000" + orderNumber).slice(-4)}`;
+  async setSession(ctx, name) {
+    await store.createRecord(`users/${ctx.from.id}/sessions/scene`, {
+      name,
+      searchParams: ctx.state.sessionMsg.url.searchParams.toString(),
+    });
+  },
+  async defaultSession(ctx) {
+    await store.createRecord(`users/${ctx.from.id}/sessions/scene`, {
+      name: "search",
+      searchParams: ctx.state.sessionMsg.url.searchParams.toString(),
+    });
   },
 };
 
 // cart instance
 const cart = {
   async add(value) {
-    await store.createRecord(`objects/${value.objectId}/carts/${value.userId}`, {
-      updatedAt: Math.floor(Date.now() / 1000),
-      fromBot: value.fromBot,
-      products: value.product,
-    });
+    // first check product if exist
+    const product = await store.findRecord(`objects/${value.product.objectId}/products/${value.product.productId}`);
+    if (product) {
+      // add cart info
+      await store.createRecord(`carts/${value.userId}`, {
+        updatedAt: Math.floor(Date.now() / 1000),
+        fromBot: value.fromBot,
+      });
+      // add cart item
+      await store.createRecord(`carts/${value.userId}/items/${value.product.objectId}-${value.product.productId}`, {
+        ...value.product,
+      });
+    }
   },
   async update(value) {
-    await store.createRecord(`objects/${value.objectId}/carts/${value.userId}`, {
+    await store.createRecord(`carts/${value.userId}`, {
       updatedAt: Math.floor(Date.now() / 1000),
-      products: value.product,
+    });
+    await store.createRecord(`carts/${value.userId}/items/${value.product.objectId}-${value.product.productId}`, {
+      ...value.product,
     });
   },
   async delete(value) {
-    await store.createRecord(`objects/${value.objectId}/carts/${value.userId}`, {
-      "products": {
-        [value.id]: FieldValue.delete(),
-      }});
+    await store.getQuery(`carts/${value.userId}/items/${value.objectId}-${value.productId}`).delete();
   },
-  async addOld(objectId, userId, product, qty) {
-    qty = Number(qty);
-    let products = {};
-    if (qty) {
-      // add product to cart or edit
-      if (typeof product == "object") {
-        products = {
-          [product.id]: {
-            name: `${product.brand ? product.brand + " " : ""}${product.name}`,
-            price: product.price,
-            unit: product.unit,
-            qty: qty,
-            createdAt: Math.floor(Date.now() / 1000),
-          },
-        };
-      } else {
-        products = {
-          [product]: {
-            qty: qty,
-          },
-        };
-      }
-      await store.createRecord(`objects/${objectId}/carts/${userId}`, {
-        updatedAt: Math.floor(Date.now() / 1000),
-        products,
-      });
-    } else {
-      // delete products
-      if (typeof product !== "object") {
-        await store.createRecord(`objects/${objectId}/carts/${userId}`,
-            {"products": {
-              [product]: FieldValue.delete(),
-            }});
-      }
-    }
+  async products(userId) {
+    const modelSnap = await getFirestore().collection(`carts/${userId}/items`).orderBy("createdAt").get();
+    const outputArray = [];
+    modelSnap.docs.forEach((model) => {
+      outputArray.push({...model.data()});
+    });
+    return outputArray;
   },
-  async products(objectId, userId) {
-    const cartProducts = await store.findRecord(`objects/${objectId}/carts/${userId}`, "products");
-    return store.sort(cartProducts);
+  async clear(userId) {
+    // if (parseInt(userId) === 94899148) {
+    await getFirestore().recursiveDelete(store.getQuery(`carts/${userId}`));
   },
-  async clear(objectId, userId) {
-    if (parseInt(userId) === 94899148) {
-      await store.createRecord(`objects/${objectId}/carts/${userId}`, {"products": FieldValue.delete()});
-    } else {
-      await store.getQuery(`objects/${objectId}/carts/${userId}`).delete();
-    }
-  },
-  async createOrder(ctx, wizardData) {
-    const userId = ctx.from.id;
-    await store.createRecord(`users/${userId}`, {orderCount: FieldValue.increment(1)});
-    const userData = await store.findRecord(`users/${userId}`);
-    const objectId = wizardData.objectId;
-    const orderQuery = getFirestore().collection("objects").doc(objectId).collection("orders");
-    const cartProducts = await store.findRecord(`objects/${objectId}/carts/${userId}`, "products");
+  async createOrder(userId, wizardData) {
+    // check auth user
+    const authUserId = wizardData.auth ? + userId : 94899148;
+    await store.createRecord(`users/${authUserId}`, {orderCount: FieldValue.increment(1)});
+    const userData = await store.findRecord(`users/${authUserId}`);
     // if cart empty alert error
-    if (cartProducts) {
-      const object = await store.findRecord(`objects/${objectId}`);
-      await orderQuery.add({
-        userId,
-        objectId,
-        objectName: object.name,
-        orderNumber: userData.orderCount,
-        statusId: 1,
-        fromBot: true,
-        products: cartProducts,
-        createdAt: Math.floor(Date.now() / 1000),
-        ...wizardData,
-      });
-      await this.clear(objectId, userId);
+    const cartProducts = await cart.products(userId);
+    if (cartProducts.length) {
+      const objectCartProducts = cartProducts.reduce((x, y) => {
+        (x[y.objectId] = x[y.objectId] || []).push(y);
+        return x;
+      }, {});
+      let subOrder = 0;
+      const ordersShare = [];
+      for (const [objectId, products] of Object.entries(objectCartProducts)) {
+        // const orderQuery = getFirestore().collection("objects").doc(objectId).collection("orders");
+        const newOrderRef = getFirestore().collection("objects").doc(objectId).collection("orders").doc();
+        const object = await store.findRecord(`objects/${objectId}`);
+        await newOrderRef.set({
+          userId: authUserId,
+          objectId,
+          objectName: object.name,
+          orderNumber: `${userData.orderCount}-${++subOrder}`,
+          statusId: 1,
+          products,
+          createdAt: Math.floor(Date.now() / 1000),
+          ...wizardData,
+        });
+        ordersShare.push({objectId, orderId: newOrderRef.id, objectName: object.name, orderNumber: `${authUserId}-${userData.orderCount}-${subOrder}`});
+        // await orderQuery.add({
+        //   userId: authUserId,
+        //   objectId,
+        //   objectName: object.name,
+        //   orderNumber: `${userData.orderCount}-${subOrder++}`,
+        //   statusId: 1,
+        //   products,
+        //   createdAt: Math.floor(Date.now() / 1000),
+        //   ...wizardData,
+        // });
+      }
+      await this.clear(userId);
+      // TODO return order share links
+      return ordersShare;
     } else {
-      throw new Error(ctx.i18n.txt.cartEmpty());
+      throw new Error("The cart is empty!");
     }
   },
-  async cartButtons(objectId, ctx) {
+  async cartButton(ctx) {
     // get cart count
-    const cartProducts = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`, "products");
+    // const cartProducts = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`, "products");
+    // const snapshot = await getFirestore().collection(`carts/${ctx.from.id}/items`).count().get();
+    const cartCount = await this.cartCount(ctx.from.id);
     return [
-      {text: ctx.i18n.btn.main(), callback_data: `o/${objectId}`},
-      {text: `${ctx.i18n.btn.cart()} (${cartProducts && Object.keys(cartProducts).length || 0})`,
-        callback_data: "cart"},
+      {text: `${ctx.i18n.btn.cart()} (${cartCount})`, callback_data: "cart"},
     ];
   },
-  async cartInfo(objectId, userId) {
+  async cartInfo(userId) {
     // get cart count
     let cartCount = 0;
-    let totalQty = 0;
     let totalSum = 0;
     if (userId) {
-      const cartProducts = await this.products(objectId, userId);
+      const cartProducts = await this.products(userId);
       for (const cartProduct of cartProducts) {
-        cartCount ++;
-        totalQty += cartProduct.qty;
-        totalSum += cartProduct.qty * cartProduct.price;
+        cartCount += cartProduct.qty;
+        totalSum += cartProduct.price * cartProduct.qty;
       }
       // return cartProducts && Object.keys(cartProducts).length || 0;
     }
-
-    return {cartCount, totalQty, totalSum: roundNumber(totalSum)};
+    return {cartCount, cartTotal: roundNumber(totalSum)};
+  },
+  async cartCount(userId) {
+    const snapshot = await getFirestore().collection(`carts/${userId}/items`).count().get();
+    return snapshot.data().count;
   },
 };
 
@@ -368,12 +371,12 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
             caption: `${product.name} (${product.id}) photo uploaded` + ctx.state.sessionMsg.linkHTML(),
             reply_markup: {
               inline_keyboard: [
-                [{text: "📸 Upload photo", callback_data: `u/${product.id}?todo=prod`}],
+                [{text: "📸 Upload photo", callback_data: `u/${product.id}/prod`}],
                 [{text: `🖼 Show photos (${product.photos ? product.photos.length + 1 : 1})`,
                   callback_data: `s/${product.id}`}],
-                [{text: `⤴️ ${product.name}`,
+                [{text: `📦 ${product.name}`,
                   callback_data: `p/${product.id}`}],
-                [{text: "⤴️ Goto catalog",
+                [{text: "🗂 Goto catalog",
                   callback_data: catalogUrl}],
               ],
             },
@@ -388,25 +391,25 @@ const uploadPhotoProduct = async (ctx, objectId, productId) => {
   }
 };
 // upload catalog photo new
-const uploadPhotoCat = async (ctx, objectId, catalogId) => {
-  if (catalogId && objectId) {
-    const catalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
+const uploadPhotoCat = async (ctx, catalogId) => {
+  if (catalogId) {
+    const catalog = await store.findRecord(`catalogs/${catalogId}`);
     // first delete old photos
     if (catalog.photoId) {
       // await bucket.deleteFiles({
       //   prefix: `photos/o/${objectId}/c/${catalogId}`,
       // });
-      await deletePhotoStorage(`photos/o/${objectId}/c/${catalogId.replace(/#/g, "-")}`);
+      await deletePhotoStorage(`photos/c/${catalogId.replace(/#/g, "-")}`);
     }
     try {
-      const photoId = await savePhotoTelegram(ctx, `photos/o/${objectId}/c/${catalogId.replace(/#/g, "-")}`);
+      const photoId = await savePhotoTelegram(ctx, `photos/c/${catalogId.replace(/#/g, "-")}`);
 
-      await store.updateRecord(`objects/${objectId}/catalogs/${catalogId}`, {
+      await store.updateRecord(`catalogs/${catalogId}`, {
         photoId,
       });
       // get catalog url (path)
       const catalogUrl = `c/${catalogId.substring(catalogId.lastIndexOf("#") + 1)}`;
-      const media = await photoCheckUrl(`photos/o/${objectId}/c/${catalogId.replace(/#/g, "-")}/${photoId}/2.jpg`);
+      const media = await photoCheckUrl(`photos/c/${catalogId.replace(/#/g, "-")}/${photoId}/2.jpg`);
       await ctx.replyWithPhoto(media,
           {
             caption: `${catalog.name} (${catalog.id}) photo uploaded` + ctx.state.sessionMsg.linkHTML(),
@@ -435,7 +438,8 @@ const deletePhotoStorage = async (prefix) => {
 // change banner fields
 const changeBanner = async (ctx, url, scene) => {
   const bannerNumber = ctx.state.sessionMsg.url.searchParams.get("bNumber");
-  if (scene == "delete-main-banner") {
+  const todo = ctx.state.sessionMsg.url.searchParams.get("bTodo");
+  if (todo == "delete-main-banner") {
     if (url === "del") {
       // delete photo
       await deletePhotoStorage(`photos/main/banners/${bannerNumber}`);
@@ -446,7 +450,7 @@ const changeBanner = async (ctx, url, scene) => {
       await ctx.replyWithHTML(`<b>${url}</b> must be a del!`);
     }
   }
-  if (scene == "setUrl-main-banner") {
+  if (todo == "setUrl-main-banner") {
     await store.createRecord(`banners/${bannerNumber}`, {
       url,
     });
@@ -454,22 +458,19 @@ const changeBanner = async (ctx, url, scene) => {
   }
 };
 // upload banners photo
-const uploadBanner = async (ctx) => {
+const uploadBanner = async (ctx, size) => {
   const bannerNumber = ctx.state.sessionMsg.url.searchParams.get("bNumber");
   // first delete old photos
-  await deletePhotoStorage(`photos/main/banners/${bannerNumber}`);
+  await deletePhotoStorage(`photos/main/banners/${bannerNumber}/${size}`);
   try {
-    const photoId = await savePhotoTelegram(ctx, `photos/main/banners/${bannerNumber}`, false);
+    const photoId = await savePhotoTelegram(ctx, `photos/main/banners/${bannerNumber}/${size}`, false);
     await store.createRecord(`banners/${bannerNumber}`, {
-      photoUrl: bucket.file(`photos/main/banners/${bannerNumber}/${photoId}/1.jpg`).publicUrl(),
+      [`${size}Url`]: bucket.file(`photos/main/banners/${bannerNumber}/${size}/${photoId}/1.jpg`).publicUrl(),
     });
-    // firestore.FieldValue.arrayUnion(photoId)
-    // photos: firestore.FieldValue.arrayRemove(photoId),
-    // get catalog url (path)
-    const media = await photoCheckUrl(`photos/main/banners/${bannerNumber}/${photoId}/1.jpg`);
+    const media = await photoCheckUrl(`photos/main/banners/${bannerNumber}/${size}/${photoId}/1.jpg`);
     await ctx.replyWithPhoto(media,
         {
-          caption: `Banner ${bannerNumber} uploaded` + ctx.state.sessionMsg.linkHTML(),
+          caption: `Banner ${bannerNumber} with size: ${size} uploaded` + ctx.state.sessionMsg.linkHTML(),
           reply_markup: {
             inline_keyboard: [
               [{text: "⤴️ Goto banner",
@@ -521,6 +522,7 @@ const lettersRuUk = {
   "є": "ye",
   "ї": "yi",
   " ": "-",
+  "-": "-",
 };
 
 function translit(word) {

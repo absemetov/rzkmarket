@@ -20,10 +20,12 @@ $ yarn s-ff
 $ yarn s-fh
 # serve functions firestore and hosting
 $ yarn s-ffh
-# start bot
-$ yarn start-bot
 # generate sitemap file
-$ node functions/sites/rzk.com.ru/sitemap.js env
+$ node functions/sites/rzk.com.ru/sitemap.js ua sitemap
+# generate robots file
+$ node functions/sites/rzk.com.ru/sitemap.js ua robots
+# generate robots file
+$ node functions/sites/rzk.com.ru/sitemap.js ua merchant
 # build for production and launch server
 $ yarn --cwd functions/ parcel-b
 $ yarn --cwd functions/ vite-b

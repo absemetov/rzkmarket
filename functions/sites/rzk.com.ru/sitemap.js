@@ -6,26 +6,31 @@ require("dotenv").config({path: `./functions/.env.${process.argv[2]}`});
 if (process.argv[3] === "robots") {
   const fs = require("fs");
   const writeStream = fs.createWriteStream("sites/rzk.com.ru/robots.txt");
-  writeStream.write(`User-agent: * 
+  if (process.argv[2] === "ru") {
+    writeStream.write(`User-agent: Googlebot
 Disallow: /search
-Disallow: /delivery-info
-Disallow: /return-policy
-Disallow: /login
-Disallow: /*?*startAfter=
-Disallow: /*?*endBefore=
-Sitemap: https://rzk.com.${process.argv[2]}/sitemaps/${process.argv[2]}/sitemap-index.xml
-
-User-agent: Yahoo
-Disallow: /
-
-User-agent: MJ12bot
-Disallow: /
-
-User-agent: Mediapartners-Google
-Disallow: /
-
-User-agent: AhrefsBot
+Disallow: /o/*/s/*
+Disallow: /c/*/?endBefore=
+Allow: /c/*/?startAfter=
+Allow: /c/*/?objectId=
+User-agent: Yandex
+Disallow: /search
+Disallow: /o/*/s/*
+Disallow: /c/*/?endBefore=
+Allow: /c/*/?startAfter=
+Allow: /c/*/?objectId=
+User-agent: *
 Disallow: /`);
+  } else {
+    writeStream.write(`User-agent: Googlebot
+Disallow: /search
+Disallow: /o/*/s/*
+Disallow: /c/*/?endBefore=
+Allow: /c/*/?startAfter=
+Allow: /c/*/?objectId=
+User-agent: *
+Disallow: /`);
+  }
   writeStream.end();
 }
 
@@ -35,7 +40,7 @@ function hitToParams(params) {
   // const catalog = params["categories.lvl5"] || params["categories.lvl4"] || params["categories.lvl3"] || params["categories.lvl2"] || params["categories.lvl1"] || params["categories.lvl0"];
   const locs = [];
   // const category = `${process.env.BOT_SITE}/search/${catalog.split(" > ").map(encodeURIComponent).join("/")}`;
-  const catalog = `${process.env.BOT_SITE}/o/${params.sellerId}/c/${params.path}`;
+  const catalog = `${process.env.BOT_SITE}/c/${params.path}`;
   const product = `${process.env.BOT_SITE}/o/${params.sellerId}/p/${params.productId}`;
   if (!alreadyAdded[catalog]) {
     locs.push(
@@ -75,7 +80,7 @@ if (process.argv[3] === "sitemap") {
 }
 
 // test merchant api
-const uploadToMerchnt = async () => {
+const uploadToMerchant = async () => {
   const content = google.content("v2.1");
   // add scope content in admin.google!!!
   const auth = new google.auth.JWT({
@@ -148,5 +153,5 @@ const uploadToMerchnt = async () => {
 
 // upload goods to merchant center
 if (process.argv[3] === "merchant") {
-  uploadToMerchnt();
+  uploadToMerchant();
 }

@@ -1,13 +1,6 @@
-<nav aria-label="breadcrumb">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="/">{{envSite.i18n.aObjects}}</a></li>
-    <li class="breadcrumb-item"><a href="/o/{{object.id}}">{{object.name}}</a></li>
-    <li class="breadcrumb-item active" aria-current="page">{{envSite.i18n.order}}</li>
-  </ol>
-</nav>
 <h4>
-  {{object.name}} / {{envSite.i18n.order}} #{{shareOrder.orderNumber}}, {{shareOrder.lastName}} {{shareOrder.firstName}}, Статус: {{shareOrder.status}}
-  (<small ="text-muted">{{shareOrder.createdAt}}</small>)
+  {{order.objectName}} / {{envSite.i18n.order}} #{{order.userId}}-{{order.orderNumber}}, {{order.lastName}} {{order.firstName}}, Статус: {{orderStatus order.statusId}}
+  (<small ="text-muted">{{moment order.createdAt}}</small>)
 </h4>
 <div class="table-responsive">
   <table class="table table-striped table-hover">
@@ -23,16 +16,19 @@
       </tr>
     </thead>
     <tbody>
-      {{#each products as |product|}}
+      {{#each order.products as |product|}}
       <tr>
-        <th scope="row">{{product.index}}</th>
-        <td><strong class="text-nowrap">{{product.id}}</strong></td>
-        <td><a href="{{product.url}}">{{product.name}}</a></td>
+        <th scope="row">{{inc @index 1}}</th>
+        <td><strong class="text-nowrap">{{product.productId}}</strong></td>
+        <td><a href="/o/{{product.objectId}}/p/{{product.productId}}">{{product.name}}</a></td>
         <td><strong class="text-nowrap">{{product.qty}} {{product.unit}}</strong></td>
         <td><strong class="text-nowrap">{{formatNumber product.price}} {{../envSite.currency}}</strong></td>
-        <td><strong class="text-nowrap">{{formatNumber product.sum}} {{../envSite.currency}}</strong></td>
+        <td><strong class="text-nowrap">{{sum product.price product.qty}} {{../envSite.currency}}</strong></td>
       </tr>
       {{/each}}
     </tbody>
   </table>
+  <a href="https://t.me/share/url?url={{encodeUrl envSite.botName order.objectId "o" order.id envSite.domain}}&text={{encode "Order" order.objectName order.userId order.orderNumber}}" target="_blank">
+    <i class="bi bi-telegram"></i> Share order to Bot @{{envSite.botName}}
+  </a>
 </div>

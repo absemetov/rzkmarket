@@ -18,28 +18,19 @@ const i18n = i18nContext[lang];
 if (location.href.match(/^.*?\/search/)) {
   searchPanel("show");
 }
-// search.start();
+
+// helper round to 2 decimals
+const roundNumber = (num) => {
+  // return Math.round((num + Number.EPSILON) * 100) / 100;
+  return Math.round(num);
+};
+
 const {setIsOpen} = startAutocomplete();
-
-// document.getElementById("productModal").addEventListener("click", function(event, suggestion, dataset) {
-//   setIsOpen(false);
-// });
-
-// document.getElementById("cartAddModal").addEventListener("click", function(event, suggestion, dataset) {
-//   setIsOpen(true);
-// });
 
 const searchPageState = getInstantSearchUiState();
 if (document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0] && searchPageState.query) {
   document.getElementsByClassName("aa-DetachedSearchButtonPlaceholder")[0].innerHTML = searchPageState.query.substring(0, 5) + "...";
 }
-
-// search.on("render", () => {
-// window.location.pathname == "/search/"
-// if (location.href.match(/^.*?\/search/)) {
-//   searchPanel("show");
-// }
-// });
 
 // back prev buttons trigger
 window.addEventListener("popstate", function() {
@@ -72,11 +63,15 @@ productModalEl.addEventListener("hidden.bs.modal", (event) => {
   }
 });
 
+// instant search product show old!!!
 productModalEl.addEventListener("show.bs.modal", async (event) => {
   // Extract info from data-bs-* attributes
   buttonShowProduct = event.relatedTarget;
   const productId = buttonShowProduct.dataset.productId;
   const productName = buttonShowProduct.dataset.productName;
+  const productPrice = buttonShowProduct.dataset.productPrice;
+  const productUnit = buttonShowProduct.dataset.productUnit;
+  const productAvailability = buttonShowProduct.dataset.productAvailability;
   const productBrand = buttonShowProduct.dataset.productBrand;
   const productImg2 = buttonShowProduct.dataset.productImg2;
   const sellerId = buttonShowProduct.dataset.sellerId;
@@ -89,7 +84,7 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
     <div class="card-body">
       <h6>
         <a href="/o/${sellerId}/p/${productId}">
-        ${productBrand !== "undefined" ? `${productBrand} - ` : ""}${productName}</a> <small class="text-muted">(${productId})</small>
+        ${productBrand ? `${productBrand} - ` : ""}${productName}</a> <small class="text-muted">(${productId})</small>
       </h6>
     </div>
     <div class="card-footer">
@@ -103,39 +98,28 @@ productModalEl.addEventListener("show.bs.modal", async (event) => {
     </div>
   </div>`;
   // get product data
-  const productRes = await fetch(`/o/${sellerId}/p/${productId}`, {method: "POST"});
+  // const productRes = await fetch(`${localServer}/o/${sellerId}/p/${productId}`, {method: "POST"});
   // const productRes = await fetch(`https://rzk.com.ru/o/${sellerId}/p/${productId}`, {method: "POST"});
-  const product = await productRes.json();
-  if (!productRes.ok) {
-    // throw new Error(resJson.error);
-    alert(product.error);
-    return false;
-  }
+  // const product = await productRes.json();
+  // if (!productRes.ok) {
+  //   // throw new Error(resJson.error);
+  //   alert(product.error);
+  //   return false;
+  // }
   const cardFooter = productModalEl.querySelector(".card-footer");
   cardFooter.innerHTML = `
     <h3>
-      ${product.price.toLocaleString("ru-Ru")} ${i18n.currency}
+      ${productPrice.toLocaleString("ru-Ru")} ${i18n.currency}
     </h3>
     <div class="d-grid gap-2">
-    ${product.availability ?
-    `<button type="button" class="btn ${product.qty ? "btn-primary" : "btn-success"}" data-bs-toggle="modal"
+    ${productAvailability ? `<button type="button" class="btn btn-success" data-bs-toggle="modal"
       data-bs-target="#cartAddModal"
-      data-product-id="${product.id}"
-      data-product-name="${product.name}"
-      data-product-unit="${product.unit}"
-      data-product-qty="${product.qty ? product.qty : 0}"
+      data-product-id="${productId}"
+      data-product-name="${productName}"
+      data-product-unit="${productUnit}"
       data-seller-id="${sellerId}"
       data-seller="${seller}"
-      data-modal-close="true">
-      ${product.qty ? product.qty + " " + product.unit + " " + product.sum + " " + i18n.currency : i18n.btn_buy}
-    </button>` : `<button type="button" class="btn btn-success" disabled>${i18n.btnNotAvailable}</button>`}
-    <a href="/o/${sellerId}/cart"  class="btn btn-success position-relative mt-2" role="button">
-      ${i18n.btn_cart} <strong id="totalSumNavAlg">${product.cartInfo.totalSum.toLocaleString("ru-Ru")} ${i18n.currency}</strong>
-      <span id="cartCountNavAlg" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark">
-        ${product.cartInfo.cartCount}
-        <span class="visually-hidden">count goods</span>
-      </span>
-    </a>
+      data-modal-close="true">${i18n.btn_buy}</button>` : `<button type="button" class="btn btn-success" disabled>${i18n.btnNotAvailable}</button>`}
   </div>`;
 });
 
@@ -157,35 +141,24 @@ new SmartPhoto(".js-smartphoto-single", {
 });
 
 // modal cart
-// helper round to 2 decimals
-const roundNumber = (num) => {
-  // return Math.round((num + Number.EPSILON) * 100) / 100;
-  return Math.round(num);
-};
 const cartAddModalEl = document.getElementById("cartAddModal");
 const cartAddModal = new Modal(cartAddModalEl);
-// const addButton = document.getElementById("addToCart");
+
 const delButton = document.getElementById("deleteFromCart");
 const qtyInput = document.getElementById("qty");
-// show algolia form when close
-// cartAddModalEl.addEventListener("hide.bs.modal", function(event) {
-//   if (buttonAddProduct.getAttribute("data-modal-close")) {
-//     productModal.show();
-//   }
-// });
 
 // show autocomlete
 cartAddModalEl.addEventListener("hidden.bs.modal", (event) => {
   const fromAutocomlete = buttonShowProduct && buttonShowProduct.dataset.autocomplete;
   if (fromAutocomlete) {
     setIsOpen(true);
-    // productModal.show();
   }
   buttonShowProduct = null;
 });
 
 cartAddModalEl.addEventListener("show.bs.modal", function(event) {
-  hideByBuy = false;
+  buttonShowProduct = event.relatedTarget;
+  // hideByBuy = false;
   // Button that triggered the modal
   buttonAddProduct = event.relatedTarget;
   // Extract info from data-bs-* attributes
@@ -218,7 +191,7 @@ const toastBody = toastLiveExample.querySelector(".toast-body");
 
 const toast = new Toast(toastLiveExample);
 
-// add product to cart
+// add product to cart New
 const addToCartform = document.getElementById("addToCartForm");
 addToCartform.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -227,9 +200,9 @@ addToCartform.addEventListener("submit", async (event) => {
   const qty = + qtyInput.value;
   const productId = buttonAddProduct.getAttribute("data-product-id");
   const added = + buttonAddProduct.getAttribute("data-product-qty");
-  const sellerId = buttonAddProduct.getAttribute("data-seller-id");
-  // const response = await fetch(`https://rzk.com.ru/o/${sellerId}/cart/add`, {
-  const response = await fetch(`/o/${sellerId}/cart/add`, {
+  const objectId = buttonAddProduct.getAttribute("data-seller-id");
+  // const server = "/cart/add";
+  const response = await fetch("/cart/add", {
     method: "POST",
     headers: {
       "Content-Type": "application/json;charset=utf-8",
@@ -237,14 +210,18 @@ addToCartform.addEventListener("submit", async (event) => {
     body: JSON.stringify({
       productId,
       qty,
+      objectId,
     }),
   });
   const resJson = await response.json();
   if (!response.ok) {
-    // throw new Error(resJson.error);
     alert(resJson.error);
     addButton.disabled = false;
     delButton.disabled = false;
+    return false;
+  }
+  if (!resJson.price) {
+    alert(`Product ID ${productId} not found!`);
     return false;
   }
   // set toast header
@@ -255,71 +232,63 @@ addToCartform.addEventListener("submit", async (event) => {
     buttonAddProduct.classList.remove("btn-success");
     buttonAddProduct.classList.add("btn-primary");
     // btn show add cart info
-    if (buttonShowProduct && !buttonShowProduct.dataset.autocomplete) {
-      buttonShowProduct.innerHTML = `${qty} ${buttonAddProduct.dataset.productUnit} <span class="text-nowrap">${resJson.price ? roundNumber(qty * resJson.price).toLocaleString("ru-Ru") : "null"} ${i18n.currency}</span>`;
-      buttonShowProduct.classList.remove("btn-success");
-      buttonShowProduct.classList.add("btn-primary");
-    }
+    // if (buttonShowProduct && !buttonShowProduct.dataset.autocomplete) {
+    //   buttonShowProduct.innerHTML = `${qty} ${buttonAddProduct.dataset.productUnit} <span class="text-nowrap">${resJson.price ? roundNumber(qty * resJson.price).toLocaleString("ru-Ru") : "null"} ${i18n.currency}</span>`;
+    //   buttonShowProduct.classList.remove("btn-success");
+    //   buttonShowProduct.classList.add("btn-primary");
+    // }
     // toast info
     toastBody.innerHTML = `${buttonAddProduct.getAttribute("data-product-name")} (${buttonAddProduct.getAttribute("data-product-id")})
     <span class="text-nowrap fw-bold">${qty} ${buttonAddProduct.dataset.productUnit}</span> ${i18n.added_to_cart}
     <div class="mt-2 pt-2 border-top">
-      <a href="/o/${sellerId}/cart" class="btn btn-success btn-sm" role="button">
-        <i class="bi bi-cart3"></i> ${resJson.cartInfo.totalSum.toLocaleString("ru-Ru")} ${i18n.currency} (${resJson.cartInfo.cartCount})
+      <a href="/cart" class="btn btn-success btn-sm" role="button">
+        <i class="bi bi-cart3"></i> ${i18n.btn_cart}
       </a>
     </div>`;
     // show toast
     toast.show();
   } else {
-    buttonAddProduct.innerText = i18n.btn_buy;
+    buttonAddProduct.innerHTML = i18n.btn_buy;
     buttonAddProduct.classList.remove("btn-primary");
     buttonAddProduct.classList.add("btn-success");
     buttonAddProduct.removeAttribute("data-product-qty");
     // btn show
-    if (buttonShowProduct && !buttonShowProduct.dataset.autocomplete) {
-      buttonShowProduct.innerText = i18n.btn_show;
-      buttonShowProduct.classList.remove("btn-primary");
-      buttonShowProduct.classList.add("btn-success");
-    }
+    // if (buttonShowProduct && !buttonShowProduct.dataset.autocomplete) {
+    //   buttonShowProduct.innerText = i18n.btn_show;
+    //   buttonShowProduct.classList.remove("btn-primary");
+    //   buttonShowProduct.classList.add("btn-success");
+    // }
     // toast
     if (added) {
       toastBody.innerHTML = `${buttonAddProduct.getAttribute("data-product-name")} (${buttonAddProduct.getAttribute("data-product-id")}) ${i18n.deleted_from_cart}
       <div class="mt-2 pt-2 border-top">
-        <a href="/o/${sellerId}/cart" class="btn btn-success btn-sm" role="button">
-          <i class="bi bi-cart3"></i> ${resJson.cartInfo.totalSum.toLocaleString("ru-Ru")} ${i18n.currency} (${resJson.cartInfo.cartCount})
+        <a href="/cart" class="btn btn-success btn-sm" role="button">
+          <i class="bi bi-cart3"></i> ${i18n.btn_cart}
         </a>
       </div>`;
       // show toast
       toast.show();
     }
   }
-  const cartCountNav = document.getElementById("cartCountNav");
-  const totalSumNav = document.getElementById("totalSumNav");
-  // total cart data
-  const totalQty = document.getElementById("totalQty");
+  // total in Cart page
   const totalSum = document.getElementById("totalSum");
-  if (totalQty) {
-    totalQty.innerText = resJson.cartInfo.totalQty;
-    totalSum.innerText = `${resJson.cartInfo.totalSum.toLocaleString("ru-Ru")} ${i18n.currency}`;
+  if (totalSum) {
+    totalSum.innerText = `${resJson.cartInfo.cartTotal.toLocaleString("ru-Ru")} ${i18n.currency}`;
   }
-  // update algolia product
-  const cartCountNavAlg = document.getElementById("cartCountNavAlg");
-  const totalSumNavAlg = document.getElementById("totalSumNavAlg");
-  if (cartCountNavAlg) {
-    const cartNavLink = document.getElementById("cartNavLink");
-    if (cartNavLink) {
-      cartNavLink.href = `/o/${sellerId}/cart`;
-    }
-    cartCountNavAlg.innerText = resJson.cartInfo.cartCount;
-    totalSumNavAlg.innerText = `${resJson.cartInfo.totalSum.toLocaleString("ru-Ru")} ${i18n.currency}`;
-  }
+  // update count goods in navbar
+  const cartCountNav = document.getElementById("cartCountNav");
   if (cartCountNav) {
     cartCountNav.innerText = resJson.cartInfo.cartCount;
-    totalSumNav.innerText = `${resJson.cartInfo.totalSum.toLocaleString("ru-Ru")} ${i18n.currency}`;
+    if (resJson.cartInfo.cartCount) {
+      cartCountNav.classList.remove("d-none");
+    } else {
+      cartCountNav.classList.add("d-none");
+    }
   }
   // hide modal
   cartAddModal.hide();
 });
+
 // delete product
 delButton.addEventListener("click", async () => {
   qtyInput.value = "";
@@ -330,13 +299,14 @@ delButton.addEventListener("click", async () => {
 const purchaseModal = document.getElementById("purchaseModal");
 if (purchaseModal) {
   purchaseModal.addEventListener("shown.bs.modal", async (event) => {
-    const lastName = document.getElementById("lastName");
-    lastName.focus();
+    document.getElementById("lastName").focus();
   });
 }
 
 const purchaseForm = document.getElementById("purchase");
+
 if (purchaseForm) {
+  const purchaseModalIns = new Modal(purchaseModal);
   const createOrderButton = document.getElementById("createOrderButton");
   // delete white spaces in phone number
   document.getElementById("phoneNumber").addEventListener("blur", (event) => {
@@ -356,13 +326,19 @@ if (purchaseForm) {
       method: "POST",
       body: formData,
     });
-    const order = await response.json();
+    const data = await response.json();
     if (response.ok) {
-      // redirect to order page
-      window.location.href = `/o/${order.objectId}/s/${order.orderId}`;
+      // show success info
+      let htmlLinks = "";
+      for (const shareOrder of data.ordersInfo) {
+        htmlLinks += `<h6><a href="/o/${shareOrder.objectId}/s/${shareOrder.orderId}" target="_blank">${i18n.shareOrder} #${shareOrder.orderNumber} склад ${shareOrder.objectName}</a></h6>`;
+      }
+      document.getElementById("cartContent").innerHTML = `<h3>${i18n.orderSuccess}</h3>${htmlLinks}`;
+      document.getElementById("cartCountNav").classList.add("d-none");
+      purchaseModalIns.hide();
     } else {
       createOrderButton.disabled = false;
-      for (const [key, error] of Object.entries(order.error)) {
+      for (const [key, error] of Object.entries(data.error)) {
         alert(`${key} => ${error}`);
         if (key === "carrierNumber") {
           document.getElementById(key).classList.add("is-invalid");
@@ -395,12 +371,110 @@ if (purchaseForm) {
 }
 
 // carousel
-const myCarousel = document.getElementById("myCarousel");
-if (myCarousel) {
-  const totalSlides = document.querySelectorAll("#myCarousel .carousel-item").length;
-  document.getElementById("totalSlides").innerHTML = totalSlides;
-  myCarousel.addEventListener("slide.bs.carousel", (event) => {
-    document.getElementById("activeSlide").innerHTML = event.to + 1;
-    document.getElementById("totalSlides").innerHTML = totalSlides;
+// const myCarousel = document.getElementById("myCarousel");
+// if (myCarousel) {
+//   const totalSlides = document.querySelectorAll("#myCarousel .carousel-item").length;
+//   document.getElementById("totalSlides").innerHTML = totalSlides;
+//   myCarousel.addEventListener("slide.bs.carousel", (event) => {
+//     document.getElementById("activeSlide").innerHTML = event.to + 1;
+//     document.getElementById("totalSlides").innerHTML = totalSlides;
+//   });
+// }
+
+// infinity scroll
+const more = document.querySelector(".more");
+if (more) {
+  const productsEl= document.getElementById("products");
+  const nextLink = document.getElementById("nextLink");
+  let nextURL = null;
+  // set from dom when first load
+  if (nextLink) {
+    nextURL = nextLink.value;
+  }
+  // fetch products
+  const getProducts = async (url) => {
+    const response = await fetch(url);
+    // handle 404
+    if (!response.ok) {
+      throw new Error(`An error occurred: ${response.status}`);
+    }
+    return await response.json();
+  };
+  // show the products
+  const photoProxy = (src, locale) => {
+    // proxy img for Crimea
+    // return locale === "ru" ? src.replace("storage", "i0.wp.com/storage") : src;
+    return src.replace("storage.googleapis.com", "i0.wp.com/storage.googleapis.com");
+  };
+  const showProducts = (products) => {
+    products.forEach((product) => {
+      const productEl = document.createElement("div");
+      productEl.classList.add("col");
+      productEl.innerHTML = `
+           <div class="card text-center h-100">
+            <a href="/o/${product.objectId}/p/${product.id}">
+              <img src="${photoProxy(product.img1)}" onerror="this.onerror=null;this.src = '/icons/photo_error_${lang}.svg';" class="card-img-top" alt="${product.name}"/>
+            </a>
+            <div class="card-body">
+              ${product.brand ? `<h4>${product.brand}</h4>` : ""}
+              <h6>
+                <a href="/o/${product.objectId}/p/${product.id}" class="link-dark link-underline-opacity-0">${product.name}</a> <small class="text-muted">(${product.id})</small>
+              </h6>
+            </div>
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item">  
+                <h6>Склад: <a href="/o/${product.objectId}" class="link-primary link-underline-opacity-0">${product.objectName}</a></h6>
+              </li>
+              <li class="list-group-item">
+                <a href="https://t.me/share/url?url=${encodeURIComponent(`https://t.me/${i18n.bot_name}?start=${btoa(`o_${product.objectId}_p_${product.id}`)}`)}` +
+                `&text=${encodeURIComponent(`${product.objectName} ${product.brand ? ` - ${product.brand} - ` : "-"} ${product.name}`)}" target="_blank">
+                  <i class="bi bi-telegram"></i> Share
+                </a>
+              </li>
+            </ul>
+            <div class="card-footer">
+              <h3>${product.price} ${i18n.currency}</h3>
+              <div class="d-grid gap-2">
+                <button type="button" class="btn btn-success  ${product.availability ? "" : "disabled"}" data-bs-toggle="modal"
+                  data-bs-target="#cartAddModal"
+                  data-product-id="${product.id}"
+                  data-product-name="${product.name}"
+                  data-product-unit="${product.unit}"
+                  data-seller-id="${product.objectId}"
+                  data-seller="${product.objectName}"
+                  data-modal-close="true">${product.availability ? i18n.btn_buy : i18n.btnNotAvailable}</button>
+              </div>
+            </div>
+          </div>`;
+      productsEl.appendChild(productEl);
+    });
+  };
+  let notLoadingProd = true;
+  // load products
+  const loadProducts = async (url) => {
+    try {
+      // call the API to get quotes
+      notLoadingProd = false;
+      const response = await getProducts(url);
+      notLoadingProd = true;
+      // show products
+      showProducts(response.products);
+      nextURL = response.nextURL;
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
+  // load more
+  const intersectionObserver = new IntersectionObserver(async (entries) => {
+    if (entries[0].intersectionRatio <= 0) return;
+    // load more content;
+    if (nextURL && notLoadingProd) {
+      await loadProducts(nextURL);
+    }
+    if (!nextURL) {
+      more.classList.add("d-none");
+    }
   });
+  // start observing
+  intersectionObserver.observe(more);
 }

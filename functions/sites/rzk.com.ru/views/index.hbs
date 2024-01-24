@@ -1,119 +1,49 @@
-<div class="row mb-4">
-  <div class="col-lg-3">
-    <div class="offcanvas-lg offcanvas-start" tabindex="-1" id="offcanvasResponsive1" aria-labelledby="offcanvasResponsiveLabel1">
-      <div class="offcanvas-header">
-        <h5 class="offcanvas-title" id="offcanvasResponsiveLabel1">{{envSite.i18n.aCatGoods}}</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#offcanvasResponsive1" aria-label="Close"></button>
-      </div>
-      <div class="offcanvas-body flex-column">
-        <div class="list-group list-group-flush">
-          {{#each catalogs as |catalog|}}
-            <a href="/search/{{catalog.url}}" data-value="Cat 1" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-              {{catalog.name}} <span class="badge bg-success rounded-pill">{{catalog.count}}</span>
-            </a>
-          {{/each}}
-        </div>
-      </div>
-    </div>
+
+{{#if banners}}
+<div id="myCarousel" class="carousel slide" data-bs-ride="carousel">
+  <div class="carousel-indicators">
+    {{#each banners as |banner|}}
+      <button {{#if (equals @index 0)}}class="active" {{/if}}type="button" data-bs-target="#myCarousel" data-bs-slide-to="{{@index}}" aria-label="Slide {{@index}}"></button>
+    {{/each}}
   </div>
-  <div class="col-md-12 col-lg-9">
-    {{#if banners}}
-      <div id="myCarousel" class="carousel slide position-relative" data-bs-ride="carousel">
-        <div class="carousel-inner">
-          {{#each banners as |banner|}}
-            <div class="carousel-item{{#if (equals @index 0)}} active{{/if}}">
-              <a href="{{banner.url}}"><img src="{{photoProxy banner.photoUrl ../envSite.lang}}" class="d-block w-100" alt="Banners"></a>
-            </div>
-          {{/each}}
-        </div>
-        <button class="d-none d-md-inline btn btn-light position-absolute top-50 start-0 translate-middle-y ms-2 p-0" type="button" data-bs-target="#myCarousel" data-bs-slide="prev">
-          <span class="bi bi-chevron-left fs-4" aria-hidden="true"></span>
-          <span class="visually-hidden">Previous</span>
-        </button>
-        <button class="d-none d-md-inline btn btn-light position-absolute top-50 end-0 translate-middle-y me-2 p-0" type="button" data-bs-target="#myCarousel" data-bs-slide="next">
-          <span class="bi bi-chevron-right fs-4" aria-hidden="true"></span>
-          <span class="visually-hidden">Next</span>
-        </button>
-        <div class="position-absolute bottom-1 end-0 badge rounded-pill bg-secondary"><span id="activeSlide">1</span>/<span id="totalSlides"></span></div>
+  <div class="carousel-inner">
+    {{#each banners as |banner|}}
+      <div class="carousel-item{{#if (equals @index 0)}} active{{/if}}">
+        <a href="{{banner.url}}"><img src="{{photoProxy banner.lgUrl ../envSite.lang}}" class="d-none d-md-block w-100 rounded" alt="Banners lg"></a>
+        <a href="{{banner.url}}"><img src="{{photoProxy banner.mdUrl ../envSite.lang}}" class="d-md-none d-block w-100 rounded" alt="Banners md"></a>
       </div>
-    {{/if}}
+    {{/each}}
   </div>
-</div>
-<div class="d-grid gap-2">
-  <button class="btn btn-success d-block d-lg-none my-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasResponsive1" aria-controls="offcanvasResponsive1">
-    {{envSite.i18n.aCatGoods}}
+  <button class="carousel-control-prev" type="button" data-bs-target="#myCarousel" data-bs-slide="prev">
+    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+    <span class="visually-hidden">Previous</span>
+  </button>
+  <button class="carousel-control-next" type="button" data-bs-target="#myCarousel" data-bs-slide="next">
+    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+    <span class="visually-hidden">Next</span>
   </button>
 </div>
-<h1>{{envSite.i18n.aObjects}}</h1>
-<div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2 my-3">
-  {{#each objects as |object|}}
-    <div class="col">
-      <div class="card text-center h-100">
-        <a href="{{#if (equals ../envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{object.id}}">
-          <img src="{{photoProxy object.img1 ../envSite.lang}}" class="card-img-top" onerror="this.src = '/icons/photo_error_{{../envSite.lang}}.svg';" alt="{{object.name}}">
-        </a>
-        <div class="card-body">
-          <h5>
-            <a href="{{#if (equals ../envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{object.id}}">{{object.name}}</a>
-          </h5>
-          <p class="card-text">
-            {{object.description}}
-          </p>
-        </div>
-        <ul class="list-group list-group-flush">
-          <li class="list-group-item">
-            {{object.address}}
-          </li>
-          <li class="list-group-item">
-            {{#each object.phoneArray as |phone|}}
-              <a href="tel:{{phone}}" class="text-decoration-none"><i class="bi bi-telephone-fill"></i> {{phone}}</a>
-            {{/each}}
-          </li>
-          <li class="list-group-item">
-            <div class="dropdown">
-              <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                Telegram
-              </button>
-              <ul class="dropdown-menu">
-                <a href="//t.me/{{../envSite.chatName}}" class="dropdown-item" target="_blank"><i class="bi bi-telegram"></i> Чат @{{../envSite.chatName}}</a>
-                <a href="https://t.me/share/url?url={{encodeUrl ../envSite.botName object.id "c" "c"}}&text={{encode object.name envSite.i18n.aCatGoods}}" class="dropdown-item" target="_blank">
-                  <i class="bi bi-telegram"></i> Share
-                </a>
-              </ul>
-            </div>
-          </li>
-          <li class="list-group-item">
-            <div class="d-grid gap-2">
-              <a href="{{#if (equals ../envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{object.id}}/c"  class="btn btn-success"><i class="bi bi-folder2"></i> {{../envSite.i18n.aCatGoods}}</a>
-            </div>
-          </li>
-        </ul>
-        <div class="card-footer">
-          <div class="d-grid gap-2">
-            <a href="{{#if (equals ../envSite.data.lang "ru-ua")}}/ru{{/if}}/o/{{object.id}}/cart"  class=" btn btn-success position-relative mt-2">
-              <span class="text-nowrap"><i class="bi bi-cart3"></i> {{formatNumber object.cartInfo.totalSum}} {{../envSite.currency}}</span>
-              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark">
-                {{object.cartInfo.cartCount}}
-                <span class="visually-hidden">count goods</span>
-              </span>
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
+{{/if}}
+<h1 class="display-6 mt-3">{{envSite.i18n.aCatGoods}}</h1>
+<div class="list-group my-3">
+  {{#each catalogs as |catalog|}}
+    <a href="{{catalog.url}}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+      {{catalog.name}}
+    </a>
   {{/each}}
 </div>
-<h1>{{envSite.i18n.tNews}}</h1>
-{{#each news as |newsObj|}}
-  <div class="card my-3">
-    <div class="card-body">
-      <h5 class="card-title">
-        <a href="{{#if (equals ../envSite.data.lang "ru-ua")}}/ru{{/if}}/news/{{newsObj.id}}">{{newsObj.title}}</a>
-      </h5>
-      <p class="card-text">{{{newsObj.preview}}}</p>
-    </div>
-    <div class="card-footer">
-      {{newsObj.createdAt}}
+{{#if products}}
+<div id="products" class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 g-2 my-2">
+  {{#each products as |product|}}
+    {{> product product=product envSite=../envSite}}
+  {{/each}}
+</div>
+  {{#if nextUrl}}
+    <input class="d-none" id="nextLink" type="text" value="{{nextUrl}}">
+  {{/if}}
+  <div class="more d-flex justify-content-center my-3">
+    <div class="spinner-border" role="status">
+      <span class="visually-hidden">Loading...</span>
     </div>
   </div>
-{{/each}}
+{{/if}}

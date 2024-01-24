@@ -46,10 +46,11 @@ txt:
   firstName: Введите имя получателя
   phoneNumber: Введите номер телефона *
   comment: Комментарий
+  enterComment: Введите комментарий
   check: Проверьте даные получателя
   confirm: Спасибо за заказ! Скоро мы с Вами свяжемся.
   order: Заказ
-  searchForm: Я ищу
+  searchForm: Введите поисковый запрос
   searchFound: найдено
   searchNotFound: по Вашему запросу ничего не найдено
   page: Страница
