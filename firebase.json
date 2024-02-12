@@ -95,7 +95,7 @@
     },
     {
       "target": "viko.org.ua",
-      "public": "sites/viko.org.ua",
+      "public": "sites/rzk.com.ru",
       "ignore": [
         "firebase.json",
         "**/.*",

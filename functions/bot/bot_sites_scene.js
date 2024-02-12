@@ -43,7 +43,6 @@ sitesActions.push(async (ctx, next) => {
       inlineKeyboardArray.push([{text: `📝 Edit site titleRu ${site.titleRu ? "✅" : "🚫"}`, callback_data: `site/${siteId}/titleRu`}]);
       inlineKeyboardArray.push([{text: `📝 Edit site contact ${site.contact ? "✅" : "🚫"}`, callback_data: `site/${siteId}/contact`}]);
       inlineKeyboardArray.push([{text: `📝 Edit site gtag ${site.gtag ? `✅ ${site.gtag}` : "🚫"}`, callback_data: `site/${siteId}/gtag`}]);
-      inlineKeyboardArray.push([{text: `📝 Edit site rzkId ${site.rzkId ? `✅ ${site.rzkId}` : "🚫"}`, callback_data: `site/${siteId}/rzkId`}]);
       await ctx.editMessageCaption(`<b>Site ${site.id}</b> ` + ctx.state.sessionMsg.linkHTML(), {
         parse_mode: "html",
         reply_markup: {
@@ -165,7 +164,7 @@ const siteEditHandle = async (ctx, text) => {
     await store.createRecord(`sites/${siteId}/pages/${pageId}`, {
       [field]: text,
     });
-    await ctx.replyWithHTML(`<b>Site ${siteId}/${pageId} field ${field} updated!</b>` + ctx.state.sessionMsg.linkHTML());
+    await ctx.replyWithHTML(`<b>Page ${siteId}/page/${pageId} field ${field} updated!</b>` + ctx.state.sessionMsg.linkHTML());
     await store.defaultSession(ctx);
   }
   // create new page
@@ -175,7 +174,7 @@ const siteEditHandle = async (ctx, text) => {
       await store.createRecord(`sites/${siteId}/pages/${text}`, {
         orderBy: 1,
       });
-      await ctx.replyWithHTML(`<b>Page ${siteId}/${text} created!</b>` + ctx.state.sessionMsg.linkHTML());
+      await ctx.replyWithHTML(`<b>Page ${siteId}/page/${text} created!</b>` + ctx.state.sessionMsg.linkHTML());
       await store.defaultSession(ctx);
     } else {
       ctx.replyWithHTML(`<b>Please enter valid url ${text}</b>` + ctx.state.sessionMsg.linkHTML());

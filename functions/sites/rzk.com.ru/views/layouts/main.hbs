@@ -3,7 +3,7 @@
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
-      <script type="module" crossorigin src="/assets/index-bb08dec8.js"></script>
+      <script type="module" crossorigin src="/assets/index-99166414.js"></script>
       <link rel="stylesheet" href="/assets/index-5b326555.css">
       <title>{{#if title}}{{title}} | {{envSite.i18n.siteName}}{{else}}{{envSite.i18n.siteTitle}}{{/if}}</title>
       <link rel="icon" href="/favicon-{{envSite.lang}}.ico">
@@ -130,11 +130,10 @@
             <a class="nav-link" href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/delivery-info">{{envSite.i18n.aDelivery}}</a>
             <a class="nav-link" href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/return-policy">{{envSite.i18n.aReturn}}</a>
             {{#if (equals envSite.lang "uk")}}
-              <a class="nav-link" href="//viko.org.ua" target="_blank">Viko.org.ua</a>
               <a class="nav-link" href="//gunsan.com.ua" target="_blank">Gunsan.com.ua</a>
               <a class="nav-link" href="//nilson.com.ua" target="_blank">Nilson.com.ua</a>
             {{/if}}
-            <a class="nav-link disabled" href="https://github.com/absemetov/rzk-com-ua">RZK Market 2.3.0 © {{year}}</a>
+            <a class="nav-link disabled" href="#">Viko by Panasonic © {{year}}</a>
             </nav>
         </div>
       </div>
@@ -210,6 +209,7 @@
             </div>
           </div>
           <div class="col-md-12 col-lg-9">
+            <h1 id="cat_header" class="d-block d-lg-none"></h1>
             <ul id="current-refinements" class="nav"></ul>
             <div id="hits" class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 g-2"></div>
             <div id="loading-indicator">

@@ -11,6 +11,8 @@ if (process.argv[3] === "robots") {
 Disallow: /search
 Disallow: /o/*/s/*
 Disallow: /c/*/?endBefore=
+Disallow: /return-policy*
+Disallow: /login*
 Allow: /c/*/?startAfter=
 Allow: /c/*/?objectId=
 User-agent: Yandex
@@ -94,7 +96,7 @@ const uploadToMerchant = async () => {
   const promises = [];
   await index.browseObjects({
     query: "",
-    facetFilters: [["seller:RZK Дніпро"]],
+    // facetFilters: [["seller:RZK Дніпро"]],
     attributesToRetrieve: ["productId", "brand", "sellerId", "img1", "name", "nameRu", "price"],
     shouldStop: () => true,
     batch: (hits) => {
@@ -107,10 +109,10 @@ const uploadToMerchant = async () => {
             "offerId": params.productId,
             "targetCountry": "UA",
             "title": `${params.brand ? params.brand + " " : ""}${params.name} (${params.productId})`,
-            "brand": `${params.brand ? params.brand : "RZK Маркет Україна"}`,
+            "brand": `${params.brand ? params.brand : "Viko світло у ваших руках"}`,
             "description": "Купити розетки та вимикачі Viko, Gunsan, Nilson оптом!",
-            "link": `https://rzk.com.ua/o/${params.sellerId}/p/${params.productId}`,
-            "imageLink": params.img1 ? params.img1 : "https://rzk.com.ua/icons/flower3.svg",
+            "link": `https://viko.org.ua/o/${params.sellerId}/p/${params.productId}`,
+            "imageLink": params.img1 ? params.img1 : "https://viko.org.ua/icons/flower3.svg",
             "availability": "in stock",
             "condition": "new",
             "price": {
@@ -129,10 +131,10 @@ const uploadToMerchant = async () => {
               "offerId": params.productId,
               "targetCountry": "UA",
               "title": `${params.brand ? params.brand + " " : ""}${params.nameRu} (${params.productId})`,
-              "brand": `${params.brand ? params.brand : "RZK Маркет Украина"}`,
+              "brand": `${params.brand ? params.brand : "Viko свет в ваших руках"}`,
               "description": "Купить розетки и выключатели Viko, Gunsan, Nilson оптом!",
-              "link": `https://rzk.com.ua/ru/o/${params.sellerId}/p/${params.productId}`,
-              "imageLink": params.img1 ? params.img1 : "https://rzk.com.ua/icons/flower3.svg",
+              "link": `https://viko.org.ua/ru/o/${params.sellerId}/p/${params.productId}`,
+              "imageLink": params.img1 ? params.img1 : "https://viko.org.ua/icons/flower3.svg",
               "availability": "in stock",
               "condition": "new",
               "price": {

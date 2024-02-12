@@ -38,9 +38,9 @@ const instantSearchRouter = historyRouter({
     }
     if (category && category[0]) {
       title = `${title ? `${title} – ` : ""}${category[category.length - 1]}`;
-      // document.getElementById("cat_header").innerHTML = category[category.length - 1] || "";
+      document.getElementById("cat_header").innerHTML = category[category.length - 1] || "";
     } else {
-      // document.getElementById("cat_header").innerHTML = "";
+      document.getElementById("cat_header").innerHTML = "";
     }
     if (brand && brand[0]) {
       title = `${title ? `${title} – ` : ""}${brand.join(" – ")}`;

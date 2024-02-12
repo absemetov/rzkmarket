@@ -1,7 +1,7 @@
 <div class="my-3">
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="/{{#if (equals site.data.lang "ru-ua")}}ru{{/if}}"><i class="bi bi-house"></i></a></li>
+      <li class="breadcrumb-item"><a href="/{{#if (equals site.data.lang "ru-ua")}}ru{{/if}}" class="link-dark link-underline-opacity-0 link-underline-opacity-100-hover"><i class="bi bi-house"></i></a></li>
       <li class="breadcrumb-item active" aria-current="page">{{page.name}}</li>
     </ol>
   </nav>
@@ -10,15 +10,21 @@
     {{{page.about}}}
   </div>
   {{#if page.products}}
+  <h2 class="mt-5">{{site.locale.products}}</h2>
   <div class="table-responsive-lg mt-3">
     <table class="table table-hover">
+      <thead>
+        <tr>
+          <th scope="col">{{site.locale.name}}</th>
+          <th scope="col">{{site.locale.price}}</th>
+          <th scope="col">Склад</th>
+        </tr>
+      </thead>
       <tbody>
         {{#each page.products as |product|}}
           <tr>
-            <th scope="row">{{product.id}}</th>
-            <td>{{product.name}}</td>
-            <td>{{product.price}} {{../site.currency}}</td>
-            <td>{{product.unit}}</td>
+            <th scope="row"><a href="{{../site.rzkDomain}}/o/{{product.objectId}}/p/{{product.id}}" target="_blank">{{product.name}}</a> ({{product.id}})</th>
+            <td>{{product.price}} {{../site.currency}} ({{product.unit}})</td>
             <td>{{product.objectName}}</td>
           </tr>
         {{/each}}

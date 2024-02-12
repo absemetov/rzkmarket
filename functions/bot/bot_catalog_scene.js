@@ -515,6 +515,25 @@ catalogsActions.push(async (ctx, next) => {
     const objectId = ctx.state.pathParams[2];
     const footerKeyboard = [];
     let publicImgUrl = null;
+    const returnBack = ctx.state.searchParams.get("return");
+    if (returnBack) {
+      const page = ctx.state.sessionMsg.url.searchParams.get("page");
+      const redirectToCart = ctx.state.sessionMsg.url.searchParams.get("cart");
+      if (page) {
+        parseUrl(ctx, `search/${page}`);
+        await searchProductHandle(ctx, page);
+        return;
+      }
+      if (redirectToCart) {
+        parseUrl(ctx, "cart");
+        await showCart(ctx);
+      } else {
+        const sessionPathCatalog = ctx.state.sessionMsg.url.searchParams.get("pathC");
+        parseUrl(ctx, sessionPathCatalog);
+        await showCatalogsAction(ctx);
+      }
+      return;
+    }
     if (objectId) {
       ctx.state.sessionMsg.url.searchParams.set("oId", objectId);
       const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
@@ -600,27 +619,27 @@ catalogsActions.push(async (ctx, next) => {
     // check availability
     if (productAvail === "true") {
       mainKeyboard.push([
+        {text: "🔙 Назад", callback_data: `k/${productId}?return=1`},
         {text: `📦 ${productName} (${productId})`, callback_data: `p/${productId}`},
-        {text: `🏪 ${objectName}`, callback_data: `o/${objectId}`},
       ],
       [
-        {text: "7", callback_data: `k/${productId}?n=7&${paramsUrl}`},
-        {text: "8", callback_data: `k/${productId}?n=8&${paramsUrl}`},
-        {text: "9", callback_data: `k/${productId}?n=9&${paramsUrl}`},
+        {text: "7️⃣", callback_data: `k/${productId}?n=7&${paramsUrl}`},
+        {text: "8️⃣", callback_data: `k/${productId}?n=8&${paramsUrl}`},
+        {text: "9️⃣", callback_data: `k/${productId}?n=9&${paramsUrl}`},
       ],
       [
-        {text: "4", callback_data: `k/${productId}?n=4&${paramsUrl}`},
-        {text: "5", callback_data: `k/${productId}?n=5&${paramsUrl}`},
-        {text: "6", callback_data: `k/${productId}?n=6&${paramsUrl}`},
+        {text: "4️⃣", callback_data: `k/${productId}?n=4&${paramsUrl}`},
+        {text: "5️⃣", callback_data: `k/${productId}?n=5&${paramsUrl}`},
+        {text: "6️⃣", callback_data: `k/${productId}?n=6&${paramsUrl}`},
       ],
       [
-        {text: "1", callback_data: `k/${productId}?n=1&${paramsUrl}`},
-        {text: "2", callback_data: `k/${productId}?n=2&${paramsUrl}`},
-        {text: "3", callback_data: `k/${productId}?n=3&${paramsUrl}`},
+        {text: "1️⃣", callback_data: `k/${productId}?n=1&${paramsUrl}`},
+        {text: "2️⃣", callback_data: `k/${productId}?n=2&${paramsUrl}`},
+        {text: "3️⃣", callback_data: `k/${productId}?n=3&${paramsUrl}`},
       ]);
       footerKeyboard.push([
         {text: "⬅️", callback_data: `k/${productId}?b=1&${paramsUrl}`},
-        {text: "0️", callback_data: `k/${productId}?n=0&${paramsUrl}`},
+        {text: "0️⃣", callback_data: `k/${productId}?n=0&${paramsUrl}`},
         {text: ctx.i18n.btn.buy(), callback_data: `a/${productId}?${paramsUrl}`},
       ]);
     } else {
@@ -637,6 +656,7 @@ catalogsActions.push(async (ctx, next) => {
       ]);
     }
     footerKeyboard.push([
+      {text: `🏪 ${objectName}`, callback_data: `o/${objectId}`},
       {text: productName, url: `${process.env.BOT_SITE}/o/${objectId}/p/${productId}?${urlBtn.searchParams.toString()}`},
     ]);
     if (objectId) {

@@ -91,10 +91,10 @@ const uploadToMerchant = async (telegram, seller) => {
             "offerId": params.productId,
             "targetCountry": "UA",
             "title": `${params.brand ? params.brand + " " : ""}${params.name} (${params.productId})`,
-            "brand": `${params.brand ? params.brand : "RZK Маркет Україна"}`,
+            "brand": `${params.brand ? params.brand : "Viko.org.ua"}`,
             "description": "Купити розетки та вимикачі Viko, Gunsan, Nilson оптом!",
-            "link": `https://rzk.com.ua/o/${params.sellerId}/p/${params.productId}`,
-            "imageLink": params.img1 ? params.img1 : "https://rzk.com.ua/icons/flower3.svg",
+            "link": `https://viko.org.ua/o/${params.sellerId}/p/${params.productId}`,
+            "imageLink": params.img1 ? params.img1 : "https://viko.org.ua/icons/flower3.svg",
             "availability": "in stock",
             "condition": "new",
             "price": {
@@ -113,10 +113,10 @@ const uploadToMerchant = async (telegram, seller) => {
               "offerId": params.productId,
               "targetCountry": "UA",
               "title": `${params.brand ? params.brand + " " : ""}${params.nameRu} (${params.productId})`,
-              "brand": `${params.brand ? params.brand : "RZK Маркет Украина"}`,
+              "brand": `${params.brand ? params.brand : "Viko.org.ua"}`,
               "description": "Купить розетки и выключатели Viko, Gunsan, Nilson оптом!",
-              "link": `https://rzk.com.ua/ru/o/${params.sellerId}/p/${params.productId}`,
-              "imageLink": params.img1 ? params.img1 : "https://rzk.com.ua/icons/flower3.svg",
+              "link": `https://viko.org.ua/ru/o/${params.sellerId}/p/${params.productId}`,
+              "imageLink": params.img1 ? params.img1 : "https://viko.org.ua/icons/flower3.svg",
               "availability": "in stock",
               "condition": "new",
               "price": {
@@ -802,9 +802,9 @@ const uploadMerch = async (ctx, next) => {
           "offerId": product.id,
           "targetCountry": "UA",
           "title": `${product.brand ? product.brand + " - " : ""}${product.nameRu} (${product.id})`,
-          "brand": `${product.brand ? product.brand : "RZK Маркет Украина"}`,
+          "brand": `${product.brand ? product.brand : "Viko.org.ua"}`,
           "description": "Купить выключатели и розетки Viko, Gunsan, Nilson оптом!",
-          "link": `https://rzk.com.ua/ru/o/${objectId}/p/${product.id}`,
+          "link": `https://viko.org.ua/ru/o/${objectId}/p/${product.id}`,
           "imageLink": photoUrl,
           "availability": "in stock",
           "condition": "new",
@@ -824,9 +824,9 @@ const uploadMerch = async (ctx, next) => {
         "offerId": product.id,
         "targetCountry": "UA",
         "title": `${product.brand ? product.brand + " - " : ""}${product.name} (${product.id})`,
-        "brand": `${product.brand ? product.brand : "RZK Маркет Україна"}`,
+        "brand": `${product.brand ? product.brand : "Viko.org.ua"}`,
         "description": "Купити вимикачі Viko, Gunsan, Nilson оптом!",
-        "link": `https://rzk.com.ua/o/${objectId}/p/${product.id}`,
+        "link": `https://viko.org.ua/o/${objectId}/p/${product.id}`,
         "imageLink": photoUrl,
         "availability": "in stock",
         "condition": "new",
@@ -882,7 +882,8 @@ const uploadCatalogs = async (telegram) => {
   const maxUploadGoods = 2000;
   // Catalogs set array
   const catalogsIsSet = new Set();
-  let deletedCatalogs = 0;
+  const catalogsDeleteSet = new Set();
+  // let deletedCatalogs = 0;
   let batchCatalogs = getFirestore().batch();
   let batchCatalogsCount = 0;
   // load sheet
@@ -986,15 +987,21 @@ const uploadCatalogs = async (telegram) => {
           const docPath = pathArrayHelper.join("#");
           if (delCatalogs) {
             // delCatalogs.push({id: pathArrayHelper.join("#")});
-            batchCatalogsDelete.delete(store.getQuery(`catalogs/${docPath}`));
-            ++ deletedCatalogs;
+            if (!catalogsDeleteSet.has(docPath)) {
+              catalogsDeleteSet.add(docPath);
+              batchCatalogsDelete.delete(store.getQuery(`catalogs/${docPath}`));
+            }
+            // ++ deletedCatalogs;
           } else {
             // delete catalog and all nested
             if (options[5]) {
               // delCatalogs.push({id: pathArrayHelper.join("#")});
+              if (!catalogsDeleteSet.has(docPath)) {
+                catalogsDeleteSet.add(docPath);
+                batchCatalogsDelete.delete(store.getQuery(`catalogs/${docPath}`));
+              }
               delCatalogs = true;
-              batchCatalogsDelete.delete(store.getQuery(`catalogs/${docPath}`));
-              ++ deletedCatalogs;
+              // ++ deletedCatalogs;
             } else {
               if (options[2]) {
                 catUrlArray.push({
@@ -1126,7 +1133,7 @@ const uploadCatalogs = async (telegram) => {
   // {parse_mode: "html"});
   await telegram.replyWithHTML(`Data uploaded in ${Math.floor(uploadTime/1000)}s\n` +
     `Catalogs added: ${catalogsIsSet.size}\n` +
-    `${deletedCatalogs > 0 ? `Deleted Catalogs: ${deletedCatalogs}` : ""}`);
+    `${catalogsDeleteSet.size > 0 ? `Deleted Catalogs: ${catalogsDeleteSet.size}` : ""}`);
 };
 // new uploader
 const uploadProductsNew = async (telegram, objectId, sheetId, pageName) => {

@@ -3,6 +3,20 @@ const {getFirestore} = require("firebase-admin/firestore");
 const express = require("express");
 const exphbs = require("express-handlebars");
 const app = express();
+const locale = {
+  "Uk": {
+    code: "Код товару",
+    name: "Найменування",
+    price: "Ціна",
+    products: "Товари",
+  },
+  "Ru": {
+    code: "Код товара",
+    name: "Наименование",
+    price: "Цена",
+    products: "Товары",
+  },
+};
 // tralling slashes set domain and locale
 app.use((req, res, next) => {
   // parse params
@@ -64,7 +78,6 @@ app.get("/:lang(ru)?", async (req, res) => {
       about: siteFire[`about${req.data.langUpper}`],
       description: siteFire[`desc${req.data.langUpper}`],
       contact: siteFire.contact,
-      rzkId: siteFire.rzkId,
       gtag: siteFire.gtag,
       data: req.data,
       lang: process.env.BOT_LANG,
@@ -86,18 +99,19 @@ app.get("/:lang(ru)?/pages/:pageId", async (req, res) => {
     const siteFire = siteSnap.data();
     const site = {
       name: siteFire[`name${req.data.langUpper}`],
-      rzkId: siteFire.rzkId,
       gtag: siteFire.gtag,
-      title: pageFire[`title${req.data.langUpper}`] + " - " + siteFire[`title${req.data.langUpper}`],
+      title: pageFire[`title${req.data.langUpper}`],
       contact: siteFire.contact,
       description: pageFire[`desc${req.data.langUpper}`] || siteFire[`desc${req.data.langUpper}`],
       data: req.data,
       lang: process.env.BOT_LANG,
       currency: process.env.BOT_CURRENCY,
+      locale: locale[req.data.langUpper],
+      rzkDomain: process.env.BOT_SITE,
     };
     const products = [];
     if (pageFire.catalogId) {
-      const query = getFirestore().collectionGroup("products").where("catalogId", "==", pageFire.catalogId).orderBy("orderNumber").limit(20);
+      const query = getFirestore().collectionGroup("products").where("catalogId", "==", pageFire.catalogId).orderBy("orderNumber").limit(50);
       // get products
       const productsSnapshot = await query.get();
       // generate products array
@@ -107,6 +121,7 @@ app.get("/:lang(ru)?/pages/:pageId", async (req, res) => {
           name: site.data.lang === "ru-ua" ? (product.data().nameRu || product.data().name) : product.data().name,
           price: product.data().price,
           unit: product.data().unit,
+          objectId: product.data().objectId,
           objectName: product.data().objectName,
         });
       }
