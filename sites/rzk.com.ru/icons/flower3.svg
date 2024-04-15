@@ -1,14 +1,17 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Generator: Adobe Illustrator 23.1.1, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
-<svg version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
-	 viewBox="0 0 480 480" style="enable-background:new 0 0 480 480;" xml:space="preserve">
-<style type="text/css">
-	.st0{fill:#222221;}
-</style>
-<g>
-	<path class="st0" d="M368,392H112c-13.2,0-24-10.8-24-24V112c0-13.2,10.8-24,24-24h256c13.2,0,24,10.8,24,24v256
-		C392,381.2,381.2,392,368,392z M112,104c-4.4,0-8,3.6-8,8v256c0,4.4,3.6,8,8,8h256c4.4,0,8-3.6,8-8V112c0-4.4-3.6-8-8-8H112z"/>
-	<path class="st0" d="M312,336H168c-13.2,0-24-10.8-24-24V168c0-13.2,10.8-24,24-24h144c13.2,0,24,10.8,24,24v144
-		C336,325.2,325.2,336,312,336z M168,160c-4.4,0-8,3.6-8,8v144c0,4.4,3.6,8,8,8h144c4.4,0,8-3.6,8-8V168c0-4.4-3.6-8-8-8H168z"/>
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="240" height="320" viewBox="0 0 240 320" xml:space="preserve">
+<desc>Created with Fabric.js 5.3.0</desc>
+<defs>
+</defs>
+<g transform="matrix(0.6666666667 0 0 0.6666666667 120 160)" id="T2uWpK2NdhNWBRYDrCEQX"  >
+<g style=""   >
+		<g transform="matrix(1 0 0 1 0 0)" id="SZUjARZQg6rOdYTEaJCFT"  >
+<path style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(34,34,33); fill-rule: nonzero; opacity: 1;"  transform=" translate(-240, -240)" d="M 368 392 L 112 392 C 98.8 392 88 381.2 88 368 L 88 112 C 88 98.8 98.8 88 112 88 L 368 88 C 381.2 88 392 98.8 392 112 L 392 368 C 392 381.2 381.2 392 368 392 z M 112 104 C 107.6 104 104 107.6 104 112 L 104 368 C 104 372.4 107.6 376 112 376 L 368 376 C 372.4 376 376 372.4 376 368 L 376 112 C 376 107.6 372.4 104 368 104 L 112 104 z" stroke-linecap="round" />
+</g>
+		<g transform="matrix(1 0 0 1 0 0)" id="An2ckg4nTUKz3qNhV_stY"  >
+<path style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(34,34,33); fill-rule: nonzero; opacity: 1;"  transform=" translate(-240, -240)" d="M 312 336 L 168 336 C 154.8 336 144 325.2 144 312 L 144 168 C 144 154.8 154.8 144 168 144 L 312 144 C 325.2 144 336 154.8 336 168 L 336 312 C 336 325.2 325.2 336 312 336 z M 168 160 C 163.6 160 160 163.6 160 168 L 160 312 C 160 316.4 163.6 320 168 320 L 312 320 C 316.4 320 320 316.4 320 312 L 320 168 C 320 163.6 316.4 160 312 160 L 168 160 z" stroke-linecap="round" />
+</g>
+</g>
 </g>
 </svg>

@@ -14,7 +14,7 @@ const locale = {
     code: "Код товара",
     name: "Наименование",
     price: "Цена",
-    products: "Товары",
+    products: "Товары и услуги",
   },
 };
 // tralling slashes set domain and locale
@@ -120,9 +120,7 @@ app.get("/:lang(ru)?/pages/:pageId", async (req, res) => {
           id: product.id,
           name: site.data.lang === "ru-ua" ? (product.data().nameRu || product.data().name) : product.data().name,
           price: product.data().price,
-          unit: product.data().unit,
           objectId: product.data().objectId,
-          objectName: product.data().objectName,
         });
       }
     }

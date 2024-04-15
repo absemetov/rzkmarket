@@ -74,6 +74,14 @@ app.use(cookieParser());
 const hbs = exphbs.create({
   extname: ".hbs",
   helpers: {
+    phoneFormat(phone) {
+      const matches = String(phone).match(/([\d]*)([\d]{3})([\d]{3})([\d]{2})([\d]{2})$/);
+      if (matches) {
+        return `+${matches[1]} ${matches[2]} ${matches[3]} ${matches[4]} ${matches[5]}`;
+      } else {
+        return phone;
+      }
+    },
     orderStatus(statusId) {
       return store.statuses().get(statusId);
     },
@@ -108,18 +116,21 @@ const hbs = exphbs.create({
     url(value) {
       return encodeURIComponent(value);
     },
-    encodeUrl(botName, objectId, type, elementId, domain) {
+    encodeUrl(botName, objectId, type, elementId, domain, text) {
       const param = btoa(`o_${objectId}_${type}_${elementId}`);
       if (type === "c" && param.length > 64) {
-        return encodeURIComponent(`${domain}/c/${elementId.replace(/#/g, "/")}`);
+        return `https://t.me/share/url?url=${encodeURIComponent(`${domain}/c/${elementId.replace(/#/g, "/")}`)}&text=${encodeURIComponent(text)}`;
       }
       if (type === "p" && param.length > 64) {
-        return encodeURIComponent(`${domain}/o/${objectId}/p/${elementId}`);
+        return `https://t.me/share/url?url=${encodeURIComponent(`${domain}/o/${objectId}/p/${elementId}`)}&text=${encodeURIComponent(text)}`;
       }
-      return encodeURIComponent(`https://t.me/${botName}?start=${param}`);
+      return `https://t.me/${botName}?start=${param}`;
     },
     encode(...value) {
-      // delete options element
+      // remove empty elemets
+      // console.log(value.filter((n) => n));
+      // remove last elemet
+      // slice(0, -1)
       return encodeURIComponent(value.filter((n) => n).slice(0, -1).join(" - "));
     },
   },
@@ -161,17 +172,11 @@ app.get("/:lang(ru)?", auth, async (req, res) => {
   // banners
   const banners = await store.findAll("banners");
   // TODO products sail
-  // const startAfter = req.query.startAfter;
-  // const objectId = req.query.objectId;
   const products = [];
   let nextUrl = null;
   // numberOrders or numberSail
   const mainQuery = getFirestore().collectionGroup("products").orderBy("numberSails", "desc");
   let query = mainQuery;
-  // if (startAfter) {
-  //   const startAfterProduct = await getFirestore().collection("objects").doc(objectId).collection("products").doc(startAfter).get();
-  //   query = query.startAfter(startAfterProduct);
-  // }
   // prev button
   query = query.limit(20);
   // get products
@@ -281,6 +286,7 @@ app.get("/search*", auth, async (req, res) => {
 });
 
 // show object
+// TODO add top40 products and Algolia link
 app.get("/:lang(ru)?/o/:objectId", auth, async (req, res) => {
   const object = await store.findRecord(`objects/${req.params.objectId}`);
   if (object) {
@@ -298,11 +304,40 @@ app.get("/:lang(ru)?/o/:objectId", auth, async (req, res) => {
       object.siteDesc = object.siteDescRu || object.siteDesc;
     }
     const cartInfo = await cart.cartInfo(req.user.uid);
+    // get products
+    const products = [];
+    const productsSnapshot = await getFirestore().collection(`objects/${req.params.objectId}/products`).orderBy("numberSails", "desc").limit(40).get();
+    for (const product of productsSnapshot.docs) {
+      const productObj = {
+        id: product.id,
+        name: envSite.data.lang === "ru-ua" ? (product.data().nameRu || product.data().name) : product.data().name,
+        brand: product.data().brand ? product.data().brand : null,
+        brandSite: product.data().brandSite ? product.data().brandSite : null,
+        price: product.data().price,
+        unit: product.data().unit,
+        url: `/o/${product.data().objectId}/p/${product.id}`,
+        img1: "/icons/flower3.svg",
+        img2: "/icons/flower3.svg",
+        objectId: product.data().objectId,
+        objectName: product.data().objectName,
+        availability: product.data().availability,
+      };
+      // set photo
+      if (product.data().mainPhoto) {
+        productObj.img1 = bucket.file(`photos/o/${product.data().objectId}/p/${product.id}/${product.data().mainPhoto}/1.jpg`)
+            .publicUrl();
+        productObj.img2 = bucket.file(`photos/o/${product.data().objectId}/p/${product.id}/${product.data().mainPhoto}/2.jpg`)
+            .publicUrl();
+      }
+      // add to array
+      products.push(productObj);
+    }
     return res.render("object", {
       cartInfo,
-      title: `${object.description} - ${object.name}`,
+      title: `${object.name} - ${object.description}`,
       description: object.siteDesc,
       object,
+      products,
       envSite});
   } else {
     // return res.redirect("/");
@@ -384,11 +419,13 @@ app.get("/:lang(ru)?/c/:catalogPath(*)?", auth, async (req, res) => {
     // generate products array
     for (const product of productsSnapshot.docs) {
       const productObj = {
+        service: !!product.data().phone,
         id: product.id,
         name: envSite.data.lang === "ru-ua" ? (product.data().nameRu || product.data().name) : product.data().name,
         brand: product.data().brand ? product.data().brand : null,
         brandSite: product.data().brandSite ? product.data().brandSite : null,
         price: product.data().price,
+        phone: product.data().phone,
         unit: product.data().unit,
         url: `/o/${product.data().objectId}/p/${product.id}`,
         img1: "/icons/flower3.svg",
@@ -432,6 +469,11 @@ app.get("/:lang(ru)?/c/:catalogPath(*)?", auth, async (req, res) => {
           }
           tags.push(tagObj);
         }
+        // add Algolia search link
+        tags.push({
+          text: envSite.i18n.btnFilter,
+          url: `/search/${currentCatalog.pathArray.map((catalog) => encodeURIComponent(catalog.name)).join("/")}`,
+        });
       }
       // endBefore prev button e paaram
       const endBeforeSnap = productsSnapshot.docs[0];
@@ -469,6 +511,7 @@ app.get("/:lang(ru)?/o/:objectId/p/:productId", auth, async (req, res) => {
   const productId = req.params.productId;
   const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
   if (product) {
+    product.service = !!product.phone;
     // set page description
     if (envSite.data.lang === "ru-ua") {
       product.name = product.nameRu || product.name;
@@ -807,7 +850,7 @@ app.post("/cart/purchase", auth, (req, res) => {
     const rulesOrder = {
       "lastName": "required|string",
       "firstName": "required|string",
-      "phoneNumber": ["required", `regex:/${process.env.BOT_PHONEREGEXP}`],
+      "phoneNumber": ["required", `regex:${process.env.BOT_PHONEREGEXP}`],
       "address": "required|string",
       "carrierId": "required|integer",
       "paymentId": "required|integer",

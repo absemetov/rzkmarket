@@ -1,5 +1,6 @@
 const {store, cart, photoCheckUrl} = require("./bot_store_cart");
 const {uploadCatalogs} = require("./bot_upload_scene");
+const {uploadElektriks} = require("./bot_upload_scene");
 const startActions = [];
 const TelegrafI18n = require("telegraf-i18n");
 const path = require("path");
@@ -52,7 +53,10 @@ const startHandler = async (ctx, startParam) => {
     // get product
     if (objectType === "p") {
       const product = await store.findRecord(`objects/${objectId}/products/${objectTypeId}`);
-      if (product) {
+      if (product.phone) {
+        inlineKeyboardArray.push([{text: `🧑‍🔧 ${product.brand ? product.brand + " " : ""}${product.name} (${product.id})`,
+          callback_data: `p/${product.id}/${objectId}`}]);
+      } else {
         inlineKeyboardArray.push([{text: `📦 ${product.brand ? product.brand + " " : ""}${product.name} (${product.id})`,
           callback_data: `k/${product.id}/${objectId}`}]);
       }
@@ -180,6 +184,18 @@ startActions.push(async (ctx, next) => {
       await ctx.answerCbQuery();
       return;
     }
+    // upload elektriks
+    const uploadElektriksAction = ctx.state.searchParams.get("uploadElektriks");
+    if (uploadElektriksAction) {
+      try {
+        // await uploadProducts(bot.telegram, objectId, uploads.sheetId, uploads.pageName);
+        await uploadElektriks(ctx);
+      } catch (error) {
+        await ctx.replyWithHTML(`Sheet ${error}`);
+      }
+      await ctx.answerCbQuery();
+      return;
+    }
     // delete session path order if not edit
     if (!ctx.state.sessionMsg.url.searchParams.get("orderData_id")) {
       ctx.state.sessionMsg.url.searchParams.delete("pathOrderCurrent");
@@ -226,7 +242,7 @@ startActions.push(async (ctx, next) => {
           inlineKeyboardArray.push([{text: "📮 Загрузить товары в мерч",
             callback_data: `upload/${object.id}?todo=uploadToMerchant`}]);
         }
-        caption += `https://docs.google.com/spreadsheets/d/${object.sheetId}\n`;
+        caption += `\nhttps://docs.google.com/spreadsheets/d/${object.sheetId}\n`;
       }
       caption += ctx.state.sessionMsg.linkHTML();
       inlineKeyboardArray.push([
@@ -258,6 +274,8 @@ startActions.push(async (ctx, next) => {
           inlineKeyboardArray.push([{text: "🎞 Banners", callback_data: "d"}]);
           inlineKeyboardArray.push([{text: "📥 Upload catalogs",
             callback_data: "o?uploadCatalogs=true"}]);
+          inlineKeyboardArray.push([{text: "📥 Upload Elektriks",
+            callback_data: "o?uploadElektriks=true"}]);
         }
         // edit mode
         if (ctx.state.sessionMsg.url.searchParams.get("editMode")) {

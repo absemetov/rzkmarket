@@ -27,8 +27,8 @@
 <h1 class="display-6 mt-3">{{envSite.i18n.aCatGoods}}</h1>
 <div class="list-group my-3">
   {{#each catalogs as |catalog|}}
-    <a href="{{catalog.url}}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-      {{catalog.name}}
+    <a href="{{catalog.url}}" class="list-group-item list-group-item-action">
+      <i class="bi bi-folder"></i> {{catalog.name}}
     </a>
   {{/each}}
 </div>

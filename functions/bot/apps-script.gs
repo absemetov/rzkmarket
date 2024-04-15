@@ -1,4 +1,4 @@
-/** @OnlyCurrentDoc 5.01.2024*/
+/** @OnlyCurrentDoc 26.03.2024*/
 function onEdit(e){
   const range = e.range;
   // range.setNote('Last modified: ' + new Date());
@@ -12,6 +12,13 @@ function onEdit(e){
       const row = cell.getRow();
       const validRange = /^products/.test(sheet.getName()) && column < 10 && row > 1;
       const validCell = validRange && cell.getValue();
+      // service sheet update timestamp
+
+      const validRangeService = /^service/.test(sheet.getName()) && column < 8 && row > 1;
+      const validCellService = validRangeService && cell.getValue();
+      if (validCellService) {
+        sheet.getRange(row, 8).setValue(timestamp);
+      }
       
       // validateGroup upd timestamp catalogs sheet
       if (/^catalogs/.test(sheet.getName()) && column < 2 && row > 1 && cell.getValue()) {
@@ -85,8 +92,8 @@ function validateGroup(cell, row, column, sheet) {
   }
   // const delCatalogs = [];
   catalogsArray.forEach((catalogName) => {
-    const options = catalogName.match(/^\s*([\wа-яА-ЯіїєґІЇЄҐ][\wа-яА-ЯіїєґІЇЄҐ\s(),-]*[\wа-яА-ЯіїєґІЇЄҐ)])\s*\|?\s*([\wа-яА-Я][\wа-яА-Я\s(),-]*[\wа-яА-Я)])?\s*\[\s*([\w][\w-]*[\w])?\s*,\s*([\d]+\s*)\s*,?\s*(del)?\s*\]\s*$/) || [];
-    if (options.length) {
+    const options = catalogName.match(/^\s*([\wа-яА-ЯіїєґІЇЄҐ][\wа-яА-ЯіїєґІЇЄҐ\s(),-]*[\wа-яА-ЯіїєґІЇЄҐ)])\s*\|?\s*([\wа-яА-Я][\wа-яА-Я\s(),-]*[\wа-яА-Я)])?\s*\[\s*([\w][\w-]*[\w])?\s*,\s*([\d]+\s*)\s*,?\s*(del)?\s*\]\s*$/);
+    if (options) {
       const id = options[3] ? options[3] : translit(options[1]);
       const valid_fail = validate(id, 40);
       if (valid_fail) {
@@ -178,6 +185,6 @@ const lettersRuUk = {
 function translit(word) {
   return word.toString().split("").map((letter) => {
     const lowLetter = letter.toLowerCase();
-    return lowLetter in lettersRuUk ? lettersRuUk[lowLetter] : (/[a-z]/.test(lowLetter) ? lowLetter : "");
+    return lowLetter in lettersRuUk ? lettersRuUk[lowLetter] : (/[a-z\d]/.test(lowLetter) ? lowLetter : "");
   }).join("");
 }

@@ -17,15 +17,13 @@
         <tr>
           <th scope="col">{{site.locale.name}}</th>
           <th scope="col">{{site.locale.price}}</th>
-          <th scope="col">Склад</th>
         </tr>
       </thead>
       <tbody>
         {{#each page.products as |product|}}
           <tr>
             <th scope="row"><a href="{{../site.rzkDomain}}/o/{{product.objectId}}/p/{{product.id}}" target="_blank">{{product.name}}</a> ({{product.id}})</th>
-            <td>{{product.price}} {{../site.currency}} ({{product.unit}})</td>
-            <td>{{product.objectName}}</td>
+            <td>{{product.price}} {{../site.currency}}</td>
           </tr>
         {{/each}}
       </tbody>

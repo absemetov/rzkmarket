@@ -3,7 +3,7 @@
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
-      <script type="module" crossorigin src="/assets/index-99166414.js"></script>
+      <script type="module" crossorigin src="/assets/index-07745b19.js"></script>
       <link rel="stylesheet" href="/assets/index-5b326555.css">
       <title>{{#if title}}{{title}} | {{envSite.i18n.siteName}}{{else}}{{envSite.i18n.siteTitle}}{{/if}}</title>
       <link rel="icon" href="/favicon-{{envSite.lang}}.ico">
@@ -80,7 +80,7 @@
       <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{envSite.gtag}}"
       height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <!-- End Google Tag Manager (noscript) -->
-      <nav class="navbar navbar-expand navbar-dark bg-dark">
+      <nav class="navbar navbar-expand navbar-dark bg-{{#if (equals envSite.data.lang "uk")}}dark{{else}}secondary{{/if}}">
         <div class="container-xl">
           <button class="navbar-toggler d-inline" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
             <span class="navbar-toggler-icon"></span>
@@ -123,8 +123,12 @@
             {{#each envSite.i18n.phones as |phone|}}
               <a class="nav-link" href="tel:{{phone}}"><i class="bi bi-telephone-fill"></i> {{phone}}</a>
             {{/each}}
-            <a class="nav-link" href="//t.me/{{envSite.botName}}" target="_blank"><i class="bi bi-telegram"></i> Бот @{{envSite.botName}}</a>
-            <a class="nav-link" href="//t.me/{{envSite.chatName}}" target="_blank"><i class="bi bi-telegram"></i> Чат @{{envSite.chatName}}</a>
+            <a class="nav-link" href="//t.me/{{envSite.botName}}" target="_blank"><i class="bi bi-telegram"></i> Telegram бот @{{envSite.botName}}</a>
+            <a class="nav-link" href="//t.me/{{envSite.chatName}}" target="_blank"><i class="bi bi-telegram"></i> Telegram чат @{{envSite.chatName}}</a>
+            {{#if (equals envSite.data.lang "ru")}}
+            <a class="nav-link" href="//t.me/rzkmarket" target="_blank"><i class="bi bi-telegram"></i> Telegram канал @RzkMarket</a>
+            <a class="nav-link" href="//www.instagram.com/rzkmarket" target="_blank"><i class="bi bi-instagram"></i> Instagram @rzkmarket</a>
+            {{/if}}
             <a class="nav-link" href="mailto:{{envSite.email}}"><i class="bi bi-envelope-fill"></i> {{envSite.email}}</a>
             <a class="nav-link" href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/news">{{envSite.i18n.tNews}}</a>
             <a class="nav-link" href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}/delivery-info">{{envSite.i18n.aDelivery}}</a>
@@ -133,7 +137,7 @@
               <a class="nav-link" href="//gunsan.com.ua" target="_blank">Gunsan.com.ua</a>
               <a class="nav-link" href="//nilson.com.ua" target="_blank">Nilson.com.ua</a>
             {{/if}}
-            <a class="nav-link disabled" href="#">Viko by Panasonic © {{year}}</a>
+            <a class="nav-link disabled" href="#">{{envSite.i18n.siteName}} © {{year}}</a>
             </nav>
         </div>
       </div>
@@ -144,7 +148,7 @@
           </button>
         </div>
         <div class="row">
-          <div class="col fs-3" id="stats"></div>
+          <div class="col fs-3 mb-3 d-none" id="stats"></div>
         </div>
         <div class="row">
           <div class="col-lg-3">
@@ -209,8 +213,8 @@
             </div>
           </div>
           <div class="col-md-12 col-lg-9">
-            <h1 id="cat_header" class="d-block d-lg-none"></h1>
-            <ul id="current-refinements" class="nav"></ul>
+            <h3 id="cat_header" class="mb-3 d-block d-lg-none d-none"></h3>
+            <ul id="current-refinements" class="nav mb-3 d-none"></ul>
             <div id="hits" class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 g-2"></div>
             <div id="loading-indicator">
               <div class="d-flex justify-content-center mt-3">

@@ -79,7 +79,7 @@
       <div class="col">
         <div class="card text-center h-100">
           <a href="{{#if (equals ../envSite.data.lang "ru-ua")}}/ru{{/if}}{{catalog.url}}">
-            <img src="{{photoProxy catalog.img1 ../envSite.lang}}" class="card-img-top" onerror="this.src = '/icons/photo_error_{{../envSite.lang}}.svg';" alt="{{catalog.name}}">
+            <img src="{{photoProxy catalog.img1 ../envSite.lang}}" class="card-img-top" alt="{{catalog.name}}">
           </a>
           <div class="card-body">
             <h6>
@@ -92,7 +92,7 @@
                 <img src="/icons/zoom-in.svg" width="21" height="21" alt="zoom img">
               </a>
             {{/if}}
-            <a href="https://t.me/share/url?url={{encodeUrl ../envSite.botName "_" "c" catalog.id ../envSite.domain}}&text={{encode catalog.name}}" target="_blank">
+            <a href="{{encodeUrl ../envSite.botName "_" "c" catalog.id ../envSite.domain catalog.name}}" target="_blank">
               <i class="bi bi-telegram"></i> Share
             </a>
           </div>

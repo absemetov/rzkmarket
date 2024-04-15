@@ -65,7 +65,7 @@
         <button class="btn btn-primary d-block d-lg-none mb-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasResponsive" aria-controls="offcanvasResponsive">Фильтр</button>
       </div>
       <div class="row">
-        <div class="col fs-3" id="stats"></div>
+        <div class="col fs-3 mb-3 d-none" id="stats"></div>
       </div>
       <div class="row">
         <div class="col-lg-3">
@@ -130,8 +130,8 @@
           </div>
         </div>
         <div class="col-md-12 col-lg-9">
-          <h1 id="cat_header" class="d-block d-lg-none"></h1>
-          <ul id="current-refinements" class="nav"></ul>
+          <h3 id="cat_header" class="mb-3 d-block d-lg-none d-none"></h3>
+          <ul id="current-refinements" class="nav mb-3 d-none"></ul>
           <div id="hits" class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 g-2"></div>
           <div id="loading-indicator">
             <div class="d-flex justify-content-center mt-3">
@@ -239,7 +239,7 @@
             </div>
             <div class="modal-footer">
               <button type="button" id="deleteFromCart" class="btn btn-danger">Удалить</button>
-              <button type="submit" id="addToCart" class="btn btn-primary" data-lang="ru" data-dev-prefix="">Купить</button>
+              <button type="submit" id="addToCart" class="btn btn-primary" data-lang="uk" data-dev-prefix="dev_">Купить</button>
             </div>
           </form>
         </div>

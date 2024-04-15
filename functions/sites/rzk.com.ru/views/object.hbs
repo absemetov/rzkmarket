@@ -1,7 +1,7 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="/{{#if (equals envSite.data.lang "ru-ua")}}ru{{/if}}" class="link-dark link-underline-opacity-0 link-underline-opacity-100-hover"><i class="bi bi-house"></i></a></li>
-    <li class="breadcrumb-item active" aria-current="page">{{object.name}}</li>
+    <li class="breadcrumb-item active" aria-current="page">{{envSite.i18n.tSeller}} {{object.name}}</li>
   </ol>
 </nav>
 <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2">
@@ -34,3 +34,11 @@
     </div>
   </div>
 </div>
+{{#if products}}
+  <h1 class="display-6 mt-3">{{envSite.i18n.aCatGoods}} TOP40 <a href="/search/?seller={{url object.name}}">{{envSite.i18n.aAllGoods}}</a></h1>
+  <div id="products" class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 g-2 my-2">
+    {{#each products as |product|}}
+      {{> product product=product envSite=../envSite}}
+    {{/each}}
+  </div>
+{{/if}}

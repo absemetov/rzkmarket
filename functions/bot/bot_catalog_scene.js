@@ -6,207 +6,6 @@ const {searchProductHandle, algoliaIndexProducts} = require("./bot_search");
 const {parseUrl} = require("./bot_start_scene");
 // catalogs actions array
 const catalogsActions = [];
-// show catalogs and goods
-// const showCatalog = async (ctx, next) => {
-//   if (ctx.state.pathParams[0] === "c") {
-//     // get btn url
-//     const inlineKeyboard = ctx.callbackQuery.message.reply_markup.inline_keyboard;
-//     let urlBtn = new URL(process.env.BOT_SITE);
-//     inlineKeyboard.forEach((btnArray) => {
-//       if (btnArray[0].url) {
-//         urlBtn = new URL(btnArray[0].url);
-//       }
-//     });
-//     const objectId = ctx.state.searchParams.get("o") || ctx.state.sessionMsg.url.searchParams.get("oId");
-//     if (ctx.state.searchParams.get("o")) {
-//       ctx.state.sessionMsg.url.searchParams.set("oId", objectId);
-//     }
-//     const cartButtons = await cart.cartButtons(objectId, ctx);
-//     let catalogId = ctx.state.pathParams[1];
-//     const tag = ctx.state.searchParams.get("t");
-//     const sessionTag = urlBtn.searchParams.getAll("sessionTag")[tag];
-//     const tagName = sessionTag && encodeCyrillic(sessionTag, true) || null;
-//     const back = ctx.state.searchParams.get("b");
-//     const startAfter = ctx.state.searchParams.get("s");
-//     const endBefore = ctx.state.searchParams.get("e");
-//     const upCatalog = ctx.state.searchParams.get("up");
-//     const inCatalog = ctx.state.searchParams.get("in");
-//     let publicImgUrl = null;
-//     const object = await store.findRecord(`objects/${objectId}`);
-//     if (object.photoId) {
-//       publicImgUrl = `photos/o/${objectId}/logo/${object.photoId}/2.jpg`;
-//     }
-//     const inlineKeyboardArray =[];
-//     const pathC = ctx.callbackQuery.data
-//         .replace("?up=1", "")
-//         .replace("?in=1", "");
-//     ctx.state.sessionMsg.url.searchParams.set("pathC", pathC);
-//     ctx.state.sessionMsg.url.searchParams.delete("cart");
-//     let currentCatalog;
-//     if (catalogId) {
-//       const pathUrl = ctx.state.sessionMsg.url.searchParams.get("pathU") || "";
-//       if (upCatalog) {
-//         // clear last cat
-//         catalogId = pathUrl.split(/#[a-zA-Z0-9-_]+$/)[0];
-//       } else if (inCatalog) {
-//         catalogId = `${pathUrl ? `${pathUrl}#` : ""}${catalogId}`;
-//       } else {
-//         catalogId = pathUrl;
-//       }
-//       ctx.state.sessionMsg.url.searchParams.set("pathU", catalogId);
-//       currentCatalog = await store.findRecord(`objects/${objectId}/catalogs/${catalogId}`);
-//       if (!currentCatalog) {
-//         await ctx.answerCbQuery("Catalog not found");
-//         return;
-//       }
-//       // back button
-//       inlineKeyboardArray.push([{text: `⤴️ ${currentCatalog.pathArray.length > 1 ? currentCatalog.pathArray[currentCatalog.pathArray.length - 2].name : ctx.i18n.btn.catalog()}`,
-//         callback_data: currentCatalog.parentId ? `c/${currentCatalog.parentId.substring(currentCatalog.parentId.lastIndexOf("#") + 1)}?up=1` : "c"}]);
-//       if (ctx.state.isAdmin && ctx.state.sessionMsg.url.searchParams.get("editMode")) {
-//         inlineKeyboardArray.push([{text: `📸 Загрузить фото каталога ${currentCatalog.name}`,
-//           callback_data: `u/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?todo=cat`}]);
-//         inlineKeyboardArray.push([{text: `📖 Описание Uk ${currentCatalog.name}`,
-//           callback_data: `u/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?todo=changeCatalog&field=desc`}]);
-//         inlineKeyboardArray.push([{text: `📖 Описание Ru ${currentCatalog.name}`,
-//           callback_data: `u/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?todo=changeCatalog&field=descRu`}]);
-//         inlineKeyboardArray.push([{text: `📖 Site desc Uk ${currentCatalog.name}`,
-//           callback_data: `u/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?todo=changeCatalog&field=siteDesc`}]);
-//         inlineKeyboardArray.push([{text: `📖 Site desc Ru ${currentCatalog.name}`,
-//           callback_data: `u/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?todo=changeCatalog&field=siteDescRu`}]);
-//         // inlineKeyboardArray.push([{text: `📖 PostId ${currentCatalog.name}`,
-//         //   callback_data: `u/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?todo=postId`}]);
-//       }
-//       // products query
-//       let mainQuery = getFirestore().collection("objects").doc(objectId)
-//           .collection("products").where("catalogId", "==", currentCatalog.id)
-//           .orderBy("orderNumber");
-//       // Filter by tag
-//       let tagUrl = "";
-//       if (tagName) {
-//         mainQuery = mainQuery.where("tags", "array-contains", tagName);
-//         tagUrl = `&t=${tag}`;
-//       }
-//       // show catalog siblings, get catalogs snap index or siblings
-//       const catalogsSnapshot = await getFirestore().collection("objects").doc(objectId)
-//           .collection("catalogs").where("parentId", "==", catalogId).orderBy("orderNumber").get();
-//       catalogsSnapshot.docs.forEach((doc) => {
-//         inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id.substring(doc.id.lastIndexOf("#") + 1)}?in=1`}]);
-//       });
-//       // paginate goods, copy main query
-//       let query = mainQuery;
-//       if (startAfter) {
-//         // get session
-//         const startAfterSession = back ? ctx.state.sessionMsg.url.searchParams.get("sPrev") : ctx.state.sessionMsg.url.searchParams.get("s");
-//         // for back btn
-//         ctx.state.sessionMsg.url.searchParams.set("sPrev", startAfterSession);
-//         const startAfterProduct = await getFirestore().collection("objects").doc(objectId)
-//             .collection("products")
-//             .doc(startAfterSession).get();
-//         query = query.startAfter(startAfterProduct);
-//       }
-//       // prev button
-//       if (endBefore) {
-//         const endBeforeSession = back ? ctx.state.sessionMsg.url.searchParams.get("ePrev") : ctx.state.sessionMsg.url.searchParams.get("e");
-//         ctx.state.sessionMsg.url.searchParams.set("ePrev", endBeforeSession);
-//         const endBeforeProduct = await getFirestore().collection("objects").doc(objectId)
-//             .collection("products")
-//             .doc(endBeforeSession).get();
-//         query = query.endBefore(endBeforeProduct).limitToLast(10);
-//       } else {
-//         query = query.limit(10);
-//       }
-//       // get products
-//       const productsSnapshot = await query.get();
-//       // get products tags
-//       if (!productsSnapshot.empty && catalogsSnapshot.empty) {
-//         const tagsArray = [];
-//         tagsArray.push({text: ctx.i18n.btn.filter(),
-//           callback_data: `t/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}`});
-//         // Delete or close selected tag
-//         if (tag) {
-//           tagsArray[0].callback_data = `t/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?tS=${tag}`;
-//           tagsArray.push({text: `❎ ${tagName}`, callback_data: `c/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}`});
-//         }
-//         inlineKeyboardArray.push(tagsArray);
-//       }
-//       // get cart product
-//       const cartProductsArray = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`, "products");
-//       // generate products array
-//       for (const product of productsSnapshot.docs) {
-//         const addButton = {text: `📦 ${product.data().price.toLocaleString("ru-RU")}` +
-//         `${process.env.BOT_CURRENCY} ${product.data().name} (${product.id}) ${product.data().brand ? product.data().brand : ""}`,
-//         callback_data: `p/${product.id}`};
-//         // get cart products
-//         const cartProduct = cartProductsArray && cartProductsArray[product.id];
-//         if (cartProduct) {
-//           addButton.text = `🛒${cartProduct.qty}${cartProduct.unit} ` +
-//           `${roundNumber(cartProduct.price * cartProduct.qty).toLocaleString("ru-RU")} ` +
-//           `${process.env.BOT_CURRENCY} ${product.data().name} (${product.id}) ${product.data().brand ? product.data().brand : ""}`;
-//           addButton.callback_data = `p/${product.id}`;
-//         }
-//         inlineKeyboardArray.push([addButton]);
-//       }
-//       // Set load more button
-//       if (!productsSnapshot.empty) {
-//         const prevNext = [];
-//         // endBefore prev button e paaram
-//         const endBeforeSnap = productsSnapshot.docs[0];
-//         const ifBeforeProducts = await mainQuery.endBefore(endBeforeSnap).limitToLast(1).get();
-//         if (!ifBeforeProducts.empty) {
-//           // set session
-//           ctx.state.sessionMsg.url.searchParams.set("e", endBeforeSnap.id);
-//           prevNext.push({text: ctx.i18n.btn.previous(),
-//             callback_data: `c/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?e=1${tagUrl}`});
-//         }
-//         // startAfter
-//         const startAfterSnap = productsSnapshot.docs[productsSnapshot.docs.length - 1];
-//         const ifAfterProducts = await mainQuery.startAfter(startAfterSnap).limit(1).get();
-//         if (!ifAfterProducts.empty) {
-//           // set session
-//           ctx.state.sessionMsg.url.searchParams.set("s", startAfterSnap.id);
-//           prevNext.push({text: ctx.i18n.btn.next(),
-//             callback_data: `c/${currentCatalog.id.substring(currentCatalog.id.lastIndexOf("#") + 1)}?s=1${tagUrl}`});
-//         }
-//         inlineKeyboardArray.push(prevNext);
-//       }
-//       // get photo catalog
-//       if (currentCatalog.photoId) {
-//         publicImgUrl = `photos/o/${objectId}/c/${currentCatalog.id.replace(/#/g, "-")}/${currentCatalog.photoId}/2.jpg`;
-//       }
-//     } else {
-//       ctx.state.sessionMsg.url.searchParams.delete("pathU");
-//       const catalogsSnapshot = await getFirestore().collection("objects").doc(objectId)
-//           .collection("catalogs")
-//           .where("parentId", "==", null).orderBy("orderNumber").get();
-//       catalogsSnapshot.docs.forEach((doc) => {
-//         inlineKeyboardArray.push([{text: `🗂 ${doc.data().name}`, callback_data: `c/${doc.id.substring(doc.id.lastIndexOf("#") + 1)}?in=1`}]);
-//       });
-//     }
-//     // cart buttons
-//     cartButtons[0].text = `🏪 ${object.name}`;
-//     inlineKeyboardArray.push(cartButtons);
-//     inlineKeyboardArray.push([
-//       {
-//         text: `${catalogId ? currentCatalog.name : ctx.i18n.btn.catalog()}`,
-//         url: `${process.env.BOT_SITE}/o/${objectId}/c${catalogId ? "/" + catalogId.replace(/#/g, "/") : ""}?${urlBtn.searchParams.toString()}`,
-//       },
-//     ]);
-//     // render
-//     const media = await photoCheckUrl(publicImgUrl);
-//     await ctx.editMessageMedia({
-//       type: "photo",
-//       media,
-//       caption: `<b>${object.name} > ${currentCatalog && currentCatalog.pathArray ? `${ctx.i18n.btn.catalog()} > ${currentCatalog.pathArray.map((cat) => cat.name).join(" > ")}` : ctx.i18n.btn.catalog()}</b>` + ctx.state.sessionMsg.linkHTML(),
-//       parse_mode: "html",
-//     }, {reply_markup: {
-//       inline_keyboard: inlineKeyboardArray,
-//     }});
-//     await ctx.answerCbQuery();
-//   } else {
-//     return next();
-//   }
-// };
-// catalogsActions.push(showCatalog);
 
 // show product
 const showProduct = async (ctx, next) => {
@@ -228,11 +27,11 @@ const showProduct = async (ctx, next) => {
     }
     // get product data
     const productId = ctx.state.pathParams[1];
-    const objectId = ctx.state.sessionMsg.url.searchParams.get("oId");
-    // const objectId = ctx.state.pathParams[2] || ctx.state.sessionMsg.url.searchParams.get("oId");
-    // if (ctx.state.searchParams.get("o")) {
-    //   ctx.state.sessionMsg.url.searchParams.set("oId", objectId);
-    // }
+    // const objectId = ctx.state.sessionMsg.url.searchParams.get("oId");
+    const objectId = ctx.state.pathParams[2] || ctx.state.sessionMsg.url.searchParams.get("oId");
+    if (ctx.state.pathParams[2]) {
+      ctx.state.sessionMsg.url.searchParams.set("oId", objectId);
+    }
     // const object = await store.findRecord(`objects/${objectId}`);
     const product = await store.findRecord(`objects/${objectId}/products/${productId}`);
     if (!product) {
@@ -268,49 +67,28 @@ const showProduct = async (ctx, next) => {
     const addButton = {text: ctx.i18n.btn.buy(), callback_data: `k/${product.id}/${product.objectId}`};
     // get cart products
     const prodBtns = [];
-    // const cartProduct = await store.findRecord(`carts/${ctx.from.id}/items/${objectId}-${productId}`);
-    // ctx.state.sessionMsg.url.searchParams.delete("pCart");
-    // ctx.state.sessionMsg.url.searchParams.delete("cPrice");
-    // ctx.state.sessionMsg.url.searchParams.set("cPrice", product.price);
-    // if (cartProduct) {
-    //   // ctx.state.sessionMsg.url.searchParams.set("pCart", true);
-    //   ctx.state.sessionMsg.url.searchParams.set("cPrice", cartProduct.price);
-    //   addButton.text = `🛒 ${cartProduct.qty} ${cartProduct.unit} ` +
-    //   ` ${roundNumber(cartProduct.qty * cartProduct.price).toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}`;
-    //   addButton.callback_data = `k/${product.id}?qty=${cartProduct.qty}`;
-    //   prodBtns.push(addButton);
-    //   prodBtns.push({text: ctx.i18n.btn.del(), callback_data: `a/${productId}`});
-    // } else {
-    // if (!product.availability) {
-    //   addButton.text = ctx.i18n.txt.notAvailable();
-    //   addButton.callback_data = `p/${product.id}`;
-    // }
-    // }
     if (!product.availability) {
       addButton.text = ctx.i18n.txt.notAvailable();
       addButton.callback_data = `p/${product.id}`;
     }
     prodBtns.push(addButton);
     // buy btn
-    inlineKeyboardArray.push(prodBtns);
-    // add session vars
-    // ctx.state.sessionMsg.url.searchParams.set("pName", encodeCyrillic(`${product.name}${product.brand ? " " + product.brand : ""}`));
-    // ctx.state.sessionMsg.url.searchParams.set("pPrice", product.price);
-    // ctx.state.sessionMsg.url.searchParams.set("pUnit", product.unit);
-    // ctx.state.sessionMsg.url.searchParams.set("TTL", 1);
+    if (!product.phone) {
+      inlineKeyboardArray.push(prodBtns);
+    }
     // chck photos
     if (product.photos && product.photos.length) {
       inlineKeyboardArray.push([{text: `🖼 Фото (${product.photos.length})`,
         callback_data: `s/${product.id}`}]);
     }
     // Get main photo url.
-    // let publicImgUrl = null;
+    let publicImgUrl = null;
     // if (object.photoId) {
     //   publicImgUrl = `photos/o/${objectId}/logo/${object.photoId}/2.jpg`;
     // }
-    // if (product.mainPhoto) {
-    //   publicImgUrl = `photos/o/${product.objectId}/p/${product.id}/${product.mainPhoto}/2.jpg`;
-    // }
+    if (product.mainPhoto) {
+      publicImgUrl = `photos/o/${product.objectId}/p/${product.id}/${product.mainPhoto}/2.jpg`;
+    }
     // footer buttons
     // cartButtons[0].text = `🏪 ${object.name}`;
     // inlineKeyboardArray.push(cartButton);
@@ -321,6 +99,10 @@ const showProduct = async (ctx, next) => {
       if (btnArray[0].url) {
         urlBtn = new URL(btnArray[0].url);
       }
+      // for virtual key link in second btn
+      if (btnArray[1] && btnArray[1].url) {
+        urlBtn = new URL(btnArray[1].url);
+      }
     });
     inlineKeyboardArray.push([
       {
@@ -328,7 +110,7 @@ const showProduct = async (ctx, next) => {
         url: `${process.env.BOT_SITE}/o/${objectId}/p/${product.id}?${urlBtn.searchParams.toString()}`,
       },
     ]);
-    // const media = await photoCheckUrl(publicImgUrl);
+    const media = await photoCheckUrl(publicImgUrl);
     // admin btns
     if (ctx.state.isAdmin) {
       if (ctx.state.sessionMsg.url.searchParams.get("editMode")) {
@@ -348,16 +130,24 @@ const showProduct = async (ctx, next) => {
           callback_data: `p/${product.id}?editOn=true`}]);
       }
     }
-    // set url session
+    // edit btns service new
     if (ctx.state.isAdmin && ctx.state.sessionMsg.url.searchParams.get("editMode")) {
-      inlineKeyboardArray.push([{text: `Доступность: ${product.availability ? "В наличии" : "Нет в наличии"}`,
-        callback_data: `b/${product.id}/availability/A`}]);
-      // inlineKeyboardArray.push([{text: "Изменить наименовение товара",
-      //   callback_data: `b/${product.id}/name/C`}]);
-      inlineKeyboardArray.push([{text: `Изменить закуп цену ${product.purchasePrice.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}`,
-        callback_data: `b/${product.id}/purchasePrice/D`}]);
-      inlineKeyboardArray.push([{text: `Изменить прод цену ${product.price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}`,
-        callback_data: `b/${product.id}/price/E`}]);
+      if (!product.phone) {
+        inlineKeyboardArray.push([{text: `Доступность: ${product.availability ? "В наличии" : "Нет в наличии"}`,
+          callback_data: `b/${product.id}/availability/A`}]);
+        // inlineKeyboardArray.push([{text: "Изменить наименовение товара",
+        //   callback_data: `b/${product.id}/name/C`}]);
+        inlineKeyboardArray.push([{text: `Изменить закуп цену ${product.purchasePrice ? product.purchasePrice.toLocaleString("ru-RU") : "null"} ${process.env.BOT_CURRENCY}`,
+          callback_data: `b/${product.id}/purchasePrice/D`}]);
+        inlineKeyboardArray.push([{text: `Изменить прод цену ${product.price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}`,
+          callback_data: `b/${product.id}/price/E`}]);
+        inlineKeyboardArray.push([{text: "Удалить товар",
+          callback_data: `b/${product.id}/del`}]);
+        if (process.env.BOT_LANG === "uk") {
+          inlineKeyboardArray.push([{text: "Загрузить в Merch",
+            callback_data: `uploadMerch/${product.id}`}]);
+        }
+      }
       if (process.env.BOT_LANG === "uk") {
         inlineKeyboardArray.push([{text: "Добавить описание UA",
           callback_data: `b/${product.id}/desc`}]);
@@ -369,32 +159,28 @@ const showProduct = async (ctx, next) => {
       }
       // inlineKeyboardArray.push([{text: "Добавить пост из канала",
       //   callback_data: `b/${product.id}?todo=postId`}]);
-      inlineKeyboardArray.push([{text: "Удалить товар",
-        callback_data: `b/${product.id}/del`}]);
-      if (process.env.BOT_LANG === "uk") {
-        inlineKeyboardArray.push([{text: "Загрузить в Merch",
-          callback_data: `uploadMerch/${product.id}`}]);
-      }
       inlineKeyboardArray.push([{text: "📸 Загрузить фото",
         callback_data: `u/${product.id}/prod`}]);
     }
     // ` ${ctx.state.isAdmin && cartProduct ? `в корзине ${cartProduct.price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}` : ""}`
-    // await ctx.editMessageMedia({
-    //   type: "photo",
-    //   media,
-    //   caption: `<b>${product.objectName}\n${product.brand ? product.brand + "\n" : ""}${product.name} (${product.id})\n</b>` +
-    //   `${ctx.i18n.product.price()}: ${product.price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}` + ctx.state.sessionMsg.linkHTML(),
-    //   parse_mode: "html",
-    // }, {reply_markup: {
-    //   inline_keyboard: inlineKeyboardArray,
-    // }});
-    // edit caption after show keyboard
-    await ctx.editMessageCaption(`<b>${product.objectName}\n${product.brand ? product.brand + "\n" : ""}${product.name} (${product.id})\n</b>` +
-    `${ctx.i18n.product.price()}: ${product.price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}` + ctx.state.sessionMsg.linkHTML(), {
+    await ctx.editMessageMedia({
+      type: "photo",
+      media,
+      caption: `<b>${product.objectName}\n${product.brand ? product.brand + "\n" : ""}${product.name} (${product.id})\n` +
+      `${ctx.i18n.product.price()}: ${product.phone ? "от " : ""}${product.price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}${product.phone ? " за услугу" : ""}` +
+      `${product.phone ? "\nПозвонить +" + product.phone : ""}</b>` + ctx.state.sessionMsg.linkHTML(),
       parse_mode: "html",
-      reply_markup: {
-        inline_keyboard: inlineKeyboardArray,
-      }});
+    }, {reply_markup: {
+      inline_keyboard: inlineKeyboardArray,
+    }});
+    // edit caption after show keyboard
+    // await ctx.editMessageCaption(`<b>${product.objectName}\n${product.brand ? product.brand + "\n" : ""}${product.name} (${product.id})\n` +
+    // `${ctx.i18n.product.price()}: ${product.phone ? "от " : ""}${product.price.toLocaleString("ru-RU")} ${process.env.BOT_CURRENCY}${product.phone ? " за услугу" : ""}` +
+    // `${product.phone ? "\nПозвонить +" + product.phone : ""}</b>` + ctx.state.sessionMsg.linkHTML(), {
+    //   parse_mode: "html",
+    //   reply_markup: {
+    //     inline_keyboard: inlineKeyboardArray,
+    //   }});
     await ctx.answerCbQuery();
   } else {
     return next();
@@ -600,6 +386,10 @@ catalogsActions.push(async (ctx, next) => {
       if (btnArray[0].url) {
         urlBtn = new URL(btnArray[0].url);
       }
+      // for virtual key link in second btn
+      if (btnArray[1] && btnArray[1].url) {
+        urlBtn = new URL(btnArray[1].url);
+      }
     });
     // let msg;
     // if (changePrice) {
@@ -623,23 +413,23 @@ catalogsActions.push(async (ctx, next) => {
         {text: `📦 ${productName} (${productId})`, callback_data: `p/${productId}`},
       ],
       [
-        {text: "7️⃣", callback_data: `k/${productId}?n=7&${paramsUrl}`},
-        {text: "8️⃣", callback_data: `k/${productId}?n=8&${paramsUrl}`},
-        {text: "9️⃣", callback_data: `k/${productId}?n=9&${paramsUrl}`},
+        {text: "7", callback_data: `k/${productId}?n=7&${paramsUrl}`},
+        {text: "8", callback_data: `k/${productId}?n=8&${paramsUrl}`},
+        {text: "9", callback_data: `k/${productId}?n=9&${paramsUrl}`},
       ],
       [
-        {text: "4️⃣", callback_data: `k/${productId}?n=4&${paramsUrl}`},
-        {text: "5️⃣", callback_data: `k/${productId}?n=5&${paramsUrl}`},
-        {text: "6️⃣", callback_data: `k/${productId}?n=6&${paramsUrl}`},
+        {text: "4", callback_data: `k/${productId}?n=4&${paramsUrl}`},
+        {text: "5", callback_data: `k/${productId}?n=5&${paramsUrl}`},
+        {text: "6", callback_data: `k/${productId}?n=6&${paramsUrl}`},
       ],
       [
-        {text: "1️⃣", callback_data: `k/${productId}?n=1&${paramsUrl}`},
-        {text: "2️⃣", callback_data: `k/${productId}?n=2&${paramsUrl}`},
-        {text: "3️⃣", callback_data: `k/${productId}?n=3&${paramsUrl}`},
+        {text: "1", callback_data: `k/${productId}?n=1&${paramsUrl}`},
+        {text: "2", callback_data: `k/${productId}?n=2&${paramsUrl}`},
+        {text: "3", callback_data: `k/${productId}?n=3&${paramsUrl}`},
       ]);
       footerKeyboard.push([
         {text: "⬅️", callback_data: `k/${productId}?b=1&${paramsUrl}`},
-        {text: "0️⃣", callback_data: `k/${productId}?n=0&${paramsUrl}`},
+        {text: "0", callback_data: `k/${productId}?n=0&${paramsUrl}`},
         {text: ctx.i18n.btn.buy(), callback_data: `a/${productId}?${paramsUrl}`},
       ]);
     } else {
@@ -1500,6 +1290,10 @@ const showCatalogsAction = async (ctx, next) => {
       if (btnArray[0].url) {
         urlBtn = new URL(btnArray[0].url);
       }
+      // for virtual key link in second btn
+      if (btnArray[1] && btnArray[1].url) {
+        urlBtn = new URL(btnArray[1].url);
+      }
     });
     let catalogId = ctx.state.pathParams[1];
     const tag = ctx.state.searchParams.get("t");
@@ -1624,9 +1418,17 @@ const showCatalogsAction = async (ctx, next) => {
       const productAddedQty = + ctx.state.sessionMsg.url.searchParams.get("sQty");
       // generate products array
       for (const product of productsSnapshot.docs) {
-        const btnProduct = [{text: `${product.data().availability ? "📦" : "🚫"} ${product.data().price.toLocaleString("ru-RU")}` +
-        `${process.env.BOT_CURRENCY} ${product.data().name} (${product.id}) ${product.data().brand ? product.data().brand : ""}`,
-        callback_data: `k/${product.id}/${product.data().objectId}`}];
+        const btnProduct = [];
+        // service new
+        if (product.data().phone) {
+          btnProduct.push({text: `${product.data().availability ? "🧑‍🔧" : "🚫"} ${product.data().price.toLocaleString("ru-RU")}` +
+          `${process.env.BOT_CURRENCY} ${product.data().name} (${product.id}) ${product.data().brand ? product.data().brand : ""}`,
+          callback_data: `p/${product.id}/${product.data().objectId}`});
+        } else {
+          btnProduct.push({text: `${product.data().availability ? "📦" : "🚫"} ${product.data().price.toLocaleString("ru-RU")}` +
+          `${process.env.BOT_CURRENCY} ${product.data().name} (${product.id}) ${product.data().brand ? product.data().brand : ""}`,
+          callback_data: `k/${product.id}/${product.data().objectId}`});
+        }
         // get cart products
         // const cartProduct = cartProductsArray && cartProductsArray[product.id];
         // if (cartProduct) {

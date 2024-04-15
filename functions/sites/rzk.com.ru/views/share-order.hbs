@@ -28,7 +28,7 @@
       {{/each}}
     </tbody>
   </table>
-  <a href="https://t.me/share/url?url={{encodeUrl envSite.botName order.objectId "o" order.id envSite.domain}}&text={{encode "Order" order.objectName order.userId order.orderNumber}}" target="_blank">
+  <a href="{{encodeUrl envSite.botName order.objectId "o" order.id envSite.domain order.orderNumber}}" target="_blank">
     <i class="bi bi-telegram"></i> Share order to Bot @{{envSite.botName}}
   </a>
 </div>

@@ -528,7 +528,7 @@ const lettersRuUk = {
 function translit(word) {
   return word.toString().split("").map((letter) => {
     const lowLetter = letter.toLowerCase();
-    return lowLetter in lettersRuUk ? lettersRuUk[lowLetter] : (/[a-z]/.test(lowLetter) ? lowLetter : "");
+    return lowLetter in lettersRuUk ? lettersRuUk[lowLetter] : (/[a-z\d]/.test(lowLetter) ? lowLetter : "");
   }).join("");
 }
 

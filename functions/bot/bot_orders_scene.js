@@ -246,7 +246,7 @@ const adminOrders = async (ctx, next) => {
         `=${product.qty}${product.unit}*${product.price}${process.env.BOT_CURRENCY}` +
         `=${roundNumber(product.price * product.qty)}${process.env.BOT_CURRENCY}`;
           // truncate long string
-          if ((caption + `${productTxt}\n`).length < 950) {
+          if ((caption + `${productTxt}\n`).length < 700) {
             caption += `${productTxt}\n`;
             itemShow++;
           }
@@ -479,10 +479,12 @@ ordersActions.push(async (ctx, next) => {
       // const products = await store.findRecord(`objects/${objectId}/carts/${ctx.from.id}`, "products");
       const products = await cart.products(ctx.from.id);
       // clear cart
-      await Promise.all([
-        cart.clear(ctx.from.id),
-        store.updateRecord(`objects/${objectId}/orders/${orderId}`, {products}),
-      ]);
+      if (products.length) {
+        await Promise.all([
+          cart.clear(ctx.from.id),
+          store.updateRecord(`objects/${objectId}/orders/${orderId}`, {products}),
+        ]);
+      }
       // redirect to order
       parseUrl(ctx, `r/${orderId}`);
       await adminOrders(ctx);

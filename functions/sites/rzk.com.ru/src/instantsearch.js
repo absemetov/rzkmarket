@@ -39,8 +39,10 @@ const instantSearchRouter = historyRouter({
     if (category && category[0]) {
       title = `${title ? `${title} – ` : ""}${category[category.length - 1]}`;
       document.getElementById("cat_header").innerHTML = category[category.length - 1] || "";
+      document.getElementById("cat_header").classList.remove("d-none");
     } else {
       document.getElementById("cat_header").innerHTML = "";
+      document.getElementById("cat_header").classList.add("d-none");
     }
     if (brand && brand[0]) {
       title = `${title ? `${title} – ` : ""}${brand.join(" – ")}`;
@@ -246,25 +248,25 @@ const customInfinityHits = connectInfiniteHits((renderArgs, isFirstRender) => {
        </div>
        <ul class="list-group list-group-flush">
          <li class="list-group-item">  
-           Склад: <a href="/o/${item.sellerId}" class="link-primary link-underline-opacity-0">${item.seller}</a>
+           ${item.phone ? "Организация" : "Склад"}: <a href="/o/${item.sellerId}" class="link-primary link-underline-opacity-0">${item.seller}</a>
          </li>
          <li class="list-group-item">
-           <a href="https://t.me/share/url?url=${encodeURIComponent(`https://t.me/${i18n.bot_name}?start=${btoa(`o_${item.sellerId}_p_${item.productId}`)}`)}&text=${encodeURIComponent(`${item.seller} ${item.brand ? ` - ${item.brand} - ` : "-"} ${item.name}`)}" target="_blank">
+           <a href="https://t.me/${i18n.bot_name}?start=${btoa(`o_${item.sellerId}_p_${item.productId}`)}" target="_blank">
              <i class="bi bi-telegram"></i> Share
            </a>
          </li>
        </ul>
        <div class="card-footer">
-         <h3>${item.price} ${i18n.currency}</h3>
+         <h3>${item.phone ? "от " : ""}${item.price} ${i18n.currency}${item.phone ? " за услугу" : ""}</h3>
          <div class="d-grid gap-2">
-          <button type="button" class="btn btn-success  ${item.availability ? "" : "disabled"}" data-bs-toggle="modal"
-            data-bs-target="#cartAddModal"
-            data-product-id="${item.productId}"
-            data-product-name="${item.name}"
-            data-product-unit="${item.unit}"
-            data-seller-id="${item.sellerId}"
-            data-seller="${item.seller}"
-            data-modal-close="true">${item.availability ? i18n.btn_buy : i18n.btnNotAvailable}</button>
+          ${item.phone ? html`<a href="tel:+${item.phone}" class="btn btn-success"><i class="bi bi-telephone"></i> Позвонить</a>` : html`<button type="button" class="btn btn-success  ${item.availability ? "" : "disabled"}" data-bs-toggle="modal"
+          data-bs-target="#cartAddModal"
+          data-product-id="${item.productId}"
+          data-product-name="${item.name}"
+          data-product-unit="${item.unit}"
+          data-seller-id="${item.sellerId}"
+          data-seller="${item.seller}"
+          data-modal-close="true">${item.availability ? i18n.btn_buy : i18n.btnNotAvailable}</button>`}
          </div>
        </div>
      </div>
@@ -545,14 +547,14 @@ const createDataAttribtues = (refinement) =>
 
 const renderListItem = (item) => `
   ${item.refinements.map((refinement) =>
-    `<li class="nav-item"><span class="badge text-bg-success m-1">
+    `<li class="nav-item"><span class="badge text-bg-success me-2">
       ${refinement.label} <button type="button" class="btn-close" aria-label="Close" ${createDataAttribtues(refinement)}></button>
     </span></li>`).join("")}
 `;
 
 const renderCurrentRefinements = (renderOptions, isFirstRender) => {
   const {items, refine, widgetParams} = renderOptions;
-  items.length ? widgetParams.container.classList.add("mb-2") : widgetParams.container.classList.remove("mb-2");
+  items.length ? widgetParams.container.classList.remove("d-none") : widgetParams.container.classList.add("d-none");
   widgetParams.container.innerHTML = `
     ${items.map(renderListItem).join("")}
   `;
@@ -616,7 +618,7 @@ const renderStats = (renderOptions, isFirstRender) => {
       count += i18n.searchNotFound;
     }
   }
-  query ? widgetParams.container.classList.add("mb-2") : widgetParams.container.classList.remove("mb-2");
+  query ? widgetParams.container.classList.remove("d-none") : widgetParams.container.classList.add("d-none");
   widgetParams.container.innerHTML = `
     ${query ? `<b><q>${query}</q> ${count}</b>` : ""}
   `;

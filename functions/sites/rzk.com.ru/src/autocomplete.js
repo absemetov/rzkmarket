@@ -163,7 +163,7 @@ export function startAutocomplete() {
                     <div class="aa-ItemContentTitle text-wrap">
                       ${components.Highlight({hit: item, attribute: "name"})} (${components.Highlight({hit: item, attribute: "productId"})}) ${item.brand ? components.Highlight({hit: item, attribute: "brand"}) : ""}
                     </div>
-                    <b>${item.price} ${i18n.currency}</b>
+                    <b>${item.phone ? "от " : ""}${item.price} ${i18n.currency}${item.phone ? " за услугу" : ""}</b>
                   </div>
                 </div>
                 <div class="aa-ItemActions">
@@ -178,15 +178,16 @@ export function startAutocomplete() {
                       />
                     </svg>
                   </button>
-                  <button type="button" class="btn aa-ItemActionButton me-2 ${item.availability ? "" : "disabled"}" style="font-size: 1.5rem; color: cornflowerblue;" data-bs-toggle="modal" data-bs-target="#cartAddModal"
-                    onClick="${itemActionButtonOnClick}"
-                    data-autocomplete="true"
-                    data-product-id="${item.productId}"
-                    data-product-name="${item.name}"
-                    data-product-unit="${item.unit}"
-                    data-seller-id="${item.sellerId}"
-                    data-seller="${item.seller}"
-                    data-modal-close="true"><i class="bi bi-${item.availability ? "cart3" : "cart-x-fill"} text-success"></i></button>
+                  ${item.phone ? html`<a href="tel:+${item.phone}" class="aa-ItemActionButton me-2" style="font-size: 1.5rem; color: cornflowerblue;"><i class="bi bi-telephone"></i></a>` :
+                  html`<button type="button" class="btn aa-ItemActionButton me-2 ${item.availability ? "" : "disabled"}" style="font-size: 1.5rem; color: cornflowerblue;" data-bs-toggle="modal" data-bs-target="#cartAddModal"
+                  onClick="${itemActionButtonOnClick}"
+                  data-autocomplete="true"
+                  data-product-id="${item.productId}"
+                  data-product-name="${item.name}"
+                  data-product-unit="${item.unit}"
+                  data-seller-id="${item.sellerId}"
+                  data-seller="${item.seller}"
+                  data-modal-close="true"><i class="bi bi-${item.availability ? "cart3" : "cart-x-fill"} text-success"></i></button>`}
                 </div>
               </div>`;
             },

@@ -2,11 +2,11 @@
   <div class="card text-center{{#unless smartPhoto}} h-100{{/unless}}">
     {{#if smartPhoto}}
       <a href="{{photoProxy product.img2 envSite.lang}}" class="js-smartphoto" data-caption="{{product.name}}">
-        <img src="{{photoProxy product.img2 envSite.lang}}" onerror="this.src = '/icons/photo_error_{{envSite.lang}}.svg';" class="card-img-top" alt="{{product.name}}">
+        <img src="{{photoProxy product.img2 envSite.lang}}" class="card-img-top" alt="{{product.name}}">
       </a>
     {{else}}
       <a href="{{#if (equals envSite.data.lang "ru-ua")}}/ru{{/if}}{{product.url}}">
-        <img src="{{photoProxy product.img1 envSite.lang}}" onerror="this.src = '/icons/photo_error_{{envSite.lang}}.svg';" class="card-img-top" alt="{{product.name}}">
+        <img src="{{photoProxy product.img1 envSite.lang}}" class="card-img-top" alt="{{product.name}}">
       </a>
     {{/if}}
     <div class="card-body">
@@ -24,31 +24,44 @@
       </h6>
     </div>
     <ul class="list-group list-group-flush">
+      {{#if product.service}}
+      <li class="list-group-item">
+        {{phoneFormat product.phone}}
+      </li>
+      <li class="list-group-item">
+        Организация: <a href="/o/{{product.objectId}}" class="link-primary link-underline-opacity-0">{{product.objectName}}</a>
+      </li>
+      {{else}}
       <li class="list-group-item">
         Склад: <a href="/o/{{product.objectId}}" class="link-primary link-underline-opacity-0">{{product.objectName}}</a>
       </li>
+      {{/if}}
       <li class="list-group-item">
         {{#if (not product.img2 "/icons/flower3.svg")}}
           <a href="{{photoProxy product.img2 envSite.lang}}" class="js-smartphoto-single text-decoration-none me-3" data-caption="{{product.name}}">
             <img src="/icons/zoom-in.svg" width="21" height="21" alt="zoom img">
           </a>
         {{/if}}
-        <a href="https://t.me/share/url?url={{encodeUrl envSite.botName product.objectId "p" product.id envSite.domain}}&text={{encode product.objectName product.brand product.name}}" target="_blank">
+        <a href="{{encodeUrl envSite.botName product.objectId "p" product.id envSite.domain product.name}}" target="_blank">
           <i class="bi bi-telegram"></i> Share
         </a>
       </li>
     </ul>
     <div class="card-footer">
       <h3>
-        {{formatNumber product.price}} {{envSite.currency}}
+        {{#if product.service}}от {{/if}}{{formatNumber product.price}} {{envSite.currency}}{{#if product.service}} за услугу{{/if}}
       </h3>
       <div class="d-grid gap-2">
         {{#if product.availability}}
-        <button type="button" class="btn {{#if product.qty}}btn-primary{{else}}btn-success{{/if}}" data-bs-toggle="modal" data-bs-target="#cartAddModal"
-          data-product-id="{{product.id}}" data-product-name="{{product.name}}" data-product-unit="{{product.unit}}" data-product-qty="{{product.qty}}"
-          data-seller-id="{{product.objectId}}" data-seller="{{product.objectName}}">
-          {{#if product.qty}}{{product.qty}} {{product.unit}} <span class="text-nowrap">{{formatNumber product.sum}} {{envSite.currency}}</span>{{else}}{{envSite.i18n.btnBuy}}{{/if}}
-        </button>
+          {{#if product.service}}
+            <a href="tel:+{{product.phone}}" class="btn btn-success"><i class="bi bi-telephone"></i> Позвонить</a>
+          {{else}}
+          <button type="button" class="btn {{#if product.qty}}btn-primary{{else}}btn-success{{/if}}" data-bs-toggle="modal" data-bs-target="#cartAddModal"
+            data-product-id="{{product.id}}" data-product-name="{{product.name}}" data-product-unit="{{product.unit}}" data-product-qty="{{product.qty}}"
+            data-seller-id="{{product.objectId}}" data-seller="{{product.objectName}}">
+            {{#if product.qty}}{{product.qty}} {{product.unit}} <span class="text-nowrap">{{formatNumber product.sum}} {{envSite.currency}}</span>{{else}}{{envSite.i18n.btnBuy}}{{/if}}
+          </button>
+          {{/if}}
         {{else}}
         <button type="button" class="btn btn-success" disabled>
           {{envSite.i18n.btnNotAvailable}}

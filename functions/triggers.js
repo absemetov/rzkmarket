@@ -127,7 +127,8 @@ exports.productCreateSecondGen = onDocumentCreated({
   document: "objects/{objectId}/products/{productId}",
   region: "europe-central2",
   maxInstances: 5}, async (event) => {
-  const product = event.data.data();
+  const snap = event.data;
+  const product = snap.data();
   const productId = event.params.productId;
   const objectId = event.params.objectId;
   // add data to Algolia
@@ -137,12 +138,17 @@ exports.productCreateSecondGen = onDocumentCreated({
     name: product.name,
     price: product.price,
     orderNumber: product.orderNumber,
-    unit: product.unit,
     availability: product.availability,
     seller: product.objectName,
     sellerId: objectId,
     path: product.catalogId.replace(/#/g, "/"),
   };
+  // new service
+  if (product.phone) {
+    productAlgolia.phone = product.phone;
+  } else {
+    productAlgolia.unit = product.unit;
+  }
   if (product.brand) {
     productAlgolia.brand = product.brand;
   }
@@ -166,7 +172,11 @@ exports.productCreateSecondGen = onDocumentCreated({
     productAlgolia[`categories.lvl${index}`] = helpArray.join(" > ");
   });
   await productsIndex.saveObject(productAlgolia);
-  return null;
+  // add numberSails default value
+  return snap.ref.set({
+    numberSails: 0,
+  }, {merge: true});
+  // return null;
 });
 
 // update product data
@@ -187,12 +197,17 @@ exports.productUpdateSecondGen = onDocumentUpdated({
     name: product.name,
     price: product.price,
     orderNumber: product.orderNumber,
-    unit: product.unit,
     availability: product.availability,
     seller: product.objectName,
     sellerId: objectId,
     path: product.catalogId.replace(/#/g, "/"),
   };
+  // new service
+  if (product.phone) {
+    productAlgolia.phone = product.phone;
+  } else {
+    productAlgolia.unit = product.unit;
+  }
   // add brand if changed
   if (product.brand) {
     productAlgolia.brand = product.brand;

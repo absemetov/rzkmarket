@@ -872,7 +872,7 @@ uploadActions.push(uploadMerch);
 const uploadCatalogs = async (telegram) => {
   await telegram.reply("Загружаем каталоги...");
   const settings = await store.findRecord("/settings/catalogsUpload");
-  const lastUplodingTime = settings.lastUplodingTime || 0;
+  const lastUplodingTime = settings?.lastUplodingTime || 0;
   const startTime = new Date();
   // for goods and catalogs
   const updatedAtTimestamp = Math.floor(startTime / 1000);
@@ -921,68 +921,21 @@ const uploadCatalogs = async (telegram) => {
       const row = {
         GROUP: GROUP.value && GROUP.value.split("#") || [],
       };
-      // generate catalogs array
-      // const pathArrayHelper = [];
-      // const delCatalogs = [];
-      // const groupArray = row.GROUP.map((catalogName) => {
-      //   let id = null;
-      //   // let parentId = null;
-      //   let orderNumber = null;
-      //   // let postId = null;
-      //   let nameCat = catalogName.trim();
-      //   // parce catalog url
-      //   const url = nameCat.match(/(.+)\[(.+)\]$/);
-      //   if (url) {
-      //     nameCat = url[1].trim();
-      //     const partial = url[2].split(",");
-      //     id = partial[0] ? partial[0].trim() : translit(nameCat);
-      //     orderNumber = partial[1] && + partial[1];
-      //     // postId = partial[2] && + partial[2];
-      //   } else {
-      //     id = translit(nameCat);
-      //   }
-      //   // delete catalogs
-      //   if (nameCat.charAt(0) === "%") {
-      //     if (id.charAt(0) === "%") {
-      //       id = id.replace(/^%-*/, "");
-      //     }
-      //     pathArrayHelper.push(id);
-      //     delCatalogs.push({id: pathArrayHelper.join("#"), del: true});
-      //   } else {
-      //     pathArrayHelper.push(id);
-      //     delCatalogs.push({id: pathArrayHelper.join("#"), del: false});
-      //   }
-      //   // use ru locale
-      //   const [name, nameRu] = nameCat.split("|").map((item) => item.trim());
-      //   return {
-      //     id,
-      //     name,
-      //     nameRu,
-      //     url: pathArrayHelper.join("/"),
-      //     parentId: pathArrayHelper.length > 1 ? pathArrayHelper.slice(0, -1).join("#") : null,
-      //     orderNumber,
-      //   };
-      // });
-      // for (const [index, value] of delCatalogs.entries()) {
-      //   if (value.del) {
-      //     if (checkNestedCat(index, delCatalogs)) {
-      //       batchCatalogsDelete.delete(store.getQuery(`catalogs/${value.id}`));
-      //       ++ deletedCatalogs;
-      //     } else {
-      //       // alert error
-      //       throw new Error(`Delete catalog problem ${value.id}, first delete nested cat!!!`);
-      //     }
-      //   }
-      // }
       // parse catalog cell
       const pathArrayHelper = [];
       const catUrlArray = [];
       const groupArray = [];
       let delCatalogs = false;
       for (const catalogOpt of row.GROUP) {
-        const options = catalogOpt.match(/^\s*([\wа-яА-ЯіїєґІЇЄҐ][\wа-яА-ЯіїєґІЇЄҐ\s(),-]*[\wа-яА-ЯіїєґІЇЄҐ)])\s*\|?\s*([\wа-яА-Я][\wа-яА-Я\s(),-]*[\wа-яА-Я)])?\s*\[\s*([\w][\w-]*[\w])?\s*,\s*([\d]+\s*)\s*,?\s*(del)?\s*\]\s*$/);
+        // TODO how to add emoji
+        // const regExpNames = /^[^<>]+$/;
+        // const options = catalogOpt.match(/^\s*([\wа-яА-ЯіїєґІЇЄҐ][\wа-яА-ЯіїєґІЇЄҐ\s(),-]*[\wа-яА-ЯіїєґІЇЄҐ)])\s*\|?\s*([\wа-яА-Я][\wа-яА-Я\s(),-]*[\wа-яА-Я)])?\s*\[\s*([\w][\w-]*[\w])?\s*,\s*([\d]+\s*)\s*,?\s*(del)?\s*\]\s*$/);
+        const options = catalogOpt.match(/^\s*([^<>|]+)\s*\|?\s*([^<>|]+)?\s*\[\s*([\w-]*)?\s*,\s*([\d]+\s*)\s*,?\s*(del)?\s*\]\s*$/);
         if (options) {
-          const id = options[3] ? options[3] : translit(options[1]);
+          // trim names
+          const name = options[1]?.trim();
+          const nameRu = options[2]?.trim();
+          const id = options[3] ? options[3] : translit(name);
           pathArrayHelper.push(id);
           const docPath = pathArrayHelper.join("#");
           if (delCatalogs) {
@@ -1003,22 +956,22 @@ const uploadCatalogs = async (telegram) => {
               delCatalogs = true;
               // ++ deletedCatalogs;
             } else {
-              if (options[2]) {
+              if (nameRu) {
                 catUrlArray.push({
-                  name: options[1],
-                  nameRu: options[2],
+                  name,
+                  nameRu,
                   url: pathArrayHelper.join("/"),
                 });
               } else {
                 catUrlArray.push({
-                  name: options[1],
+                  name,
                   url: pathArrayHelper.join("/"),
                 });
               }
               groupArray.push({
                 id,
-                name: options[1],
-                nameRu: options[2],
+                name,
+                nameRu,
                 docPath,
                 parentId: pathArrayHelper.length > 1 ? pathArrayHelper.slice(0, -1).join("#") : null,
                 orderNumber: +options[4],
@@ -1031,7 +984,7 @@ const uploadCatalogs = async (telegram) => {
         }
       }
       // new data detected
-      if (row.GROUP.length && newDataDetected) {
+      if (row.GROUP.length && newDataDetected && groupArray.length > 0) {
         const catalog = {
           groupName: groupArray.map((cat) => cat.name),
           groupNameRu: groupArray.map((cat) => cat.nameRu),
@@ -1064,26 +1017,7 @@ const uploadCatalogs = async (telegram) => {
             throw new Error(`Limit <b>${maxUploadGoods}</b> catalogs!`);
           }
           // save catalogs to batch
-          // const pathArray = [];
-          // const catUrlArray = [];
           for (const catalog of groupArray) {
-            // helper url for algolia
-            // helpArray.push(catalog.name);
-            // check if catalog added to batch
-            // helper arrays
-            // pathArray.push(catalog.id);
-            // if (catalog.nameRu) {
-            //   catUrlArray.push({
-            //     name: catalog.name,
-            //     nameRu: catalog.nameRu,
-            //     url: pathArray.join("/"),
-            //   });
-            // } else {
-            //   catUrlArray.push({
-            //     name: catalog.name,
-            //     url: pathArray.join("/"),
-            //   });
-            // }
             if (!catalogsIsSet.has(catalog.docPath)) {
               catalogsIsSet.add(catalog.docPath);
               const catalogRef = getFirestore().collection("catalogs").doc(catalog.docPath);
@@ -1122,7 +1056,7 @@ const uploadCatalogs = async (telegram) => {
     await batchCatalogs.commit();
   }
   // save lastUplodingTime
-  await store.updateRecord("/settings/catalogsUpload", {
+  await store.createRecord("/settings/catalogsUpload", {
     lastUplodingTime: updatedAtTimestamp,
   });
   // send notify
@@ -1134,6 +1068,213 @@ const uploadCatalogs = async (telegram) => {
   await telegram.replyWithHTML(`Data uploaded in ${Math.floor(uploadTime/1000)}s\n` +
     `Catalogs added: ${catalogsIsSet.size}\n` +
     `${catalogsDeleteSet.size > 0 ? `Deleted Catalogs: ${catalogsDeleteSet.size}` : ""}`);
+};
+
+// upload elektriks
+const uploadElektriks = async (telegram) => {
+  await telegram.reply("Загружаем электриков ...");
+  const object = await store.findRecord("objects/service");
+  const lastUplodingTime = object.lastUplodingTime || 0;
+  const startTime = new Date();
+  // for goods and catalogs
+  const updatedAtTimestamp = Math.floor(startTime / 1000);
+  // per page default 500
+  const perPage = 500;
+  // Max upload goods
+  const maxUploadGoods = 2000;
+  // elektriks set array
+  const productIsSet = new Set();
+  let deletedProducts = 0;
+  // load sheet
+  const doc = new GoogleSpreadsheet("1NdlYGQb3qUiS5D7rkouhZZ8Q7KvoJ6kTpKMtF2o5oVM");
+  await doc.useServiceAccountAuth(creds, "nadir@absemetov.org.ua");
+  // loads document properties and worksheets
+  await doc.loadInfo();
+  const sheet = doc.sheetsByTitle[`service-${process.env.BOT_LANG}`];
+  if (sheet) {
+    await telegram.replyWithHTML(`<b>Loading [service-${process.env.BOT_LANG}] from ${doc.title}\n` +
+     `Count rows: ${sheet.rowCount}</b>`);
+  } else {
+    throw new Error(`<b>Sheet title "service-${process.env.BOT_LANG}" not found!</b>`);
+  }
+  const rowCount = sheet.rowCount;
+  // read rows
+  for (let i = 1; i < rowCount; i += perPage) {
+    // write batch
+    const batchGoods = getFirestore().batch();
+    const batchGoodsDelete = getFirestore().batch();
+    // get rows data, use get cell because this method have numder formats
+    await sheet.loadCells({
+      startRowIndex: i, endRowIndex: i + perPage, startColumnIndex: 0, endColumnIndex: 8,
+    });
+    // loop rows from SHEET
+    for (let j = i; j < i + perPage && j < rowCount; j++) {
+      // get cell insst
+      const ORDER_BY = sheet.getCell(j, 0);
+      const ID = sheet.getCell(j, 1);
+      const NAME = sheet.getCell(j, 2);
+      const PHONE = sheet.getCell(j, 3);
+      const PRICE = sheet.getCell(j, 4);
+      const GROUP = sheet.getCell(j, 5);
+      const BRAND = sheet.getCell(j, 6);
+      const TIMESTAMP = sheet.getCell(j, 7);
+      const rowUpdatedTime = TIMESTAMP.value || 1;
+      const prodMustDel = ID.value && NAME.value && ORDER_BY.value === "delete" && rowUpdatedTime !== "deleted";
+      const newDataDetected = !prodMustDel && rowUpdatedTime > lastUplodingTime;
+      const row = {
+        ORDER_BY: ORDER_BY.value && ORDER_BY.value.toString().trim().replace(/^!\s*/, ""),
+        ID: ID.value && ID.value.toString().trim(),
+        NAME: NAME.value && NAME.value.toString().trim(),
+        PHONE: PHONE.value,
+        PRICE: PRICE.value,
+        GROUP: GROUP.value && GROUP.value.split("#") || [],
+        BRAND: BRAND.value ? BRAND.value.match(/^\s*([\wа-яА-ЯіїєґІЇЄҐ][\wа-яА-ЯіїєґІЇЄҐ\s()-]*[\wа-яА-ЯіїєґІЇЄҐ)])\s*\[?\s*(\w[\w.-]*\w\s*)?\]?\s*$/) || [] : [],
+        AVAILABILITY: ORDER_BY.value && ORDER_BY.value.toString().trim().charAt(0) !== "!",
+      };
+      // new parcer catalogs
+      const pathArrayHelper = [];
+      const catUrlArray = [];
+      const groupArray = [];
+      for (const catalogOpt of row.GROUP) {
+        // const options = catalogOpt.match(/^\s*([\wа-яА-ЯіїєґІЇЄҐ][\wа-яА-ЯіїєґІЇЄҐ\s(),-]*[\wа-яА-ЯіїєґІЇЄҐ)])\s*\|?\s*([\wа-яА-Я][\wа-яА-Я\s(),-]*[\wа-яА-Я)])?\s*\[\s*([\w][\w-]*[\w])?\s*,\s*([\d]+\s*)\s*,?\s*(del)?\s*\]\s*$/);
+        const options = catalogOpt.match(/^\s*([^<>|]+)\s*\|?\s*([^<>|]+)?\s*\[\s*([\w-]*)?\s*,\s*([\d]+\s*)\s*,?\s*(del)?\s*\]\s*$/);
+        if (options) {
+          // trim names
+          const name = options[1]?.trim();
+          const nameRu = options[2]?.trim();
+          const id = options[3] ? options[3] : translit(name);
+          pathArrayHelper.push(id);
+          const docPath = pathArrayHelper.join("#");
+          if (nameRu) {
+            catUrlArray.push({
+              name,
+              nameRu,
+              url: pathArrayHelper.join("/"),
+            });
+          } else {
+            catUrlArray.push({
+              name,
+              url: pathArrayHelper.join("/"),
+            });
+          }
+          groupArray.push({
+            id,
+            name,
+            nameRu,
+            docPath,
+            // parentId: pathArrayHelper.length > 1 ? pathArrayHelper.slice(0, -1).join("#") : null,
+            orderNumber: +options[4],
+            pathArray: [...catUrlArray],
+          });
+        } else {
+          throw new Error(`In row <b>${j + 1}</b>, Catalog format problem use name|nameRu[id, orderNumber, del]!`);
+        }
+      }
+      // add to delete batch
+      if (prodMustDel) {
+        batchGoodsDelete.delete(store.getQuery(`objects/service/products/${row.ID}`));
+        ++ deletedProducts;
+        TIMESTAMP.value = "deleted";
+      }
+      // check if this products have ID and NAME
+      if (row.ID && row.NAME && newDataDetected) {
+        // product data
+        // use ru locale todo custom column NAME_RU
+        const product = {
+          id: row.ID,
+          name: row.NAME,
+          phone: row.PHONE,
+          price: row.PRICE ? roundNumber(row.PRICE) : null,
+          groupName: groupArray.map((cat) => cat.name),
+          groupNameRu: groupArray.map((cat) => cat.nameRu),
+          group: groupArray.map((cat) => cat.id),
+          groupOrder: groupArray.map((cat) => cat.orderNumber),
+          groupLength: groupArray.length,
+          brand: row.BRAND[1],
+          brandSite: row.BRAND[2] ? "https://" + row.BRAND[2] : "",
+          orderNumber: + row.ORDER_BY,
+          availability: row.AVAILABILITY,
+        };
+        const regExpNames = /^[^<>]+$/;
+
+        // validate product
+        const rulesProductRow = {
+          "id": "required|alpha_dash|max:40",
+          "name": `required|string|max:90|regex:${regExpNames}`,
+          "phone": ["required", `regex:${process.env.BOT_PHONEREGEXP}`],
+          "price": "required|numeric",
+          "groupLength": "required|min:1|max:7",
+          "groupName.*": `required|string|max:90|regex:${regExpNames}`,
+          "groupNameRu.*": `string|max:90|regex:${regExpNames}`,
+          "group.*": "required|alpha_dash|max:40",
+          "groupOrder.*": "required|integer|min:1",
+          "brand": `string|max:40|regex:${regExpNames}`,
+          "brandSite": "url",
+          "orderNumber": "required|integer|min:1",
+          "availability": "boolean",
+        };
+        const validateProductRow = new Validator(product, rulesProductRow);
+        // check fails
+        if (validateProductRow.fails()) {
+          let errorRow = `In row <b>${j + 1}</b> Product ID <b>${product.id}</b>\n`;
+          for (const [key, error] of Object.entries(validateProductRow.errors.all())) {
+            errorRow += `Column <b>${key}</b> => <b>${error}</b>\n`;
+          }
+          throw new Error(errorRow);
+        }
+        if (validateProductRow.passes()) {
+          // check limit goods
+          if (productIsSet.size === maxUploadGoods) {
+            throw new Error(`Limit <b>${maxUploadGoods}</b> goods!`);
+          }
+          // add products in batch, check id product is unic
+          if (productIsSet.has(product.id)) {
+            throw new Error(`Product ID <b>${product.id}</b> in row <b>${j + 1}</b> not unic`);
+          } else {
+            productIsSet.add(product.id);
+          }
+          const productRef = getFirestore().collection("objects").doc("service").collection("products").doc(product.id);
+          batchGoods.set(productRef, {
+            "name": product.name,
+            "phone": product.phone,
+            "price": product.price,
+            "orderNumber": product.orderNumber,
+            "catalogId": groupArray[groupArray.length - 1].docPath,
+            "pathArray": groupArray[groupArray.length - 1].pathArray,
+            "brand": product.brand ? product.brand : FieldValue.delete(),
+            "brandSite": product.brandSite ? product.brandSite : FieldValue.delete(),
+            "updatedAt": updatedAtTimestamp,
+            "objectName": "RZK Сервис",
+            "rowNumber": j + 1,
+            "workSheet": `service-${process.env.BOT_LANG}`,
+            "availability": product.availability,
+            "objectId": "service",
+          }, {merge: true});
+        }
+      }
+    }
+    // commit goods
+    await batchGoods.commit();
+    // delete goods and catalogs
+    await batchGoodsDelete.commit();
+    // send done info
+    // await telegram.sendMessage(94899148, `<b>${i + perPage - 1} rows scaned from ${rowCount}</b>`,
+    //     {parse_mode: "html"});
+    await telegram.replyWithHTML(`<b>${i + perPage - 1} rows scaned from ${rowCount}</b>`);
+    // save cell changes
+    await sheet.saveUpdatedCells();
+    // clear cache
+    sheet.resetLocalCache(true);
+  }
+  // save lastUplodingTime
+  await store.updateRecord("objects/service", {
+    lastUplodingTime: updatedAtTimestamp,
+  });
+  // send notify
+  const uploadTime = new Date() - startTime;
+  await telegram.replyWithHTML(`Data uploaded in ${Math.floor(uploadTime/1000)}s\n` +
+    `Elektriks added: ${productIsSet.size}\n` +
+    `${deletedProducts > 0 ? `Deleted Elektriks: ${deletedProducts}` : ""}`);
 };
 // new uploader
 const uploadProductsNew = async (telegram, objectId, sheetId, pageName) => {
@@ -1161,7 +1302,7 @@ const uploadProductsNew = async (telegram, objectId, sheetId, pageName) => {
   await doc.loadInfo();
   const sheet = doc.sheetsByTitle[pageName];
   if (sheet) {
-    await telegram.sendMessage(94899148, `<b>Loading goods from ${doc.title}\n`+
+    await telegram.sendMessage(94899148, `<b>Loading title ${pageName} from ${doc.title}\n`+
     `Count rows: ${sheet.rowCount}</b>`,
     {parse_mode: "html"});
   } else {
@@ -1171,12 +1312,8 @@ const uploadProductsNew = async (telegram, objectId, sheetId, pageName) => {
   // read rows
   for (let i = 1; i < rowCount; i += perPage) {
     // write batch
-    // const batchGoods = firebase.firestore().batch();
-    // const batchGoodsDelete = firebase.firestore().batch();
-    // const batchCatalogsDelete = firebase.firestore().batch();
     const batchGoods = getFirestore().batch();
     const batchGoodsDelete = getFirestore().batch();
-    // const batchCatalogsDelete = getFirestore().batch();
     // get rows data, use get cell because this method have numder formats
     await sheet.loadCells({
       startRowIndex: i, endRowIndex: i + perPage, startColumnIndex: 0, endColumnIndex: 11,
@@ -1214,63 +1351,36 @@ const uploadProductsNew = async (telegram, objectId, sheetId, pageName) => {
         BRAND: BRAND.value ? BRAND.value.match(/^\s*([\wа-яА-ЯіїєґІЇЄҐ][\wа-яА-ЯіїєґІЇЄҐ\s()-]*[\wа-яА-ЯіїєґІЇЄҐ)])\s*\[?\s*(\w[\w.-]*\w\s*)?\]?\s*$/) || [] : [],
         AVAILABILITY: ORDER_BY.value && ORDER_BY.value.toString().trim().charAt(0) !== "!",
       };
-      // generate catalogs array
-      // const pathArrayHelper = [];
-      // const groupArray = row.GROUP.map((catalogName) => {
-      //   let id = null;
-      //   // let parentId = null;
-      //   let orderNumber = null;
-      //   // let postId = null;
-      //   let nameCat = catalogName.trim();
-      //   // parce catalog url
-      //   const url = nameCat.match(/(.+)\[(.+)\]$/);
-      //   if (url) {
-      //     nameCat = url[1].trim();
-      //     const partial = url[2].split(",");
-      //     id = partial[0] ? partial[0].trim() : translit(nameCat);
-      //     orderNumber = partial[1] && + partial[1];
-      //     // postId = partial[2] && + partial[2];
-      //   } else {
-      //     id = translit(nameCat);
-      //   }
-      //   pathArrayHelper.push(id);
-      //   // use ru locale
-      //   const [name, nameRu] = nameCat.split("|").map((item) => item.trim());
-      //   return {
-      //     id,
-      //     name,
-      //     nameRu,
-      //     url: pathArrayHelper.join("/"),
-      //     parentId: pathArrayHelper.length > 1 ? pathArrayHelper.slice(0, -1).join("#") : null,
-      //     orderNumber,
-      //   };
-      // });
       // new parcer catalogs
       const pathArrayHelper = [];
       const catUrlArray = [];
       const groupArray = [];
       for (const catalogOpt of row.GROUP) {
-        const options = catalogOpt.match(/^\s*([\wа-яА-ЯіїєґІЇЄҐ][\wа-яА-ЯіїєґІЇЄҐ\s(),-]*[\wа-яА-ЯіїєґІЇЄҐ)])\s*\|?\s*([\wа-яА-Я][\wа-яА-Я\s(),-]*[\wа-яА-Я)])?\s*\[\s*([\w][\w-]*[\w])?\s*,\s*([\d]+\s*)\s*,?\s*(del)?\s*\]\s*$/);
+        // const options = catalogOpt.match(/^\s*([\wа-яА-ЯіїєґІЇЄҐ][\wа-яА-ЯіїєґІЇЄҐ\s(),-]*[\wа-яА-ЯіїєґІЇЄҐ)])\s*\|?\s*([\wа-яА-Я][\wа-яА-Я\s(),-]*[\wа-яА-Я)])?\s*\[\s*([\w][\w-]*[\w])?\s*,\s*([\d]+\s*)\s*,?\s*(del)?\s*\]\s*$/);
+        const options = catalogOpt.match(/^\s*([^<>|]+)\s*\|?\s*([^<>|]+)?\s*\[\s*([\w-]*)?\s*,\s*([\d]+\s*)\s*,?\s*(del)?\s*\]\s*$/);
         if (options) {
-          const id = options[3] ? options[3] : translit(options[1]);
+          // trim names
+          const name = options[1]?.trim();
+          const nameRu = options[2]?.trim();
+          const id = options[3] ? options[3] : translit(name);
           pathArrayHelper.push(id);
           const docPath = pathArrayHelper.join("#");
-          if (options[2]) {
+          if (nameRu) {
             catUrlArray.push({
-              name: options[1],
-              nameRu: options[2],
+              name,
+              nameRu,
               url: pathArrayHelper.join("/"),
             });
           } else {
             catUrlArray.push({
-              name: options[1],
+              name,
               url: pathArrayHelper.join("/"),
             });
           }
           groupArray.push({
             id,
-            name: options[1],
-            nameRu: options[2],
+            name,
+            nameRu,
             docPath,
             // parentId: pathArrayHelper.length > 1 ? pathArrayHelper.slice(0, -1).join("#") : null,
             orderNumber: +options[4],
@@ -1355,28 +1465,16 @@ const uploadProductsNew = async (telegram, objectId, sheetId, pageName) => {
             productIsSet.add(product.id);
           }
           const productRef = getFirestore().collection("objects").doc(objectId).collection("products").doc(product.id);
-          // console.log(groupArray[groupArray.length - 1].pathArray);
           batchGoods.set(productRef, {
             "name": product.name,
             "nameRu": product.nameRu || FieldValue.delete(),
             "purchasePrice": product.purchasePrice,
             "price": product.price,
-            // "currency": product.currency,
-            // "currency": FieldValue.delete(),
             "unit": product.unit,
             "orderNumber": product.orderNumber,
-            // "catalogId": groupArray[groupArray.length - 1].url.replace(/\//g, "#"),
             "catalogId": groupArray[groupArray.length - 1].docPath,
-            // "pathArray": groupArray.map((catalog) => {
-            //   if (catalog.nameRu) {
-            //     return {name: catalog.name, nameRu: catalog.nameRu, url: catalog.url};
-            //   } else {
-            //     return {name: catalog.name, url: catalog.url};
-            //   }
-            // }),
             "pathArray": groupArray[groupArray.length - 1].pathArray,
             "tags": tags.length ? tags : FieldValue.delete(),
-            // "tagsNames": firestore.FieldValue.delete(),
             "brand": product.brand ? product.brand : FieldValue.delete(),
             "brandSite": product.brandSite ? product.brandSite : FieldValue.delete(),
             "updatedAt": updatedAtTimestamp,
@@ -1393,7 +1491,6 @@ const uploadProductsNew = async (telegram, objectId, sheetId, pageName) => {
     await batchGoods.commit();
     // delete goods and catalogs
     await batchGoodsDelete.commit();
-    // await batchCatalogsDelete.commit();
     // send done info
     await telegram.sendMessage(94899148, `<b>${i + perPage - 1} rows scaned from ${rowCount}</b>`,
         {parse_mode: "html"});
@@ -1442,3 +1539,4 @@ exports.changeCatalog = changeCatalog;
 exports.uploadActions = uploadActions;
 exports.uploadProductsTrigger = uploadProductsTrigger;
 exports.uploadCatalogs = uploadCatalogs;
+exports.uploadElektriks = uploadElektriks;
